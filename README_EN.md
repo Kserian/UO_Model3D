@@ -132,17 +132,14 @@ items into it, not the other way round.
    1. Make every piece that is a separate item in the game (breastplate, pauldrons, gloves, boots, helmet) a separate
       object. Keep it under about 10k vertices: the script makes 1254 copies of the mesh (about 30 KB of RAM per
       vertex), and a 136×120 px frame shows no more detail anyway. Reduce a dense mesh with a *Decimate* modifier.
-   2. Select the item, open the text **`uo_bind_item.py`** and run it (Alt+P). Settings at the top of the script:
-      - `PART = "all"`: the default. Every item vertex follows the skin **right under it** (along its normal):
-        armour on the shoulder follows the arm, on the side under the armpit it follows the torso. Fits most items.
-      - `MAP = "under"` (skin under the vertex) or `"nearest"` (nearest skin).
-      - `SMOOTH = 4`: smoothing of the weights and corrections over the item. Less stretching where body parts meet.
-      - Another `PART` limits the weights and corrections to the skin of one body part. Useful when the item still
-        follows a body part it does not cover:
+   2. Select the item, open the text **`uo_bind_item.py`**, set `PART` (the kind of item) and run it (Alt+P).
+      Every item vertex follows the skin **right under it** (along its normal, `MAP = "under"`), and the weights
+      and corrections are smoothed over the item (`SMOOTH = 4`).
 
-      | `PART` | Item | Bones (weights and corrections from this skin only) |
+      | `PART` | Item | What it follows |
       |---|---|---|
-      | `"torso"` | breastplate, tunic, sleeveless shirt | pelvis, spine, chest, neck |
+      | `"chest"` | breastplate, vest, tunic | skin under it; shoulders 80% on the collarbones (the arm moves under the armour), bottom 70% on the pelvis |
+      | `"torso"` | something on the torso only | pelvis, spine, chest, neck |
       | `"shoulders"` | pauldrons | chest, upper_arm |
       | `"arms"` | sleeves, arm armour | upper_arm, forearm |
       | `"gloves"` | gloves, gauntlets, bracers | forearm, hand |
@@ -150,7 +147,10 @@ items into it, not the other way round.
       | `"boots"` | boots, greaves | shin, foot |
       | `"helm"` | helmet, hood, mask | head |
       | `"neck"` | gorget, collar | neck, chest, head |
-      | `"all"` | robe, cloak, full suit in one object | every bone |
+      | `"all"` | robe, cloak, full suit in one object | skin under it, every bone |
+
+      For `"chest"` the shoulder is set in that type's line: `"upper_arm": 0.2` is the arm's share (less = armour
+      stays stiffer on the shoulder, more = follows the arm more), `"thigh": 0.3` is the thighs' share at the lower edge.
 
    3. The script parents the item to `UO_Rig`, adds the *Armature* modifier, sets the weights and copies the shape
       corrections from the same skin, so the item moves with the skin under it. Run it again after every change to the
@@ -190,7 +190,9 @@ items into it, not the other way round.
    EXACT_COLORS = True         # body colours from the original (LAYER = "body" / "all")
    HOLDOUT_MARGIN = 0.01       # the body hides the item where it is > 1 cm in front of it (shallow skin pokes cut
                                # no holes); 0 = plain Cycles holdout
-   FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled with the item (0 = off)
+   OCCLUDERS = [...]           # body parts that may hide the item: arms, hands, head, legs; never the torso
+                               # (items are worn over it)
+   FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled (0 = off)
    ```
 3. Run **Run Script** (Alt+P). A full layer is 1050 frames, about 15–30 minutes on a CPU. A clothing layer is rendered
    without the body, and the script works out from depth what the body hides (with `HOLDOUT_MARGIN = 0` every frame
@@ -389,8 +391,11 @@ CORRECTIONS: 210 shape keys "uo_NN_MM" on UO_Body; driver value = (uo_action_id 
              skin hit along the item vertex normal (else nearest); weights = body weights there (allowed bones only,
              renormalised); keys copied from the same point; SMOOTH passes of neighbour averaging over the item.
 HOLDOUT    : clothing layer = Cycles render without the body; own z-buffer raster of body and items; the body hides a
-             pixel where depth_body < depth_item - HOLDOUT_MARGIN (0.01 m); body-cut patches <= FILL_HOLES px fully
-             surrounded by the item are restored from the render without the body.
+             pixel where depth_body < depth_item - HOLDOUT_MARGIN (0.01 m), using only body triangles whose dominant bone is
+             in OCCLUDERS (no torso); transparent patches <= FILL_HOLES px fully
+             surrounded by the item are filled (from the render without the body, else the neighbours' colour).
+BIND FOLD  : uo_bind_item PARTS[...][1] = share of a limb bone's weight kept; the rest moves to the parent bone
+             (hand>forearm>upper_arm>clavicle, foot>shin>thigh>pelvis, head>neck); "chest" = upper_arm 0.2, thigh 0.3.
 MOUNTED    : horse = body 0xC8; rider->horse action pairing 23->0, 24->1, 25..29->2. Objects Horse_a{action}_f{frame}
              (holdout proxies, parented to UO_Rig) + text "uo_horse_masks.json" (key "action,frame,dir" ->
              base64(zlib(packbits(120x136 bool)))). Hiding happens only inside the horse silhouette.

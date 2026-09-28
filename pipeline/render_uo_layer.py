@@ -31,8 +31,11 @@ EXACT_BODY = True                  # body = original UO frames: the "body" layer
 HOLDOUT_MARGIN = 0.01              # m: in the clothing layer the body hides an item only where it is at least this much in
                                    # front of it, so skin poking a few mm through tight armour does not cut holes
                                    # (1 px = 2.8 cm). 0 = plain Cycles holdout (renders every frame twice).
-FILL_HOLES = 4                     # px: holes the body cuts INSIDE an item (fully surrounded by it) up to this size are
-                                   # filled back with the item - skin poking through, not a real occluder. 0 = off
+OCCLUDERS = ["head", "upper_arm", "forearm", "hand", "thigh", "shin", "foot"]   # body parts that may hide items
+                                   # (with HOLDOUT_MARGIN > 0); the torso (pelvis, spine, chest, neck) never does, because
+                                   # items are worn over it and a torso poking through is a model error, not an occluder
+FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
+                                   # poking through or a gap in the item mesh, not a real occluder. 0 = off
 
 
 sc = bpy.context.scene
@@ -142,9 +145,26 @@ def render_px():
     return px.reshape(h, w, 4)[::-1]                        # Blender pixels start at the bottom row
 
 
-def raster(objs):
+def body_part_mask(parts):
+    """body triangles (loop_triangles order) whose dominant bone is one of `parts` (names without .L / .R)"""
+    me = body.data
+    names = [g.name.split(".")[0] for g in body.vertex_groups]
+    W = np.zeros((len(me.vertices), len(names)))
+    for v in me.vertices:
+        for g in v.groups:
+            W[v.index, g.group] = g.weight
+    me.calc_loop_triangles()
+    tri = np.array([t.vertices[:] for t in me.loop_triangles])
+    dom = W[tri].sum(1).argmax(1)
+    return np.array([names[k] in parts for k in dom])
+
+
+OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))
+
+
+def raster(objs, tri_mask=None):
     """pixel coverage and camera depth (m) of the deformed meshes through UO_Camera, pixel-centre rule (like the
-    EXACT render). Returns (bool 120x136, float 120x136 with inf where nothing is)."""
+    EXACT render). Returns (bool 120x136, float 120x136 with inf where nothing is). tri_mask: triangles to use."""
     rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get()
     cam = sc.camera.evaluated_get(dg)
@@ -155,6 +175,8 @@ def raster(objs):
         co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
         me.calc_loop_triangles()
         tri = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tri); tri = tri.reshape(-1, 3)
+        if tri_mask is not None and len(tri_mask) == len(tri):
+            tri = tri[tri_mask]
         Mw = np.array(ev.matrix_world)
         ev.to_mesh_clear()
         hv = np.c_[co, np.ones(len(co))] @ (Vm @ Mw).T                  # camera space
@@ -187,7 +209,8 @@ def body_coverage():
 def body_occlusion(free, margin):
     """the clothing render without the body, with the body in front of the item removed. The body hides a pixel only
     where it is more than `margin` in front of the visible item surface. Returns (hold, body coverage)."""
-    cov, zb = raster([body])
+    cov, _ = raster([body])
+    occ, zb = raster([body], OCCLUDER_TRIS)            # only the parts that may hide items (not the torso)
     _, zi = raster([o for o in clothes if not o.hide_render])
     seen = free[..., 3] >= 0.5
     for _ in range(2):                                  # item pixels Cycles drew but the raster missed: neighbour depth
@@ -198,7 +221,7 @@ def body_occlusion(free, margin):
         nb = np.min([pad[y:y + 120, x:x + 136] for y in range(3) for x in range(3)], axis=0)
         zi = np.where(miss, nb, zi)
     hold = free.copy()
-    hold[cov & (zb < zi - margin)] = 0.0
+    hold[occ & (zb < zi - margin)] = 0.0
     return hold, cov
 
 
@@ -228,31 +251,54 @@ def binary_dilation(m, iterations=1):
 
 
 def fill_small_holes(px, free, max_px):
-    """item pixels hidden by the body in small patches fully surrounded by the item get the item back"""
+    """transparent patches up to max_px fully surrounded by the item are filled: with the item from the render without
+    the body (skin poking through) or, where the item mesh itself leaves a gap, with the colour of the item around it"""
     a = px[..., 3] >= 0.5
-    cut = (free[..., 3] >= 0.5) & ~a
-    seen = np.zeros_like(cut)
-    H, W = cut.shape
-    for y, x in zip(*np.nonzero(cut)):
+    H, W = a.shape
+    outside = np.zeros_like(a)
+    outside[0, :] = outside[-1, :] = outside[:, 0] = outside[:, -1] = True
+    outside &= ~a
+    while True:                                         # transparent pixels connected to the image border
+        g = outside.copy()
+        g[1:] |= outside[:-1]; g[:-1] |= outside[1:]; g[:, 1:] |= outside[:, :-1]; g[:, :-1] |= outside[:, 1:]
+        g &= ~a
+        if (g == outside).all():
+            break
+        outside = g
+    hole = ~a & ~outside
+    seen = np.zeros_like(hole)
+    for y, x in zip(*np.nonzero(hole)):
         if seen[y, x]:
             continue
-        comp, stack, closed = [], [(y, x)], True
+        comp, stack = [], [(y, x)]
         seen[y, x] = True
         while stack:
             cy, cx = stack.pop()
             comp.append((cy, cx))
             for ny, nx in ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1)):
-                if not (0 <= ny < H and 0 <= nx < W):
-                    closed = False
-                elif cut[ny, nx]:
-                    if not seen[ny, nx]:
-                        seen[ny, nx] = True
-                        stack.append((ny, nx))
-                elif not a[ny, nx]:
-                    closed = False                      # touches the outside: a real occluder (arm, hand...)
-        if closed and len(comp) <= max_px:
-            ys, xs = [c[0] for c in comp], [c[1] for c in comp]
-            px[ys, xs] = free[ys, xs]
+                if 0 <= ny < H and 0 <= nx < W and hole[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True
+                    stack.append((ny, nx))
+        if len(comp) > max_px:
+            continue                                    # a real opening (e.g. an arm in front of the chest)
+        todo = []
+        for cy, cx in comp:
+            if free[cy, cx, 3] >= 0.5:
+                px[cy, cx] = free[cy, cx]
+            else:
+                todo.append((cy, cx))
+        for _ in range(max_px):                         # mesh gap: colour of the neighbouring item pixels
+            left = []
+            for cy, cx in todo:
+                nb = [px[ny, nx] for ny, nx in ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1))
+                      if 0 <= ny < H and 0 <= nx < W and px[ny, nx, 3] >= 0.5]
+                if nb:
+                    px[cy, cx] = np.mean(nb, axis=0); px[cy, cx, 3] = 1.0
+                else:
+                    left.append((cy, cx))
+            todo = left
+            if not todo:
+                break
     return px
 
 

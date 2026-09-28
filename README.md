@@ -128,17 +128,14 @@ do niego swoje przedmioty, a nie odwrotnie.
    1. Każdy przedmiot, który w grze jest osobny (napierśnik, naramienniki, rękawice, buty, hełm), rób jako osobny
       obiekt. Mniej niż ok. 10 tys. wierzchołków: skrypt robi 1254 kopie siatki (ok. 30 KB RAM na wierzchołek),
       a w klatce 136×120 px więcej szczegółów i tak nie widać. Za gęstą siatkę zmniejsz modyfikatorem *Decimate*.
-   2. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`** i uruchom (Alt+P). Ustawienia na początku skryptu:
-      - `PART = "all"`: domyślnie. Każdy wierzchołek przedmiotu idzie za skórą, która leży **pod nim** (wzdłuż
-        normalnej): pancerz na barku za ramieniem, na boku pod pachą za tułowiem. Pasuje do większości przedmiotów.
-      - `MAP = "under"` (skóra pod wierzchołkiem) albo `"nearest"` (najbliższa skóra).
-      - `SMOOTH = 4`: wygładzanie wag i korekt na przedmiocie. Mniej rozciągania na granicach części ciała.
-      - Inny `PART` ogranicza wagi i korekty do skóry jednej części ciała. Przydaje się, gdy przedmiot mimo to idzie
-        za częścią ciała, której nie zakrywa:
+   2. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`**, ustaw `PART` (typ przedmiotu) i uruchom (Alt+P).
+      Każdy wierzchołek przedmiotu idzie za skórą, która leży **pod nim** (wzdłuż normalnej, `MAP = "under"`),
+      a wagi i korekty są wygładzane na przedmiocie (`SMOOTH = 4`).
 
-      | `PART` | Przedmiot | Kości (wagi i korekty tylko z tej skóry) |
+      | `PART` | Przedmiot | Za czym idzie |
       |---|---|---|
-      | `"torso"` | napierśnik, tunika, koszula bez rękawów | pelvis, spine, chest, neck |
+      | `"chest"` | napierśnik, kamizelka, tunika | skóra pod spodem; bark w 80% na obojczyku (ręka rusza się pod pancerzem), dół w 70% za miednicą |
+      | `"torso"` | coś tylko na tułowiu | pelvis, spine, chest, neck |
       | `"shoulders"` | naramienniki | chest, upper_arm |
       | `"arms"` | rękawy, osłony ramion | upper_arm, forearm |
       | `"gloves"` | rękawice, karwasze | forearm, hand |
@@ -146,7 +143,10 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"boots"` | buty, nagolenniki | shin, foot |
       | `"helm"` | hełm, kaptur, maska | head |
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
-      | `"all"` | szata, płaszcz, cała zbroja w jednym obiekcie | wszystkie kości |
+      | `"all"` | szata, płaszcz, cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
+
+      Dla `"chest"` bark ustawiasz w linii tego typu: `"upper_arm": 0.2` to udział ramienia (mniej = pancerz
+      sztywniej na barku, więcej = bardziej za ręką), `"thigh": 0.3` to udział ud przy dolnej krawędzi.
 
    3. Skrypt robi parent do `UO_Rig`, modyfikator *Armature*, wagi i kopiuje korekty kształtu z tej samej skóry,
       więc przedmiot rusza się razem ze skórą pod nim. Uruchom go ponownie po każdej zmianie kształtu przedmiotu. Stare wagi i klucze `uo_`
@@ -186,7 +186,9 @@ do niego swoje przedmioty, a nie odwrotnie.
    EXACT_COLORS = True         # kolory ciała z oryginału (LAYER = "body" / "all")
    HOLDOUT_MARGIN = 0.01       # ciało zasłania przedmiot, gdy jest przed nim o > 1 cm (płytkie przebicia skóry
                                # nie robią dziur); 0 = zwykły holdout Cycles
-   FILL_HOLES = 4              # dziurki do 4 px otoczone przedmiotem wypełnia przedmiotem (0 = wył.)
+   OCCLUDERS = [...]           # części ciała, które mogą zasłaniać przedmiot: ręce, dłonie, głowa, nogi;
+                               # tułów nigdy (przedmioty leżą na nim)
+   FILL_HOLES = 4              # dziurki do 4 px otoczone przedmiotem są wypełniane (0 = wył.)
    ```
 3. Uruchom **Run Script** (Alt+P). Pełna warstwa to 1050 klatek, ok. 15–30 min na CPU. Warstwa ubrania renderuje się
    bez ciała, a to, co ciało zasłania, skrypt liczy z głębokości (z `HOLDOUT_MARGIN = 0` każda klatka renderuje się

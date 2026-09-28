@@ -1,8 +1,9 @@
 # Bind the SELECTED item meshes to the UO body in one go: parent + Armature modifier + skin weights + shape corrections.
 # 1. Model the item on the body in Rest Position, put it in the "Clothing" collection (keep it under ~10k vertices).
-# 2. Select the item and run (Alt+P). Every item vertex follows the skin right under it (MAP = "under"): weights and
-#    shape corrections are taken from that skin point, then smoothed over the item (SMOOTH).
-# 3. PART limits the skin to one body part (e.g. "gloves"), for an item that still follows a part it does not cover.
+# 2. Set PART to the kind of item (e.g. "chest" for a breastplate, "gloves" for gloves), select it and run (Alt+P).
+#    Every item vertex follows the skin right under it (MAP = "under"); weights and shape corrections are taken from
+#    that skin point and smoothed over the item (SMOOTH). "chest" moves most of the upper-arm weight to the
+#    collarbones, so the shoulders of a breastplate stay on the shoulders while the arms move under it.
 # Run it again after you change the item's shape (old weights and "uo_" corrections are replaced). Your own shape
 # keys (names not starting with "uo_") are kept.
 import bpy
@@ -11,21 +12,28 @@ from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 from mathutils.geometry import barycentric_transform
 
-PART = "all"          # which body part the item covers (see PARTS); "all" = every bone
+PART = "all"          # kind of item, see PARTS below (e.g. "chest" for a breastplate, "gloves" for gloves)
 MAP = "under"         # "under": follow the skin right under each vertex (along its normal); "nearest": nearest skin
 SMOOTH = 4            # smoothing passes of weights and corrections over the item (0 = off)
 MAX_DIST = 0.15       # m, farthest skin an item vertex may follow along its normal
+CORR_KEEP = 0.0       # 0..1: share of the skin corrections kept where FOLLOW moved weight to a parent bone
+# PART: (bones the item may follow - None = all, FOLLOW = share of a limb bone's weight that stays on it; the rest goes
+# to its parent bone: hand->forearm->upper_arm->clavicle, foot->shin->thigh->pelvis, head->neck)
 PARTS = {
-    "torso":     ["pelvis", "spine", "chest", "neck"],                          # breastplate, tunic, shirt without sleeves
-    "shoulders": ["chest", "upper_arm.L", "upper_arm.R"],                       # pauldrons
-    "arms":      ["upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R"],       # sleeves, arm armour
-    "gloves":    ["forearm.L", "hand.L", "forearm.R", "hand.R"],                 # gloves, gauntlets, bracers
-    "legs":      ["pelvis", "thigh.L", "shin.L", "thigh.R", "shin.R"],           # leggings, trousers
-    "boots":     ["shin.L", "foot.L", "shin.R", "foot.R"],                       # boots, greaves
-    "helm":      ["head"],                                                       # helmet, hat, mask
-    "neck":      ["neck", "chest", "head"],                                      # gorget, collar
-    "all":       None,                                                           # robe, cloak, full suit: every bone
+    "all":       (None, {}),                                                   # robe, cloak, full suit: like the skin
+    "chest":     (None, {"upper_arm": 0.2, "forearm": 0.0, "hand": 0.0,        # breastplate, vest, tunic: shoulders ride
+                         "thigh": 0.3, "shin": 0.0, "foot": 0.0, "head": 0.0}),  # on the collarbones, arms move under it
+    "torso":     (["pelvis", "spine", "chest", "neck"], {}),                   # torso skin only
+    "shoulders": (["chest", "upper_arm.L", "upper_arm.R"], {}),                # pauldrons
+    "arms":      (["upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R"], {}),   # sleeves, arm armour
+    "gloves":    (["forearm.L", "hand.L", "forearm.R", "hand.R"], {}),         # gloves, gauntlets, bracers
+    "legs":      (["pelvis", "thigh.L", "shin.L", "thigh.R", "shin.R"], {}),   # leggings, trousers
+    "boots":     (["shin.L", "foot.L", "shin.R", "foot.R"], {}),               # boots, greaves
+    "helm":      (["head"], {}),                                               # helmet, hat, mask
+    "neck":      (["neck", "chest", "head"], {}),                              # gorget, collar
 }
+PARENT = {"hand": "forearm", "forearm": "upper_arm", "upper_arm": "clavicle", "foot": "shin", "shin": "thigh",
+          "thigh": "pelvis", "head": "neck"}
 
 body = bpy.data.objects["UO_Body"]
 rig = bpy.data.objects["UO_Rig"]
@@ -103,6 +111,23 @@ def bind(ob, allowed):
     lost = s[:, 0] <= 1e-6                                           # no weight of the part here: nearest bone of the part
     if lost.any():
         wv[lost, W[idx[lost, 0]].argmax(1)] = 1.0
+    moved = np.zeros(n)
+    bones = list(bones)
+    for base in ("hand", "forearm", "upper_arm", "foot", "shin", "thigh", "head"):   # distal first, so chains fold
+        if base not in FOLLOW:
+            continue
+        for side in ((".L", ".R") if base != "head" else ("",)):
+            b, pb = base + side, PARENT[base] + ("" if PARENT[base] in ("pelvis", "neck") else side)
+            if b not in bones or pb not in rig.data.bones:
+                continue
+            j = bones.index(b)
+            mv = wv[:, j] * (1 - FOLLOW[base])
+            wv[:, j] -= mv; moved += mv
+            if pb in bones:
+                wv[:, bones.index(pb)] += mv
+            else:
+                wv = np.c_[wv, mv]; bones.append(pb)
+    moved = np.clip(moved, 0, 1)
     body_bones = {g.name for g in body.vertex_groups}
     for g in [g for g in ob.vertex_groups if g.name in body_bones or g.name.startswith("clavicle")]:
         ob.vertex_groups.remove(g)
@@ -141,7 +166,7 @@ def bind(ob, allowed):
     for k in keys:
         k.data.foreach_get("co", buf)
         off = buf.reshape(-1, 3) - basis
-        o = smooth((off[idx] * bary[..., None]).sum(1)) @ R.T
+        o = smooth((off[idx] * bary[..., None]).sum(1) * (1 - moved * (1 - CORR_KEEP))[:, None]) @ R.T
         sk = ob.shape_key_add(name=k.name, from_mix=False)
         sk.data.foreach_set("co", (obasis + o).ravel().astype(np.float32))
         src = drivers['key_blocks["%s"].value' % k.name].driver
@@ -156,11 +181,12 @@ def bind(ob, allowed):
 
 if PART not in PARTS:
     raise ValueError("PART must be one of %s" % list(PARTS))
+FOLLOW = PARTS[PART][1]
 pose = rig.data.pose_position
 rig.data.pose_position = "REST"
 bpy.context.view_layer.update()
 try:
     for ob in [o for o in bpy.context.selected_objects if o.type == "MESH" and o != body]:
-        bind(ob, PARTS[PART])
+        bind(ob, PARTS[PART][0])
 finally:
     rig.data.pose_position = pose
