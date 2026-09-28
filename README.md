@@ -108,6 +108,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | Tekst | Rola |
 |---|---|
 | `render_uo_layer.py` | Render warstwy do klatek i `.vd` (uruchamiasz Alt+P). |
+| `uo_fit_item.py` | Wypycha zaznaczony przedmiot ze skóry (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature, wagi i korekty (rozdział 3). |
 | `uo_transfer_corrections.py` | Kopiuje same korekty kształtu ciała na zaznaczony przedmiot (gdy wagi robisz ręcznie). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
@@ -128,7 +129,11 @@ do niego swoje przedmioty, a nie odwrotnie.
    1. Każdy przedmiot, który w grze jest osobny (napierśnik, naramienniki, rękawice, buty, hełm), rób jako osobny
       obiekt. Mniej niż ok. 10 tys. wierzchołków: skrypt robi 1254 kopie siatki (ok. 30 KB RAM na wierzchołek),
       a w klatce 136×120 px więcej szczegółów i tak nie widać. Za gęstą siatkę zmniejsz modyfikatorem *Decimate*.
-   2. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`**, ustaw `PART` (typ przedmiotu) i uruchom (Alt+P).
+   2. **Dopasowanie do skóry** (opcjonalnie, w pozycji spoczynkowej): zaznacz przedmiot i uruchom **`uo_fit_item.py`**.
+      Części bliżej skóry niż `MIN_GAP` (8 mm) albo w ciele zostają wypchnięte. Przesunięcie rozchodzi się płynnie na
+      `RADIUS` (4 cm), więc płyty zostają sztywne, a nity i wzory przesuwają się razem z nimi. `MAX_GAP > 0`
+      dodatkowo dociąga odstające miejsca (zmienia wygląd, domyślnie wyłączone). Położenie i rozmiar ustaw sam.
+   3. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`**, ustaw `PART` (typ przedmiotu) i uruchom (Alt+P).
       Każdy wierzchołek przedmiotu idzie za skórą, która leży **pod nim** (wzdłuż normalnej, `MAP = "under"`),
       a wagi i korekty są wygładzane na przedmiocie (`SMOOTH = 4`).
 
@@ -148,16 +153,16 @@ do niego swoje przedmioty, a nie odwrotnie.
       Dla `"chest"` bark ustawiasz w linii tego typu: `"upper_arm": 0.2` to udział ramienia (mniej = pancerz
       sztywniej na barku, więcej = bardziej za ręką), `"thigh": 0.3` to udział ud przy dolnej krawędzi.
 
-   3. Skrypt robi parent do `UO_Rig`, modyfikator *Armature*, wagi i kopiuje korekty kształtu z tej samej skóry,
+   4. Skrypt robi parent do `UO_Rig`, modyfikator *Armature*, wagi i kopiuje korekty kształtu z tej samej skóry,
       więc przedmiot rusza się razem ze skórą pod nim. Uruchom go ponownie po każdej zmianie kształtu przedmiotu. Stare wagi i klucze `uo_`
       zostaną zastąpione, twoje własne klucze kształtu zostają.
-   4. Wersja ręczna (gdy chcesz własne wagi): Ctrl+P → *Armature Deform → With Empty Groups*, wagi pomaluj
+   5. Wersja ręczna (gdy chcesz własne wagi): Ctrl+P → *Armature Deform → With Empty Groups*, wagi pomaluj
       albo skopiuj modyfikatorem *Data Transfer* (Vertex Groups, *Nearest Face Interpolated*) i usuń grupy kości,
       których przedmiot nie zakrywa. Na koniec uruchom **`uo_transfer_corrections.py`**.
-   5. W niektórych klatkach (upadki, jazda konna, dłonie) samo ciało jest mocno odkształcone przez korekty, bo tak
+   6. W niektórych klatkach (upadki, jazda konna, dłonie) samo ciało jest mocno odkształcone przez korekty, bo tak
       dopasowuje się do obrysu oryginału. Przedmiot odkształca się wtedy razem z nim. W podglądzie 3D wygląda to
       dziwnie, w klatce UO pasuje do oryginalnego ciała.
-   6. Skóra przebijająca przedmiot o kilka mm (w podglądzie 3D) nie robi dziur w klatkach: przy renderze ciało zasłania
+   7. Skóra przebijająca przedmiot o kilka mm (w podglądzie 3D) nie robi dziur w klatkach: przy renderze ciało zasłania
       przedmiot dopiero wtedy, gdy jest przed nim o więcej niż `HOLDOUT_MARGIN` (1 cm, rozdział 4).
 5. **Broń, tarcza** (rzeczy sztywne): zaznacz przedmiot, potem z Shiftem `UO_Rig` → Pose Mode → zaznacz kość `hand.R`
    (lub `hand.L`) → Ctrl+P → *Bone*.

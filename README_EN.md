@@ -112,6 +112,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | Text | Purpose |
 |---|---|
 | `render_uo_layer.py` | Renders a layer to frames and `.vd` (run with Alt+P). |
+| `uo_fit_item.py` | Pushes the selected item out of the skin (before `uo_bind_item.py`, section 3). |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature, weights and corrections (section 3). |
 | `uo_transfer_corrections.py` | Copies only the body's shape corrections onto the selected item (when you make the weights by hand). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
@@ -132,7 +133,11 @@ items into it, not the other way round.
    1. Make every piece that is a separate item in the game (breastplate, pauldrons, gloves, boots, helmet) a separate
       object. Keep it under about 10k vertices: the script makes 1254 copies of the mesh (about 30 KB of RAM per
       vertex), and a 136×120 px frame shows no more detail anyway. Reduce a dense mesh with a *Decimate* modifier.
-   2. Select the item, open the text **`uo_bind_item.py`**, set `PART` (the kind of item) and run it (Alt+P).
+   2. **Fit to the skin** (optional, in Rest Position): select the item and run **`uo_fit_item.py`**. Parts closer
+      to the skin than `MIN_GAP` (8 mm) or inside the body are pushed out. The push spreads smoothly over `RADIUS`
+      (4 cm), so plates stay rigid and rivets / reliefs move with them. `MAX_GAP > 0` also pulls standing-off parts
+      in (changes the look, off by default). Place and size the item yourself.
+   3. Select the item, open the text **`uo_bind_item.py`**, set `PART` (the kind of item) and run it (Alt+P).
       Every item vertex follows the skin **right under it** (along its normal, `MAP = "under"`), and the weights
       and corrections are smoothed over the item (`SMOOTH = 4`).
 
@@ -152,16 +157,16 @@ items into it, not the other way round.
       For `"chest"` the shoulder is set in that type's line: `"upper_arm": 0.2` is the arm's share (less = armour
       stays stiffer on the shoulder, more = follows the arm more), `"thigh": 0.3` is the thighs' share at the lower edge.
 
-   3. The script parents the item to `UO_Rig`, adds the *Armature* modifier, sets the weights and copies the shape
+   4. The script parents the item to `UO_Rig`, adds the *Armature* modifier, sets the weights and copies the shape
       corrections from the same skin, so the item moves with the skin under it. Run it again after every change to the
       item's shape. Old weights and `uo_` keys are replaced; your own shape keys are kept.
-   4. Manual way (your own weights): Ctrl+P → *Armature Deform → With Empty Groups*, paint the weights or copy them with
+   5. Manual way (your own weights): Ctrl+P → *Armature Deform → With Empty Groups*, paint the weights or copy them with
       a *Data Transfer* modifier (Vertex Groups, *Nearest Face Interpolated*) and delete the groups of bones the item
       does not cover. Then run **`uo_transfer_corrections.py`**.
-   5. In some frames (deaths, mounted actions, hands) the body itself is strongly deformed by the corrections, because
+   6. In some frames (deaths, mounted actions, hands) the body itself is strongly deformed by the corrections, because
       that is how it matches the original outline. The item deforms with it. It looks odd in the 3D view and fits the
       original body in the UO frame.
-   6. Skin poking a few mm through the item (in the 3D view) does not cut holes in the frames: when rendering, the body
+   7. Skin poking a few mm through the item (in the 3D view) does not cut holes in the frames: when rendering, the body
       hides the item only where it is more than `HOLDOUT_MARGIN` (1 cm, section 4) in front of it.
 5. **Weapon, shield** (rigid things): select the item, then Shift-select `UO_Rig` → Pose Mode → select the bone `hand.R`
    (or `hand.L`) → Ctrl+P → *Bone*.
