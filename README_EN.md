@@ -112,7 +112,8 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | Text | Purpose |
 |---|---|
 | `render_uo_layer.py` | Renders a layer to frames and `.vd` (run with Alt+P). |
-| `uo_transfer_corrections.py` | Copies the body's shape corrections onto the selected item. |
+| `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature, weights and corrections (section 3). |
+| `uo_transfer_corrections.py` | Copies only the body's shape corrections onto the selected item (when you make the weights by hand). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
 
@@ -127,12 +128,34 @@ items into it, not the other way round.
    body in the A-pose, then switch back to *Pose Position*.
 3. **Add the item:** model it or import it (File → Import / Append) and put it into the **`Clothing`** collection.
    Everything in this collection goes into the rendered layer. Delete `Example_Shirt` or disable it in renders.
-4. **Clothing, armour, helmet, boots** (things that bend):
-   1. Parent = `UO_Rig` plus an *Armature* modifier (object `UO_Rig`).
-   2. Weights from the body: *Data Transfer* modifier → Vertex Data → Vertex Groups, source `UO_Body`,
-      *Nearest Face Interpolated* → *Generate Data Layers* → *Apply*.
-   3. Select the item and run the text **`uo_transfer_corrections.py`** (Alt+P). It copies the body's shape corrections,
-      so the item never cuts into the body. Run it again after every change to the item's shape.
+4. **Clothing, armour, helmet, boots, gloves** (things that bend): the script **`uo_bind_item.py`**.
+   1. Make every piece that is a separate item in the game (breastplate, pauldrons, gloves, boots, helmet) a separate
+      object. Keep it under about 10k vertices: the script makes 1254 copies of the mesh (about 30 KB of RAM per
+      vertex), and a 136×120 px frame shows no more detail anyway. Reduce a dense mesh with a *Decimate* modifier.
+   2. Select the item, open the text **`uo_bind_item.py`**, set `PART` and run it (Alt+P):
+
+      | `PART` | Item | Bones (weights and corrections from this skin only) |
+      |---|---|---|
+      | `"torso"` | breastplate, tunic, sleeveless shirt | pelvis, spine, chest, neck |
+      | `"shoulders"` | pauldrons | chest, upper_arm |
+      | `"arms"` | sleeves, arm armour | upper_arm, forearm |
+      | `"gloves"` | gloves, gauntlets, bracers | forearm, hand |
+      | `"legs"` | trousers, leg armour up to the waist | pelvis, thigh, shin |
+      | `"boots"` | boots, greaves | shin, foot |
+      | `"helm"` | helmet, hood, mask | head |
+      | `"neck"` | gorget, collar | neck, chest, head |
+      | `"all"` | robe, cloak, full suit in one object | every bone |
+
+   3. The script parents the item to `UO_Rig`, adds the *Armature* modifier, sets the weights (only the `PART` bones)
+      and copies the shape corrections from the same skin. The item does not follow body parts it does not cover
+      (e.g. a breastplate following the arms) and does not cut into the body. Run it again after every change to the
+      item's shape. Old weights and `uo_` keys are replaced; your own shape keys are kept.
+   4. Manual way (your own weights): Ctrl+P → *Armature Deform → With Empty Groups*, paint the weights or copy them with
+      a *Data Transfer* modifier (Vertex Groups, *Nearest Face Interpolated*) and delete the groups of bones the item
+      does not cover. Then run **`uo_transfer_corrections.py`**.
+   5. In some frames (deaths, mounted actions, hands) the body itself is strongly deformed by the corrections, because
+      that is how it matches the original outline. The item deforms with it. It looks odd in the 3D view and fits the
+      original body in the UO frame.
 5. **Weapon, shield** (rigid things): select the item, then Shift-select `UO_Rig` → Pose Mode → select the bone `hand.R`
    (or `hand.L`) → Ctrl+P → *Bone*.
 6. **Material:** Add → Group → **`UO_Look`**, and plug your colour or texture into its *Albedo* input. Make anything that
@@ -327,7 +350,9 @@ Key settings: `UO_DELTA=refine_mesh.pkl` when fitting poses and `refine_infl.pkl
 | The Text Editor is empty | Pick a text from the list in the editor header. If the list is empty, open `UO_Body_0x190.blend` with File → Open (don't import the `.glb`/`.fbx` and don't append the body into another scene). |
 | The body renders black or wrong | Enable *Auto Run Python Scripts* and reopen the file. Use Cycles. Check `LAYER`. |
 | Exact modes change nothing | The file has no original frames: use the `.blend` from this repository or `pack_originals.py`. |
-| The item cuts into the body | Run `uo_transfer_corrections.py` with the item selected, and make it slightly larger. |
+| The item cuts into the body | Run `uo_bind_item.py` with the right `PART`, and make the item slightly larger. |
+| The item stretches after an arm or leg | It has weights of bones it does not cover. Run `uo_bind_item.py` with the right `PART`. |
+| Blender freezes and its memory grows while the script runs | The item has too many vertices. Reduce it below 10k (*Decimate*). |
 | The item stays in place | The *Armature* modifier or the weights are missing (section 3). |
 | The character "jumps" in `vdtool` | The drawing moved relative to the anchor. |
 | Jagged edges after import | Semi-transparent pixels: set alpha to 0 or 255. |
@@ -348,8 +373,9 @@ RIG        : 19 bones: pelvis (root) spine chest neck head; clavicle.L/R (non-de
 ACTIONS    : 35 Blender actions "NN_name", props uo_action (0..34) and uo_frames; UO frame i -> scene frame 1 + 3*i.
              Every action keys UO_Rig["uo_action_id"].
 CORRECTIONS: 210 shape keys "uo_NN_MM" on UO_Body; driver value = (uo_action_id == NN) * max(0, 1 - |frame - (1+3*MM)| / 3).
-             1044 keys "uo_NN_MM_dK": same * (uo_direction == K). Items: Armature + weights, then the text
-             "uo_transfer_corrections.py" copies the keys (nearest skin point).
+             1044 keys "uo_NN_MM_dK": same * (uo_direction == K). Items: text "uo_bind_item.py" (PART preset ->
+             allowed bones): nearest skin point restricted to body triangles whose dominant bone is allowed; weights =
+             body weights there (allowed bones only, renormalised); keys copied from the same point (barycentric).
 MOUNTED    : horse = body 0xC8; rider->horse action pairing 23->0, 24->1, 25..29->2. Objects Horse_a{action}_f{frame}
              (holdout proxies, parented to UO_Rig) + text "uo_horse_masks.json" (key "action,frame,dir" ->
              base64(zlib(packbits(120x136 bool)))). Hiding happens only inside the horse silhouette.

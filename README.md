@@ -108,7 +108,8 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | Tekst | Rola |
 |---|---|
 | `render_uo_layer.py` | Render warstwy do klatek i `.vd` (uruchamiasz Alt+P). |
-| `uo_transfer_corrections.py` | Kopiuje korekty kształtu ciała na zaznaczony przedmiot. |
+| `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature, wagi i korekty (rozdział 3). |
+| `uo_transfer_corrections.py` | Kopiuje same korekty kształtu ciała na zaznaczony przedmiot (gdy wagi robisz ręcznie). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
 
@@ -123,12 +124,34 @@ do niego swoje przedmioty, a nie odwrotnie.
    Modeluj na ciele w A-pose, a na koniec wróć do *Pose Position*.
 3. **Dodaj przedmiot:** wymodeluj go albo zaimportuj (File → Import / Append) i wrzuć do kolekcji **`Clothing`**.
    Wszystko w tej kolekcji trafia do renderowanej warstwy. `Example_Shirt` usuń albo wyłącz w renderze.
-4. **Ubranie, zbroja, hełm, buty** (rzeczy, które się uginają):
-   1. Parent = `UO_Rig` i modyfikator *Armature* (obiekt `UO_Rig`).
-   2. Wagi z ciała: modyfikator *Data Transfer* → Vertex Data → Vertex Groups, źródło `UO_Body`,
-      *Nearest Face Interpolated* → *Generate Data Layers* → *Apply*.
-   3. Zaznacz przedmiot i uruchom tekst **`uo_transfer_corrections.py`** (Alt+P). Skrypt kopiuje korekty kształtu ciała,
-      więc przedmiot nie przebija się przez ciało. Uruchom go ponownie po każdej zmianie kształtu przedmiotu.
+4. **Ubranie, zbroja, hełm, buty, rękawice** (rzeczy, które się uginają): skrypt **`uo_bind_item.py`**.
+   1. Każdy przedmiot, który w grze jest osobny (napierśnik, naramienniki, rękawice, buty, hełm), rób jako osobny
+      obiekt. Mniej niż ok. 10 tys. wierzchołków: skrypt robi 1254 kopie siatki (ok. 30 KB RAM na wierzchołek),
+      a w klatce 136×120 px więcej szczegółów i tak nie widać. Za gęstą siatkę zmniejsz modyfikatorem *Decimate*.
+   2. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`**, ustaw `PART` i uruchom (Alt+P):
+
+      | `PART` | Przedmiot | Kości (wagi i korekty tylko z tej skóry) |
+      |---|---|---|
+      | `"torso"` | napierśnik, tunika, koszula bez rękawów | pelvis, spine, chest, neck |
+      | `"shoulders"` | naramienniki | chest, upper_arm |
+      | `"arms"` | rękawy, osłony ramion | upper_arm, forearm |
+      | `"gloves"` | rękawice, karwasze | forearm, hand |
+      | `"legs"` | spodnie, nagolenniki do pasa | pelvis, thigh, shin |
+      | `"boots"` | buty, nagolenniki | shin, foot |
+      | `"helm"` | hełm, kaptur, maska | head |
+      | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
+      | `"all"` | szata, płaszcz, cała zbroja w jednym obiekcie | wszystkie kości |
+
+   3. Skrypt robi parent do `UO_Rig`, modyfikator *Armature*, wagi (tylko kości z `PART`) i kopiuje korekty kształtu
+      z tej samej skóry. Przedmiot nie idzie za częściami ciała, których nie zakrywa (np. napierśnik za rękami), i nie
+      przebija się przez ciało. Uruchom go ponownie po każdej zmianie kształtu przedmiotu. Stare wagi i klucze `uo_`
+      zostaną zastąpione, twoje własne klucze kształtu zostają.
+   4. Wersja ręczna (gdy chcesz własne wagi): Ctrl+P → *Armature Deform → With Empty Groups*, wagi pomaluj
+      albo skopiuj modyfikatorem *Data Transfer* (Vertex Groups, *Nearest Face Interpolated*) i usuń grupy kości,
+      których przedmiot nie zakrywa. Na koniec uruchom **`uo_transfer_corrections.py`**.
+   5. W niektórych klatkach (upadki, jazda konna, dłonie) samo ciało jest mocno odkształcone przez korekty, bo tak
+      dopasowuje się do obrysu oryginału. Przedmiot odkształca się wtedy razem z nim. W podglądzie 3D wygląda to
+      dziwnie, w klatce UO pasuje do oryginalnego ciała.
 5. **Broń, tarcza** (rzeczy sztywne): zaznacz przedmiot, potem z Shiftem `UO_Rig` → Pose Mode → zaznacz kość `hand.R`
    (lub `hand.L`) → Ctrl+P → *Bone*.
 6. **Materiał:** Add → Group → **`UO_Look`**, kolor lub teksturę podepnij na wejście *Albedo*. Rzeczy, które w grze mają
@@ -320,7 +343,9 @@ Ważne ustawienia: `UO_DELTA=refine_mesh.pkl` przy dopasowaniu póz, `refine_inf
 | Text Editor jest pusty | Wybierz tekst z listy w nagłówku edytora. Jeśli lista jest pusta, otwórz `UO_Body_0x190.blend` przez File → Open (nie importuj `.glb`/`.fbx` i nie dołączaj ciała do innej sceny). |
 | Czarne albo dziwne ciało na renderze | Włącz *Auto Run Python Scripts* i otwórz plik ponownie. Ustaw Cycles. Sprawdź `LAYER`. |
 | Tryby dokładne nic nie zmieniają | W pliku nie ma oryginalnych klatek: użyj `.blend` z tego repozytorium albo `pack_originals.py`. |
-| Przedmiot przebija się przez ciało | Uruchom `uo_transfer_corrections.py` z zaznaczonym przedmiotem i zrób go odrobinę większy. |
+| Przedmiot przebija się przez ciało | Uruchom `uo_bind_item.py` z właściwym `PART` i zrób przedmiot odrobinę większy. |
+| Przedmiot rozciąga się za ręką lub nogą | Ma wagi kości, których nie zakrywa. Uruchom `uo_bind_item.py` z właściwym `PART`. |
+| Blender „wisi” i rośnie mu pamięć przy skrypcie | Przedmiot ma za dużo wierzchołków. Zmniejsz go do < 10 tys. (*Decimate*). |
 | Przedmiot stoi w miejscu | Brak modyfikatora *Armature* albo wag (rozdział 3). |
 | Postać „skacze” w `vdtool` | Rysunek przesunięty względem punktu zaczepienia. |
 | Poszarpane krawędzie po imporcie | Półprzezroczyste piksele: ustaw alfę 0 albo 255. |

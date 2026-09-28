@@ -1,7 +1,8 @@
 # Copy the per-frame shape corrections of UO_Body onto the SELECTED clothing / armour meshes.
 # Use after the item is bound to the rig (Armature modifier + weights, see README). Run with Alt+P in the Text Editor.
-# Every vertex takes the correction of the nearest point of the body skin (rest pose), so the item follows the
-# corrected body in all 210 UO frames. Run it again after you edit the item's shape.
+# Every vertex takes the correction of the nearest point of the body skin (rest pose) of the bones the item is
+# weighted to, so the item follows the corrected body in all 210 UO frames. Run it again after you edit the item's
+# shape. uo_bind_item.py does the weights and this step in one run.
 import bpy
 import numpy as np
 from mathutils import Vector
@@ -17,6 +18,16 @@ def transfer(ob):
     basis = np.array([v.co[:] for v in kb["Basis"].data], np.float64)
     body.data.calc_loop_triangles()
     tri = [tuple(t.vertices) for t in body.data.loop_triangles]
+    # only the skin of the bones the item is weighted to (a breastplate never takes the arm corrections)
+    names = [g.name for g in body.vertex_groups]
+    allowed = {g.name for g in ob.vertex_groups} & set(names)
+    if allowed:
+        W = np.zeros((len(body.data.vertices), len(names)))
+        for v in body.data.vertices:
+            for g in v.groups:
+                W[v.index, g.group] = g.weight
+        dom = W[np.array(tri)].sum(1).argmax(1)
+        tri = [t for t, b in zip(tri, dom) if names[b] in allowed] or tri
     bvh = BVHTree.FromPolygons([Vector(p) for p in basis], tri)
     M = body.matrix_world.inverted() @ ob.matrix_world               # item space -> body space
     R = np.array(M.to_3x3().inverted())                                  # body offsets -> item space

@@ -161,6 +161,8 @@ L(mix.outputs[0], out.inputs["Surface"])
 #     Armature (as before) + the body's corrections copied onto the item (text block uo_transfer_corrections.py)
 tt = bpy.data.texts.get("uo_transfer_corrections.py") or bpy.data.texts.new("uo_transfer_corrections.py")
 tt.from_string(open("uo_transfer_corrections.py").read())
+tb = bpy.data.texts.get("uo_bind_item.py") or bpy.data.texts.new("uo_bind_item.py")   # one-click bind (weights per body part)
+tb.from_string(open("uo_bind_item.py").read())
 bpy.ops.object.select_all(action="DESELECT")
 for ob in (bpy.data.collections["Clothing"].all_objects if "Clothing" in bpy.data.collections else []):
     if ob.type == "MESH":

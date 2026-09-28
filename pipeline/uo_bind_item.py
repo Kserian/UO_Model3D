@@ -1,0 +1,136 @@
+# Bind the SELECTED item meshes to the UO body in one go: parent + Armature modifier + skin weights + shape corrections.
+# 1. Model the item on the body in Rest Position, put it in the "Clothing" collection.
+# 2. Set PART below to the body part the item covers, select the item (one kind of item per run) and run (Alt+P).
+# Weights and corrections are taken ONLY from the skin of that part, so e.g. a breastplate never follows the arms
+# and gloves never follow the torso. Run it again after you change the item's shape (old weights/corrections are
+# replaced). Your own shape keys (names not starting with "uo_") are kept.
+import bpy
+import numpy as np
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
+from mathutils.geometry import barycentric_transform
+
+PART = "torso"
+PARTS = {
+    "torso":     ["pelvis", "spine", "chest", "neck"],                          # breastplate, tunic, shirt without sleeves
+    "shoulders": ["chest", "upper_arm.L", "upper_arm.R"],                       # pauldrons
+    "arms":      ["upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R"],       # sleeves, arm armour
+    "gloves":    ["forearm.L", "hand.L", "forearm.R", "hand.R"],                 # gloves, gauntlets, bracers
+    "legs":      ["pelvis", "thigh.L", "shin.L", "thigh.R", "shin.R"],           # leggings, trousers
+    "boots":     ["shin.L", "foot.L", "shin.R", "foot.R"],                       # boots, greaves
+    "helm":      ["head"],                                                       # helmet, hat, mask
+    "neck":      ["neck", "chest", "head"],                                      # gorget, collar
+    "all":       None,                                                           # robe, cloak, full suit: every bone
+}
+
+body = bpy.data.objects["UO_Body"]
+rig = bpy.data.objects["UO_Rig"]
+
+
+def body_regions(allowed):
+    """Body skin triangles whose dominant bone is in `allowed`, plus the body vertex weights of those bones."""
+    me = body.data
+    names = [g.name for g in body.vertex_groups]
+    W = np.zeros((len(me.vertices), len(names)))
+    for v in me.vertices:
+        for g in v.groups:
+            W[v.index, g.group] = g.weight
+    keep = [i for i, n in enumerate(names) if allowed is None or n in allowed]
+    kb = me.shape_keys.key_blocks
+    basis = np.empty(len(me.vertices) * 3, np.float32); kb["Basis"].data.foreach_get("co", basis)
+    basis = basis.reshape(-1, 3).astype(np.float64)
+    me.calc_loop_triangles()
+    tri = np.array([t.vertices[:] for t in me.loop_triangles])
+    dom = W[tri].sum(1).argmax(1)                                    # dominant bone of every triangle
+    tri = tri[np.isin(dom, keep)]
+    if not len(tri):
+        raise RuntimeError("no body skin for PART %r" % PART)
+    bvh = BVHTree.FromPolygons([Vector(p) for p in basis], tri.tolist())
+    return bvh, tri, basis, W[:, keep], [names[i] for i in keep]
+
+
+def bind(ob, allowed):
+    bvh, tri, basis, W, bones = body_regions(allowed)
+    M = body.matrix_world.inverted() @ ob.matrix_world               # item space -> body space
+    n = len(ob.data.vertices)
+    co = np.empty(n * 3, np.float32)
+    if ob.data.shape_keys:
+        ob.data.shape_keys.key_blocks[0].data.foreach_get("co", co)
+    else:
+        ob.data.vertices.foreach_get("co", co)
+    idx = np.zeros((n, 3), int); bary = np.zeros((n, 3))
+    for i, p in enumerate(co.reshape(-1, 3)):
+        loc, nrm, fi, dist = bvh.find_nearest(M @ Vector(p))
+        a, b, c = tri[fi]
+        w = barycentric_transform(loc, Vector(basis[a]), Vector(basis[b]), Vector(basis[c]),
+                                  Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)))
+        idx[i] = a, b, c; bary[i] = np.clip(w, 0, 1); bary[i] /= max(bary[i].sum(), 1e-9)
+
+    # --- skin weights: body weights at the nearest skin point, only the PART bones, normalised
+    wv = (W[idx] * bary[..., None]).sum(1)
+    s = wv.sum(1, keepdims=True)
+    wv = np.where(s > 1e-6, wv / np.maximum(s, 1e-9), 0)
+    lost = s[:, 0] <= 1e-6                                           # no weight of the part here: nearest bone of the part
+    if lost.any():
+        wv[lost, W[idx[lost, 0]].argmax(1)] = 1.0
+    body_bones = {g.name for g in body.vertex_groups}
+    for g in [g for g in ob.vertex_groups if g.name in body_bones or g.name.startswith("clavicle")]:
+        ob.vertex_groups.remove(g)
+    for j, name in enumerate(bones):
+        nz = np.nonzero(wv[:, j] > 1e-4)[0]
+        if len(nz):
+            g = ob.vertex_groups.new(name=name)
+            for i in nz:
+                g.add([int(i)], float(wv[i, j]), "REPLACE")
+
+    # --- parent + Armature modifier
+    if ob.parent != rig:
+        mw = ob.matrix_world.copy()
+        ob.parent = rig; ob.matrix_parent_inverse = rig.matrix_world.inverted(); ob.matrix_world = mw
+    arm = next((m for m in ob.modifiers if m.type == "ARMATURE"), None)
+    if arm is None:
+        arm = ob.modifiers.new("Armature", "ARMATURE")
+        try:
+            ob.modifiers.move(len(ob.modifiers) - 1, 0)
+        except Exception:
+            pass
+    arm.object = rig; arm.use_vertex_groups = True; arm.use_bone_envelopes = False
+
+    # --- shape corrections of the same skin points
+    kb = body.data.shape_keys.key_blocks
+    R = np.array((body.matrix_world.inverted() @ ob.matrix_world).to_3x3().inverted())   # body offsets -> item space
+    if ob.data.shape_keys is None:
+        ob.shape_key_add(name="Basis", from_mix=False)
+    for k in [k for k in ob.data.shape_keys.key_blocks if k.name.startswith("uo_")]:
+        ob.shape_key_remove(k)
+    obasis = np.empty(n * 3, np.float32); ob.data.shape_keys.key_blocks[0].data.foreach_get("co", obasis)
+    obasis = obasis.reshape(-1, 3).astype(np.float64)
+    drivers = {d.data_path: d for d in body.data.shape_keys.animation_data.drivers}
+    nb = len(body.data.vertices); buf = np.empty(nb * 3, np.float32)
+    keys = [k for k in kb if k.name.startswith("uo_")]
+    for k in keys:
+        k.data.foreach_get("co", buf)
+        off = buf.reshape(-1, 3) - basis
+        o = (off[idx] * bary[..., None]).sum(1) @ R.T
+        sk = ob.shape_key_add(name=k.name, from_mix=False)
+        sk.data.foreach_set("co", (obasis + o).ravel().astype(np.float32))
+        src = drivers['key_blocks["%s"].value' % k.name].driver
+        d = sk.driver_add("value").driver; d.type = "SCRIPTED"
+        for sv in src.variables:
+            v = d.variables.new(); v.name = sv.name; v.type = sv.type
+            v.targets[0].id_type = sv.targets[0].id_type; v.targets[0].id = sv.targets[0].id
+            v.targets[0].data_path = sv.targets[0].data_path
+        d.expression = src.expression
+    print("uo_bind_item: %s -> PART %s, bones %s, %d corrections" % (ob.name, PART, bones, len(keys)))
+
+
+if PART not in PARTS:
+    raise ValueError("PART must be one of %s" % list(PARTS))
+pose = rig.data.pose_position
+rig.data.pose_position = "REST"
+bpy.context.view_layer.update()
+try:
+    for ob in [o for o in bpy.context.selected_objects if o.type == "MESH" and o != body]:
+        bind(ob, PARTS[PART])
+finally:
+    rig.data.pose_position = pose
