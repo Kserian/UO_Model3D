@@ -1,16 +1,20 @@
 # Bind the SELECTED item meshes to the UO body in one go: parent + Armature modifier + skin weights + shape corrections.
-# 1. Model the item on the body in Rest Position, put it in the "Clothing" collection.
-# 2. Set PART below to the body part the item covers, select the item (one kind of item per run) and run (Alt+P).
-# Weights and corrections are taken ONLY from the skin of that part, so e.g. a breastplate never follows the arms
-# and gloves never follow the torso. Run it again after you change the item's shape (old weights/corrections are
-# replaced). Your own shape keys (names not starting with "uo_") are kept.
+# 1. Model the item on the body in Rest Position, put it in the "Clothing" collection (keep it under ~10k vertices).
+# 2. Select the item and run (Alt+P). Every item vertex follows the skin right under it (MAP = "under"): weights and
+#    shape corrections are taken from that skin point, then smoothed over the item (SMOOTH).
+# 3. PART limits the skin to one body part (e.g. "gloves"), for an item that still follows a part it does not cover.
+# Run it again after you change the item's shape (old weights and "uo_" corrections are replaced). Your own shape
+# keys (names not starting with "uo_") are kept.
 import bpy
 import numpy as np
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 from mathutils.geometry import barycentric_transform
 
-PART = "torso"
+PART = "all"          # which body part the item covers (see PARTS); "all" = every bone
+MAP = "under"         # "under": follow the skin right under each vertex (along its normal); "nearest": nearest skin
+SMOOTH = 4            # smoothing passes of weights and corrections over the item (0 = off)
+MAX_DIST = 0.15       # m, farthest skin an item vertex may follow along its normal
 PARTS = {
     "torso":     ["pelvis", "spine", "chest", "neck"],                          # breastplate, tunic, shirt without sleeves
     "shoulders": ["chest", "upper_arm.L", "upper_arm.R"],                       # pauldrons
@@ -58,16 +62,42 @@ def bind(ob, allowed):
         ob.data.shape_keys.key_blocks[0].data.foreach_get("co", co)
     else:
         ob.data.vertices.foreach_get("co", co)
+    co = np.array([M @ Vector(p) for p in co.reshape(-1, 3)])        # body space
+    ob.data.calc_loop_triangles()
+    itri = np.array([t.vertices[:] for t in ob.data.loop_triangles]).reshape(-1, 3)
+    fn = np.cross(co[itri[:, 1]] - co[itri[:, 0]], co[itri[:, 2]] - co[itri[:, 0]])
+    vn = np.zeros_like(co)
+    for k in range(3):
+        np.add.at(vn, itri[:, k], fn)
+    vn /= np.maximum(np.linalg.norm(vn, axis=1, keepdims=True), 1e-12)
     idx = np.zeros((n, 3), int); bary = np.zeros((n, 3))
-    for i, p in enumerate(co.reshape(-1, 3)):
-        loc, nrm, fi, dist = bvh.find_nearest(M @ Vector(p))
+    for i, p in enumerate(co):
+        p = Vector(p)
+        loc, nrm, fi, dist = bvh.find_nearest(p)
+        if MAP == "under" and (p - loc).dot(nrm) > 0:                # vertex outside the body: skin under it
+            best = None
+            for d in (-Vector(vn[i]), Vector(vn[i])):                 # normals may point either way
+                hit = bvh.ray_cast(p, d, MAX_DIST)
+                if hit[0] is not None and (p - hit[0]).dot(hit[1]) > 0 and (best is None or hit[3] < best[3]):
+                    best = hit
+            if best is not None and best[3] < max(3 * dist, dist + 0.05):
+                loc, nrm, fi, dist = best
         a, b, c = tri[fi]
         w = barycentric_transform(loc, Vector(basis[a]), Vector(basis[b]), Vector(basis[c]),
                                   Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)))
         idx[i] = a, b, c; bary[i] = np.clip(w, 0, 1); bary[i] /= max(bary[i].sum(), 1e-9)
+    edges = np.array([e.vertices[:] for e in ob.data.edges]).reshape(-1, 2)
+    deg = np.bincount(edges.ravel(), minlength=n).astype(float)[:, None]
+
+    def smooth(x):
+        for _ in range(SMOOTH):
+            acc = np.zeros_like(x)
+            np.add.at(acc, edges[:, 0], x[edges[:, 1]]); np.add.at(acc, edges[:, 1], x[edges[:, 0]])
+            x = np.where(deg > 0, 0.5 * x + 0.5 * acc / np.maximum(deg, 1), x)
+        return x
 
     # --- skin weights: body weights at the nearest skin point, only the PART bones, normalised
-    wv = (W[idx] * bary[..., None]).sum(1)
+    wv = smooth((W[idx] * bary[..., None]).sum(1))
     s = wv.sum(1, keepdims=True)
     wv = np.where(s > 1e-6, wv / np.maximum(s, 1e-9), 0)
     lost = s[:, 0] <= 1e-6                                           # no weight of the part here: nearest bone of the part
@@ -111,7 +141,7 @@ def bind(ob, allowed):
     for k in keys:
         k.data.foreach_get("co", buf)
         off = buf.reshape(-1, 3) - basis
-        o = (off[idx] * bary[..., None]).sum(1) @ R.T
+        o = smooth((off[idx] * bary[..., None]).sum(1)) @ R.T
         sk = ob.shape_key_add(name=k.name, from_mix=False)
         sk.data.foreach_set("co", (obasis + o).ravel().astype(np.float32))
         src = drivers['key_blocks["%s"].value' % k.name].driver

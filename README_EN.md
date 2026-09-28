@@ -132,7 +132,13 @@ items into it, not the other way round.
    1. Make every piece that is a separate item in the game (breastplate, pauldrons, gloves, boots, helmet) a separate
       object. Keep it under about 10k vertices: the script makes 1254 copies of the mesh (about 30 KB of RAM per
       vertex), and a 136×120 px frame shows no more detail anyway. Reduce a dense mesh with a *Decimate* modifier.
-   2. Select the item, open the text **`uo_bind_item.py`**, set `PART` and run it (Alt+P):
+   2. Select the item, open the text **`uo_bind_item.py`** and run it (Alt+P). Settings at the top of the script:
+      - `PART = "all"`: the default. Every item vertex follows the skin **right under it** (along its normal):
+        armour on the shoulder follows the arm, on the side under the armpit it follows the torso. Fits most items.
+      - `MAP = "under"` (skin under the vertex) or `"nearest"` (nearest skin).
+      - `SMOOTH = 4`: smoothing of the weights and corrections over the item. Less stretching where body parts meet.
+      - Another `PART` limits the weights and corrections to the skin of one body part. Useful when the item still
+        follows a body part it does not cover:
 
       | `PART` | Item | Bones (weights and corrections from this skin only) |
       |---|---|---|
@@ -146,9 +152,8 @@ items into it, not the other way round.
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | robe, cloak, full suit in one object | every bone |
 
-   3. The script parents the item to `UO_Rig`, adds the *Armature* modifier, sets the weights (only the `PART` bones)
-      and copies the shape corrections from the same skin. The item does not follow body parts it does not cover
-      (e.g. a breastplate following the arms) and does not cut into the body. Run it again after every change to the
+   3. The script parents the item to `UO_Rig`, adds the *Armature* modifier, sets the weights and copies the shape
+      corrections from the same skin, so the item moves with the skin under it. Run it again after every change to the
       item's shape. Old weights and `uo_` keys are replaced; your own shape keys are kept.
    4. Manual way (your own weights): Ctrl+P → *Armature Deform → With Empty Groups*, paint the weights or copy them with
       a *Data Transfer* modifier (Vertex Groups, *Nearest Face Interpolated*) and delete the groups of bones the item
@@ -156,6 +161,8 @@ items into it, not the other way round.
    5. In some frames (deaths, mounted actions, hands) the body itself is strongly deformed by the corrections, because
       that is how it matches the original outline. The item deforms with it. It looks odd in the 3D view and fits the
       original body in the UO frame.
+   6. Skin poking a few mm through the item (in the 3D view) does not cut holes in the frames: when rendering, the body
+      hides the item only where it is more than `HOLDOUT_MARGIN` (1 cm, section 4) in front of it.
 5. **Weapon, shield** (rigid things): select the item, then Shift-select `UO_Rig` → Pose Mode → select the bone `hand.R`
    (or `hand.L`) → Ctrl+P → *Bone*.
 6. **Material:** Add → Group → **`UO_Look`**, and plug your colour or texture into its *Albedo* input. Make anything that
@@ -181,9 +188,12 @@ items into it, not the other way round.
    HORSE_HOLDOUT = True        # mounted actions: the horse hides the item
    EXACT_BODY = True           # cut along the original body outline
    EXACT_COLORS = True         # body colours from the original (LAYER = "body" / "all")
+   HOLDOUT_MARGIN = 0.01       # the body hides the item where it is > 1 cm in front of it (shallow skin pokes cut
+                               # no holes); 0 = plain Cycles holdout
    ```
-3. Run **Run Script** (Alt+P). A full layer is 1050 frames, about 15–30 minutes on a CPU. A clothing layer renders every
-   frame twice: with and without the body.
+3. Run **Run Script** (Alt+P). A full layer is 1050 frames, about 15–30 minutes on a CPU. A clothing layer is rendered
+   without the body, and the script works out from depth what the body hides (with `HOLDOUT_MARGIN = 0` every frame
+   is rendered twice: with and without the body).
 4. Output in `uo_render/`:
    - `clothing/frames/NN_action/dirK/NN.png`: frames on a 136×120 canvas,
    - `clothing/meta.json`: frame order and anchor,
@@ -374,8 +384,11 @@ ACTIONS    : 35 Blender actions "NN_name", props uo_action (0..34) and uo_frames
              Every action keys UO_Rig["uo_action_id"].
 CORRECTIONS: 210 shape keys "uo_NN_MM" on UO_Body; driver value = (uo_action_id == NN) * max(0, 1 - |frame - (1+3*MM)| / 3).
              1044 keys "uo_NN_MM_dK": same * (uo_direction == K). Items: text "uo_bind_item.py" (PART preset ->
-             allowed bones): nearest skin point restricted to body triangles whose dominant bone is allowed; weights =
-             body weights there (allowed bones only, renormalised); keys copied from the same point (barycentric).
+             allowed bones): nearest skin point restricted to body triangles whose dominant bone is allowed; MAP "under":
+             skin hit along the item vertex normal (else nearest); weights = body weights there (allowed bones only,
+             renormalised); keys copied from the same point; SMOOTH passes of neighbour averaging over the item.
+HOLDOUT    : clothing layer = Cycles render without the body; own z-buffer raster of body and items; the body hides a
+             pixel where depth_body < depth_item - HOLDOUT_MARGIN (0.01 m).
 MOUNTED    : horse = body 0xC8; rider->horse action pairing 23->0, 24->1, 25..29->2. Objects Horse_a{action}_f{frame}
              (holdout proxies, parented to UO_Rig) + text "uo_horse_masks.json" (key "action,frame,dir" ->
              base64(zlib(packbits(120x136 bool)))). Hiding happens only inside the horse silhouette.

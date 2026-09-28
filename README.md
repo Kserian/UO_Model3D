@@ -128,7 +128,13 @@ do niego swoje przedmioty, a nie odwrotnie.
    1. Każdy przedmiot, który w grze jest osobny (napierśnik, naramienniki, rękawice, buty, hełm), rób jako osobny
       obiekt. Mniej niż ok. 10 tys. wierzchołków: skrypt robi 1254 kopie siatki (ok. 30 KB RAM na wierzchołek),
       a w klatce 136×120 px więcej szczegółów i tak nie widać. Za gęstą siatkę zmniejsz modyfikatorem *Decimate*.
-   2. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`**, ustaw `PART` i uruchom (Alt+P):
+   2. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`** i uruchom (Alt+P). Ustawienia na początku skryptu:
+      - `PART = "all"`: domyślnie. Każdy wierzchołek przedmiotu idzie za skórą, która leży **pod nim** (wzdłuż
+        normalnej): pancerz na barku za ramieniem, na boku pod pachą za tułowiem. Pasuje do większości przedmiotów.
+      - `MAP = "under"` (skóra pod wierzchołkiem) albo `"nearest"` (najbliższa skóra).
+      - `SMOOTH = 4`: wygładzanie wag i korekt na przedmiocie. Mniej rozciągania na granicach części ciała.
+      - Inny `PART` ogranicza wagi i korekty do skóry jednej części ciała. Przydaje się, gdy przedmiot mimo to idzie
+        za częścią ciała, której nie zakrywa:
 
       | `PART` | Przedmiot | Kości (wagi i korekty tylko z tej skóry) |
       |---|---|---|
@@ -142,9 +148,8 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
       | `"all"` | szata, płaszcz, cała zbroja w jednym obiekcie | wszystkie kości |
 
-   3. Skrypt robi parent do `UO_Rig`, modyfikator *Armature*, wagi (tylko kości z `PART`) i kopiuje korekty kształtu
-      z tej samej skóry. Przedmiot nie idzie za częściami ciała, których nie zakrywa (np. napierśnik za rękami), i nie
-      przebija się przez ciało. Uruchom go ponownie po każdej zmianie kształtu przedmiotu. Stare wagi i klucze `uo_`
+   3. Skrypt robi parent do `UO_Rig`, modyfikator *Armature*, wagi i kopiuje korekty kształtu z tej samej skóry,
+      więc przedmiot rusza się razem ze skórą pod nim. Uruchom go ponownie po każdej zmianie kształtu przedmiotu. Stare wagi i klucze `uo_`
       zostaną zastąpione, twoje własne klucze kształtu zostają.
    4. Wersja ręczna (gdy chcesz własne wagi): Ctrl+P → *Armature Deform → With Empty Groups*, wagi pomaluj
       albo skopiuj modyfikatorem *Data Transfer* (Vertex Groups, *Nearest Face Interpolated*) i usuń grupy kości,
@@ -152,6 +157,8 @@ do niego swoje przedmioty, a nie odwrotnie.
    5. W niektórych klatkach (upadki, jazda konna, dłonie) samo ciało jest mocno odkształcone przez korekty, bo tak
       dopasowuje się do obrysu oryginału. Przedmiot odkształca się wtedy razem z nim. W podglądzie 3D wygląda to
       dziwnie, w klatce UO pasuje do oryginalnego ciała.
+   6. Skóra przebijająca przedmiot o kilka mm (w podglądzie 3D) nie robi dziur w klatkach: przy renderze ciało zasłania
+      przedmiot dopiero wtedy, gdy jest przed nim o więcej niż `HOLDOUT_MARGIN` (1 cm, rozdział 4).
 5. **Broń, tarcza** (rzeczy sztywne): zaznacz przedmiot, potem z Shiftem `UO_Rig` → Pose Mode → zaznacz kość `hand.R`
    (lub `hand.L`) → Ctrl+P → *Bone*.
 6. **Materiał:** Add → Group → **`UO_Look`**, kolor lub teksturę podepnij na wejście *Albedo*. Rzeczy, które w grze mają
@@ -177,9 +184,12 @@ do niego swoje przedmioty, a nie odwrotnie.
    HORSE_HOLDOUT = True        # akcje konne: koń zasłania przedmiot
    EXACT_BODY = True           # docinanie po obrysie oryginalnego ciała
    EXACT_COLORS = True         # kolory ciała z oryginału (LAYER = "body" / "all")
+   HOLDOUT_MARGIN = 0.01       # ciało zasłania przedmiot, gdy jest przed nim o > 1 cm (płytkie przebicia skóry
+                               # nie robią dziur); 0 = zwykły holdout Cycles
    ```
-3. Uruchom **Run Script** (Alt+P). Pełna warstwa to 1050 klatek, ok. 15–30 min na CPU. Warstwa ubrania renderuje każdą
-   klatkę dwa razy: z ciałem i bez.
+3. Uruchom **Run Script** (Alt+P). Pełna warstwa to 1050 klatek, ok. 15–30 min na CPU. Warstwa ubrania renderuje się
+   bez ciała, a to, co ciało zasłania, skrypt liczy z głębokości (z `HOLDOUT_MARGIN = 0` każda klatka renderuje się
+   dwa razy: z ciałem i bez).
 4. Wynik w `uo_render/`:
    - `clothing/frames/NN_akcja/dirK/NN.png`: klatki na płótnie 136×120,
    - `clothing/meta.json`: kolejność i punkt zaczepienia,

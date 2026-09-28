@@ -28,6 +28,9 @@ EXACT_COLORS = True                # body in the UO look: colours projected from
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
                                    # the "clothing" layer the body hides items exactly along the ORIGINAL outline
                                    # (the 3D model only decides what is in front / behind). Turn off for a modified body.
+HOLDOUT_MARGIN = 0.01              # m: in the clothing layer the body hides an item only where it is at least this much in
+                                   # front of it, so skin poking a few mm through tight armour does not cut holes
+                                   # (1 px = 2.8 cm). 0 = plain Cycles holdout (renders every frame twice).
 
 
 sc = bpy.context.scene
@@ -137,35 +140,64 @@ def render_px():
     return px.reshape(h, w, 4)[::-1]                        # Blender pixels start at the bottom row
 
 
-def body_coverage():
-    """pixels covered by the (deformed) body mesh through UO_Camera, pixel-centre rule (like the EXACT render)"""
+def raster(objs):
+    """pixel coverage and camera depth (m) of the deformed meshes through UO_Camera, pixel-centre rule (like the
+    EXACT render). Returns (bool 120x136, float 120x136 with inf where nothing is)."""
     rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get()
-    ev = body.evaluated_get(dg); me = ev.to_mesh()
-    co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
-    me.calc_loop_triangles()
-    tri = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tri); tri = tri.reshape(-1, 3)
-    Mw = np.array(ev.matrix_world)
-    ev.to_mesh_clear()
     cam = sc.camera.evaluated_get(dg)
-    M = np.array(cam.calc_matrix_camera(dg, x=136, y=120)) @ np.array(cam.matrix_world.inverted()) @ Mw
-    h = np.c_[co, np.ones(len(co))] @ M.T
-    ndc = h[:, :2] / h[:, 3:4]
-    P = np.stack([(ndc[:, 0] + 1) * 0.5 * 136, (1 - ndc[:, 1]) * 0.5 * 120], 1)[tri]
-    img = np.zeros((120, 136), bool)
-    mn = np.floor(P.min(1)).astype(int); mx = np.ceil(P.max(1)).astype(int)
-    A, B, C = P[:, 0], P[:, 1], P[:, 2]
-    den = (B[:, 1] - C[:, 1]) * (A[:, 0] - C[:, 0]) + (C[:, 0] - B[:, 0]) * (A[:, 1] - C[:, 1])
-    ok = np.abs(den) > 1e-12; size = np.clip(mx - mn, 0, 16)
-    for dy in range(int(size[:, 1].max(initial=0)) + 1):
-        for dx in range(int(size[:, 0].max(initial=0)) + 1):
-            t = np.nonzero(ok & (dx <= size[:, 0]) & (dy <= size[:, 1]))[0]
-            px_ = mn[t, 0] + dx; py_ = mn[t, 1] + dy; cx, cy = px_ + 0.5, py_ + 0.5
-            l0 = ((B[t, 1] - C[t, 1]) * (cx - C[t, 0]) + (C[t, 0] - B[t, 0]) * (cy - C[t, 1])) / den[t]
-            l1 = ((C[t, 1] - A[t, 1]) * (cx - C[t, 0]) + (A[t, 0] - C[t, 0]) * (cy - C[t, 1])) / den[t]
-            k = (l0 >= -1e-4) & (l1 >= -1e-4) & (1 - l0 - l1 >= -1e-4) & (px_ >= 0) & (py_ >= 0) & (px_ < 136) & (py_ < 120)
-            img[py_[k], px_[k]] = True
-    return img
+    Pm = np.array(cam.calc_matrix_camera(dg, x=136, y=120)); Vm = np.array(cam.matrix_world.inverted())
+    img = np.zeros((120, 136), bool); depth = np.full((120, 136), np.inf)
+    for ob in objs:
+        ev = ob.evaluated_get(dg); me = ev.to_mesh()
+        co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+        me.calc_loop_triangles()
+        tri = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tri); tri = tri.reshape(-1, 3)
+        Mw = np.array(ev.matrix_world)
+        ev.to_mesh_clear()
+        hv = np.c_[co, np.ones(len(co))] @ (Vm @ Mw).T                  # camera space
+        h = hv @ Pm.T
+        ndc = h[:, :2] / h[:, 3:4]
+        P = np.stack([(ndc[:, 0] + 1) * 0.5 * 136, (1 - ndc[:, 1]) * 0.5 * 120], 1)[tri]
+        Z = -hv[:, 2][tri]
+        mn = np.floor(P.min(1)).astype(int); mx = np.ceil(P.max(1)).astype(int)
+        A, B, C = P[:, 0], P[:, 1], P[:, 2]
+        den = (B[:, 1] - C[:, 1]) * (A[:, 0] - C[:, 0]) + (C[:, 0] - B[:, 0]) * (A[:, 1] - C[:, 1])
+        ok = np.abs(den) > 1e-12; size = np.clip(mx - mn, 0, 16)
+        for dy in range(int(size[:, 1].max(initial=0)) + 1):
+            for dx in range(int(size[:, 0].max(initial=0)) + 1):
+                t = np.nonzero(ok & (dx <= size[:, 0]) & (dy <= size[:, 1]))[0]
+                px_ = mn[t, 0] + dx; py_ = mn[t, 1] + dy; cx, cy = px_ + 0.5, py_ + 0.5
+                l0 = ((B[t, 1] - C[t, 1]) * (cx - C[t, 0]) + (C[t, 0] - B[t, 0]) * (cy - C[t, 1])) / den[t]
+                l1 = ((C[t, 1] - A[t, 1]) * (cx - C[t, 0]) + (A[t, 0] - C[t, 0]) * (cy - C[t, 1])) / den[t]
+                k = (l0 >= -1e-4) & (l1 >= -1e-4) & (1 - l0 - l1 >= -1e-4) & (px_ >= 0) & (py_ >= 0) & (px_ < 136) & (py_ < 120)
+                img[py_[k], px_[k]] = True
+                z = l0[k] * Z[t[k], 0] + l1[k] * Z[t[k], 1] + (1 - l0[k] - l1[k]) * Z[t[k], 2]
+                np.minimum.at(depth, (py_[k], px_[k]), z)
+    return img, depth
+
+
+def body_coverage():
+    """pixels covered by the (deformed) body mesh through UO_Camera, pixel-centre rule (like the EXACT render)"""
+    return raster([body])[0]
+
+
+def body_occlusion(free, margin):
+    """the clothing render without the body, with the body in front of the item removed. The body hides a pixel only
+    where it is more than `margin` in front of the visible item surface. Returns (hold, body coverage)."""
+    cov, zb = raster([body])
+    _, zi = raster([o for o in clothes if not o.hide_render])
+    seen = free[..., 3] >= 0.5
+    for _ in range(2):                                  # item pixels Cycles drew but the raster missed: neighbour depth
+        miss = seen & np.isinf(zi)
+        if not miss.any():
+            break
+        pad = np.pad(zi, 1, constant_values=np.inf)
+        nb = np.min([pad[y:y + 120, x:x + 136] for y in range(3) for x in range(3)], axis=0)
+        zi = np.where(miss, nb, zi)
+    hold = free.copy()
+    hold[cov & (zb < zi - margin)] = 0.0
+    return hold, cov
 
 
 def render_frame(a, i, d, body_mode):
@@ -232,6 +264,11 @@ for act in acts:
             orig_m = orig[..., 3] > 0 if orig is not None else None
             if LAYER == "body" and EXACT_BODY and orig is not None:
                 rgba = orig                                    # the original UO body frame, pixel for pixel
+            elif LAYER == "clothing" and HOLDOUT_MARGIN > 0:
+                free = render_frame(a, i, d, "hidden")
+                hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
+                px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
+                rgba = uo_post(px)
             elif LAYER == "clothing":
                 px = render_frame(a, i, d, "holdout")
                 if EXACT_BODY and orig is not None:
