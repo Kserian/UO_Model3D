@@ -35,6 +35,8 @@ Polish version: [`README.md`](README.md).
 | `example_clothing/` | Example layer (a shirt) in `Example_Shirt_layer.vd`, with a preview over the original body. |
 | `vdtool/vdtool.py` | Tool to unpack and repack `.vd` files (section 6). |
 | `pipeline/` | Scripts and data used to rebuild the model (section 10). |
+| `pipeline/body400.vd`, `pipeline/horse200.vd` | Original client files: body 0x190 (`anim1_0x0190.vd`) and horse 0xC8. |
+| `client/body_0x190_frames/`, `client/horse_0xC8_frames/` | Original body (1050) and horse (300) frames as PNG + `meta.json` (`vdtool extract`). |
 
 **Original frames.** The `.blend` contains the original UO client body frames (for the exact modes,
 section 2). It is for your own use only; do not share it publicly. A stripped copy (`strip_originals.py`) does not contain them.
@@ -289,8 +291,8 @@ horse volume that hides the rider is approximate.
 ## 10. Rebuilding the model (pipeline)
 
 The scripts are in `pipeline/` and run from that folder. Requirements: Python 3.11,
-`pip install numpy pillow scipy scikit-image jax optax "bpy==4.2.*"`. The client `.vd` files are not in the repository: copy the
-body as `body400.vd` and the horse (0xC8) as `horse200.vd`. The `*.pkl` files are saved results, so steps can be resumed.
+`pip install numpy pillow scipy scikit-image jax optax "bpy==4.2.*"`. The client files are already in `pipeline/`: the
+body `body400.vd` and the horse (0xC8) `horse200.vd`. The `*.pkl` files are saved results, so steps can be resumed.
 
 | Stage | Scripts | Result |
 |---|---|---|

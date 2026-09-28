@@ -34,6 +34,8 @@ English version: [`README_EN.md`](README_EN.md).
 | `example_clothing/` | Przykładowa warstwa (koszula) w `Example_Shirt_layer.vd` i jej podgląd na oryginalnym ciele. |
 | `vdtool/vdtool.py` | Narzędzie do rozpakowywania i pakowania `.vd` (rozdział 6). |
 | `pipeline/` | Skrypty i dane, którymi zrekonstruowano model (rozdział 10). |
+| `pipeline/body400.vd`, `pipeline/horse200.vd` | Oryginalne pliki klienta: ciało 0x190 (`anim1_0x0190.vd`) i koń 0xC8. |
+| `client/body_0x190_frames/`, `client/horse_0xC8_frames/` | Oryginalne klatki ciała (1050) i konia (300) jako PNG + `meta.json` (`vdtool extract`). |
 
 **Oryginalne klatki.** Plik `.blend` zawiera oryginalne klatki ciała z klienta UO (do trybów dokładnych, rozdział 2).
 Jest tylko do własnego użytku. Nie udostępniaj go publicznie. Kopia bez oryginałów (`strip_originals.py`) ich nie ma. Żeby je dodać
@@ -282,8 +284,8 @@ zasłaniająca jeźdźca jest przybliżona.
 ## 10. Odtworzenie modelu (pipeline)
 
 Skrypty są w `pipeline/`, uruchamia się je z tego folderu. Wymagania: Python 3.11,
-`pip install numpy pillow scipy scikit-image jax optax "bpy==4.2.*"`. Plików `.vd` klienta nie ma w repozytorium: skopiuj ciało
-jako `body400.vd`, a konia (0xC8) jako `horse200.vd`. Pliki `*.pkl` to zapisane wyniki, więc kroki można wznawiać.
+`pip install numpy pillow scipy scikit-image jax optax "bpy==4.2.*"`. Pliki klienta są już w `pipeline/`: ciało
+`body400.vd` i koń (0xC8) `horse200.vd`. Pliki `*.pkl` to zapisane wyniki, więc kroki można wznawiać.
 
 | Etap | Skrypty | Wynik |
 |---|---|---|
