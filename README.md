@@ -186,6 +186,7 @@ do niego swoje przedmioty, a nie odwrotnie.
    EXACT_COLORS = True         # kolory ciała z oryginału (LAYER = "body" / "all")
    HOLDOUT_MARGIN = 0.01       # ciało zasłania przedmiot, gdy jest przed nim o > 1 cm (płytkie przebicia skóry
                                # nie robią dziur); 0 = zwykły holdout Cycles
+   FILL_HOLES = 4              # dziurki do 4 px otoczone przedmiotem wypełnia przedmiotem (0 = wył.)
    ```
 3. Uruchom **Run Script** (Alt+P). Pełna warstwa to 1050 klatek, ok. 15–30 min na CPU. Warstwa ubrania renderuje się
    bez ciała, a to, co ciało zasłania, skrypt liczy z głębokości (z `HOLDOUT_MARGIN = 0` każda klatka renderuje się

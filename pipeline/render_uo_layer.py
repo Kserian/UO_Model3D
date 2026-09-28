@@ -31,6 +31,8 @@ EXACT_BODY = True                  # body = original UO frames: the "body" layer
 HOLDOUT_MARGIN = 0.01              # m: in the clothing layer the body hides an item only where it is at least this much in
                                    # front of it, so skin poking a few mm through tight armour does not cut holes
                                    # (1 px = 2.8 cm). 0 = plain Cycles holdout (renders every frame twice).
+FILL_HOLES = 4                     # px: holes the body cuts INSIDE an item (fully surrounded by it) up to this size are
+                                   # filled back with the item - skin poking through, not a real occluder. 0 = off
 
 
 sc = bpy.context.scene
@@ -225,6 +227,35 @@ def binary_dilation(m, iterations=1):
     return m
 
 
+def fill_small_holes(px, free, max_px):
+    """item pixels hidden by the body in small patches fully surrounded by the item get the item back"""
+    a = px[..., 3] >= 0.5
+    cut = (free[..., 3] >= 0.5) & ~a
+    seen = np.zeros_like(cut)
+    H, W = cut.shape
+    for y, x in zip(*np.nonzero(cut)):
+        if seen[y, x]:
+            continue
+        comp, stack, closed = [], [(y, x)], True
+        seen[y, x] = True
+        while stack:
+            cy, cx = stack.pop()
+            comp.append((cy, cx))
+            for ny, nx in ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1)):
+                if not (0 <= ny < H and 0 <= nx < W):
+                    closed = False
+                elif cut[ny, nx]:
+                    if not seen[ny, nx]:
+                        seen[ny, nx] = True
+                        stack.append((ny, nx))
+                elif not a[ny, nx]:
+                    closed = False                      # touches the outside: a real occluder (arm, hand...)
+        if closed and len(comp) <= max_px:
+            ys, xs = [c[0] for c in comp], [c[1] for c in comp]
+            px[ys, xs] = free[ys, xs]
+    return px
+
+
 def exact_clothing(hold, free, orig_body, cov):
     """Hide the item exactly where the ORIGINAL body is in front of it; the 3D model decides front/behind."""
     a_h, a_f = hold[..., 3] >= 0.5, free[..., 3] >= 0.5
@@ -268,6 +299,8 @@ for act in acts:
                 free = render_frame(a, i, d, "hidden")
                 hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
                 px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
+                if FILL_HOLES > 0:
+                    px = fill_small_holes(px, free, FILL_HOLES)
                 rgba = uo_post(px)
             elif LAYER == "clothing":
                 px = render_frame(a, i, d, "holdout")

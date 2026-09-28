@@ -190,6 +190,7 @@ items into it, not the other way round.
    EXACT_COLORS = True         # body colours from the original (LAYER = "body" / "all")
    HOLDOUT_MARGIN = 0.01       # the body hides the item where it is > 1 cm in front of it (shallow skin pokes cut
                                # no holes); 0 = plain Cycles holdout
+   FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled with the item (0 = off)
    ```
 3. Run **Run Script** (Alt+P). A full layer is 1050 frames, about 15–30 minutes on a CPU. A clothing layer is rendered
    without the body, and the script works out from depth what the body hides (with `HOLDOUT_MARGIN = 0` every frame
@@ -388,7 +389,8 @@ CORRECTIONS: 210 shape keys "uo_NN_MM" on UO_Body; driver value = (uo_action_id 
              skin hit along the item vertex normal (else nearest); weights = body weights there (allowed bones only,
              renormalised); keys copied from the same point; SMOOTH passes of neighbour averaging over the item.
 HOLDOUT    : clothing layer = Cycles render without the body; own z-buffer raster of body and items; the body hides a
-             pixel where depth_body < depth_item - HOLDOUT_MARGIN (0.01 m).
+             pixel where depth_body < depth_item - HOLDOUT_MARGIN (0.01 m); body-cut patches <= FILL_HOLES px fully
+             surrounded by the item are restored from the render without the body.
 MOUNTED    : horse = body 0xC8; rider->horse action pairing 23->0, 24->1, 25..29->2. Objects Horse_a{action}_f{frame}
              (holdout proxies, parented to UO_Rig) + text "uo_horse_masks.json" (key "action,frame,dir" ->
              base64(zlib(packbits(120x136 bool)))). Hiding happens only inside the horse silhouette.
