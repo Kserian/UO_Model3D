@@ -121,6 +121,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_fit_item.py` | Turns the selected item's sleeves onto the arms and pushes it out of the skin (before `uo_bind_item.py`, section 3). |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
 | `uo_cloth_bake.py` | Cloth simulation for robes, dresses, skirts and cloaks, after `uo_bind_item.py` (section 3). |
+| `uo_place_shield.py` | Puts the selected shield on the left forearm as UO holds it and slides it onto the arm (before `uo_bind_item.py`, section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
 
@@ -210,7 +211,10 @@ items into it, not the other way round.
         to the plain bound item.
 5. **Weapon, shield, hair** (rigid things): `uo_bind_item.py` with `PART = "weapon"`, `"shield"`, `"hair"` etc. (table
    above). Place a sword in Rest Position with the grip inside the clenched right hand and the blade on the thumb side:
-   that is how weapons sit on the original UO frames.
+   that is how weapons sit on the original UO frames. Stand a shield upright with its face towards the front view
+   (Numpad 1), select it and run **`uo_place_shield.py`**: it goes onto the outside of the left forearm (like the UO
+   heater shield) and slides onto the arm, `GAP` = 1 cm; then `PART = "shield"`. Render a shield with
+   `BODY_GAP = 0` so it does not bend.
 6. **Material:** Add → Group → **`UO_Look`**, and plug your colour or texture into its *Albedo* input. Make anything that
    should take a hue in-game in greyscale.
 7. **Check the motion:** Dope Sheet → Action Editor → pick the `NN_name` actions and play (Space). Game-camera view:

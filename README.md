@@ -117,6 +117,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_fit_item.py` | Obraca rękawy zaznaczonego przedmiotu na ręce i wypycha go ze skóry (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
 | `uo_cloth_bake.py` | Symulacja tkaniny dla szat, sukni, spódnic i płaszczy, po `uo_bind_item.py` (rozdział 3). |
+| `uo_place_shield.py` | Stawia zaznaczoną tarczę na lewym przedramieniu jak w UO i dosuwa ją do ręki (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
 
@@ -205,7 +206,10 @@ do niego swoje przedmioty, a nie odwrotnie.
         pomijany. `REMOVE = True` wraca do samego podpięcia.
 5. **Broń, tarcza, włosy** (rzeczy sztywne): `uo_bind_item.py` z `PART = "weapon"`, `"shield"`, `"hair"` itd.
    (tabela wyżej). Miecz ustaw w pozycji spoczynkowej tak, żeby rękojeść była w zaciśniętej prawej dłoni, a klinga
-   wychodziła po stronie kciuka: tak leży broń na oryginalnych klatkach UO.
+   wychodziła po stronie kciuka: tak leży broń na oryginalnych klatkach UO. Tarczę postaw pionowo, licem do widoku z
+   przodu (Numpad 1), zaznacz i uruchom **`uo_place_shield.py`**: sama stanie na zewnętrznej stronie lewego
+   przedramienia (jak tarcza heater z UO) i dosunie się do ręki na `GAP` = 1 cm; potem `PART = "shield"`. W
+   renderze tarczy ustaw `BODY_GAP = 0`, żeby się nie wyginała.
 6. **Materiał:** Add → Group → **`UO_Look`**, kolor lub teksturę podepnij na wejście *Albedo*. Rzeczy, które w grze mają
    przyjmować kolor (hue), rób w odcieniach szarości.
 7. **Sprawdź ruch:** Dope Sheet → Action Editor → wybieraj akcje `NN_nazwa` i odtwarzaj (Spacja). Widok z kamery gry:
