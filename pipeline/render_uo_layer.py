@@ -156,7 +156,8 @@ def set_horse(a, i):
 
 
 state = dict(holdout=body.is_holdout, body_hide=body.hide_render, cloth={o.name: o.hide_render for o in clothes},
-             action=rig.animation_data.action, direction=rig.get("uo_direction", 0))
+             action=rig.animation_data.action, direction=rig.get("uo_direction", 0), pose=rig.data.pose_position)
+rig.data.pose_position = "POSE"                      # the actions only play in Pose Position
 body.hide_render = False
 body.is_holdout = LAYER == "clothing"
 for o in clothes:
@@ -491,4 +492,5 @@ body.is_holdout, body.hide_render = state["holdout"], state["body_hide"]
 for o in clothes:
     o.hide_render = state["cloth"][o.name]
 rig.animation_data.action, rig["uo_direction"] = state["action"], state["direction"]
+rig.data.pose_position = state["pose"]
 print("done ->", root)
