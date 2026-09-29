@@ -81,6 +81,9 @@ def cloth_show(o, a, i):
     n = np.cross(B - A, C - A); n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
     fr = np.stack([e1, np.cross(n, e1), n], 1)[fi]
     pos = (co[tris[fi]] * c["bc"][..., None]).sum(1) + np.einsum("nk,nkj->nj", c["off"], fr)
+    if "fix_node" in c and ("d%d_f%d_i" % (a, i)) in c:              # pushed out of the real body after the simulation
+        Dn = np.zeros((int(c["fix_node"].max()) + 1, 3)); Dn[c["d%d_f%d_i" % (a, i)]] = c["d%d_f%d_v" % (a, i)]
+        pos += Dn[c["fix_node"]]
     if key is None:
         if o.data.shape_keys is None:
             o.shape_key_add(name="Basis", from_mix=False)

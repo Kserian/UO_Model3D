@@ -30,6 +30,8 @@ GOAL = 0.5            # 0..1: how strongly the hanging part is pulled towards th
 TIE = 0.03            # m: separate pieces of the item (layers, a skirt under a belt) closer than this are tied
                       # together, so no piece falls off
 DISTANCE = 0.012      # m, the cloth keeps this far from the body
+FIX_GAP = 0.004       # m: afterwards every frame is checked against the real posed body; parts of the item inside it
+                      # or closer than this are pushed out, smoothly (skin never shows through). 0 = off
 OUT_DIR = "//uo_cloth/"
 BAKE = True           # False: only (re)enable the viewport preview of an existing bake
 REMOVE = False        # True: forget the bake of the selected items (back to the plain bound item)
@@ -272,6 +274,76 @@ def apply_binding(sim_co, tris, fi, bc, off):
     return base + np.einsum("nk,nkj->nj", off, fr)
 
 
+def welded(co):
+    """vertices at the same place (UV-seam splits) -> one node, so fixes never tear the item open"""
+    key = np.round(co / 1e-5).astype(np.int64)
+    _, first, node = np.unique(key, axis=0, return_index=True, return_inverse=True)
+    return first, node.ravel()
+
+
+def push_out(X, bvh, E, deg):
+    """displacement that keeps the points X (body space) FIX_GAP outside the body; spread over the item (smooth)"""
+    D = np.zeros_like(X); look = np.arange(len(X)); reach = 0.1
+    for it in range(12):
+        P = X + D; need = np.zeros(len(X)); N = np.zeros_like(X); near = []
+        for i in look:
+            p = Vector(P[i]); loc, nrm, fi, dist = bvh.find_nearest(p, reach)
+            if loc is not None:
+                near.append(i); s = (p - loc).dot(nrm)
+                if s < FIX_GAP:
+                    need[i] = FIX_GAP - s; N[i] = nrm
+        if it == 0:
+            look = np.array(near, int); reach = FIX_GAP + 0.05
+        if not (need > 1e-4).any():
+            break
+        D += need[:, None] * N
+        if it < 11:
+            for _ in range(2):
+                acc = np.zeros_like(D)
+                np.add.at(acc, E[:, 0], D[E[:, 1]]); np.add.at(acc, E[:, 1], D[E[:, 0]])
+                D = np.where(deg[:, None] > 0, 0.5 * D + 0.5 * acc / np.maximum(deg, 1)[:, None], D)
+            look = np.union1d(look, np.nonzero(np.abs(D).max(1) > 1e-5)[0])
+    return D
+
+
+def fix_pass(item, data, done):
+    """push every baked frame of the item out of the real posed body (see FIX_GAP); stored as sparse node offsets"""
+    base = item.data.shape_keys.key_blocks[0].data if item.data.shape_keys else item.data.vertices
+    ico = np.empty(len(item.data.vertices) * 3, np.float32); base.foreach_get("co", ico)
+    first, node = welded(ico.reshape(-1, 3).astype(np.float64))
+    E = np.array([e.vertices[:] for e in item.data.edges]).reshape(-1, 2)
+    E = np.unique(np.sort(node[E], 1), axis=0); E = E[E[:, 0] != E[:, 1]]
+    deg = np.bincount(E.ravel(), minlength=len(first)).astype(float)
+    data["fix_node"] = node.astype(np.int32)
+    moved = 0
+    for act in [a for a in bpy.data.actions if "uo_action" in a and int(a["uo_action"]) in done]:
+        a = int(act["uo_action"]); rig.animation_data.action = act
+        for i in range(int(data["frames_%d" % a])):
+            sc.frame_set(1 + i * STEP)
+            dg = bpy.context.evaluated_depsgraph_get()
+            ev = body.evaluated_get(dg); me = ev.to_mesh(); bco = local_co(me)
+            me.calc_loop_triangles(); btri = [t.vertices[:] for t in me.loop_triangles]; ev.to_mesh_clear()
+            bvh = BVHTree.FromPolygons([Vector(p) for p in bco], btri)
+            M = np.array(body.matrix_world.inverted() @ item.matrix_world)
+            co = apply_binding(data["a%d_f%d" % (a, i)].astype(np.float64), data["tris"], data["fi"], data["bc"],
+                               data["off"])[first]
+            D = push_out(co @ M[:3, :3].T + M[:3, 3], bvh, E, deg) @ np.linalg.inv(M[:3, :3]).T
+            idx = np.nonzero(np.abs(D).max(1) > 2e-4)[0]
+            data["d%d_f%d_i" % (a, i)] = idx.astype(np.int32)
+            data["d%d_f%d_v" % (a, i)] = D[idx].astype(np.float16)
+            moved = max(moved, len(idx))
+    print("uo_cloth_bake: %s pushed out of the body (up to %d points per frame)" % (item.name, moved))
+
+
+def fix_offsets(c, a, i, n):
+    """per-vertex fix of frame i of action a (zeros if none)"""
+    k = "d%d_f%d_i" % (a, i)
+    if "fix_node" not in c or k not in c:
+        return 0.0
+    Dn = np.zeros((int(c["fix_node"].max()) + 1, 3)); Dn[c[k]] = c["d%d_f%d_v" % (a, i)]
+    return Dn[c["fix_node"]]
+
+
 # ---------------------------------------------------------------- preview / render support (shared with the renderer)
 _cache = {}
 
@@ -307,6 +379,7 @@ def show(ob, a, t):
         i1, w = i0, 0.0
     sim_co = (1 - w) * c["a%d_f%d" % (a, i0)].astype(np.float64) + w * c["a%d_f%d" % (a, i1)].astype(np.float64)
     co = apply_binding(sim_co, c["tris"], c["fi"], c["bc"], c["off"])
+    co = co + (1 - w) * fix_offsets(c, a, i0, len(co)) + w * fix_offsets(c, a, i1, len(co))
     if key is None:
         if ob.data.shape_keys is None:
             ob.shape_key_add(name="Basis", from_mix=False)
@@ -374,24 +447,28 @@ def bake(item):
     acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
     done = []
     try:
-        for act in acts:
-            a = int(act["uo_action"])
-            if (ACTIONS and act.name not in ACTIONS) or 23 <= a <= 29:
-                continue
-            res = simulate(sim, act)
-            for i, co in res.items():
-                data["a%d_f%d" % (a, i)] = co
-            data["frames_%d" % a] = np.array(len(res))
-            done.append(a)
-            print("uo_cloth_bake: %s %s: %d frames" % (item.name, act.name, len(res)))
+        try:
+            for act in acts:
+                a = int(act["uo_action"])
+                if (ACTIONS and act.name not in ACTIONS) or 23 <= a <= 29:
+                    continue
+                res = simulate(sim, act)
+                for i, co in res.items():
+                    data["a%d_f%d" % (a, i)] = co
+                data["frames_%d" % a] = np.array(len(res))
+                done.append(a)
+                print("uo_cloth_bake: %s %s: %d frames" % (item.name, act.name, len(res)))
+        finally:
+            for o in hidden:
+                o.hide_viewport = False
+            for kind, ob, name in made + [("obj", sim, None)]:
+                if kind == "mod":
+                    ob.modifiers.remove(ob.modifiers[name])
+                else:
+                    me = ob.data; bpy.data.objects.remove(ob); bpy.data.meshes.remove(me)
+        if FIX_GAP > 0 and done:
+            fix_pass(item, data, done)
     finally:
-        for o in hidden:
-            o.hide_viewport = False
-        for kind, ob, name in made + [("obj", sim, None)]:
-            if kind == "mod":
-                ob.modifiers.remove(ob.modifiers[name])
-            else:
-                me = ob.data; bpy.data.objects.remove(ob); bpy.data.meshes.remove(me)
         rig.data.pose_position = state["pose"]; rig.animation_data.action = state["act"]
         rig["uo_direction"] = state["d"]; sc.frame_set(state["frame"])
     old = load(item)                                                  # keep other actions baked earlier
@@ -400,7 +477,7 @@ def bake(item):
         for k, v in old.items():
             if k.startswith("frames_"):
                 a = int(k[7:])
-            elif k.startswith("a") and "_f" in k:
+            elif k.startswith(("a", "d")) and "_f" in k:
                 a = int(k[1:k.index("_f")])
             else:
                 continue

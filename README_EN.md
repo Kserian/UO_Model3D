@@ -196,6 +196,8 @@ items into it, not the other way round.
       - Every action is simulated on its own. The cloth first settles for `PREROLL` frames in the first pose.
         Actions the game loops (walk, run, stand) run `LOOP_CYCLES` times and the last cycle is kept, so the loop
         has no jump. Mounted actions are not simulated (the horse is not a collider).
+      - After the simulation every frame is checked against the real body: parts inside the skin or closer
+        than `FIX_GAP` (4 mm) are pushed out smoothly, so the skin never shows through the cloth.
       - The result goes to `uo_cloth/<item>.npz` next to the `.blend`. `render_uo_layer.py` uses it automatically,
         and after the bake playing an action in the 3D viewport shows the cloth too (after reopening the file run
         the script with `BAKE = False` to get that preview back).
