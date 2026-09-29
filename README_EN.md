@@ -118,7 +118,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | Text | Purpose |
 |---|---|
 | `render_uo_layer.py` | Renders a layer to frames and `.vd` (run with Alt+P). |
-| `uo_fit_item.py` | Pushes the selected item out of the skin (before `uo_bind_item.py`, section 3). |
+| `uo_fit_item.py` | Turns the selected item's sleeves onto the arms and pushes it out of the skin (before `uo_bind_item.py`, section 3). |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
@@ -138,10 +138,15 @@ items into it, not the other way round.
    1. Make every piece that is a separate item in the game (breastplate, pauldrons, gloves, boots, helmet) a separate
       object. A 136×120 px frame shows little detail, so up to about 20k vertices is plenty (reduce a dense mesh
       with a *Decimate* modifier).
-   2. **Fit to the skin** (optional, in Rest Position): select the item and run **`uo_fit_item.py`**. Parts closer
-      to the skin than `MIN_GAP` (8 mm) or inside the body are pushed out. The push spreads smoothly over `RADIUS`
-      (4 cm), so plates stay rigid and rivets / reliefs move with them. `MAX_GAP > 0` also pulls standing-off parts
-      in (changes the look, off by default). Place and size the item yourself.
+   2. **Fit to the body** (optional, in Rest Position): select the item and run **`uo_fit_item.py`**. First the
+      sleeves (`MATCH_ARMS`): if the item was made for arms held differently (lower, more forward, bent at the
+      elbow), the script finds that pose and turns the sleeves onto the body's arms. Items without sleeves are left
+      alone. Then parts closer to the skin than `MIN_GAP` (15 mm) or inside the body are pushed out. A push moves the
+      whole area around it the same way and fades out smoothly over max(`RADIUS` = 4 cm, `SPREAD` × the push), so a
+      sleeve widens or moves as a whole instead of getting bumps, and folds, rivets and reliefs go with it. Subdivide
+      big faces first (Edit Mode, A, right click → Subdivide, Number of Cuts 2), as they can cut through the body
+      between their corners. Running it again changes nothing. `MAX_GAP > 0` also pulls standing-off parts in
+      (changes the look, off by default). Place and size the item yourself.
    3. Select the item, open the text **`uo_bind_item.py`**, set `PART` (the kind of item) and run it (Alt+P).
       Every item vertex follows the skin **right under it** (along its normal, `MAP = "under"`), and the weights
       are smoothed over the item (`SMOOTH = 4`).

@@ -114,7 +114,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | Tekst | Rola |
 |---|---|
 | `render_uo_layer.py` | Render warstwy do klatek i `.vd` (uruchamiasz Alt+P). |
-| `uo_fit_item.py` | Wypycha zaznaczony przedmiot ze skóry (przed `uo_bind_item.py`, rozdział 3). |
+| `uo_fit_item.py` | Obraca rękawy zaznaczonego przedmiotu na ręce i wypycha go ze skóry (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
@@ -134,10 +134,15 @@ do niego swoje przedmioty, a nie odwrotnie.
    1. Każdy przedmiot, który w grze jest osobny (napierśnik, naramienniki, rękawice, buty, hełm), rób jako osobny
       obiekt. W klatce 136×120 px widać niewiele szczegółów, więc siatka do ok. 20 tys. wierzchołków w zupełności
       wystarczy (za gęstą zmniejsz modyfikatorem *Decimate*).
-   2. **Dopasowanie do skóry** (opcjonalnie, w pozycji spoczynkowej): zaznacz przedmiot i uruchom **`uo_fit_item.py`**.
-      Części bliżej skóry niż `MIN_GAP` (8 mm) albo w ciele zostają wypchnięte. Przesunięcie rozchodzi się płynnie na
-      `RADIUS` (4 cm), więc płyty zostają sztywne, a nity i wzory przesuwają się razem z nimi. `MAX_GAP > 0`
-      dodatkowo dociąga odstające miejsca (zmienia wygląd, domyślnie wyłączone). Położenie i rozmiar ustaw sam.
+   2. **Dopasowanie do ciała** (opcjonalnie, w pozycji spoczynkowej): zaznacz przedmiot i uruchom **`uo_fit_item.py`**.
+      Najpierw rękawy (`MATCH_ARMS`): jeśli przedmiot był robiony pod ręce ustawione inaczej (niżej, bardziej do
+      przodu, zgięte w łokciu), skrypt sam znajduje ten kąt i obraca rękawy na ręce postaci. Przedmioty bez rękawów
+      zostają bez zmian. Potem części bliżej skóry niż `MIN_GAP` (15 mm) albo w ciele zostają wypchnięte. Pchnięcie
+      przesuwa cały obszar wokół w jedną stronę i wygasa płynnie na max(`RADIUS` = 4 cm, `SPREAD` × pchnięcie), więc
+      zamiast guzów rękaw poszerza się albo przesuwa w całości, a fałdy, nity i wzory idą razem z nim. Duże ściany
+      podziel wcześniej (Tryb edycji, A, PPM → Pod podziel, Liczba cięć 2), bo mogą przecinać ciało między
+      wierzchołkami. Ponowne uruchomienie nic już nie zmienia. `MAX_GAP > 0` dodatkowo dociąga odstające miejsca
+      (zmienia wygląd, domyślnie wyłączone). Położenie i rozmiar ustaw sam.
    3. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`**, ustaw `PART` (typ przedmiotu) i uruchom (Alt+P).
       Każdy wierzchołek przedmiotu idzie za skórą, która leży **pod nim** (wzdłuż normalnej, `MAP = "under"`),
       a wagi są wygładzane na przedmiocie (`SMOOTH = 4`).
