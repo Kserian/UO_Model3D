@@ -201,7 +201,9 @@ items into it, not the other way round.
       - The result goes to `uo_cloth/<item>.npz` next to the `.blend`. `render_uo_layer.py` uses it automatically,
         and after the bake playing an action in the 3D viewport shows the cloth too (after reopening the file run
         the script with `BAKE = False` to get that preview back).
-      - All actions take 20-40 minutes (less: lower `SIM_VERTS`, `QUALITY` or only some `ACTIONS`). Run it
+      - Layers of the item (a coat over a tunic) collide with each other (`SELF_COLLISION`), so the inner one never
+        shows through the outer one.
+      - All actions take 30-60 minutes (less: lower `SIM_VERTS`, `QUALITY` or only some `ACTIONS`). Run it
         again after changing the item (shape, fit, weights); an outdated bake is skipped. `REMOVE = True` goes back
         to the plain bound item.
 5. **Weapon, shield, hair** (rigid things): `uo_bind_item.py` with `PART = "weapon"`, `"shield"`, `"hair"` etc. (table

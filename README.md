@@ -196,7 +196,9 @@ do niego swoje przedmioty, a nie odwrotnie.
       - Wynik trafia do `uo_cloth/<przedmiot>.npz` obok pliku `.blend`. `render_uo_layer.py` używa go sam, a po
         bake'u odtwarzanie akcji w podglądzie 3D też pokazuje tkaninę (po ponownym otwarciu pliku uruchom skrypt
         z `BAKE = False`, żeby wrócił podgląd).
-      - Trwa to 20–40 minut dla wszystkich akcji (mniej: niższe `SIM_VERTS`, `QUALITY` albo tylko wybrane
+      - Warstwy przedmiotu (płaszcz na tunice) zderzają się ze sobą (`SELF_COLLISION`), więc spodnia nie wychodzi
+        przez wierzchnią.
+      - Trwa to 30–60 minut dla wszystkich akcji (mniej: niższe `SIM_VERTS`, `QUALITY` albo tylko wybrane
         `ACTIONS`). Po zmianie przedmiotu (kształt, dopasowanie, wagi) uruchom go ponownie; nieaktualny wynik jest
         pomijany. `REMOVE = True` wraca do samego podpięcia.
 5. **Broń, tarcza, włosy** (rzeczy sztywne): `uo_bind_item.py` z `PART = "weapon"`, `"shield"`, `"hair"` itd.

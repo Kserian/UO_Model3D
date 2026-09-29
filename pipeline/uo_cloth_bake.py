@@ -9,7 +9,7 @@
 # 3. The result is saved next to the .blend (OUT_DIR/<item>.npz). render_uo_layer.py uses it automatically; after
 #    the bake, playing an action in the viewport shows it too (run the script again with BAKE = False to get that
 #    preview back after reopening the file). To go back to the plain bound item, run it with REMOVE = True.
-# Bake again after changing the item, its fit or its binding. All actions take about 20-40 minutes; the progress
+# Bake again after changing the item, its fit or its binding. All actions take about 30-60 minutes; the progress
 # is printed in the system console (Window > Toggle System Console), one line per action for the simulation and
 # again for the check against the body (FIX_GAP).
 import bpy
@@ -28,6 +28,8 @@ PREROLL = 40          # frames the cloth settles in the first pose of an action 
 QUALITY = 8           # cloth steps per frame (more = fewer tunnelling problems in fast attacks, slower)
 GOAL = 0.5            # 0..1: how strongly the hanging part is pulled towards the bound shape (the cloth chains are
                       # fitted to the original UO robe / skirt / cloak frames): 0 = pure cloth, 1 = no cloth at all
+SELF_COLLISION = True # layers of the item (a coat over a tunic) collide with each other, so the inner one never
+                      # shows through the outer one (slower)
 TIE = 0.03            # m: separate pieces of the item (layers, a skirt under a belt) closer than this are tied
                       # together, so no piece falls off
 DISTANCE = 0.012      # m, the cloth keeps this far from the body
@@ -171,7 +173,8 @@ def add_cloth(sim, frames):
     s.air_damping = 1.0
     s.vertex_group_mass = "uo_pin"; s.pin_stiffness = 1.0
     c = cm.collision_settings
-    c.use_collision = True; c.distance_min = DISTANCE; c.collision_quality = 4; c.use_self_collision = False
+    c.use_collision = True; c.distance_min = DISTANCE; c.collision_quality = 4
+    c.use_self_collision = SELF_COLLISION; c.self_distance_min = 0.006; c.self_friction = 5.0
     cm.point_cache.frame_start = 1; cm.point_cache.frame_end = frames
     return cm
 
@@ -242,14 +245,37 @@ def simulate(sim, act):
     return out
 
 
-def bind_to_proxy(item_co, sim_co, tris):
-    """every item vertex rides on the nearest proxy triangle: barycentric point + offset along the normal and in
-    the triangle plane"""
-    bvh = BVHTree.FromPolygons([Vector(p) for p in sim_co], tris.tolist())
+def pieces(co, tris):
+    """connected piece of every vertex (vertices at the same place count as connected)"""
+    _, node = welded(co)
+    E = node[np.r_[tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]]; lab = np.arange(node.max() + 1)
+    while True:
+        a = np.minimum(lab[E[:, 0]], lab[E[:, 1]]); nl = lab.copy()
+        np.minimum.at(nl, E[:, 0], a); np.minimum.at(nl, E[:, 1], a); nl = nl[nl]
+        if (nl == lab).all():
+            return lab[node]
+        lab = nl
+
+
+def bind_to_proxy(item_co, item_tris, sim_co, tris):
+    """every item vertex rides on the nearest proxy triangle OF ITS OWN PIECE (a tunic under a coat follows the
+    tunic): barycentric point + offset along the normal and in the triangle plane"""
+    ip = pieces(item_co, item_tris); sp = pieces(sim_co, tris)[tris[:, 0]]
+    whole = BVHTree.FromPolygons([Vector(p) for p in sim_co], tris.tolist())
+    votes = {}                                                        # item piece -> proxy piece (majority)
+    for i in range(0, len(item_co), 7):
+        f = whole.find_nearest(Vector(item_co[i]))[2]
+        votes.setdefault(ip[i], []).append(sp[f])
+    own = {k: np.bincount(v).argmax() for k, v in votes.items()}
+    trees = {}
+    for q in np.unique(sp):
+        sel = np.nonzero(sp == q)[0]
+        trees[q] = (BVHTree.FromPolygons([Vector(p) for p in sim_co], tris[sel].tolist()), sel)
     fi = np.zeros(len(item_co), np.int32); bc = np.zeros((len(item_co), 3)); off = np.zeros((len(item_co), 3))
     fr = frames_of(sim_co, tris)
     for i, p in enumerate(item_co):
-        loc, nrm, f, d = bvh.find_nearest(Vector(p))
+        tree, sel = trees[own.get(ip[i], sp[0])]
+        loc, nrm, f, d = tree.find_nearest(Vector(p)); f = sel[f]
         a, b, c = sim_co[tris[f]]
         v0, v1, v2 = b - a, c - a, np.array(loc) - a
         d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
@@ -438,7 +464,9 @@ def bake(item):
     tris = np.array([t.vertices[:] for t in sim.data.loop_triangles], np.int32)
     base = item.data.shape_keys.key_blocks[0].data if item.data.shape_keys else item.data.vertices
     ico = np.empty(len(item.data.vertices) * 3, np.float32); base.foreach_get("co", ico)
-    fi, bc, off = bind_to_proxy(ico.reshape(-1, 3).astype(np.float64), sim_rest, tris)
+    item.data.calc_loop_triangles()
+    itris = np.array([t.vertices[:] for t in item.data.loop_triangles], np.int32)
+    fi, bc, off = bind_to_proxy(ico.reshape(-1, 3).astype(np.float64), itris, sim_rest, tris)
     made = colliders()
     hidden = [o for o in sc.objects if o.type == "MESH" and o is not sim and not o.hide_viewport
               and not o.name.startswith(("UO_Floor", "UO_Body_uo_collider"))]
