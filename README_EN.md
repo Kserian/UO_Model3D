@@ -243,6 +243,7 @@ python vdtool.py extract file.vd work              # -> work/meta.json + work/fr
 python vdtool.py extract file.vd work --raw        # frames cropped to their content
 python vdtool.py pack    work new.vd               # PNG + meta.json -> .vd
 python vdtool.py verify  file.vd new.vd            # what changed
+python mul2vd.py anim.idx anim.mul out 701 468     # animations from the client files (e.g. hair 701, cloak 468) -> .vd
 ```
 
 - **Canvas mode (default):** all frames have the same size and share the anchor (`meta.json → anchor`). When packing,

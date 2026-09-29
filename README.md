@@ -239,6 +239,7 @@ python vdtool.py extract plik.vd praca             # -> praca/meta.json + praca/
 python vdtool.py extract plik.vd praca --raw       # klatki przycięte do zawartości
 python vdtool.py pack    praca nowy.vd             # PNG + meta.json -> .vd
 python vdtool.py verify  plik.vd nowy.vd           # co się zmieniło
+python mul2vd.py anim.idx anim.mul wynik 701 468   # animacje z plików klienta (np. włosy 701, peleryna 468) -> .vd
 ```
 
 - **Tryb płótna (domyślny):** wszystkie klatki mają ten sam rozmiar i wspólny punkt zaczepienia (`meta.json → anchor`).

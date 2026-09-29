@@ -87,7 +87,11 @@ def read_vd(path):
                     dx = dx - 0x400 if dx & 0x200 else dx
                     dy = dy - 0x400 if dy & 0x200 else dy
                     x, y = cx + dx, cy + h + dy
-                    idx[y, x:x + n] = np.frombuffer(d, np.uint8, n, p)
+                    run = np.frombuffer(d, np.uint8, n, p)
+                    if 0 <= y < idx.shape[0]:                           # a few client frames have runs past
+                        x0, x1 = max(x, 0), min(x + n, idx.shape[1])    # their declared size: clip them
+                        if x1 > x0:
+                            idx[y, x0:x1] = run[x0 - x:x1 - x]
                     p += n
                 frames.append(dict(cx=cx, cy=cy, w=w, h=h, idx=idx))
             blk["palette"] = [v & 0x7FFF for v in pal]
