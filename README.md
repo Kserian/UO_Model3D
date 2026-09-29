@@ -1,9 +1,10 @@
 # UO Body 0x190: model 3D z animacji Ultima Online
 
-Nagi mężczyzna (body 0x190 / 400) odtworzony w 3D wyłącznie z pliku animacji klienta UO `anim1_0x0190.vd`:
-35 akcji × 5 kierunków, 210 klatek na kierunek, razem 1050 obrazków. Model ma szkielet, wszystkie 35 animacji i korekty
-kształtu, dzięki którym jego sylwetka pokrywa się z oryginalnymi klatkami. Służy do projektowania nowych warstw ubrań,
-zbroi i broni: plik `.blend` renderuje nowe klatki UO i od razu zapisuje je do `.vd`.
+Nagi mężczyzna (body 0x190 / 400) odtworzony w 3D z pliku animacji klienta UO `anim1_0x0190.vd`:
+35 akcji × 5 kierunków, 210 klatek na kierunek, razem 1050 obrazków. Realistyczne ciało (MakeHuman, CC0) w proporcjach
+postaci UO, szkielet 55 kości z palcami i łańcuchami materiału, wszystkie 35 animacji dopasowane do oryginalnych klatek.
+Służy do projektowania nowych warstw ubrań, zbroi, włosów, płaszczy i broni: plik `.blend` renderuje nowe klatki UO
+i od razu zapisuje je do `.vd`.
 
 English version: [`README_EN.md`](README_EN.md).
 
@@ -26,7 +27,7 @@ English version: [`README_EN.md`](README_EN.md).
 
 | Plik / folder | Co to jest |
 |---|---|
-| `UO_Body_0x190.blend` | Główny plik (Blender 4.2+): siatka, szkielet, 35 akcji, korekty kształtu, kamera UO, scena warstw ubrań, bryły konia, skrypty. |
+| `UO_Body_0x190.blend` | Główny plik (Blender 4.2+): ciało, szkielet, 35 akcji, szablony płaszcza i spódnicy, kamera UO, scena warstw ubrań, bryły konia, skrypty. |
 | `UO_Body_0x190.glb` | glTF 2.0: siatka + szkielet + animacje + tekstura (Unity, Godot, three.js, Blender). |
 | `UO_Body_0x190.fbx` | FBX: siatka + szkielet + animacje (Maya, 3ds Max, Unreal, Unity). |
 | `UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Tekstura albedo (szara jak skóra w UO, bez światła) i jej warianty dla 5 kierunków UO. |
@@ -44,24 +45,29 @@ z własnego klienta: skopiuj `anim1_0x0190.vd` jako `pipeline/body400.vd`, a w `
 
 ## 2. Jak działa model
 
-**Siatka**
-- 3328 czworokątów (3331 wierzchołków), symetryczna w osi X (w Edit Mode działa X-Mirror), płynne cieniowanie.
-- Pozycja spoczynkowa to A-pose: ręce 40° od pionu, nogi rozstawione o 6°. Wzrost ok. 1,83 m.
-- Jednostki to metry, postać patrzy w −Y, oś Z w górę. **Podłoga to z = 0.**
-- Dłonie są „rękawicami” (bez palców), twarz nie ma rysów: głowa na sprite'ach ma ok. 6 px.
+**Siatka `UO_Body`**
+- Realistyczne ciało na bazie MakeHuman (CC0): 13 380 wierzchołków, UV, palce, stopy z palcami, twarz.
+  Proporcje (grubość rąk, nóg, tułowia, głowa) dopasowane do oryginalnych klatek z ograniczeniami anatomicznymi.
+- Pozycja spoczynkowa to A-pose. Jednostki to metry, postać patrzy w −Y, oś Z w górę. **Podłoga to z = 0.**
+- Nie ma korekt kształtu (shape keys): sylwetkę w każdej klatce ustawiają same kości, więc przedmiot po prostu idzie
+  za kośćmi.
 
-**Szkielet `UO_Rig`** (19 kości, sufiksy `.L`/`.R`):
-`pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`, `pelvis → thigh → shin → foot`.
-- Wagi są automatyczne (bone heat). `pelvis` jest korzeniem i niesie przesunięcie postaci.
-- **Obojczyki (`clavicle.L/.R`)** same nie deformują siatki, ale niosą rękę. Ich przesunięcie unosi bark, np. przy rękach
-  nad głową (zwykle 1–4 cm, do ~9 cm).
+**Szkielet `UO_Rig`** (55 kości ciała + łańcuchy materiału, sufiksy `.L`/`.R`):
+- 19 kości UO: `pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`,
+  `pelvis → thigh → shin → foot`. `pelvis` jest korzeniem i niesie przesunięcie postaci. Obojczyki unoszą bark.
+- `upper_arm_twist`, `forearm_twist` (skręt ramienia i przedramienia), 15 kości palców na dłoń (`finger1-1` …
+  `finger5-3`, `finger1` to kciuk), `toe` (palce stóp). Kolekcje kości: *Fingers*, *Twist*, *Toes*, *Cloth*.
+- Wagi pochodzą z MakeHuman (gładkie stawy, bez „cukierków” w łokciach i barkach).
+- **Grubość w klatce:** skala X/Z kości `upper_arm`, `forearm`, `hand`, `thigh`, `shin`, `foot`, `head` (Y = 1) lekko
+  pogrubia lub wyszczupla kończynę tam, gdzie oryginał tego wymaga. Następna kość łańcucha tej skali nie dziedziczy
+  (Inherit Scale = None), więc długość kończyn się nie zmienia. Przedmiot przypięty do tych kości pogrubia się razem ze skórą.
+- **Palce:** w każdej klatce dłoń jest zaciśnięta tak jak na oryginale (zgięcie palców i kciuka dopasowane do klatek).
+- **Łańcuchy materiału:** `skirt_K_S` (8 łańcuchów × 3 kości wokół miednicy) i `cloak_K_S` (7 × 4, z tyłu od barków).
+  Ich ruch dopasowano do oryginalnych klatek spódnicy (anim 449) i płaszcza (anim 468) z `anim.mul`, także na koniu.
 
-**Korekty kształtu.** Oryginalne klatki wyrenderowano innym modelem 3D, więc sam szkielet nie odtworzy każdej sylwetki.
-- 210 shape keys `uo_NN_MM` (akcja NN, klatka MM): małe przesunięcia (zwykle ≤ 1–2 px) dociągające sylwetkę
-  do oryginału we wszystkich 5 kierunkach.
-- 1044 klucze `uo_NN_MM_dK` (zwykle < 1 px): ostatnie poprawki tylko dla kierunku UO K.
-- Włączają się same, przez drivery: w swojej akcji (każda akcja kluczuje właściwość `uo_action_id` na `UO_Rig`),
-  klatce i kierunku (`uo_direction`). W pozycji spoczynkowej i w nowych animacjach żadna korekta nie jest aktywna.
+**Dopasowanie do klatek.** Poza każdej z 210 klatek jest dopasowana do 5 kierunków oryginału naraz (1050 obrazków),
+bez żadnych korekt kształtu. Obrót prawej dłoni dopasowano dodatkowo do oryginalnych klatek katany (anim 627), więc
+broń w dłoni leży jak w grze (klinga średnio co do 0,8 px).
 
 **Animacje.** Każda akcja UO to akcja Blendera `NN_nazwa` (z fake userem). 1 klatka UO = 3 klatki sceny (24 fps),
 z płynną interpolacją. Chód i bieg są zapętlone. Właściwości akcji: `uo_action` (numer) i `uo_frames` (liczba klatek).
@@ -109,8 +115,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 |---|---|
 | `render_uo_layer.py` | Render warstwy do klatek i `.vd` (uruchamiasz Alt+P). |
 | `uo_fit_item.py` | Wypycha zaznaczony przedmiot ze skóry (przed `uo_bind_item.py`, rozdział 3). |
-| `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature, wagi i korekty (rozdział 3). |
-| `uo_transfer_corrections.py` | Kopiuje same korekty kształtu ciała na zaznaczony przedmiot (gdy wagi robisz ręcznie). |
+| `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
 
@@ -127,15 +132,15 @@ do niego swoje przedmioty, a nie odwrotnie.
    Wszystko w tej kolekcji trafia do renderowanej warstwy. `Example_Shirt` usuń albo wyłącz w renderze.
 4. **Ubranie, zbroja, hełm, buty, rękawice** (rzeczy, które się uginają): skrypt **`uo_bind_item.py`**.
    1. Każdy przedmiot, który w grze jest osobny (napierśnik, naramienniki, rękawice, buty, hełm), rób jako osobny
-      obiekt. Mniej niż ok. 10 tys. wierzchołków: skrypt robi 1254 kopie siatki (ok. 30 KB RAM na wierzchołek),
-      a w klatce 136×120 px więcej szczegółów i tak nie widać. Za gęstą siatkę zmniejsz modyfikatorem *Decimate*.
+      obiekt. W klatce 136×120 px widać niewiele szczegółów, więc siatka do ok. 20 tys. wierzchołków w zupełności
+      wystarczy (za gęstą zmniejsz modyfikatorem *Decimate*).
    2. **Dopasowanie do skóry** (opcjonalnie, w pozycji spoczynkowej): zaznacz przedmiot i uruchom **`uo_fit_item.py`**.
       Części bliżej skóry niż `MIN_GAP` (8 mm) albo w ciele zostają wypchnięte. Przesunięcie rozchodzi się płynnie na
       `RADIUS` (4 cm), więc płyty zostają sztywne, a nity i wzory przesuwają się razem z nimi. `MAX_GAP > 0`
       dodatkowo dociąga odstające miejsca (zmienia wygląd, domyślnie wyłączone). Położenie i rozmiar ustaw sam.
    3. Zaznacz przedmiot, otwórz tekst **`uo_bind_item.py`**, ustaw `PART` (typ przedmiotu) i uruchom (Alt+P).
       Każdy wierzchołek przedmiotu idzie za skórą, która leży **pod nim** (wzdłuż normalnej, `MAP = "under"`),
-      a wagi i korekty są wygładzane na przedmiocie (`SMOOTH = 4`).
+      a wagi są wygładzane na przedmiocie (`SMOOTH = 4`).
 
       | `PART` | Przedmiot | Za czym idzie |
       |---|---|---|
@@ -148,24 +153,33 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"boots"` | buty, nagolenniki | shin, foot |
       | `"helm"` | hełm, kaptur, maska | head |
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
-      | `"all"` | szata, płaszcz, cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
+      | `"all"` | cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
+      | `"robe"` | szata, suknia | góra jak skóra, od pasa w dół łańcuchy spódnicy (płynne przejście 15 cm) |
+      | `"skirt"` | spódnica, kilt | łańcuchy `skirt_*` (szablon `UO_Template_Skirt`) |
+      | `"cloak"` | płaszcz, peleryna | łańcuchy `cloak_*` + karczek na barkach (szablon `UO_Template_Cloak`) |
+      | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |
+      | `"weapon"` / `"weapon.L"` | broń | sztywno na `hand.R` / `hand.L` (UO trzyma broń w prawej dłoni) |
+      | `"shield"` | tarcza | sztywno na `forearm.L` |
+      | `"bow"` / `"crossbow"` | łuk / kusza | sztywno na `hand.L` / `hand.R` |
+      | `"quiver"` | kołczan | sztywno na `chest` |
+
+      Rękawice (`"gloves"`) idą też za palcami, rękawy (`"arms"`) za kośćmi skrętu, buty (`"boots"`) za palcami stóp.
+      Szablony materiału (kolekcja *Templates*, niewidoczne w renderze) możesz skopiować jako bazę własnego płaszcza
+      albo spódnicy: kształt zmieniaj w pozycji spoczynkowej, potem `uo_bind_item.py` z `PART = "cloak"` / `"skirt"`.
 
       Dla `"chest"` bark ustawiasz w linii tego typu: `"upper_arm": (0.2, 0.15, 0.45)` = przy stawie 20% za ręką,
       od 45% długości ramienia 100% (rękaw), pomiędzy płynnie. `"thigh": (0.3, 0.1, 0.4)` tak samo dla ud i poł.
 
-   4. Skrypt robi parent do `UO_Rig`, modyfikator *Armature*, wagi i kopiuje korekty kształtu z tej samej skóry,
-      więc przedmiot rusza się razem ze skórą pod nim. Uruchom go ponownie po każdej zmianie kształtu przedmiotu. Stare wagi i klucze `uo_`
-      zostaną zastąpione, twoje własne klucze kształtu zostają.
+   4. Skrypt robi parent do `UO_Rig`, modyfikator *Armature* i wagi, więc przedmiot rusza się razem ze skórą pod nim.
+      Uruchom go ponownie po każdej zmianie kształtu przedmiotu (stare wagi zostaną zastąpione).
    5. Wersja ręczna (gdy chcesz własne wagi): Ctrl+P → *Armature Deform → With Empty Groups*, wagi pomaluj
       albo skopiuj modyfikatorem *Data Transfer* (Vertex Groups, *Nearest Face Interpolated*) i usuń grupy kości,
-      których przedmiot nie zakrywa. Na koniec uruchom **`uo_transfer_corrections.py`**.
-   6. W niektórych klatkach (upadki, jazda konna, dłonie) samo ciało jest mocno odkształcone przez korekty, bo tak
-      dopasowuje się do obrysu oryginału. Przedmiot odkształca się wtedy razem z nim. W podglądzie 3D wygląda to
-      dziwnie, w klatce UO pasuje do oryginalnego ciała.
-   7. Skóra przebijająca przedmiot o kilka mm (w podglądzie 3D) nie robi dziur w klatkach: przy renderze ciało zasłania
+      których przedmiot nie zakrywa.
+   6. Skóra przebijająca przedmiot o kilka mm (w podglądzie 3D) nie robi dziur w klatkach: przy renderze ciało zasłania
       przedmiot dopiero wtedy, gdy jest przed nim o więcej niż `HOLDOUT_MARGIN` (1 cm, rozdział 4).
-5. **Broń, tarcza** (rzeczy sztywne): zaznacz przedmiot, potem z Shiftem `UO_Rig` → Pose Mode → zaznacz kość `hand.R`
-   (lub `hand.L`) → Ctrl+P → *Bone*.
+5. **Broń, tarcza, włosy** (rzeczy sztywne): `uo_bind_item.py` z `PART = "weapon"`, `"shield"`, `"hair"` itd.
+   (tabela wyżej). Miecz ustaw w pozycji spoczynkowej tak, żeby rękojeść była w zaciśniętej prawej dłoni, a klinga
+   wychodziła po stronie kciuka: tak leży broń na oryginalnych klatkach UO.
 6. **Materiał:** Add → Group → **`UO_Look`**, kolor lub teksturę podepnij na wejście *Albedo*. Rzeczy, które w grze mają
    przyjmować kolor (hue), rób w odcieniach szarości.
 7. **Sprawdź ruch:** Dope Sheet → Action Editor → wybieraj akcje `NN_nazwa` i odtwarzaj (Spacja). Widok z kamery gry:
@@ -173,7 +187,7 @@ do niego swoje przedmioty, a nie odwrotnie.
 8. **Wskazówki:**
    - Ubranie rób ok. 1–2 cm nad skórą.
    - Sprawdzaj zwłaszcza ataki, czary i upadki.
-   - Spódnice, szaty i peleryny mogą mieć własne kości.
+   - Spódnice, szaty i płaszcze bindujesz presetami `"skirt"`, `"robe"`, `"cloak"` (idą za łańcuchami materiału).
 
 ## 4. Render do klatek i pliku `.vd`
 
@@ -275,29 +289,51 @@ people). Każdy przedmiot ma osobne ID animacji.
 
 - **Tryb dokładny (`EXACT_BODY = True`):** wyrenderowana warstwa ciała jest identyczna z oryginałem (wszystkie 1050 klatek,
   sprawdzone `vdtool verify`).
-- **Sam model 3D (`EXACT_BODY = False`):** średnia zgodność obrysu (IoU) **0,979** na 1050 klatkach. Wg kierunku: przód
-  0,970, tył 0,978, pozostałe 0,982–0,983. Kolory na wspólnych pikselach są dokładne z `EXACT_COLORS`.
+- **Sam model 3D (`EXACT_BODY = False`):** średnia zgodność obrysu (IoU) **0,879** na 1050 klatkach, **bez żadnych
+  korekt kształtu** (same kości). Wg kierunku: 0,876–0,893. Kolory na wspólnych pikselach są dokładne z `EXACT_COLORS`.
 
 | # | akcja | IoU | # | akcja | IoU | # | akcja | IoU |
 |---|---|---|---|---|---|---|---|---|
-| 0 | walk_unarmed | 0.984 | 12 | attack_2h_bash | 0.986 | 24 | mounted_run | 0.947 |
-| 1 | walk_armed | 0.985 | 13 | attack_2h_slash | 0.987 | 25 | mounted_stand | 0.946 |
-| 2 | run_unarmed | 0.986 | 14 | attack_2h_pierce | 0.981 | 26 | mounted_attack_1h | 0.947 |
-| 3 | run_armed | 0.987 | 15 | combat_advance | 0.989 | 27 | mounted_attack_bow | 0.961 |
-| 4 | stand | 0.984 | 16 | spell_directed | 0.984 | 28 | mounted_attack_crossbow | 0.950 |
-| 5 | fidget_1 | 0.988 | 17 | spell_area | 0.984 | 29 | mounted_attack_2h | 0.928 |
-| 6 | fidget_2 | 0.984 | 18 | attack_bow | 0.984 | 30 | block | 0.980 |
-| 7 | combat_idle_1h | 0.993 | 19 | attack_crossbow | 0.987 | 31 | punch | 0.990 |
-| 8 | combat_idle_2h | 0.987 | 20 | get_hit | 0.985 | 32 | bow | 0.984 |
-| 9 | attack_1h_slash | 0.985 | 21 | die_forward | 0.971 | 33 | salute | 0.984 |
-| 10 | attack_1h_pierce | 0.989 | 22 | die_backward | 0.980 | 34 | eat | 0.983 |
-| 11 | attack_1h_bash | 0.988 | 23 | mounted_walk | 0.950 |  |  |  |
+| 0 | walk_unarmed | 0.905 | 12 | attack_2h_bash | 0.882 | 24 | mounted_run | 0.858 |
+| 1 | walk_armed | 0.901 | 13 | attack_2h_slash | 0.887 | 25 | mounted_stand | 0.853 |
+| 2 | run_unarmed | 0.896 | 14 | attack_2h_pierce | 0.872 | 26 | mounted_attack_1h | 0.853 |
+| 3 | run_armed | 0.896 | 15 | combat_advance | 0.881 | 27 | mounted_attack_bow | 0.865 |
+| 4 | stand | 0.912 | 16 | spell_directed | 0.879 | 28 | mounted_attack_crossbow | 0.852 |
+| 5 | fidget_1 | 0.909 | 17 | spell_area | 0.851 | 29 | mounted_attack_2h | 0.830 |
+| 6 | fidget_2 | 0.896 | 18 | attack_bow | 0.868 | 30 | block | 0.884 |
+| 7 | combat_idle_1h | 0.882 | 19 | attack_crossbow | 0.887 | 31 | punch | 0.884 |
+| 8 | combat_idle_2h | 0.878 | 20 | get_hit | 0.896 | 32 | bow | 0.892 |
+| 9 | attack_1h_slash | 0.860 | 21 | die_forward | 0.855 | 33 | salute | 0.902 |
+| 10 | attack_1h_pierce | 0.879 | 22 | die_backward | 0.857 | 34 | eat | 0.893 |
+| 11 | attack_1h_bash | 0.882 | 23 | mounted_walk | 0.859 |  |  |  |
 
-Pozostałe różnice to głównie 1-pikselowe szczeliny między ręką a tułowiem. Akcje konne mają mniej, bo bryła konia
-zasłaniająca jeźdźca jest przybliżona.
+Różnice to prawie wyłącznie 1-pikselowe paski wzdłuż krawędzi (oryginał rysowano innym modelem 3D). Dużych błędów, np.
+ręki w innym miejscu niż na oryginale, nie ma, więc wycięcia w przedmiotach trafiają w rękę. Dla porównania: poprzedni
+model bez swoich 1254 korekt miał 0,880, a z nimi 0,979 (ale przedmioty musiały kopiować te korekty).
+
+**Przedmioty UO.** Test na prawdziwych przedmiotach z `anim.mul` (koszula, spodnie, buty, rękawice, hełm, zbroja
+płytowa): przylegające do ciała przedmioty wyrenderowane na tym modelu odtwarzają oryginalne klatki (razem z wycięciami
+na ręce) tak samo dobrze jak poprzedni model z korektami. **Materiał:** spódnica IoU 0,83 (konno 0,62), płaszcz 0,73
+(konno 0,67) względem oryginalnych klatek spódnicy i płaszcza. **Broń:** klinga w dłoni średnio 0,8 px od klingi katany z UO.
 
 ## 9. Jak powstał model
 
+**Obecne ciało (MakeHuman).**
+1. **Kształt:** siatka MakeHuman (CC0, mężczyzna, umięśnienie 0,6) przeniesiona na szkielet UO: każda kończyna na swoją
+   kość (długość i obwód), tułów mapą wysokości (szerokość, głębokość na 7 poziomach), szyja i głowa osobno, przejścia
+   wagami MakeHuman. Grubości dopasowane do oryginalnych klatek z karą za nienaturalne kształty.
+2. **Szkielet:** 19 kości UO bez zmian + skręt ramion, 15 kości palców na dłoń, palce stóp; wagi z MakeHuman.
+3. **Pozy:** każda klatka dopasowana do 5 kierunków naraz (własny szybki rasteryzer + LBS jak w Blenderze), naprzemiennie
+   z kształtem; grubość kończyn (skala X/Z kości) i zaciśnięcie dłoni też dopasowane w każdej klatce.
+4. **Dłoń i broń:** chwyt miecza skalibrowany na oryginalnych klatkach katany (anim 627), potem obrót dłoni w każdej
+   klatce tak, żeby klinga pokrywała się z oryginałem. Tarcza skalibrowana na tarczy heater (anim 582).
+5. **Konno:** jeździec widoczny tylko tam, gdzie jest przed koniem, i nie może wchodzić w bryłę konia.
+6. **Materiał:** łańcuchy kości spódnicy i płaszcza dopasowane klatka po klatce do oryginalnych klatek spódnicy (449)
+   i płaszcza (468), z zasłanianiem przez ciało, bez przenikania nóg i konia.
+7. **Tekstura:** kolory z oryginalnych klatek rzutowane na UV MakeHuman, światło UO usunięte (albedo), osobno dla
+   5 kierunków.
+
+**Pierwsza wersja modelu** (proporcje i kamera UO wyznaczone z klatek, na nich opiera się obecne ciało):
 1. **Dekodowanie `.vd`:** paleta RGB555, klatki RLE, punkt zaczepienia.
 2. **Kamera UO z samych klatek:** wspólne dopasowanie proporcji ciała i kamery do obrysów z 5 kierunków dało rzut
    ortograficzny, elewację 28,45°, 36 px/m, zaczepienie w środku piksela i podłogę 7 cm pod nim.
@@ -327,6 +363,24 @@ zasłaniająca jeźdźca jest przybliżona.
 
 ## 10. Odtworzenie modelu (pipeline)
 
+**Obecne ciało** (folder `pipeline/body13/`, uruchamiane z tego folderu; wymagania: `numpy scipy numba pillow "bpy==4.2.*"`).
+Zapisane wyniki (`*.json`, `*.npz`) pozwalają powtórzyć dowolny krok. Dane MakeHuman (CC0) są w `mh/`, klatki przedmiotów
+UO z `anim.mul` (spódnica, płaszcz, katana, tarcza, koszula, spodnie, buty, zbroja, hełm) w `mul/`.
+
+| Etap | Skrypty | Wynik |
+|---|---|---|
+| Dane z pierwszej wersji | `prep_views.py`, `dump_poses.py`, `dump_horse.py`, `dump_v12.py` | `views_*.npz`, `rig_poses.npz`, `horse.npz` |
+| Kształt | `shape13.py`, `fit_shape2.py` | `shape_r2.json` |
+| Szkielet 55 kości | `skel13.py` | (w pamięci, `build_v13.py`) |
+| Pozy | `run_poses13.py`, `views_from_poses13.py`, `run_mounted13.py` (+ `horse_sdf.py`) | `poses13_*.json` |
+| Broń i dłoń | `weaponfit.py`, `handfit.py`, `shieldfit.py` | `grip_katana2.json`, `poses13_r5.json`, `shield_heater.json` |
+| Materiał | `cloth13.py`, `clothfit.py`, `run_cloth.py`, `run_cloth_mounted.py` | `cloth_449all.json`, `cloth_468all.json` |
+| Tekstura | `bake13.py` | albedo 5 kierunków |
+| Budowa pliku | `build_v13.py`, potem `../export.py` | `.blend`, `.glb`, `.fbx` |
+| Pomiary i podglądy | `eval13.py`, `itemval.py`, `gen_items.py`, `make_gif.py` | IoU, losowe zestawy, GIF-y |
+
+**Pierwsza wersja modelu** (skrypty w `pipeline/`):
+
 Skrypty są w `pipeline/`, uruchamia się je z tego folderu. Wymagania: Python 3.11,
 `pip install numpy pillow scipy scikit-image jax optax "bpy==4.2.*"`. Pliki klienta są już w `pipeline/`: ciało
 `body400.vd` i koń (0xC8) `horse200.vd`. Pliki `*.pkl` to zapisane wyniki, więc kroki można wznawiać.
@@ -351,10 +405,11 @@ Ważne ustawienia: `UO_DELTA=refine_mesh.pkl` przy dopasowaniu póz, `refine_inf
 
 **Ograniczenia**
 - Rysunek mięśni jest bardziej miękki niż na sprite'ach, bo tekstura uśrednia wiele klatek.
-- Z klatek ~60 px nie da się odtworzyć palców ani rysów twarzy.
-- Sam model 3D nie otworzy 1-pikselowych szczelin między ręką a tułowiem, więc ok. 2% sylwetki się różni.
-  Tryby dokładne usuwają to z renderów.
-- `.glb`/`.fbx` zawierają tylko animację szkieletu, bez korekt kształtu.
+- Palce i twarz pochodzą z MakeHuman (na klatkach ~60 px ich nie widać).
+- Sam model 3D różni się od oryginału głównie 1-pikselowymi paskami na krawędziach (ok. 12% pikseli sylwetki).
+  Tryby dokładne (`EXACT_BODY`) usuwają to z renderów: ciało jest zawsze oryginalne, model decyduje tylko, co jest
+  przed, a co za nim.
+- Na koniu dolna część spódnicy i płaszcza może wchodzić w konia: przy renderze koń ją zasłania (jak w UO).
 - Koń to przybliżona bryła do zasłaniania, a nie model do edycji.
 
 **Częste problemy**
@@ -366,7 +421,7 @@ Ważne ustawienia: `UO_DELTA=refine_mesh.pkl` przy dopasowaniu póz, `refine_inf
 | Tryby dokładne nic nie zmieniają | W pliku nie ma oryginalnych klatek: użyj `.blend` z tego repozytorium albo `pack_originals.py`. |
 | Przedmiot przebija się przez ciało | Uruchom `uo_bind_item.py` z właściwym `PART` i zrób przedmiot odrobinę większy. |
 | Przedmiot rozciąga się za ręką lub nogą | Ma wagi kości, których nie zakrywa. Uruchom `uo_bind_item.py` z właściwym `PART`. |
-| Blender „wisi” i rośnie mu pamięć przy skrypcie | Przedmiot ma za dużo wierzchołków. Zmniejsz go do < 10 tys. (*Decimate*). |
+| Blender „wisi” przy skrypcie | Przedmiot ma za dużo wierzchołków. Zmniejsz go (*Decimate*). |
 | Przedmiot stoi w miejscu | Brak modyfikatora *Armature* albo wag (rozdział 3). |
 | Postać „skacze” w `vdtool` | Rysunek przesunięty względem punktu zaczepienia. |
 | Poszarpane krawędzie po imporcie | Półprzezroczyste piksele: ustaw alfę 0 albo 255. |

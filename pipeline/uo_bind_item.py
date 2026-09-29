@@ -5,7 +5,8 @@
 #    that skin point and smoothed over the item (SMOOTH). "chest" moves most of the upper-arm weight to the
 #    collarbones, so the shoulders of a breastplate stay on the shoulders while the arms move under it.
 # Run it again after you change the item's shape (old weights and "uo_" corrections are replaced). Your own shape
-# keys (names not starting with "uo_") are kept.
+# keys (names not starting with "uo_") are kept. The finger, twist and toe bones of the v13 body count as the hand,
+# arm and foot in PARTS (e.g. "gloves" follows the fingers too).
 import bpy
 import numpy as np
 from mathutils import Vector
@@ -33,12 +34,32 @@ PARTS = {
     "boots":     (["shin.L", "foot.L", "shin.R", "foot.R"], {}),               # boots, greaves
     "helm":      (["head"], {}),                                               # helmet, hat, mask
     "neck":      (["neck", "chest", "head"], {}),                              # gorget, collar
-}
+    # cloth (v13 body): weights from the cloth template (bone chains fitted to the original UO cloak / skirt frames)
+    "skirt":     (["pelvis", "spine", "thigh.L", "thigh.R"], {}),              # skirt, kilt: all on the skirt chains
+    "cloak":     (["chest", "spine", "neck", "clavicle.L", "clavicle.R"], {}), # cloak, cape: all on the cloak chains
+    "robe":      (None, {"hand": 0.0, "foot": 0.0, "head": 0.0}),              # robe, dress: top like the skin,
+}                                                                              # below the waist the skirt chains
+# PART -> (cloth template object, height band in m over which the item goes from the body weights to the template
+# weights below the template's top; None = template weights only)
+CLOTH = {"skirt": ("UO_Template_Skirt", None), "cloak": ("UO_Template_Cloak", None), "robe": ("UO_Template_Skirt", 0.15)}
+# rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
+# weapons (right hand), shields (left forearm), bows (left hand), quivers (back)
+RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "shield": "forearm.L",
+         "bow": "hand.L", "crossbow": "hand.R", "quiver": "chest"}
 PARENT = {"hand": "forearm", "forearm": "upper_arm", "upper_arm": "clavicle", "foot": "shin", "shin": "thigh",
           "thigh": "pelvis", "head": "neck"}
 
 body = bpy.data.objects["UO_Body"]
 rig = bpy.data.objects["UO_Rig"]
+SUB = {"upper_arm_twist": "upper_arm", "forearm_twist": "forearm", "toe": "foot"}   # extra bones -> their UO bone
+
+
+def group_of(name):
+    """UO bone a body bone belongs to: finger / twist / toe bones count as hand / arm / foot"""
+    side = name[-2:] if name.endswith((".L", ".R")) else ""
+    base = name[:-2] if side else name
+    base = "hand" if base.startswith("finger") else SUB.get(base, base)
+    return base + side
 
 
 def body_regions(allowed):
@@ -49,9 +70,9 @@ def body_regions(allowed):
     for v in me.vertices:
         for g in v.groups:
             W[v.index, g.group] = g.weight
-    keep = [i for i, n in enumerate(names) if allowed is None or n in allowed]
-    kb = me.shape_keys.key_blocks
-    basis = np.empty(len(me.vertices) * 3, np.float32); kb["Basis"].data.foreach_get("co", basis)
+    keep = [i for i, n in enumerate(names) if allowed is None or group_of(n) in allowed]
+    basis = np.empty(len(me.vertices) * 3, np.float32)
+    (me.shape_keys.key_blocks[0].data if me.shape_keys else me.vertices).foreach_get("co", basis)
     basis = basis.reshape(-1, 3).astype(np.float64)
     me.calc_loop_triangles()
     tri = np.array([t.vertices[:] for t in me.loop_triangles])
@@ -61,6 +82,44 @@ def body_regions(allowed):
         raise RuntimeError("no body skin for PART %r" % PART)
     bvh = BVHTree.FromPolygons([Vector(p) for p in basis], tri.tolist())
     return bvh, tri, basis, W[:, keep], [names[i] for i in keep]
+
+
+def cloth_blend(co, wv, bones, tpl_name, band):
+    """blend the body weights with the weights of the nearest point of the cloth template (all in body space)"""
+    tpl = bpy.data.objects.get(tpl_name)
+    if tpl is None:
+        raise RuntimeError("cloth template %s not found (v13 body file)" % tpl_name)
+    me = tpl.data
+    M = body.matrix_world.inverted() @ tpl.matrix_world
+    tco = np.array([M @ v.co for v in me.vertices])
+    tn = [g.name for g in tpl.vertex_groups]
+    TW = np.zeros((len(me.vertices), len(tn)))
+    for v in me.vertices:
+        for g in v.groups:
+            TW[v.index, g.group] = g.weight
+    me.calc_loop_triangles()
+    ttri = np.array([t.vertices[:] for t in me.loop_triangles])
+    bvh = BVHTree.FromPolygons([Vector(p) for p in tco], ttri.tolist())
+    wt = np.zeros((len(co), len(tn)))
+    for i, p in enumerate(co):
+        loc, nrm, fi, dist = bvh.find_nearest(Vector(p))
+        a, b, c = ttri[fi]
+        w = barycentric_transform(loc, Vector(tco[a]), Vector(tco[b]), Vector(tco[c]),
+                                  Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)))
+        w = np.clip(np.array(w), 0, 1); w /= max(w.sum(), 1e-9)
+        wt[i] = w[0] * TW[a] + w[1] * TW[b] + w[2] * TW[c]
+    wt /= np.maximum(wt.sum(1, keepdims=True), 1e-9)
+    if band is None:
+        h = np.ones(len(co))
+    else:
+        top = tco[:, 2].max()
+        h = np.clip((top - co[:, 2]) / band, 0, 1)
+    names = list(bones) + [b for b in tn if b not in bones]
+    out = np.zeros((len(co), len(names)))
+    out[:, :len(bones)] = wv * (1 - h)[:, None]
+    for j, b in enumerate(tn):
+        out[:, names.index(b)] += wt[:, j] * h
+    return out, names
 
 
 def bind(ob, allowed):
@@ -120,9 +179,8 @@ def bind(ob, allowed):
             continue
         for side in ((".L", ".R") if base != "head" else ("",)):
             b, pb = base + side, PARENT[base] + ("" if PARENT[base] in ("pelvis", "neck") else side)
-            if b not in bones or pb not in rig.data.bones:
+            if b not in rig.data.bones or pb not in rig.data.bones:
                 continue
-            j = bones.index(b)
             f = FOLLOW[base]
             if isinstance(f, tuple):                                 # share grows along the bone (t = 0 joint, 1 end)
                 bone = rig.data.bones[b]
@@ -130,14 +188,18 @@ def bind(ob, allowed):
                 h, t_ = np.array(to_body @ bone.head_local), np.array(to_body @ bone.tail_local)
                 t = ((co - h) @ (t_ - h)) / max(((t_ - h) ** 2).sum(), 1e-12)
                 f = f[0] + (1 - f[0]) * np.clip((t - f[1]) / max(f[2] - f[1], 1e-6), 0, 1)
-            mv = wv[:, j] * (1 - f)
-            wv[:, j] -= mv; moved += mv
-            if pb in bones:
-                wv[:, bones.index(pb)] += mv
-            else:
-                wv = np.c_[wv, mv]; bones.append(pb)
+            for j in [j for j, nm in enumerate(bones) if group_of(nm) == b]:   # the bone + its finger / twist / toe bones
+                mv = wv[:, j] * (1 - f)
+                wv[:, j] -= mv; moved += mv
+                if pb in bones:
+                    wv[:, bones.index(pb)] += mv
+                else:
+                    wv = np.c_[wv, mv]; bones.append(pb)
     moved = np.clip(moved, 0, 1)
-    body_bones = {g.name for g in body.vertex_groups}
+    if PART in CLOTH:
+        wv, bones = cloth_blend(co, wv, bones, *CLOTH[PART])
+        moved = np.ones(n)
+    body_bones = {g.name for g in body.vertex_groups} | {b.name for b in rig.data.bones}
     for g in [g for g in ob.vertex_groups if g.name in body_bones or g.name.startswith("clavicle")]:
         ob.vertex_groups.remove(g)
     for j, name in enumerate(bones):
@@ -160,7 +222,13 @@ def bind(ob, allowed):
             pass
     arm.object = rig; arm.use_vertex_groups = True; arm.use_bone_envelopes = False
 
-    # --- shape corrections of the same skin points
+    # --- shape corrections of the same skin points (only a body with corrective shape keys, v12)
+    if ob.data.shape_keys:
+        for k in [k for k in ob.data.shape_keys.key_blocks if k.name.startswith("uo_")]:
+            ob.shape_key_remove(k)
+    if body.data.shape_keys is None or not any(k.name.startswith("uo_") for k in body.data.shape_keys.key_blocks):
+        print("uo_bind_item: %s -> PART %s, bones %s" % (ob.name, PART, bones))
+        return
     kb = body.data.shape_keys.key_blocks
     R = np.array((body.matrix_world.inverted() @ ob.matrix_world).to_3x3().inverted())   # body offsets -> item space
     if ob.data.shape_keys is None:
@@ -188,14 +256,33 @@ def bind(ob, allowed):
     print("uo_bind_item: %s -> PART %s, bones %s, %d corrections" % (ob.name, PART, bones, len(keys)))
 
 
-if PART not in PARTS:
-    raise ValueError("PART must be one of %s" % list(PARTS))
-FOLLOW = PARTS[PART][1]
+def bind_rigid(ob, bone):
+    body_bones = {g.name for g in body.vertex_groups}
+    for g in [g for g in ob.vertex_groups if g.name in body_bones]:
+        ob.vertex_groups.remove(g)
+    g = ob.vertex_groups.new(name=bone); g.add(list(range(len(ob.data.vertices))), 1.0, "REPLACE")
+    if ob.parent != rig:
+        mw = ob.matrix_world.copy()
+        ob.parent = rig; ob.matrix_parent_inverse = rig.matrix_world.inverted(); ob.matrix_world = mw
+    arm = next((m for m in ob.modifiers if m.type == "ARMATURE"), None) or ob.modifiers.new("Armature", "ARMATURE")
+    arm.object = rig; arm.use_vertex_groups = True; arm.use_bone_envelopes = False
+    if ob.data.shape_keys:
+        for k in [k for k in ob.data.shape_keys.key_blocks if k.name.startswith("uo_")]:
+            ob.shape_key_remove(k)
+    print("uo_bind_item: %s -> rigid on %s" % (ob.name, bone))
+
+
+if PART not in PARTS and PART not in RIGID:
+    raise ValueError("PART must be one of %s" % (list(PARTS) + list(RIGID)))
+FOLLOW = PARTS[PART][1] if PART in PARTS else {}
 pose = rig.data.pose_position
 rig.data.pose_position = "REST"
 bpy.context.view_layer.update()
 try:
     for ob in [o for o in bpy.context.selected_objects if o.type == "MESH" and o != body]:
-        bind(ob, PARTS[PART][0])
+        if PART in RIGID:
+            bind_rigid(ob, RIGID[PART])
+        else:
+            bind(ob, PARTS[PART][0])
 finally:
     rig.data.pose_position = pose

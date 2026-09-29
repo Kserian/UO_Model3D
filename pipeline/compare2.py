@@ -16,7 +16,10 @@ sc = bpy.context.scene
 sc.render.engine = "CYCLES"; sc.cycles.samples = 16; sc.cycles.device = "CPU"
 NAMES = [f"{a:02d}_{ACTIONS_PEOPLE[a]}" for a in ACT_IDS]
 src = bpy.data.texts["render_uo_layer.py"].as_string()
-src = src.replace('LAYER = "clothing"', 'LAYER = "body"').replace("ONLY = []", "ONLY = %r" % NAMES)
+import re
+src = re.sub(r'(?m)^LAYER = "clothing"', 'LAYER = "body"', src, count=1)             # the settings line, not the header
+src = re.sub(r'(?m)^ONLY = \[\]', "ONLY = %r" % NAMES, src, count=1)
+src = re.sub(r'(?m)^EXACT_BODY = True', "EXACT_BODY = False", src, count=1)           # the 3D model itself, not the original
 src = src.replace('WRITE_VD = True', 'WRITE_VD = False').replace('OUT_DIR = "//uo_render/"', 'OUT_DIR = %r' % (out + "/"))
 exec(compile(src, "render_uo_layer.py", "exec"))
 BG = np.array([48, 52, 60], float)

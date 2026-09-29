@@ -14,6 +14,9 @@ rig = bpy.data.objects["UO_Rig"]
 
 
 def transfer(ob):
+    if body.data.shape_keys is None:                                  # v13 body: no corrections, nothing to copy
+        print("uo_transfer_corrections: UO_Body has no corrective shape keys - nothing to do for", ob.name)
+        return
     kb = body.data.shape_keys.key_blocks
     basis = np.array([v.co[:] for v in kb["Basis"].data], np.float64)
     body.data.calc_loop_triangles()

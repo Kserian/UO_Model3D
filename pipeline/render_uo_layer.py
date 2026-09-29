@@ -151,7 +151,9 @@ def render_px():
 def body_part_mask(parts):
     """body triangles (loop_triangles order) whose dominant bone is one of `parts` (names without .L / .R)"""
     me = body.data
+    sub = {"upper_arm_twist": "upper_arm", "forearm_twist": "forearm", "toe": "foot"}   # v13 extra bones
     names = [g.name.split(".")[0] for g in body.vertex_groups]
+    names = ["hand" if n.startswith("finger") else sub.get(n, n) for n in names]
     W = np.zeros((len(me.vertices), len(names)))
     for v in me.vertices:
         for g in v.groups:
