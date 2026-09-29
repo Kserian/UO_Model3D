@@ -195,7 +195,9 @@ items into it, not the other way round.
         frames (0 = pure cloth, 1 = no cloth). `MATERIAL`: `silk`, `cotton`, `wool` or `leather`.
       - Every action is simulated on its own. The cloth first settles for `PREROLL` frames in the first pose.
         Actions the game loops (walk, run, stand) run `LOOP_CYCLES` times and the last cycle is kept, so the loop
-        has no jump. Mounted actions are not simulated (the horse is not a collider).
+        has no jump. In the mounted actions the horse of each frame (collection `Horse_Proxy`) is an obstacle too.
+      - `CHAIN_SWING` (0.5): how much of the UO chains' swing the cloth follows; lower = calmer in fast actions
+        (war walk, run).
       - After the simulation every frame is checked against the real body: parts inside the skin or closer
         than `FIX_GAP` (4 mm) are pushed out smoothly, so the skin never shows through the cloth.
       - The result goes to `uo_cloth/<item>.npz` next to the `.blend`. `render_uo_layer.py` uses it automatically,

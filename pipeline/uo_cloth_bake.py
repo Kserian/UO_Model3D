@@ -5,7 +5,7 @@
 #    is pinned and follows the skeleton exactly.
 # 2. Every UO action is simulated on its own: the item first settles for PREROLL frames in the action's first pose;
 #    looping actions (walk, run, stand) run LOOP_CYCLES times and the last cycle is kept, so the loop has no jump.
-#    Mounted actions are not simulated (the horse is not a collider) - they keep the bound result.
+#    In the mounted actions the horse (collection Horse_Proxy, one shape per frame) is a collider too.
 # 3. The result is saved next to the .blend (OUT_DIR/<item>.npz). render_uo_layer.py uses it automatically; after
 #    the bake, playing an action in the viewport shows it too (run the script again with BAKE = False to get that
 #    preview back after reopening the file). To go back to the plain bound item, run it with REMOVE = True.
@@ -16,13 +16,14 @@ import bpy
 import os
 import numpy as np
 import bmesh
-from mathutils import Vector
+from mathutils import Vector, Matrix, Quaternion
 from mathutils.bvhtree import BVHTree
 
 MATERIAL = "wool"     # silk, cotton, wool, leather (how light / flowing -> heavy / stiff the cloth is)
 SIM_VERTS = 4000      # the simulated copy has about this many vertices (more = finer folds, slower)
 ACTIONS = []          # e.g. ["00_walk_unarmed", "04_stand"]; empty = all actions on foot
-LOOP_ACTIONS = [0, 1, 2, 3, 4, 7, 8]   # UO actions the game loops (walk, run, stand, combat idle)
+LOOP_ACTIONS = [0, 1, 2, 3, 4, 7, 8, 23, 24, 25]   # UO actions the game loops (walk, run, stand, combat idle)
+MOUNTED = True        # mounted actions too: the horse of every frame (collection Horse_Proxy) pushes the cloth
 LOOP_CYCLES = 3       # looping actions: cycles simulated, the last one is kept
 PREROLL = 40          # frames the cloth settles in the first pose of an action (at 24 fps)
 QUALITY = 8           # cloth steps per frame (more = fewer tunnelling problems in fast attacks, slower)
@@ -30,6 +31,9 @@ GOAL = 0.5            # 0..1: how strongly the hanging part is pulled towards th
                       # fitted to the original UO robe / skirt / cloak frames): 0 = pure cloth, 1 = no cloth at all
 SELF_COLLISION = True # layers of the item (a coat over a tunic) collide with each other, so the inner one never
                       # shows through the outer one (slower)
+CHAIN_SWING = 0.5     # 0..1: how much of the cloth chains' swing (fitted to the UO sprites) the cloth is pulled
+                      # towards; lower = calmer cloth in fast actions (war walk, run)
+FRICTION = 1.0        # how much the cloth sticks to the body (lower: it slides off a leg instead of being dragged)
 TIE = 0.03            # m: separate pieces of the item (layers, a skirt under a belt) closer than this are tied
                       # together, so no piece falls off
 DISTANCE = 0.012      # m, the cloth keeps this far from the body
@@ -196,7 +200,7 @@ def colliders():
     col.modifiers.remove(dec); old = col.data; col.data = me; bpy.data.meshes.remove(old)
     arm = col.modifiers.new("Armature", "ARMATURE"); arm.object = rig
     col.modifiers.new("UO_Collision", "COLLISION")
-    col.collision.thickness_outer = DISTANCE; col.collision.cloth_friction = 5.0
+    col.collision.thickness_outer = DISTANCE; col.collision.cloth_friction = FRICTION
     made.append(("obj", col, None))
     me = bpy.data.meshes.new("UO_Floor")
     me.from_pydata([(-3, -3, 0), (3, -3, 0), (3, 3, 0), (-3, 3, 0)], [], [(0, 1, 2, 3)])
@@ -204,6 +208,36 @@ def colliders():
     fl.modifiers.new("UO_Collision", "COLLISION"); fl.collision.thickness_outer = DISTANCE
     made.append(("obj", fl, None))
     return made
+
+
+def horse_shapes(a, nf):
+    """the horse proxy of every UO frame of a mounted action, as ONE mesh topology (frame 0's) moved onto each frame's
+    surface, so it can be a moving collider; None if the file has no horse for this action"""
+    hs = [bpy.data.objects.get("Horse_a%d_f%d" % (a, i)) for i in range(nf)]
+    if not hs or any(h is None for h in hs):
+        return None
+    def world(h):
+        co = local_co(h.data); M = np.array(h.matrix_world)
+        return co @ M[:3, :3].T + M[:3, 3]
+    base = world(hs[0]); out = [base]
+    for h in hs[1:]:
+        h.data.calc_loop_triangles()
+        bvh = BVHTree.FromPolygons([Vector(p) for p in world(h)], [t.vertices[:] for t in h.data.loop_triangles])
+        out.append(np.array([bvh.find_nearest(Vector(p))[0][:] for p in base]))
+    return hs[0], out
+
+
+def horse_collider(a, nf):
+    hs = horse_shapes(a, nf)
+    if hs is None:
+        return None, None
+    src, shapes = hs
+    me = src.data.copy(); me.name = "UO_Horse_uo_collider"
+    col = bpy.data.objects.new("UO_Horse_uo_collider", me); sc.collection.objects.link(col); col.hide_render = True
+    me.vertices.foreach_set("co", shapes[0].astype(np.float32).ravel()); me.update()
+    col.modifiers.new("UO_Collision", "COLLISION"); col.collision.thickness_outer = DISTANCE
+    col.collision.cloth_friction = FRICTION
+    return col, shapes
 
 
 def poses(act, times):
@@ -231,17 +265,29 @@ def simulate(sim, act):
     times = [f0] * PREROLL + [t_of(k) for k in range(run)]
     P = poses(act, times)
     rig.animation_data.action = None
+    horse, shapes = horse_collider(a, nf) if 23 <= a <= 29 else (None, None)
     add_cloth(sim, total)
     want = {keep0 + 1 + i * STEP: i for i in range(nf)}
     out = {}
+    chain = [pb.name.startswith(CHAIN) for pb in rig.pose.bones]
     for s in range(1, total + 1):
-        for pb, m in zip(rig.pose.bones, P[times[s - 1]]):
+        for pb, m, ch in zip(rig.pose.bones, P[times[s - 1]], chain):
+            if ch and CHAIN_SWING < 1:                                # calmer chains: part of the way to rest
+                loc, q, sca = m.decompose()
+                m = Matrix.LocRotScale(loc, q.slerp(Quaternion(), 1 - CHAIN_SWING), sca)
             pb.matrix_basis = m
+        if horse is not None:                                         # the horse of this moment (blend of 2 frames)
+            u = (times[s - 1] - f0) / STEP; j0 = int(np.floor(u)); w = u - j0
+            j1 = (j0 + 1) % nf if a in LOOP_ACTIONS else min(j0 + 1, nf - 1); j0 = min(j0, nf - 1)
+            horse.data.vertices.foreach_set("co", ((1 - w) * shapes[j0] + w * shapes[j1]).astype(np.float32).ravel())
+            horse.data.update()
         sc.frame_set(s)
         if s in want:
             dg = bpy.context.evaluated_depsgraph_get()
             ev = sim.evaluated_get(dg); me = ev.to_mesh()
             out[want[s]] = local_co(me).astype(np.float32); ev.to_mesh_clear()
+    if horse is not None:
+        me = horse.data; bpy.data.objects.remove(horse); bpy.data.meshes.remove(me)
     return out
 
 
@@ -350,6 +396,12 @@ def fix_pass(item, data, done):
             dg = bpy.context.evaluated_depsgraph_get()
             ev = body.evaluated_get(dg); me = ev.to_mesh(); bco = local_co(me)
             me.calc_loop_triangles(); btri = [t.vertices[:] for t in me.loop_triangles]; ev.to_mesh_clear()
+            hz = bpy.data.objects.get("Horse_a%d_f%d" % (a, i)) if 23 <= a <= 29 else None
+            if hz is not None:                                        # mounted: the horse of this frame too
+                Hm = np.array(body.matrix_world.inverted() @ hz.matrix_world); hco = local_co(hz.data)
+                hz.data.calc_loop_triangles()
+                btri = btri + [tuple(k + len(bco) for k in t.vertices) for t in hz.data.loop_triangles]
+                bco = np.r_[bco, hco @ Hm[:3, :3].T + Hm[:3, 3]]
             bvh = BVHTree.FromPolygons([Vector(p) for p in bco], btri)
             M = np.array(body.matrix_world.inverted() @ item.matrix_world)
             co = apply_binding(data["a%d_f%d" % (a, i)].astype(np.float64), data["tris"], data["fi"], data["bc"],
@@ -480,7 +532,7 @@ def bake(item):
         try:
             for act in acts:
                 a = int(act["uo_action"])
-                if (ACTIONS and act.name not in ACTIONS) or 23 <= a <= 29:
+                if (ACTIONS and act.name not in ACTIONS) or (23 <= a <= 29 and not MOUNTED):
                     continue
                 res = simulate(sim, act)
                 for i, co in res.items():

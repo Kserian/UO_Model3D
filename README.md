@@ -190,7 +190,9 @@ do niego swoje przedmioty, a nie odwrotnie.
         (0 = czysta tkanina, 1 = bez tkaniny). `MATERIAL`: `silk`, `cotton`, `wool` albo `leather`.
       - Każda akcja jest liczona osobno. Najpierw materiał układa się przez `PREROLL` klatek w pierwszej pozie.
         Akcje zapętlone w grze (chód, bieg, stanie) są liczone `LOOP_CYCLES` razy i brany jest ostatni cykl, więc
-        pętla nie skacze. Akcje konne zostają bez symulacji (koń nie jest przeszkodą dla materiału).
+        pętla nie skacze. W akcjach konnych przeszkodą jest też koń z danej klatki (kolekcja `Horse_Proxy`).
+      - `CHAIN_SWING` (0,5): jak bardzo materiał idzie za rozkołysem łańcuchów z UO; mniej = spokojniejszy w szybkich
+        akcjach (chód bojowy, bieg).
       - Po symulacji każda klatka jest sprawdzana z prawdziwym ciałem: miejsca, które weszły w skórę albo są bliżej
         niż `FIX_GAP` (4 mm), są płynnie wypychane, więc skóra nie przebija przez materiał.
       - Wynik trafia do `uo_cloth/<przedmiot>.npz` obok pliku `.blend`. `render_uo_layer.py` używa go sam, a po
