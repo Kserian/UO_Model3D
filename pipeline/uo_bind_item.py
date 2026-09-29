@@ -38,10 +38,11 @@ PARTS = {
     "skirt":     (["pelvis", "spine", "thigh.L", "thigh.R"], {}),              # skirt, kilt: all on the skirt chains
     "cloak":     (["chest", "spine", "neck", "clavicle.L", "clavicle.R"], {}), # cloak, cape: all on the cloak chains
     "robe":      (None, {"hand": 0.0, "foot": 0.0, "head": 0.0}),              # robe, dress: top like the skin,
-}                                                                              # below the waist the skirt chains
+}                                                                              # below the waist the skirt chains,
+                                                                               # sleeves on the arms at any height
 # PART -> (cloth template object, height band in m over which the item goes from the body weights to the template
 # weights below the template's top; None = template weights only)
-CLOTH = {"skirt": ("UO_Template_Skirt", None), "cloak": ("UO_Template_Cloak", None), "robe": ("UO_Template_Skirt", 0.15)}
+CLOTH = {"skirt": ("UO_Template_Skirt", None), "cloak": ("UO_Template_Cloak", None), "robe": ("UO_Template_Skirt", 0.35)}
 # rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
 # weapons (right hand), shields (left forearm), bows (left hand), quivers (back)
 RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "shield": "forearm.L",
@@ -85,7 +86,8 @@ def body_regions(allowed):
 
 
 def cloth_blend(co, wv, bones, tpl_name, band):
-    """blend the body weights with the weights of the nearest point of the cloth template (all in body space)"""
+    """blend the body weights with the weights of the nearest point of the cloth template (all in body space); with a
+    band (robe) the parts on the arms (sleeves) keep the body weights at any height"""
     tpl = bpy.data.objects.get(tpl_name)
     if tpl is None:
         raise RuntimeError("cloth template %s not found (v13 body file)" % tpl_name)
@@ -113,7 +115,9 @@ def cloth_blend(co, wv, bones, tpl_name, band):
         h = np.ones(len(co))
     else:
         top = tco[:, 2].max()
+        arm = wv[:, [j for j, b in enumerate(bones) if group_of(b).split(".")[0] in ("upper_arm", "forearm", "hand")]].sum(1)
         h = np.clip((top - co[:, 2]) / band, 0, 1)
+        h = h * h * (3 - 2 * h) * np.clip(1 - 2 * arm, 0, 1)             # smooth; sleeves stay on the arms
     names = list(bones) + [b for b in tn if b not in bones]
     out = np.zeros((len(co), len(names)))
     out[:, :len(bones)] = wv * (1 - h)[:, None]

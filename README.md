@@ -159,7 +159,7 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"helm"` | hełm, kaptur, maska | head |
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
       | `"all"` | cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
-      | `"robe"` | szata, suknia | góra jak skóra, od pasa w dół łańcuchy spódnicy (płynne przejście 15 cm) |
+      | `"robe"` | szata, suknia | góra jak skóra, od pasa w dół łańcuchy spódnicy (płynne przejście 35 cm); rękawy zawsze za rękami |
       | `"skirt"` | spódnica, kilt | łańcuchy `skirt_*` (szablon `UO_Template_Skirt`) |
       | `"cloak"` | płaszcz, peleryna | łańcuchy `cloak_*` + karczek na barkach (szablon `UO_Template_Cloak`) |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |

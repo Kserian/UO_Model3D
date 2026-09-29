@@ -163,7 +163,7 @@ items into it, not the other way round.
       | `"helm"` | helmet, hood, mask | head |
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | full suit in one object | skin under it, every bone |
-      | `"robe"` | robe, dress | top like the skin, from the waist down the skirt chains (15 cm smooth transition) |
+      | `"robe"` | robe, dress | top like the skin, from the waist down the skirt chains (35 cm smooth transition); sleeves always follow the arms |
       | `"skirt"` | skirt, kilt | the `skirt_*` chains (template `UO_Template_Skirt`) |
       | `"cloak"` | cloak, cape | the `cloak_*` chains + a yoke over the shoulders (template `UO_Template_Cloak`) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
