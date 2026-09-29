@@ -159,14 +159,15 @@ def match_arms(Q, edges, gbvh):
                         c_ += 4 * max(0.0, (r + 0.01 - hit[3]) / r) ** 2   # the item cuts into the arm
         return (miss, len(dirs) * 8) if misses else c_ + 2.0 * float(np.sum(np.square(x)))
 
+    tried = []
     for sd in arms.side:
-        g = np.radians(np.arange(-MAX_TURN, MAX_TURN + 0.1, 2.5))
-        best = min(((cost(sd, (u, f, 0.0)), (u, f, 0.0)) for u in g for f in g if abs(f) <= np.radians(25)),
-                   key=lambda r: r[0])
-        ge = np.radians(np.arange(-10, 60.1, 2.5))                      # elbow: -10 (straighter) .. 60 deg bent
-        best = min([best] + [(cost(sd, (best[1][0], best[1][1], e)), (best[1][0], best[1][1], e)) for e in ge], key=lambda r: r[0])
-        f, x = best
-        for st in np.radians([2.0, 1.0, 0.5]):                         # refine
+        g = np.radians(np.arange(-MAX_TURN, MAX_TURN + 0.1, 5.0))
+        ge = np.radians(np.arange(-10, 60.1, 10.0))                     # elbow: -10 (straighter) .. 60 deg bent
+        cand = [(cost(sd, (u, f, e)), (u, f, e)) for u in g for f in g if abs(f) <= np.radians(25) for e in ge]
+        cand += [(cost(sd, tuple(x)), tuple(x)) for x in tried]        # the other sleeve's answer (same numbers = mirrored)
+        f, x = min(cand, key=lambda r: r[0])                           # up, forward and elbow together: a sleeve made
+        x = list(x)                                                    # with a bent elbow is found from any start
+        for st in np.radians([4.0, 2.0, 1.0, 0.5]):                    # refine
             imp = True
             while imp:
                 imp = False
@@ -176,6 +177,7 @@ def match_arms(Q, edges, gbvh):
                         fy = cost(sd, y)
                         if fy < f - 1e-9:
                             f, x, imp = fy, y, True
+        tried.append(tuple(x))
         miss, rays = cost(sd, x, True)
         if miss > rays // 8:                                           # no sleeve around this arm (vest, cuirass)
             continue
