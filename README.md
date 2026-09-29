@@ -117,6 +117,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_fit_item.py` | Obraca rękawy zaznaczonego przedmiotu na ręce i wypycha go ze skóry (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
 | `uo_cloth_bake.py` | Symulacja tkaniny dla szat, sukni, spódnic i płaszczy, po `uo_bind_item.py` (rozdział 3). |
+| `uo_shield_keys.py` | Podmienia ruch kości tarczy `shield.L` w starszym pliku na najnowszy (tarcza i jej podpięcie zostają). |
 | `uo_place_shield.py` | Stawia zaznaczoną tarczę na lewym przedramieniu jak w UO i dosuwa ją do ręki (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
@@ -363,7 +364,8 @@ na ręce) tak samo dobrze jak poprzedni model z korektami. **Materiał:** spódn
 4. **Dłoń i broń:** chwyt miecza skalibrowany na oryginalnych klatkach katany (anim 627), potem obrót dłoni w każdej
    klatce tak, żeby klinga pokrywała się z oryginałem. Tarcza: kość `shield.L` (dziecko `forearm.L`), jej
    obrót i przesunięcie dopasowane w każdej klatce do oryginalnej tarczy (anim 582) we wszystkich 5 kierunkach naraz
-   (IoU z oryginałem średnio 0,48 → 0,75).
+   (IoU z oryginałem średnio 0,48 → 0,76); lico tarczy od ciała, góra do góry (dwie kary w dopasowaniu), tarcza może
+   odsunąć się od przedramienia, gdy ręka modelu rusza się inaczej niż tarcza UO.
 5. **Konno:** jeździec widoczny tylko tam, gdzie jest przed koniem, i nie może wchodzić w bryłę konia.
 6. **Materiał:** łańcuchy kości spódnicy i płaszcza dopasowane klatka po klatce do oryginalnych klatek spódnicy (449)
    i płaszcza (468), z zasłanianiem przez ciało, bez przenikania nóg i konia.

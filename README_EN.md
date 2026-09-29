@@ -121,6 +121,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_fit_item.py` | Turns the selected item's sleeves onto the arms and pushes it out of the skin (before `uo_bind_item.py`, section 3). |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
 | `uo_cloth_bake.py` | Cloth simulation for robes, dresses, skirts and cloaks, after `uo_bind_item.py` (section 3). |
+| `uo_shield_keys.py` | Replaces the motion of the shield bone `shield.L` in an older file with the latest one (the shield and its binding stay). |
 | `uo_place_shield.py` | Puts the selected shield on the left forearm as UO holds it and slides it onto the arm (before `uo_bind_item.py`, section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
@@ -370,7 +371,8 @@ model with its corrections. **Cloth:** skirt IoU 0.83 (mounted 0.62), cloak 0.73
 4. **Hand and weapon:** the sword grip calibrated on the original katana frames (anim 627), then the hand's rotation in
    every frame so that the blade covers the original. The shield: bone `shield.L` (child of `forearm.L`),
    its turn and shift fitted in every frame to the original shield (anim 582) in all 5 directions at once (IoU with
-   the original 0.48 -> 0.75 on average).
+   the original 0.48 -> 0.76 on average); its face away from the body and its top up (two penalties in the fit),
+   and it may move off the forearm where the model's arm moves differently from the UO shield.
 5. **Mounted:** the rider is seen only where it is in front of the horse and must not enter the horse volume.
 6. **Cloth:** the skirt and cloak bone chains fitted frame by frame to the original skirt (449) and cloak (468) frames,
    hidden by the body, without entering the legs or the horse.
