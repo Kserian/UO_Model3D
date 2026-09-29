@@ -139,7 +139,7 @@ do niego swoje przedmioty, a nie odwrotnie.
 
       | `PART` | Przedmiot | Za czym idzie |
       |---|---|---|
-      | `"chest"` | napierśnik, kamizelka, tunika | skóra pod spodem; bark w 80% na obojczyku (ręka rusza się pod pancerzem), dół w 70% za miednicą |
+      | `"chest"` | napierśnik, kamizelka, tunika | skóra pod spodem; naramiennik na barku w 80% na obojczyku, rękaw niżej na ramieniu za ręką (płynne przejście), dół w 70% za miednicą |
       | `"torso"` | coś tylko na tułowiu | pelvis, spine, chest, neck |
       | `"shoulders"` | naramienniki | chest, upper_arm |
       | `"arms"` | rękawy, osłony ramion | upper_arm, forearm |
@@ -150,8 +150,8 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
       | `"all"` | szata, płaszcz, cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
 
-      Dla `"chest"` bark ustawiasz w linii tego typu: `"upper_arm": 0.2` to udział ramienia (mniej = pancerz
-      sztywniej na barku, więcej = bardziej za ręką), `"thigh": 0.3` to udział ud przy dolnej krawędzi.
+      Dla `"chest"` bark ustawiasz w linii tego typu: `"upper_arm": (0.2, 0.15, 0.45)` = przy stawie 20% za ręką,
+      od 45% długości ramienia 100% (rękaw), pomiędzy płynnie. `"thigh": (0.3, 0.1, 0.4)` tak samo dla ud i poł.
 
    4. Skrypt robi parent do `UO_Rig`, modyfikator *Armature*, wagi i kopiuje korekty kształtu z tej samej skóry,
       więc przedmiot rusza się razem ze skórą pod nim. Uruchom go ponownie po każdej zmianie kształtu przedmiotu. Stare wagi i klucze `uo_`

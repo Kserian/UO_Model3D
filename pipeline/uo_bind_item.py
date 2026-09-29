@@ -18,11 +18,13 @@ SMOOTH = 4            # smoothing passes of weights and corrections over the ite
 MAX_DIST = 0.15       # m, farthest skin an item vertex may follow along its normal
 CORR_KEEP = 0.0       # 0..1: share of the skin corrections kept where FOLLOW moved weight to a parent bone
 # PART: (bones the item may follow - None = all, FOLLOW = share of a limb bone's weight that stays on it; the rest goes
-# to its parent bone: hand->forearm->upper_arm->clavicle, foot->shin->thigh->pelvis, head->neck)
+# to its parent bone: hand->forearm->upper_arm->clavicle, foot->shin->thigh->pelvis, head->neck). A FOLLOW of
+# (share, t0, t1) grows along the bone: `share` near its joint (up to t0 of the bone length), 1.0 from t1 on - so in
+# "chest" the pauldron on the shoulder rides on the collarbone while the sleeve further down follows the arm.
 PARTS = {
     "all":       (None, {}),                                                   # robe, cloak, full suit: like the skin
-    "chest":     (None, {"upper_arm": 0.2, "forearm": 0.0, "hand": 0.0,        # breastplate, vest, tunic: shoulders ride
-                         "thigh": 0.3, "shin": 0.0, "foot": 0.0, "head": 0.0}),  # on the collarbones, arms move under it
+    "chest":     (None, {"upper_arm": (0.2, 0.15, 0.45), "hand": 0.0,           # breastplate / armour with
+                         "thigh": (0.3, 0.1, 0.4), "foot": 0.0, "head": 0.0}),    # pauldrons and sleeves
     "torso":     (["pelvis", "spine", "chest", "neck"], {}),                   # torso skin only
     "shoulders": (["chest", "upper_arm.L", "upper_arm.R"], {}),                # pauldrons
     "arms":      (["upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R"], {}),   # sleeves, arm armour
@@ -121,7 +123,14 @@ def bind(ob, allowed):
             if b not in bones or pb not in rig.data.bones:
                 continue
             j = bones.index(b)
-            mv = wv[:, j] * (1 - FOLLOW[base])
+            f = FOLLOW[base]
+            if isinstance(f, tuple):                                 # share grows along the bone (t = 0 joint, 1 end)
+                bone = rig.data.bones[b]
+                to_body = body.matrix_world.inverted() @ rig.matrix_world
+                h, t_ = np.array(to_body @ bone.head_local), np.array(to_body @ bone.tail_local)
+                t = ((co - h) @ (t_ - h)) / max(((t_ - h) ** 2).sum(), 1e-12)
+                f = f[0] + (1 - f[0]) * np.clip((t - f[1]) / max(f[2] - f[1], 1e-6), 0, 1)
+            mv = wv[:, j] * (1 - f)
             wv[:, j] -= mv; moved += mv
             if pb in bones:
                 wv[:, bones.index(pb)] += mv

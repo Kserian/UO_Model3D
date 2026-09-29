@@ -143,7 +143,7 @@ items into it, not the other way round.
 
       | `PART` | Item | What it follows |
       |---|---|---|
-      | `"chest"` | breastplate, vest, tunic | skin under it; shoulders 80% on the collarbones (the arm moves under the armour), bottom 70% on the pelvis |
+      | `"chest"` | breastplate, vest, tunic | skin under it; pauldron on the shoulder 80% on the collarbone, sleeve further down the arm follows the arm (smooth transition), bottom 70% on the pelvis |
       | `"torso"` | something on the torso only | pelvis, spine, chest, neck |
       | `"shoulders"` | pauldrons | chest, upper_arm |
       | `"arms"` | sleeves, arm armour | upper_arm, forearm |
@@ -154,8 +154,8 @@ items into it, not the other way round.
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | robe, cloak, full suit in one object | skin under it, every bone |
 
-      For `"chest"` the shoulder is set in that type's line: `"upper_arm": 0.2` is the arm's share (less = armour
-      stays stiffer on the shoulder, more = follows the arm more), `"thigh": 0.3` is the thighs' share at the lower edge.
+      For `"chest"` the shoulder is set in that type's line: `"upper_arm": (0.2, 0.15, 0.45)` = 20% on the arm at the
+      joint, 100% from 45% of the arm's length (the sleeve), smooth in between. `"thigh": (0.3, 0.1, 0.4)` likewise for the thighs.
 
    4. The script parents the item to `UO_Rig`, adds the *Armature* modifier, sets the weights and copies the shape
       corrections from the same skin, so the item moves with the skin under it. Run it again after every change to the
@@ -400,7 +400,8 @@ HOLDOUT    : clothing layer = Cycles render without the body; own z-buffer raste
              in OCCLUDERS (no torso); transparent patches <= FILL_HOLES px fully
              surrounded by the item are filled (from the render without the body, else the neighbours' colour).
 BIND FOLD  : uo_bind_item PARTS[...][1] = share of a limb bone's weight kept; the rest moves to the parent bone
-             (hand>forearm>upper_arm>clavicle, foot>shin>thigh>pelvis, head>neck); "chest" = upper_arm 0.2, thigh 0.3.
+             (hand>forearm>upper_arm>clavicle, foot>shin>thigh>pelvis, head>neck); a tuple (share, t0, t1) ramps the share along the bone; "chest" =
+             upper_arm (0.2, 0.15, 0.45), thigh (0.3, 0.1, 0.4).
 MOUNTED    : horse = body 0xC8; rider->horse action pairing 23->0, 24->1, 25..29->2. Objects Horse_a{action}_f{frame}
              (holdout proxies, parented to UO_Rig) + text "uo_horse_masks.json" (key "action,frame,dir" ->
              base64(zlib(packbits(120x136 bool)))). Hiding happens only inside the horse silhouette.
