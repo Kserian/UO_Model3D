@@ -9,8 +9,9 @@
 # 3. The result is saved next to the .blend (OUT_DIR/<item>.npz). render_uo_layer.py uses it automatically; after
 #    the bake, playing an action in the viewport shows it too (run the script again with BAKE = False to get that
 #    preview back after reopening the file). To go back to the plain bound item, run it with REMOVE = True.
-# Bake again after changing the item, its fit or its binding. All actions take about 15-30 minutes; the progress
-# is printed in the system console (Window > Toggle System Console), one line per action.
+# Bake again after changing the item, its fit or its binding. All actions take about 20-40 minutes; the progress
+# is printed in the system console (Window > Toggle System Console), one line per action for the simulation and
+# again for the check against the body (FIX_GAP).
 import bpy
 import os
 import numpy as np
@@ -332,6 +333,7 @@ def fix_pass(item, data, done):
             data["d%d_f%d_i" % (a, i)] = idx.astype(np.int32)
             data["d%d_f%d_v" % (a, i)] = D[idx].astype(np.float16)
             moved = max(moved, len(idx))
+        print("uo_cloth_bake: %s %s: checked against the body" % (item.name, act.name))
     print("uo_cloth_bake: %s pushed out of the body (up to %d points per frame)" % (item.name, moved))
 
 
