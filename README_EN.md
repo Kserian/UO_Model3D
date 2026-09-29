@@ -242,6 +242,8 @@ items into it, not the other way round.
    DESPECKLE = 28              # single dark dots inside the item (deep details, rivets) take the colour around
                                # them (0 = off)
    FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled (0 = off)
+   MIN_PIECE = 8               # detached bits of the item under 8 px (a collar / cuff rim cut off by the head or a
+                               # hand) are removed; the biggest piece always stays (0 = off)
    ```
 3. Run **Run Script** (Alt+P). A full layer is 1050 frames, about 15–30 minutes on a CPU. A clothing layer is rendered
    without the body, and the script works out from depth what the body hides (with `HOLDOUT_MARGIN = 0` every frame
@@ -490,7 +492,8 @@ BODY       : UO_Body = MakeHuman mesh (13380 verts, UVs), no shape keys. Items: 
 HOLDOUT    : clothing layer = Cycles render without the body; own z-buffer raster of body and items; the body hides a
              pixel where depth_body < depth_item - HOLDOUT_MARGIN (0.01 m), using only body triangles whose dominant bone is
              in OCCLUDERS (no torso); transparent patches <= FILL_HOLES px fully
-             surrounded by the item are filled (from the render without the body, else the neighbours' colour).
+             surrounded by the item are filled (from the render without the body, else the neighbours' colour);
+             8-connected pieces < MIN_PIECE px other than the biggest are cleared after the UO post-process.
 BIND FOLD  : uo_bind_item PARTS[...][1] = share of a limb bone's weight kept; the rest moves to the parent bone
              (hand>forearm>upper_arm>clavicle, foot>shin>thigh>pelvis, head>neck); a tuple (share, t0, t1) ramps the share along the bone; "chest" =
              upper_arm (0.2, 0.15, 0.45), thigh (0.3, 0.1, 0.4).

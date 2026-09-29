@@ -237,6 +237,8 @@ do niego swoje przedmioty, a nie odwrotnie.
    DESPECKLE = 28              # pojedyncze ciemne kropki w środku przedmiotu (głębokie detale, nity) dostają kolor
                                # otoczenia (0 = wył.)
    FILL_HOLES = 4              # dziurki do 4 px otoczone przedmiotem są wypełniane (0 = wył.)
+   MIN_PIECE = 8               # oderwane kawałki przedmiotu mniejsze niż 8 px (brzeg kołnierza / mankietu uciętego
+                               # przez głowę lub dłoń) są usuwane; największy kawałek zostaje zawsze (0 = wył.)
    ```
 3. Uruchom **Run Script** (Alt+P). Pełna warstwa to 1050 klatek, ok. 15–30 min na CPU. Warstwa ubrania renderuje się
    bez ciała, a to, co ciało zasłania, skrypt liczy z głębokości (z `HOLDOUT_MARGIN = 0` każda klatka renderuje się

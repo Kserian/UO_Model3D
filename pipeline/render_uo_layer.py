@@ -39,6 +39,8 @@ DESPECKLE = 28                     # clothing: single dark pixels inside the ite
                                    # turn into black dots at UO size. 0 = off
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
                                    # poking through or a gap in the item mesh, not a real occluder. 0 = off
+MIN_PIECE = 8                      # px: detached bits of the item smaller than this are removed (collar or cuff rims cut
+                                   # off by the head or a hand read as dirt at UO size); the biggest piece always stays. 0 = off
 
 
 sc = bpy.context.scene
@@ -382,6 +384,31 @@ def despeckle(img, thr, passes=2):
     return out
 
 
+def drop_small_pieces(img, min_px):
+    """uint8 RGBA: detached pieces of the item (8-connected) smaller than min_px -> transparent, except the biggest"""
+    m = img[..., 3] > 0; H, W = m.shape
+    seen = np.zeros_like(m); pieces = []
+    for y0, x0 in zip(*np.nonzero(m)):
+        if seen[y0, x0]:
+            continue
+        comp = [(y0, x0)]; seen[y0, x0] = True; k = 0
+        while k < len(comp):
+            cy, cx = comp[k]; k += 1
+            for ny in (cy - 1, cy, cy + 1):
+                for nx in (cx - 1, cx, cx + 1):
+                    if 0 <= ny < H and 0 <= nx < W and m[ny, nx] and not seen[ny, nx]:
+                        seen[ny, nx] = True
+                        comp.append((ny, nx))
+        pieces.append(comp)
+    out = img.copy()
+    big = max(pieces, key=len) if pieces else None
+    for comp in pieces:
+        if len(comp) < min_px and comp is not big:
+            ys, xs = zip(*comp)
+            out[list(ys), list(xs)] = 0
+    return out
+
+
 def exact_clothing(hold, free, orig_body, cov):
     """Hide the item exactly where the ORIGINAL body is in front of it; the 3D model decides front/behind."""
     a_h, a_f = hold[..., 3] >= 0.5, free[..., 3] >= 0.5
@@ -433,11 +460,15 @@ for act in acts:
                 rgba = uo_post(px)
                 if DESPECKLE > 0:
                     rgba = despeckle(rgba, DESPECKLE)
+                if MIN_PIECE > 0:
+                    rgba = drop_small_pieces(rgba, MIN_PIECE)
             elif LAYER == "clothing":
                 px = render_frame(a, i, d, "holdout")
                 if EXACT_BODY and orig is not None:
                     px = exact_clothing(px, render_frame(a, i, d, "hidden"), orig_m, body_coverage())
                 rgba = uo_post(px)
+                if MIN_PIECE > 0:
+                    rgba = drop_small_pieces(rgba, MIN_PIECE)
             else:
                 px = render_frame(a, i, d, "visible")
                 rgba = uo_post(px, keep=orig_m if (EXACT_COLORS and orig_m is not None) else None)
