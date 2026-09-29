@@ -57,6 +57,10 @@ rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
 
 
+def log(msg):
+    print(msg, flush=True)
+
+
 def cache_path(ob):
     return bpy.path.abspath(OUT_DIR + bpy.path.clean_name(ob.name) + ".npz")
 
@@ -411,8 +415,8 @@ def fix_pass(item, data, done):
             data["d%d_f%d_i" % (a, i)] = idx.astype(np.int32)
             data["d%d_f%d_v" % (a, i)] = D[idx].astype(np.float16)
             moved = max(moved, len(idx))
-        print("uo_cloth_bake: %s %s: checked against the body" % (item.name, act.name))
-    print("uo_cloth_bake: %s pushed out of the body (up to %d points per frame)" % (item.name, moved))
+        log("uo_cloth_bake: %s %s: checked against the body" % (item.name, act.name))
+    log("uo_cloth_bake: %s pushed out of the body (up to %d points per frame)" % (item.name, moved))
 
 
 def fix_offsets(c, a, i, n):
@@ -505,6 +509,7 @@ def bake(item):
     if not bpy.data.filepath:
         raise RuntimeError("save the .blend first (the bake is written next to it)")
     rest(item)
+    log("uo_cloth_bake: %s - preparing (the first action line comes after a few minutes)" % item.name)
     state = dict(pose=rig.data.pose_position, act=rig.animation_data.action, frame=sc.frame_current,
                  d=rig.get("uo_direction", 0))
     rig.data.pose_position = "REST"; bpy.context.view_layer.update()
@@ -539,7 +544,7 @@ def bake(item):
                     data["a%d_f%d" % (a, i)] = co
                 data["frames_%d" % a] = np.array(len(res))
                 done.append(a)
-                print("uo_cloth_bake: %s %s: %d frames" % (item.name, act.name, len(res)))
+                log("uo_cloth_bake: %s %s: %d frames" % (item.name, act.name, len(res)))
         finally:
             for o in hidden:
                 o.hide_viewport = False
@@ -569,7 +574,7 @@ def bake(item):
     np.savez_compressed(p, **data)
     _cache.pop(p, None)
     item["uo_cloth"] = bpy.path.relpath(p)
-    print("uo_cloth_bake: %s -> %s (%d vertices simulated, %d pinned)" % (item.name, p, len(sim_rest), (pin > 0.99).sum()))
+    log("uo_cloth_bake: %s -> %s (%d vertices simulated, %d pinned)" % (item.name, p, len(sim_rest), (pin > 0.99).sum()))
 
 
 if __name__ == "__main__" and REMOVE:
@@ -577,10 +582,10 @@ if __name__ == "__main__" and REMOVE:
         rest(ob); del ob["uo_cloth"]
         if ob.data.shape_keys and "uo_cloth" in ob.data.shape_keys.key_blocks:
             ob.shape_key_remove(ob.data.shape_keys.key_blocks["uo_cloth"])
-        print("uo_cloth_bake: %s back to the bound item" % ob.name)
+        log("uo_cloth_bake: %s back to the bound item" % ob.name)
 elif __name__ == "__main__":
     if BAKE:
         for ob in [o for o in bpy.context.selected_objects if o.type == "MESH" and o != body and "_uo_sim" not in o.name]:
             bake(ob)
     enable_preview()
-    print("uo_cloth_bake: viewport preview on (play an action of UO_Rig in Pose Position)")
+    log("uo_cloth_bake: viewport preview on (play an action of UO_Rig in Pose Position)")
