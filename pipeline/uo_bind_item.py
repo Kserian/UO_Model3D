@@ -45,7 +45,7 @@ PARTS = {
 CLOTH = {"skirt": ("UO_Template_Skirt", None), "cloak": ("UO_Template_Cloak", None), "robe": ("UO_Template_Skirt", 0.35)}
 # rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
 # weapons (right hand), shields (left forearm), bows (left hand), quivers (back)
-RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "shield": "forearm.L",
+RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "shield": "shield.L",
          "bow": "hand.L", "crossbow": "hand.R", "quiver": "chest"}
 PARENT = {"hand": "forearm", "forearm": "upper_arm", "upper_arm": "clavicle", "foot": "shin", "shin": "thigh",
           "thigh": "pelvis", "head": "neck"}
@@ -285,7 +285,10 @@ bpy.context.view_layer.update()
 try:
     for ob in [o for o in bpy.context.selected_objects if o.type == "MESH" and o != body]:
         if PART in RIGID:
-            bind_rigid(ob, RIGID[PART])
+            bone = RIGID[PART]
+            if bone not in rig.data.bones:                           # older file without the shield bone
+                bone = {"shield.L": "forearm.L"}.get(bone, bone)
+            bind_rigid(ob, bone)
         else:
             bind(ob, PARTS[PART][0])
 finally:

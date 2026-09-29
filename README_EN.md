@@ -170,7 +170,7 @@ items into it, not the other way round.
       | `"cloak"` | cloak, cape | the `cloak_*` chains + a yoke over the shoulders (template `UO_Template_Cloak`) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
       | `"weapon"` / `"weapon.L"` | weapon | rigid on `hand.R` / `hand.L` (UO holds weapons in the right hand) |
-      | `"shield"` | shield | rigid on `forearm.L` |
+      | `"shield"` | shield | rigid on `shield.L` (shield bone on the forearm, moves like the UO shield) |
       | `"bow"` / `"crossbow"` | bow / crossbow | rigid on `hand.L` / `hand.R` |
       | `"quiver"` | quiver | rigid on `chest` |
 
@@ -368,7 +368,9 @@ model with its corrections. **Cloth:** skirt IoU 0.83 (mounted 0.62), cloak 0.73
 3. **Poses:** every frame fitted to all 5 directions at once (own fast rasteriser + LBS like Blender's), alternating with
    the shape; limb girth (bone X/Z scale) and the clench of the hands are fitted per frame too.
 4. **Hand and weapon:** the sword grip calibrated on the original katana frames (anim 627), then the hand's rotation in
-   every frame so that the blade covers the original. The shield calibrated on the heater shield (anim 582).
+   every frame so that the blade covers the original. The shield: bone `shield.L` (child of `forearm.L`),
+   its turn and shift fitted in every frame to the original shield (anim 582) in all 5 directions at once (IoU with
+   the original 0.48 -> 0.75 on average).
 5. **Mounted:** the rider is seen only where it is in front of the horse and must not enter the horse volume.
 6. **Cloth:** the skirt and cloak bone chains fitted frame by frame to the original skirt (449) and cloak (468) frames,
    hidden by the body, without entering the legs or the horse.

@@ -1,5 +1,6 @@
-# Put the SELECTED shield on the left forearm the way UO holds a shield (calibrated on the original heater shield,
-# anim 582) and slide it towards the arm until its back touches the forearm. Run it from Blender's Text Editor.
+# Put the SELECTED shield on the left forearm the way UO holds a shield (the bone shield.L: fitted frame by frame to the
+# original UO shield, anim 582) and slide it towards the arm until its back touches the forearm. Run it from Blender's
+# Text Editor.
 # 1. Model / import the shield upright with its face towards the front view (Numpad 1), top up, point down.
 # 2. Select it and run this script (the body is put in Rest Position while it works, as it was afterwards).
 # 3. Then uo_bind_item.py with PART = "shield".
@@ -39,12 +40,15 @@ def arm_skin_bvh():
 
 
 def place(ob):
-    b = rig.data.bones["forearm.L"]
-    M = rig.matrix_world @ b.matrix_local; M3 = M.to_3x3()
-    c = M @ CENTRE
-    n = (M3 @ NORMAL).normalized()                                   # face of the shield
-    a = (M3 @ NORMAL.cross(Vector((0, 1, 0)))).normalized()          # its height axis (top = -a in Rest Position)
-    up = -a
+    if "shield.L" in rig.data.bones:                                  # the shield bone: X width, Y height (top), Z face
+        M = rig.matrix_world @ rig.data.bones["shield.L"].matrix_local; M3 = M.to_3x3().normalized()
+        c = M.translation.copy(); n = M3.col[2].normalized(); up = M3.col[1].normalized()
+    else:                                                             # older file: the calibrated disc on forearm.L
+        b = rig.data.bones["forearm.L"]
+        M = rig.matrix_world @ b.matrix_local; M3 = M.to_3x3()
+        c = M @ CENTRE
+        n = (M3 @ NORMAL).normalized()
+        up = -(M3 @ NORMAL.cross(Vector((0, 1, 0)))).normalized()
     y = -n                                                            # model -Y (front) -> n
     x = y.cross(up).normalized(); z = x.cross(y).normalized()
     R = Matrix((x, y, z)).transposed().to_4x4()

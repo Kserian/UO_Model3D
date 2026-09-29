@@ -166,7 +166,7 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"cloak"` | płaszcz, peleryna | łańcuchy `cloak_*` + karczek na barkach (szablon `UO_Template_Cloak`) |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |
       | `"weapon"` / `"weapon.L"` | broń | sztywno na `hand.R` / `hand.L` (UO trzyma broń w prawej dłoni) |
-      | `"shield"` | tarcza | sztywno na `forearm.L` |
+      | `"shield"` | tarcza | sztywno na `shield.L` (kość tarczy na przedramieniu, ruch jak tarcza z UO) |
       | `"bow"` / `"crossbow"` | łuk / kusza | sztywno na `hand.L` / `hand.R` |
       | `"quiver"` | kołczan | sztywno na `chest` |
 
@@ -361,7 +361,9 @@ na ręce) tak samo dobrze jak poprzedni model z korektami. **Materiał:** spódn
 3. **Pozy:** każda klatka dopasowana do 5 kierunków naraz (własny szybki rasteryzer + LBS jak w Blenderze), naprzemiennie
    z kształtem; grubość kończyn (skala X/Z kości) i zaciśnięcie dłoni też dopasowane w każdej klatce.
 4. **Dłoń i broń:** chwyt miecza skalibrowany na oryginalnych klatkach katany (anim 627), potem obrót dłoni w każdej
-   klatce tak, żeby klinga pokrywała się z oryginałem. Tarcza skalibrowana na tarczy heater (anim 582).
+   klatce tak, żeby klinga pokrywała się z oryginałem. Tarcza: kość `shield.L` (dziecko `forearm.L`), jej
+   obrót i przesunięcie dopasowane w każdej klatce do oryginalnej tarczy (anim 582) we wszystkich 5 kierunkach naraz
+   (IoU z oryginałem średnio 0,48 → 0,75).
 5. **Konno:** jeździec widoczny tylko tam, gdzie jest przed koniem, i nie może wchodzić w bryłę konia.
 6. **Materiał:** łańcuchy kości spódnicy i płaszcza dopasowane klatka po klatce do oryginalnych klatek spódnicy (449)
    i płaszcza (468), z zasłanianiem przez ciało, bez przenikania nóg i konia.
