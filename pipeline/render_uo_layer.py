@@ -34,6 +34,9 @@ HOLDOUT_MARGIN = 0.01              # m: in the clothing layer the body hides an 
 OCCLUDERS = ["head", "upper_arm", "forearm", "hand", "thigh", "shin", "foot"]   # body parts that may hide items
                                    # (with HOLDOUT_MARGIN > 0); the torso (pelvis, spine, chest, neck) never does, because
                                    # items are worn over it and a torso poking through is a model error, not an occluder
+DESPECKLE = 28                     # clothing: single dark pixels inside the item darker than their neighbours by more
+                                   # than this (0-255) take the colour around them - deep sculpt details / rivets that
+                                   # turn into black dots at UO size. 0 = off
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
                                    # poking through or a gap in the item mesh, not a real occluder. 0 = off
 
@@ -302,6 +305,33 @@ def fill_small_holes(px, free, max_px):
     return px
 
 
+def despeckle(img, thr, passes=2):
+    """uint8 RGBA: dark single pixels inside the item (not its outline) -> colour of their non-dark neighbours"""
+    out = img.copy(); m = out[..., 3] > 0; H, W = m.shape
+    offs = [(y, x) for y in range(3) for x in range(3) if (y, x) != (1, 1)]
+    for _ in range(passes):
+        rgb = out[..., :3].astype(float)
+        lum = rgb.mean(-1)
+        pad = np.pad(rgb, ((1, 1), (1, 1), (0, 0)), mode="edge"); pm = np.pad(m, 1)
+        stack = np.stack([pad[y:y + H, x:x + W] for y, x in offs], 0)
+        valid = np.stack([pm[y:y + H, x:x + W] for y, x in offs], 0)
+        sl = stack.mean(-1)
+        srt = np.sort(np.where(valid, sl, np.inf), axis=0)
+        n = valid.sum(0)
+        lo = np.take_along_axis(srt, np.clip((n - 1) // 2, 0, 7)[None], 0)[0]
+        hi = np.take_along_axis(srt, np.clip(n // 2, 0, 7)[None], 0)[0]
+        med = np.where(np.isfinite(hi), (lo + hi) / 2, lo)
+        dark = m & (n >= 7) & (lum < med - thr)
+        if not dark.any():
+            break
+        ok = valid & (sl >= (med - thr / 2)[None])
+        w = ok.sum(0)
+        fill = (stack * ok[..., None]).sum(0) / np.maximum(w, 1)[..., None]
+        sel = dark & (w > 0)
+        out[sel, :3] = np.clip(fill[sel] + 0.5, 0, 255).astype(np.uint8)
+    return out
+
+
 def exact_clothing(hold, free, orig_body, cov):
     """Hide the item exactly where the ORIGINAL body is in front of it; the 3D model decides front/behind."""
     a_h, a_f = hold[..., 3] >= 0.5, free[..., 3] >= 0.5
@@ -348,6 +378,8 @@ for act in acts:
                 if FILL_HOLES > 0:
                     px = fill_small_holes(px, free, FILL_HOLES)
                 rgba = uo_post(px)
+                if DESPECKLE > 0:
+                    rgba = despeckle(rgba, DESPECKLE)
             elif LAYER == "clothing":
                 px = render_frame(a, i, d, "holdout")
                 if EXACT_BODY and orig is not None:

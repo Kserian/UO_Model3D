@@ -193,6 +193,8 @@ do niego swoje przedmioty, a nie odwrotnie.
                                # nie robią dziur); 0 = zwykły holdout Cycles
    OCCLUDERS = [...]           # części ciała, które mogą zasłaniać przedmiot: ręce, dłonie, głowa, nogi;
                                # tułów nigdy (przedmioty leżą na nim)
+   DESPECKLE = 28              # pojedyncze ciemne kropki w środku przedmiotu (głębokie detale, nity) dostają kolor
+                               # otoczenia (0 = wył.)
    FILL_HOLES = 4              # dziurki do 4 px otoczone przedmiotem są wypełniane (0 = wył.)
    ```
 3. Uruchom **Run Script** (Alt+P). Pełna warstwa to 1050 klatek, ok. 15–30 min na CPU. Warstwa ubrania renderuje się

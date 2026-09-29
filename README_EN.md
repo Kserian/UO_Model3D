@@ -197,6 +197,8 @@ items into it, not the other way round.
                                # no holes); 0 = plain Cycles holdout
    OCCLUDERS = [...]           # body parts that may hide the item: arms, hands, head, legs; never the torso
                                # (items are worn over it)
+   DESPECKLE = 28              # single dark dots inside the item (deep details, rivets) take the colour around
+                               # them (0 = off)
    FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled (0 = off)
    ```
 3. Run **Run Script** (Alt+P). A full layer is 1050 frames, about 15–30 minutes on a CPU. A clothing layer is rendered
