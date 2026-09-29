@@ -237,6 +237,8 @@ do niego swoje przedmioty, a nie odwrotnie.
    DESPECKLE = 28              # pojedyncze ciemne kropki w środku przedmiotu (głębokie detale, nity) dostają kolor
                                # otoczenia (0 = wył.)
    FILL_HOLES = 4              # dziurki do 4 px otoczone przedmiotem są wypełniane (0 = wył.)
+   BODY_GAP = 0.006            # w każdej klatce części ubrania bliżej niż 6 mm rąk, dłoni, nóg lub głowy są wypychane
+                               # na zewnątrz - ręka przebijająca rękaw w ruchu nie robi dziury (0 = wył.)
    MIN_PIECE = 8               # oderwane kawałki przedmiotu mniejsze niż 8 px (brzeg kołnierza / mankietu uciętego
                                # przez głowę lub dłoń) są usuwane; największy kawałek zostaje zawsze (0 = wył.)
    ```

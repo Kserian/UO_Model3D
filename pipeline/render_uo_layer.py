@@ -13,6 +13,8 @@
 #   another; each run writes a .vd with ALL actions rendered so far (delete OUT_DIR to start from scratch).
 import bpy, os, json
 import numpy as np
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 LAYER = "clothing"
 ONLY = []                          # e.g. ["04_stand", "00_walk_unarmed"]; empty = all 35 UO actions
@@ -39,6 +41,10 @@ DESPECKLE = 28                     # clothing: single dark pixels inside the ite
                                    # turn into black dots at UO size. 0 = off
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
                                    # poking through or a gap in the item mesh, not a real occluder. 0 = off
+BODY_GAP = 0.006                   # m: every frame, parts of the bound items closer than this to the arms, hands, legs or
+                                   # head of the posed body are pushed out (smoothly) before rendering - otherwise a forearm
+                                   # poking through a sleeve in motion cuts a hole in the item. Cloth-baked frames have their
+                                   # own fix (uo_cloth_bake FIX_GAP). 0 = off
 MIN_PIECE = 8                      # px: detached bits of the item smaller than this are removed (collar or cuff rims cut
                                    # off by the head or a hand read as dirt at UO size); the biggest piece always stays. 0 = off
 
@@ -94,6 +100,135 @@ def cloth_show(o, a, i):
     for m in arm:
         m.show_viewport = m.show_render = False
     o.data.update()
+
+
+# BODY_GAP: bound items pushed out of the posed limbs / head, per UO frame (shape key "uo_fix", Armature off)
+FIX_MESH, FIX_CACHE, FIX_ON, FIX_ADDED = {}, {}, {}, set()
+
+
+def fix_mesh(o):
+    """welded nodes (UV-seam splits move together, so a fix never tears the item open), their edges and degrees"""
+    if o.name not in FIX_MESH:
+        co = np.empty(len(o.data.vertices) * 3, np.float32); o.data.vertices.foreach_get("co", co)
+        key = np.round(co.reshape(-1, 3).astype(np.float64) / 1e-5).astype(np.int64)
+        _, first, node = np.unique(key, axis=0, return_index=True, return_inverse=True); node = node.ravel()
+        E = np.empty(len(o.data.edges) * 2, np.int32); o.data.edges.foreach_get("vertices", E)
+        E = np.unique(np.sort(node[E.reshape(-1, 2)], 1), axis=0); E = E[E[:, 0] != E[:, 1]]
+        FIX_MESH[o.name] = (first, node, E, np.bincount(E.ravel(), minlength=len(first)).astype(float))
+    return FIX_MESH[o.name]
+
+
+def push_out(X, bvh, E, deg, gap):
+    """displacement that keeps the points X (body space) `gap` outside the body parts in bvh; spread over the item"""
+    D = np.zeros_like(X); look = np.arange(len(X)); reach = 0.1
+    for it in range(12):
+        P = X + D; need = np.zeros(len(X)); N = np.zeros_like(X); near = []
+        for i in look:
+            p = Vector(P[i]); loc, nrm, fi, dist = bvh.find_nearest(p, reach)
+            if loc is not None:
+                near.append(i); sd = (p - loc).dot(nrm)
+                if sd < gap:
+                    need[i] = gap - sd; N[i] = nrm
+        if it == 0:
+            look = np.array(near, int); reach = gap + 0.05
+        if not (need > 1e-4).any():
+            break
+        D += need[:, None] * N
+        if it < 11:
+            for _ in range(2):
+                acc = np.zeros_like(D)
+                np.add.at(acc, E[:, 0], D[E[:, 1]]); np.add.at(acc, E[:, 1], D[E[:, 0]])
+                D = np.where(deg[:, None] > 0, 0.5 * D + 0.5 * acc / np.maximum(deg, 1)[:, None], D)
+            look = np.union1d(look, np.nonzero(np.abs(D).max(1) > 1e-5)[0])
+    return D
+
+
+def fix_off(o):
+    st = FIX_ON.pop(o.name, None)
+    if st is None:
+        return
+    kb = o.data.shape_keys.key_blocks
+    kb["uo_fix"].value = 0.0
+    for name, mute in st["mute"].items():
+        kb[name].mute = mute
+    for m, (v, r) in st["arm"]:
+        m.show_viewport, m.show_render = v, r
+    o.data.update()
+
+
+def fix_on(o, pos):
+    if o.data.shape_keys is None:
+        o.shape_key_add(name="Basis", from_mix=False); FIX_ADDED.add(o.name)
+    kb = o.data.shape_keys.key_blocks
+    key = kb.get("uo_fix") or o.shape_key_add(name="uo_fix", from_mix=False)
+    key.data.foreach_set("co", pos.astype(np.float32).ravel()); key.value = 1.0
+    others = [k for k in list(kb)[1:] if k.name != "uo_fix"]
+    arm = [m for m in o.modifiers if m.type == "ARMATURE"]
+    FIX_ON[o.name] = dict(mute={k.name: k.mute for k in others}, arm=[(m, (m.show_viewport, m.show_render)) for m in arm])
+    for k in others:
+        k.mute = True                                   # the posed shape already contains them
+    for m in arm:
+        m.show_viewport = m.show_render = False
+    o.data.update()
+
+
+def evaluated_co(ob, dg):
+    ev = ob.evaluated_get(dg); me = ev.to_mesh()
+    co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co)
+    return ev, me, co.reshape(-1, 3).astype(np.float64)
+
+
+def body_fix(a, i):
+    """BODY_GAP for UO frame i of action a: the pose does not depend on the direction, so each frame is solved once"""
+    items = [o for o in clothes if not o.hide_render and not (o.name in CLOTH and ("a%d_f%d" % (a, i)) in CLOTH[o.name])]
+    for o in items:
+        fix_off(o)
+    if not items:
+        return
+    bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+    todo = [o for o in items if (o.name, a, i) not in FIX_CACHE]
+    if todo:
+        eb, me, bco = evaluated_co(body, dg)
+        me.calc_loop_triangles()
+        tri = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tri)
+        tri = tri.reshape(-1, 3); Bi = np.array(eb.matrix_world.inverted()); eb.to_mesh_clear()
+        if len(OCCLUDER_TRIS) == len(tri):
+            tri = tri[OCCLUDER_TRIS]                    # arms, hands, legs, head: the parts that cut holes
+        bvh = BVHTree.FromPolygons([Vector(p) for p in bco], tri.tolist())
+    for o in items:
+        first, node, E, deg = fix_mesh(o)
+        ev, me, co = evaluated_co(o, dg); Mw = np.array(ev.matrix_world); ev.to_mesh_clear()
+        if len(co) != len(node):
+            FIX_CACHE[(o.name, a, i)] = None            # a modifier changes the vertex count: left as bound
+            continue
+        if (o.name, a, i) not in FIX_CACHE:
+            M = Bi @ Mw
+            D = push_out(co[first] @ M[:3, :3].T + M[:3, 3], bvh, E, deg, BODY_GAP) @ np.linalg.inv(M[:3, :3]).T
+            idx = np.nonzero(np.abs(D).max(1) > 2e-4)[0]
+            FIX_CACHE[(o.name, a, i)] = (idx.astype(np.int32), D[idx].astype(np.float32)) if len(idx) else None
+        c = FIX_CACHE[(o.name, a, i)]
+        if c is not None:
+            Dn = np.zeros((len(first), 3)); Dn[c[0]] = c[1]
+            fix_on(o, co + Dn[node])
+
+
+def fix_clear():
+    for o in clothes:
+        fix_off(o)
+        sk = o.data.shape_keys
+        if sk and "uo_fix" in sk.key_blocks:
+            o.shape_key_remove(sk.key_blocks["uo_fix"])
+        if o.name in FIX_ADDED and o.data.shape_keys and len(o.data.shape_keys.key_blocks) == 1:
+            o.shape_key_clear()
+
+
+
+for o in clothes:                                       # left over from a run that crashed: back to the bound item
+    if o.data.shape_keys and "uo_fix" in o.data.shape_keys.key_blocks:
+        o.shape_key_remove(o.data.shape_keys.key_blocks["uo_fix"])
+        for m in o.modifiers:
+            if m.type == "ARMATURE":
+                m.show_viewport = m.show_render = True
 writer = bpy.data.texts["uo_vd_writer.py"].as_module()
 
 if sc.render.engine != "CYCLES":                     # holdout, exact modes and UO shading are set up for Cycles
@@ -428,59 +563,64 @@ if os.path.exists(os.path.join(root, "STOP")):
     os.remove(os.path.join(root, "STOP"))                  # a leftover STOP from a cancelled run
 blocks, meta_blocks = {}, []
 acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
-for act in acts:
-    if ONLY and act.name not in ONLY:
-        continue
-    a = int(act["uo_action"])
-    rig.animation_data.action = act
-    for d in range(5):
-        rig["uo_direction"] = d
-        rig.update_tag()
-        fdir = os.path.join(root, "frames", act.name, "dir%d" % d)
-        os.makedirs(fdir, exist_ok=True)
-        frames, meta_frames = [], []
-        for i in range(int(act["uo_frames"])):
-            if os.path.exists(os.path.join(root, "STOP")):      # create an empty file named STOP to cancel
-                raise KeyboardInterrupt("STOP file found in " + root)
-            set_tile(a, i, d)
-            sc.frame_set(1 + i * STEP)
-            for o in clothes:
-                if o.name in CLOTH:
-                    cloth_show(o, a, i)
-            orig = original(a, i, d) if EXACT_ANY else None
-            orig_m = orig[..., 3] > 0 if orig is not None else None
-            if LAYER == "body" and EXACT_BODY and orig is not None:
-                rgba = orig                                    # the original UO body frame, pixel for pixel
-            elif LAYER == "clothing" and HOLDOUT_MARGIN > 0:
-                free = render_frame(a, i, d, "hidden")
-                hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
-                px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
-                if FILL_HOLES > 0:
-                    px = fill_small_holes(px, free, FILL_HOLES)
-                rgba = uo_post(px)
-                if DESPECKLE > 0:
-                    rgba = despeckle(rgba, DESPECKLE)
-                if MIN_PIECE > 0:
-                    rgba = drop_small_pieces(rgba, MIN_PIECE)
-            elif LAYER == "clothing":
-                px = render_frame(a, i, d, "holdout")
-                if EXACT_BODY and orig is not None:
-                    px = exact_clothing(px, render_frame(a, i, d, "hidden"), orig_m, body_coverage())
-                rgba = uo_post(px)
-                if MIN_PIECE > 0:
-                    rgba = drop_small_pieces(rgba, MIN_PIECE)
-            else:
-                px = render_frame(a, i, d, "visible")
-                rgba = uo_post(px, keep=orig_m if (EXACT_COLORS and orig_m is not None) else None)
-            h, w = rgba.shape[:2]
-            frames.append(rgba)
-            png = bpy.data.images.new("uo_tmp_out", w, h, alpha=True)
-            png.pixels.foreach_set((rgba[::-1].astype(np.float32) / 255.0).ravel())
-            png.filepath_raw = os.path.join(fdir, "%02d.png" % i); png.file_format = "PNG"; png.save()
-            bpy.data.images.remove(png)
-            meta_frames.append(dict(file="%02d.png" % i))
-        blocks[(a, d)] = frames
-        meta_blocks.append(dict(action=a, dir=d, name=act.name, frames=meta_frames))
+try:
+    for act in acts:
+        if ONLY and act.name not in ONLY:
+            continue
+        a = int(act["uo_action"])
+        rig.animation_data.action = act
+        for d in range(5):
+            rig["uo_direction"] = d
+            rig.update_tag()
+            fdir = os.path.join(root, "frames", act.name, "dir%d" % d)
+            os.makedirs(fdir, exist_ok=True)
+            frames, meta_frames = [], []
+            for i in range(int(act["uo_frames"])):
+                if os.path.exists(os.path.join(root, "STOP")):      # create an empty file named STOP to cancel
+                    raise KeyboardInterrupt("STOP file found in " + root)
+                set_tile(a, i, d)
+                sc.frame_set(1 + i * STEP)
+                for o in clothes:
+                    if o.name in CLOTH:
+                        cloth_show(o, a, i)
+                if BODY_GAP > 0 and LAYER != "body":
+                    body_fix(a, i)
+                orig = original(a, i, d) if EXACT_ANY else None
+                orig_m = orig[..., 3] > 0 if orig is not None else None
+                if LAYER == "body" and EXACT_BODY and orig is not None:
+                    rgba = orig                                    # the original UO body frame, pixel for pixel
+                elif LAYER == "clothing" and HOLDOUT_MARGIN > 0:
+                    free = render_frame(a, i, d, "hidden")
+                    hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
+                    px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
+                    if FILL_HOLES > 0:
+                        px = fill_small_holes(px, free, FILL_HOLES)
+                    rgba = uo_post(px)
+                    if DESPECKLE > 0:
+                        rgba = despeckle(rgba, DESPECKLE)
+                    if MIN_PIECE > 0:
+                        rgba = drop_small_pieces(rgba, MIN_PIECE)
+                elif LAYER == "clothing":
+                    px = render_frame(a, i, d, "holdout")
+                    if EXACT_BODY and orig is not None:
+                        px = exact_clothing(px, render_frame(a, i, d, "hidden"), orig_m, body_coverage())
+                    rgba = uo_post(px)
+                    if MIN_PIECE > 0:
+                        rgba = drop_small_pieces(rgba, MIN_PIECE)
+                else:
+                    px = render_frame(a, i, d, "visible")
+                    rgba = uo_post(px, keep=orig_m if (EXACT_COLORS and orig_m is not None) else None)
+                h, w = rgba.shape[:2]
+                frames.append(rgba)
+                png = bpy.data.images.new("uo_tmp_out", w, h, alpha=True)
+                png.pixels.foreach_set((rgba[::-1].astype(np.float32) / 255.0).ravel())
+                png.filepath_raw = os.path.join(fdir, "%02d.png" % i); png.file_format = "PNG"; png.save()
+                bpy.data.images.remove(png)
+                meta_frames.append(dict(file="%02d.png" % i))
+            blocks[(a, d)] = frames
+            meta_blocks.append(dict(action=a, dir=d, name=act.name, frames=meta_frames))
+finally:
+    fix_clear()                                         # items back to bound, also after STOP / an error
 if os.path.exists(tmp):
     os.remove(tmp)
 # actions rendered in EARLIER runs into the same folder are kept: each run can use a different item setup (e.g. another
