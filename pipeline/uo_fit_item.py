@@ -29,6 +29,9 @@ MATCH_ARMS = True     # first turn the sleeves onto the arms: finds how much low
                       # by that much, so the arms sit inside the sleeves before anything is pushed
 MAX_TURN = 35         # deg, the most the sleeves may be turned
 MIN_GAIN = 3.0        # turn only if it fits the arms clearly better (so running the script again changes nothing)
+SLIM = 1.0            # < 1 makes the item narrower below the chest (e.g. 0.85 = 15 % narrower at the hips and below),
+                      # towards the body's middle; sleeves and the chest are left as they are. Run once per change:
+                      # every run slims again
 
 body = bpy.data.objects["UO_Body"]
 rig = bpy.data.objects["UO_Rig"]
@@ -215,6 +218,41 @@ def match_arms(Q, edges, gbvh):
     return Qr, txt
 
 
+def slim(Q, edges, arms):
+    """narrower below the chest (see SLIM): each height is scaled towards the middle of the body at that height"""
+    V = arms.V
+    armw = sum(a["wU"] for a in arms.side.values())
+    B = np.array(body.matrix_world.inverted() @ rig.matrix_world)
+    zt = (B @ np.r_[list(rig.data.bones["chest"].head_local), 1])[2]      # chest: nothing changes above
+    zf = (B @ np.r_[list(rig.data.bones["pelvis"].head_local), 1])[2]     # pelvis: full SLIM below
+    core = V[armw < 0.3]
+    kb = np.clip(((core[:, 2] - core[:, 2].min()) / 0.02).astype(int), 0, None)
+    nb = kb.max() + 1
+    cnt = np.bincount(kb, minlength=nb).astype(float)
+    cx = np.bincount(kb, core[:, 0], nb); cy = np.bincount(kb, core[:, 1], nb)
+    ok = cnt > 0; ib = np.arange(nb)
+    cx = np.interp(ib, ib[ok], cx[ok] / cnt[ok]); cy = np.interp(ib, ib[ok], cy[ok] / cnt[ok])
+    for _ in range(3):                                                 # smooth the middle line over height
+        cx = np.convolve(np.pad(cx, 2, mode="edge"), np.ones(5) / 5, "valid")
+        cy = np.convolve(np.pad(cy, 2, mode="edge"), np.ones(5) / 5, "valid")
+    k = np.clip(((Q[:, 2] - core[:, 2].min()) / 0.02).astype(int), 0, nb - 1)
+    c = np.c_[cx[k], cy[k]]
+    kd = KDTree(len(V))
+    for i, p in enumerate(V):
+        kd.insert(p, i)
+    kd.balance()
+    aw = armw[np.array([kd.find(p)[1] for p in Q])]
+    for _ in range(8):                                                 # smooth over the item
+        acc = aw.copy(); n = np.ones(len(Q))
+        np.add.at(acc, edges[:, 0], aw[edges[:, 1]]); np.add.at(acc, edges[:, 1], aw[edges[:, 0]])
+        np.add.at(n, edges[:, 0], 1); np.add.at(n, edges[:, 1], 1)
+        aw = acc / n
+    t = np.clip((zt - Q[:, 2]) / max(zt - zf, 1e-6), 0, 1); t = t * t * (3 - 2 * t)
+    s = 1 - (1 - SLIM) * t * np.clip(1 - 2 * aw, 0, 1)
+    out = Q.copy(); out[:, :2] = c + (Q[:, :2] - c) * s[:, None]
+    return out
+
+
 def fit(ob, bvh):
     me = ob.data
     M = np.array(body.matrix_world.inverted() @ ob.matrix_world)       # item -> body space
@@ -231,14 +269,18 @@ def fit(ob, bvh):
     Q = Q0.copy()
     S0 = skin(bvh, Q0, MIN_GAP + 0.3)[1][node]
     turn = ""
-    if MATCH_ARMS:
+    if MATCH_ARMS or SLIM < 1:
         me.calc_loop_triangles()
         tri = node[np.array([t.vertices[:] for t in me.loop_triangles])]
         edges = np.unique(np.sort(np.r_[tri[:, [0, 1]], tri[:, [1, 2]], tri[:, [2, 0]]], 1), axis=0)
         edges = edges[edges[:, 0] != edges[:, 1]]
+    if MATCH_ARMS:
         gbvh = BVHTree.FromPolygons([Vector(p) for p in Q0], tri.tolist())
         Q, turn = match_arms(Q0, edges, gbvh)
         turn = " | sleeves turned: " + turn
+    if SLIM < 1:
+        Q = slim(Q, edges, Arms())
+        turn += " | slimmed to %.2f" % SLIM
     rounds = 0
     Sn = skin(bvh, Q)[1]
     close = np.nonzero(Sn < MIN_GAP + 0.05)[0]                        # only these can end up too close

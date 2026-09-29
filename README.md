@@ -116,6 +116,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `render_uo_layer.py` | Render warstwy do klatek i `.vd` (uruchamiasz Alt+P). |
 | `uo_fit_item.py` | Obraca rękawy zaznaczonego przedmiotu na ręce i wypycha go ze skóry (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
+| `uo_cloth_bake.py` | Symulacja tkaniny dla szat, sukni, spódnic i płaszczy, po `uo_bind_item.py` (rozdział 3). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
 
@@ -182,6 +183,20 @@ do niego swoje przedmioty, a nie odwrotnie.
       których przedmiot nie zakrywa.
    6. Skóra przebijająca przedmiot o kilka mm (w podglądzie 3D) nie robi dziur w klatkach: przy renderze ciało zasłania
       przedmiot dopiero wtedy, gdy jest przed nim o więcej niż `HOLDOUT_MARGIN` (1 cm, rozdział 4).
+   7. **Tkanina** (opcjonalnie: szata, suknia, spódnica, płaszcz). Zaznacz podpięty przedmiot, zapisz plik i uruchom
+      **`uo_cloth_bake.py`**. Dół przedmiotu (to, co `uo_bind_item.py` dało na łańcuchy materiału) staje się tkaniną
+      Blendera: opada, buja się i odbija od ciała. Barki, pierś i rękawy zostają przypięte do szkieletu.
+      - `GOAL` (0,5): jak mocno materiał ciągnie do kształtu łańcuchów dopasowanych do oryginalnych klatek UO
+        (0 = czysta tkanina, 1 = bez tkaniny). `MATERIAL`: `silk`, `cotton`, `wool` albo `leather`.
+      - Każda akcja jest liczona osobno. Najpierw materiał układa się przez `PREROLL` klatek w pierwszej pozie.
+        Akcje zapętlone w grze (chód, bieg, stanie) są liczone `LOOP_CYCLES` razy i brany jest ostatni cykl, więc
+        pętla nie skacze. Akcje konne zostają bez symulacji (koń nie jest przeszkodą dla materiału).
+      - Wynik trafia do `uo_cloth/<przedmiot>.npz` obok pliku `.blend`. `render_uo_layer.py` używa go sam, a po
+        bake'u odtwarzanie akcji w podglądzie 3D też pokazuje tkaninę (po ponownym otwarciu pliku uruchom skrypt
+        z `BAKE = False`, żeby wrócił podgląd).
+      - Trwa to około pół godziny dla wszystkich akcji (mniej: niższe `SIM_VERTS`, `QUALITY` albo tylko wybrane
+        `ACTIONS`). Po zmianie przedmiotu (kształt, dopasowanie, wagi) uruchom go ponownie; nieaktualny wynik jest
+        pomijany. `REMOVE = True` wraca do samego podpięcia.
 5. **Broń, tarcza, włosy** (rzeczy sztywne): `uo_bind_item.py` z `PART = "weapon"`, `"shield"`, `"hair"` itd.
    (tabela wyżej). Miecz ustaw w pozycji spoczynkowej tak, żeby rękojeść była w zaciśniętej prawej dłoni, a klinga
    wychodziła po stronie kciuka: tak leży broń na oryginalnych klatkach UO.
@@ -192,7 +207,8 @@ do niego swoje przedmioty, a nie odwrotnie.
 8. **Wskazówki:**
    - Ubranie rób ok. 1–2 cm nad skórą.
    - Sprawdzaj zwłaszcza ataki, czary i upadki.
-   - Spódnice, szaty i płaszcze bindujesz presetami `"skirt"`, `"robe"`, `"cloak"` (idą za łańcuchami materiału).
+   - Spódnice, szaty i płaszcze bindujesz presetami `"skirt"`, `"robe"`, `"cloak"` (idą za łańcuchami materiału),
+     a naturalny ruch materiału daje potem `uo_cloth_bake.py` (krok 4.7).
 
 ## 4. Render do klatek i pliku `.vd`
 

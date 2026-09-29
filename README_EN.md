@@ -120,6 +120,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `render_uo_layer.py` | Renders a layer to frames and `.vd` (run with Alt+P). |
 | `uo_fit_item.py` | Turns the selected item's sleeves onto the arms and pushes it out of the skin (before `uo_bind_item.py`, section 3). |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
+| `uo_cloth_bake.py` | Cloth simulation for robes, dresses, skirts and cloaks, after `uo_bind_item.py` (section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
 
@@ -186,6 +187,21 @@ items into it, not the other way round.
       does not cover.
    6. Skin poking a few mm through the item (in the 3D view) does not cut holes in the frames: when rendering, the body
       hides the item only where it is more than `HOLDOUT_MARGIN` (1 cm, section 4) in front of it.
+   7. **Cloth** (optional: robe, dress, skirt, cloak). Select the bound item, save the file and run
+      **`uo_cloth_bake.py`**. The lower part of the item (what `uo_bind_item.py` put on the cloth chains) becomes
+      Blender cloth: it falls, swings and collides with the body. Shoulders, chest and sleeves stay pinned to the
+      skeleton.
+      - `GOAL` (0.5): how strongly the cloth is pulled towards the shape of the chains fitted to the original UO
+        frames (0 = pure cloth, 1 = no cloth). `MATERIAL`: `silk`, `cotton`, `wool` or `leather`.
+      - Every action is simulated on its own. The cloth first settles for `PREROLL` frames in the first pose.
+        Actions the game loops (walk, run, stand) run `LOOP_CYCLES` times and the last cycle is kept, so the loop
+        has no jump. Mounted actions are not simulated (the horse is not a collider).
+      - The result goes to `uo_cloth/<item>.npz` next to the `.blend`. `render_uo_layer.py` uses it automatically,
+        and after the bake playing an action in the 3D viewport shows the cloth too (after reopening the file run
+        the script with `BAKE = False` to get that preview back).
+      - All actions take about half an hour (less: lower `SIM_VERTS`, `QUALITY` or only some `ACTIONS`). Run it
+        again after changing the item (shape, fit, weights); an outdated bake is skipped. `REMOVE = True` goes back
+        to the plain bound item.
 5. **Weapon, shield, hair** (rigid things): `uo_bind_item.py` with `PART = "weapon"`, `"shield"`, `"hair"` etc. (table
    above). Place a sword in Rest Position with the grip inside the clenched right hand and the blade on the thumb side:
    that is how weapons sit on the original UO frames.
@@ -196,7 +212,8 @@ items into it, not the other way round.
 8. **Tips:**
    - Make clothing about 1–2 cm above the skin.
    - Check attacks, spells and deaths in particular.
-   - Bind skirts, robes and cloaks with the `"skirt"`, `"robe"`, `"cloak"` presets (they follow the cloth chains).
+   - Bind skirts, robes and cloaks with the `"skirt"`, `"robe"`, `"cloak"` presets (they follow the cloth chains);
+     `uo_cloth_bake.py` then gives the cloth natural motion (step 4.7).
 
 ## 4. Rendering frames and the `.vd` file
 

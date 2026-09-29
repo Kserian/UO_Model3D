@@ -45,6 +45,50 @@ sc = bpy.context.scene
 rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
 clothes = [o for o in bpy.data.collections[CLOTHING].all_objects if o.type == "MESH"] if CLOTHING in bpy.data.collections else []
+
+# items baked by uo_cloth_bake.py: their cloth simulation replaces the bound pose in the actions it covers
+CLOTH = {}
+for o in clothes:
+    if o.get("uo_cloth"):
+        p = bpy.path.abspath(o["uo_cloth"])
+        base = o.data.shape_keys.key_blocks[0].data if o.data.shape_keys else o.data.vertices
+        co = np.empty(len(o.data.vertices) * 3, np.float32); base.foreach_get("co", co)
+        sig = np.array([len(o.data.vertices), float(np.abs(co.astype(np.float64)).sum())])
+        d = np.load(p) if os.path.exists(p) else None
+        if d is not None and "item_sig" in d.files and np.allclose(d["item_sig"], sig, rtol=1e-5):
+            CLOTH[o.name] = {k: d[k] for k in d.files}
+            print("render_uo_layer: %s uses its cloth bake %s" % (o.name, p))
+        elif d is not None:
+            print("render_uo_layer: %s changed after its cloth bake - rendered as bound (bake it again)" % o.name)
+        else:
+            print("render_uo_layer: cloth bake of %s not found (%s) - rendered as bound" % (o.name, p))
+
+
+def cloth_show(o, a, i):
+    """baked cloth shape of UO action a, frame i on item o (shape key 'uo_cloth', Armature off); else the bound item"""
+    c = CLOTH.get(o.name)
+    arm = [m for m in o.modifiers if m.type == "ARMATURE"]
+    key = o.data.shape_keys.key_blocks.get("uo_cloth") if o.data.shape_keys else None
+    if c is None or ("a%d_f%d" % (a, i)) not in c:
+        for m in arm:
+            m.show_viewport = m.show_render = True
+        if key:
+            key.value = 0.0
+        return
+    co = c["a%d_f%d" % (a, i)].astype(np.float64); tris, fi = c["tris"], c["fi"]
+    A, B, C = co[tris[:, 0]], co[tris[:, 1]], co[tris[:, 2]]
+    e1 = B - A; e1 /= np.maximum(np.linalg.norm(e1, axis=1, keepdims=True), 1e-12)
+    n = np.cross(B - A, C - A); n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+    fr = np.stack([e1, np.cross(n, e1), n], 1)[fi]
+    pos = (co[tris[fi]] * c["bc"][..., None]).sum(1) + np.einsum("nk,nkj->nj", c["off"], fr)
+    if key is None:
+        if o.data.shape_keys is None:
+            o.shape_key_add(name="Basis", from_mix=False)
+        key = o.shape_key_add(name="uo_cloth", from_mix=False)
+    key.data.foreach_set("co", pos.astype(np.float32).ravel()); key.value = 1.0
+    for m in arm:
+        m.show_viewport = m.show_render = False
+    o.data.update()
 writer = bpy.data.texts["uo_vd_writer.py"].as_module()
 
 if sc.render.engine != "CYCLES":                     # holdout, exact modes and UO shading are set up for Cycles
@@ -369,6 +413,9 @@ for act in acts:
                 raise KeyboardInterrupt("STOP file found in " + root)
             set_tile(a, i, d)
             sc.frame_set(1 + i * STEP)
+            for o in clothes:
+                if o.name in CLOTH:
+                    cloth_show(o, a, i)
             orig = original(a, i, d) if EXACT_ANY else None
             orig_m = orig[..., 3] > 0 if orig is not None else None
             if LAYER == "body" and EXACT_BODY and orig is not None:
@@ -434,6 +481,9 @@ if WRITE_VD:
     print("wrote", vd_path)
 
 set_horse(-1, 0)
+for o in clothes:
+    if o.name in CLOTH:
+        cloth_show(o, -1, 0)                                # back to the bound item
 body.is_holdout, body.hide_render = state["holdout"], state["body_hide"]
 for o in clothes:
     o.hide_render = state["cloth"][o.name]
