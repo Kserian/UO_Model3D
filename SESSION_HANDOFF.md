@@ -29,6 +29,19 @@
 
 ## 1. Cel projektu
 
+**CEL NADRZĘDNY (od użytkownika, sesja 1): nasze body ma odwzorowywać body z UO tak, żeby przedmioty zrobione na naszym modelu
+pasowały na oryginalny model UO** (oryginalne ciało i sprite'y z klienta). Oceniaj każdą zmianę tym kryterium: czy przedmiot zrobiony
+na naszym ciele, wyrenderowany do `.vd`, zgadza się z oryginalnym ciałem i oryginalnym spritem przedmiotu. Konsekwencje:
+- Oryginalne body UO to 1050 płaskich klatek; modelu 3D, którym je zrobiono, nie mamy. Nasze ciało (MakeHuman) jest ich rekonstrukcją
+  (sylwetka IoU ok. 0,88 bez korekt). Wierność ciała to nie ozdoba, tylko warunek, żeby przedmioty pasowały.
+- `test_items.py` (przedmiot zrobiony na naszym ciele vs oryginalny sprite) jest główną miarą celu. Najpierw wymaga wiarygodnego baseline'u (krok 2).
+- Krok 5 (ciało poprawiane na podstawie sprite'ów ekwipunku: dłonie, stopy, głowa, kończyny) bezpośrednio realizuje ten cel i ma wysoki priorytet
+  zaraz po baseline'ie.
+- `EDGE_COVER` (krok 4) tylko ukrywa błąd ciała w renderze (dociąga przedmiot do oryginalnego obrysu), nie poprawia modelu. Nie zastępuje kroku 5.
+- Poprawianie samej sylwetki ma granicę ok. 0,88 dla czystego szkieletu (raport 2.2). v12 miał 0,979 dzięki 1254 korektom kształtu na klatkę,
+  które każdy przedmiot musiał kopiować (commit `1e3ec8f`, `pipeline/uo_transfer_corrections.py`). Możliwa opcjonalna warstwa korekt
+  stosowana tylko w renderze (raport 4.9): decyzja użytkownika, patrz sekcja 9.
+
 Model 3D nagiego ciała UO (body 0x190 / 400) służy do generowania animacji ubrań, zbroi, broni, butów i tarcz w formacie
 `.vd` dla klienta Ultima Online (serwer: Nelderim). Kolejność prac wybrana przez użytkownika:
 
@@ -160,7 +173,7 @@ kolejne kroki miały liczby „przed/po”.
 - [ ] **3. Broń w lewej dłoni (4.2).** Presety `crossbow → hand.L`, `weapon2h`, `staff`, `polearm`; kalibracja lewej dłoni
       albo osobnej kości `weapon2h` (jak `shield.L`); plik chwytów na klasę broni. Odbiór: błąd ≤ 1,5–2 px (dziś 5–6 px).
 - [ ] **4. `EDGE_COVER` (4.3).** Domknięcie 1-pikselowych pasków skóry. Odbiór: 0 pikseli skóry przy krawędzi obcisłych przedmiotów.
-- [ ] 5. Analiza klatek ekwipunku pod kątem lepszego ciała: rękawice 530 / buty 477 / hełm 563 jako dodatkowe ograniczenie
+- [ ] 5. **(WYSOKI PRIORYTET po baseline'ie, realizuje cel nadrzędny)** Analiza klatek ekwipunku pod kątem lepszego ciała: rękawice 530 / buty 477 / hełm 563 jako dodatkowe ograniczenie
       orientacji dłoni, stóp i głowy przy dopasowaniu póz. Pomysł z sesji 1, jeszcze nie sprawdzony.
 - [ ] 6. Materiały (4.5), ciało kobiece/elfy (4.4), ścieżka A „przemalowanie z kotwiczeniem 3D” (4.7), spięcie z nelderim-asset-pipeline (4.8).
 - [ ] 7. Dopiero potem: tworzenie ubrań, zbroi, broni, butów, tarcz (rozdz. 3 README).
@@ -193,12 +206,15 @@ kolejne kroki miały liczby „przed/po”.
    Uruchamianie: `cd pipeline && python test_items.py --items shirt,plate,pants,boots,gloves,helm --out ../docs/qa/items_baseline.json --img /tmp/ov.png`.
    Sprite'y: `pipeline/body13/mul/anim_NNNN.vd` (434, 527, 431, 477, 530, 563 i inne); kolejne wyciągaj `vdtool/mul2vd.py` z klienta
    (sekcja 2) i dodawaj do `client/extract/vd/`.
-3. Potem krok 4 (`EDGE_COVER`) z liczbami „przed/po” z kroku 2, albo krok 3 (broń w lewej dłoni): klient potrzebny do `.vd` kijów 648,
-   berdysza 614, włóczni 641, kuszy, łuku (mapowanie w `client/extract/item_animations.json`, ID lokalne w pliku).
+3. Potem krok 5 (poprawa ciała z klatek ekwipunku: rękawice 530, buty 477, hełm 563, spodnie 431, koszula 434; cel nadrzędny z sekcji 1),
+   mierząc skutek w `test_items.py` (przed/po). Krok 4 (`EDGE_COVER`) i krok 3 (broń w lewej dłoni; klient potrzebny do `.vd` kijów 648,
+   berdysza 614, włóczni 641, kuszy, łuku, mapowanie w `client/extract/item_animations.json`) dopiero potem.
 4. Na koniec zaktualizuj ten plik, commit i `git push origin main`, i powiedz użytkownikowi, że temat jest zamknięty.
 
 ## 9. Pytania otwarte do użytkownika
 
+- **Decyzja do podjęcia:** czy dopuszczasz opcjonalną warstwę korekt kształtu per klatka (jak v12, IoU 0,979), stosowaną tylko w renderze, żeby
+  ciało dokładniej odwzorowywało UO, przy czystym szkielecie i animacjach? Zapytaj użytkownika przed krokiem 5, bo zmienia to jego zakres.
 - Czy wolno zainstalować `numba` i uruchomić stary `body13/itemval.py`, żeby porównać go z `test_items.py`? (Użytkownik odrzucił to w sesji 1
   bez podania powodu, więc zapytaj, zanim to zrobisz.)
 - Czy `Nelderim_dane_klienta_SpriteMotion.zip` z raportu to ten sam zestaw co klient, który użytkownik udostępnia?
