@@ -10,5 +10,5 @@ Oceniaj tym każdą zmianę.
 zrób commit i `git push origin main`. Bez tego następna sesja zaczyna w ciemno. Jeśli zmieniłeś zasady pracy, popraw też ten plik.
 
 - Rozmowa po polsku. Commity po angielsku: `UOModel3D: <co i po co>`.
-- Pracujemy na `main`. Nie wypychaj na gałąź `claude/friendly-knuth-44xtfw` (kopia zapasowa stanu `ea55c0b`).
+- Pracujemy na `main`. Wszystko przetestowane i działające wrzucaj na `main` (`git push origin main`) bez dopytywania; nietestowanego nie wrzucaj. Nie wypychaj na gałąź `claude/friendly-knuth-44xtfw` (kopia zapasowa stanu `ea55c0b`).
 - Dokumentacja użytkownika: `README.md` (PL), `README_EN.md` (EN). Raport z analizy: `docs/RAPORT_model3D_UO.txt`.

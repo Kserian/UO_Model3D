@@ -7,7 +7,7 @@
 ## 0. Zasady pracy (ustalone z użytkownikiem)
 
 - **Język:** rozmowa po polsku. Komunikaty commitów po angielsku w stylu repo: `UOModel3D: <co i po co>`.
-- **Gałąź:** pracujemy na `main` (commit i push na `main`). Pull requesta nie twórz, dopóki użytkownik o niego nie poprosi.
+- **Gałąź:** pracujemy na `main`. Wszystko, co jest przetestowane i działa, wrzucaj na `main` (commit i `git push origin main`) bez dopytywania; nietestowanych zmian nie wrzucaj. Jeśli zadanie sesji narzuca inną gałąź, wypchnij na nią, a po przetestowaniu przewiń też `main` (`git push origin HEAD:main`). Pull requesta nie twórz, dopóki użytkownik o niego nie poprosi.
   Gałąź `claude/friendly-knuth-44xtfw` na GitHubie stoi na commicie `ea55c0b` (stan sprzed jakichkolwiek zmian) i jest
   trwałą kopią zapasową: **nie wypychaj na nią niczego**.
 - **Kopia zapasowa:** zanim zmienisz pliki w `model/`, zapisz ich kopię poza repo (np. `/home/user/UO_Model3D_backup/`).
