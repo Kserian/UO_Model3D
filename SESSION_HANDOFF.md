@@ -212,9 +212,15 @@ kolejne kroki miały liczby „przed/po”.
 ## 8. Następne kroki (sesja 3)
 
 1. Kopia zapasowa `model/` poza repo, środowisko (sekcja 4).
-2. Krok 5 (poprawa ciała, wysoki priorytet): baseline jest (sekcja 6). Najpierw sprawdź, skąd biorą się paski ≤ 1 px (obrys ciała vs sprite w `04_stand`:
-   porównaj sylwetkę ciała z klatkami koszuli 434 / spodni 431 / butów 477 / hełmu 563 i policz, o ile px sprite wychodzi poza ciało), potem rękawice 530
-   i buty 477 jako ograniczenie orientacji dłoni i stóp. Mierz skutek w `test_items.py` (przed/po względem `docs/qa/items_baseline.json`).
+2. Krok 5 (poprawa ciała, wysoki priorytet, bez warstwy korekt: decyzja użytkownika). Pomiary „przed” są: `docs/qa/body_silhouette_baseline.json`
+   (IoU 0,876, `pipeline/body_silhouette_qa.py`) i `docs/qa/items_baseline.json` (średnie IoU 0,677, `pipeline/test_items.py`). Plan analizy:
+   a) rozbij błąd sylwetki na części ciała (głowa, tors, ramię, przedramię, dłoń, udo, goleń, stopa) dla wszystkich 1050 klatek: zrenderuj maski części
+      (np. materiał/identyfikator na część) i policz nadmiar/braki na część, akcję i kierunek; znajdź błędy systematyczne vs pojedyncze pozy;
+   b) użyj klatek ekwipunku jako dodatkowego ograniczenia kształtu (najpierw rękawice 530, buty 477, hełm 563, spodnie 431, koszula 434, płytówka 527,
+      potem reszta, jeśli pomaga): obrys oryginalnego ciała „od zewnątrz” dla dłoni, stóp, głowy, kończyn;
+   c) poprawiaj siatkę/pozy/wagi, a po każdej zmianie powtarzaj oba pomiary i zachowuj poprawkę tylko przy poprawie wyniku.
+   Granica czystego szkieletu to ok. 0,88 (raport 2.2): spodziewaj się poprawy tam, gdzie błąd jest systematyczny, nie 0,98.
+   Render ciała 35 akcji trwa ok. 15 min: uruchamiaj w tle.
 3. Krok 4 (`EDGE_COVER`) i krok 3 (broń w lewej dłoni; klient potrzebny do `.vd` kijów 648, berdysza 614, włóczni 641, kuszy, łuku,
    mapowanie w `client/extract/item_animations.json`) dopiero potem.
 4. Na koniec zaktualizuj ten plik, commit i `git push origin main`, i powiedz użytkownikowi, że temat jest zamknięty.
