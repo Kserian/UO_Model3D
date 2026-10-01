@@ -1,0 +1,8 @@
+{
+ "note": "pose fit (pipeline/body_pose_fit.py), 210 poses, direction 3 held out of the fit; rest shape = after body shape fit (IoU 0.8945). lam_rot=1000, 3 iterations, rotations capped at 0.12 rad, no pelvis location",
+ "bones": "upper_arm, forearm, hand, clavicle, thigh, shin, foot, toe (L/R)",
+ "A_rotations_only": {"fit_dirs_iou": [0.8937, 0.9023], "holdout_dir3_iou": [0.8979, 0.8996], "all_1050_iou": [0.8945, 0.9018]},
+ "B_rotations_plus_scale": {"fit_dirs_iou": [0.8937, 0.9027], "holdout_dir3_iou": [0.8979, 0.8995], "all_1050_iou": [0.8945, 0.9020]},
+ "sample_30_poses_ablation_holdout_gain": {"legs": 0.0019, "arms": 0.0009, "spine_chest_neck_head": -0.0026, "pelvis": -0.0017, "hands_feet_head": -0.0023},
+ "verdict": "in-sample +0.007..0.009 but held-out view only +0.0017: the poses are already about as good as silhouettes can tell; NOT applied to the .blend"
+}

@@ -218,9 +218,17 @@ kolejne kroki miały liczby „przed/po”.
 - `model/UO_Body_0x190.blend` ZMIENIONY (binarny): siatka `UO_Body` przesunięta o `pipeline/body_shape_delta.npz` (średnio 1,4 cm, maks. 4 cm; 8 odwróconych ścianek na 26,7 tys., głównie kciuk i palce stóp). Wagi, UV, szkielet, teksty bez zmian. Kopia sprzed zmiany: commit `053e219` (plik `model/` w git) i `/home/user/UO_Model3D_backup/` (tylko ta sesja).
 - Odrzucone w drodze: regularyzacja membranowa bez wag (2000+ odwróconych ścianek), przesunięcia tylko po normalnej (też odwracały ścianki), `bilap`.
 
-## 8. Następne kroki (sesja 4)
+**Sesja 4 (2026-10-01).** Gałąź sesji `claude/lucid-feynman-t86ia8` (zadanie narzucało gałąź), po testach przewinięta na `main`.
+- Poprawka póz (kroki z sekcji 8 pkt 0): `pipeline/body_pose_fk_export.py` (dane FK 210 póz), `body_pose_lib.py` (FK w numpy; zgodne z Blenderem do 1e-5, **uwaga: kości forearm/hand/shin/foot mają `inherit_scale = NONE`**, FK to uwzględnia), `body_pose_fit.py` (per poza: korekty rotacji kości, opcjonalnie lokacji miednicy i skali; pochodne różnicami skończonymi, tłumiony Gauss-Newton, kontury jak w `body_shape_fit.py`, 5 kierunków dzieli jedną pozę), `body_pose_apply.py` (zapis do kluczy fcurves; nieużyty).
+- **Wynik (kierunek 3 wyłączony z dopasowania):** IoU 0,8979 -> 0,8996 (+0,0017); w próbce dopasowania +0,009. Skala kości nic nie dodaje. Ablacja na 30 pozach: pomagają tylko nogi (+0,002) i ramiona (+0,001); tułów, głowa, miednica pogarszają. Średnie korekty 2–4,7°. Dane: `docs/qa/pose_fit_holdout.json`. **Wniosek: pozy są już tak dobre, jak pozwala sylwetka; nie wgrano do `.blend`** (`model/` bez zmian w tej sesji).
+- Eksport póz z aktualnego `.blend` zajmuje 15 s (`body_pose_export.py`), więc dane do analiz odtwarzaj na żywo.
 
-0. (Sesja 3, gotowe) kształt ciała dopasowany, patrz dziennik. Następna dźwignia: **poprawka póz** (kości główne × 210 póz × 5 widoków) liniaryzacją konturów jak w `body_shape_fit.py`; poza zapisana w fcurves (kwaternion + skala + lokacja pelvis, klatki 1+3i); nowa siatka wymaga ponownego sprawdzenia. Potem dłonie (sprite+ w `hand.R` największy) i głowa.
+## 8. Następne kroki (sesja 5)
+
+0. (Sesja 4) Poprawka póz sprawdzona i odrzucona jako słaba dźwignia (patrz dziennik). Sylwetka ciała ma granicę ok. 0,90, błąd rozłożony równo na części. Zamiast dalszej gonitwy za IoU sylwetki rozważ: (a) pozy palców/dłoni (rękawice 0,50 to najgorszy przedmiot w `test_items`), (b) kroki 3 i 4 (broń w lewej dłoni, `EDGE_COVER`), (c) rozszerzenie baseline'u `test_items` (szata, płaszcz, spódnica, katana, tarcza).
+
+
+0b. (Sesja 3, gotowe) kształt ciała dopasowany, patrz dziennik. Następna dźwignia: **poprawka póz** (kości główne × 210 póz × 5 widoków) liniaryzacją konturów jak w `body_shape_fit.py`; poza zapisana w fcurves (kwaternion + skala + lokacja pelvis, klatki 1+3i); nowa siatka wymaga ponownego sprawdzenia. Potem dłonie (sprite+ w `hand.R` największy) i głowa.
 
 
 1. Kopia zapasowa `model/` poza repo, środowisko (sekcja 4).
