@@ -124,6 +124,9 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
 | `uo_cloth_bake.py` | Cloth simulation for robes, dresses, skirts and cloaks, after `uo_bind_item.py` (section 3). |
 | `uo_shield_keys.py` | Replaces the motion of the shield bone `shield.L` in an older file with the latest one (the shield and its binding stay). |
+| `uo_weapon_bones.py` | Adds the left-hand weapon bones (`polearm.L`, `axe2h.L`, `bow.L`) and keys their motion from `weapon_motion.json` (already run in the file; to load the motion again). |
+| `uo_place_weapon.py` | Puts the selected weapon (shaft along +Z, tip up) on the grip line of its class, before `uo_bind_item.py`. |
+| `weapon_motion.json` | Data: grip (point, direction, butt position) and motion of the 3 left-hand weapon classes, 210 poses each. |
 | `uo_place_shield.py` | Puts the selected shield on the left forearm as UO holds it and slides it onto the arm (before `uo_bind_item.py`, section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
@@ -172,9 +175,11 @@ items into it, not the other way round.
       | `"skirt"` | skirt, kilt | the `skirt_*` chains (template `UO_Template_Skirt`) |
       | `"cloak"` | cloak, cape | the `cloak_*` chains + a yoke over the shoulders (template `UO_Template_Cloak`) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
-      | `"weapon"` / `"weapon.L"` | weapon | rigid on `hand.R` / `hand.L` (UO holds weapons in the right hand) |
+      | `"weapon"` / `"weapon.L"` | 1H weapon | rigid on `hand.R` / `hand.L` (UO holds 1H weapons in the right hand) |
+      | `"polearm"` (`"staff"`, `"weapon2h"`) | staff, spear, javelin, pitchfork, halberd, bardiche, crook | bone `polearm.L` on the left hand, motion fitted to the original weapons (0.6-1.1 px instead of 5-6 px); run `uo_place_weapon.py` first |
+      | `"axe2h"` | two-handed axe, hatchet / hammer in the left hand | bone `axe2h.L` (same, 1.2-1.7 px error) |
       | `"shield"` | shield | rigid on `shield.L` (shield bone on the forearm, moves like the UO shield) |
-      | `"bow"` / `"crossbow"` | bow / crossbow | rigid on `hand.L` / `hand.R` |
+      | `"bow"` / `"crossbow"` | bow / crossbow | bone `bow.L` on the left hand (1.6-2.1 px error instead of 3 px) |
       | `"quiver"` | quiver | rigid on `chest` |
 
       Gloves (`"gloves"`) also follow the fingers, sleeves (`"arms"`) the twist bones, boots (`"boots"`) the toes.

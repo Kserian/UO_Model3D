@@ -108,8 +108,8 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
   ```
 - Silnik w pliku to `BLENDER_EEVEE_NEXT`; `render_uo_layer.py` sam przełącza na Cycles z 1 próbką na piksel.
 - **Teksty osadzone w `.blend`** (to je uruchamia render, nie pliki z `pipeline/`): `render_uo_layer.py`, `uo_bind_item.py`,
-  `uo_cloth_bake.py`, `uo_fit_item.py`, `uo_place_shield.py`, `uo_transfer_corrections.py`, `uo_vd_writer.py`,
-  `uo_horse_masks.json`, `uo_original_frames.json`.
+  `uo_cloth_bake.py`, `uo_fit_item.py`, `uo_place_shield.py`, `uo_place_weapon.py`, `uo_weapon_bones.py`, `uo_transfer_corrections.py`, `uo_vd_writer.py`,
+  `uo_horse_masks.json`, `uo_original_frames.json`, `weapon_motion.json`.
   Uwaga: README wymienia też `uo_shield_keys.py` jako skrypt w `.blend`, ale takiego tekstu w pliku nie ma
   (jest za to `uo_transfer_corrections.py`, którego README nie wymienia). Do wyjaśnienia.
 - Skrypty z `pipeline/` są źródłem; zmiany wgrywa do `.blend` `pipeline/sync_blend_scripts.py` (`--check` pokazuje różnice, nazwy skryptów
@@ -169,8 +169,9 @@ kolejne kroki miały liczby „przed/po”.
       Uwaga do testów: `--tmp` nie czyści katalogu, stare klatki zostają i fałszują liczbę klatek: przed każdym przebiegiem usuń `<tmp>/<item>`.
       Zostaje: baseline na `--all` (35 akcji, ok. 10× dłużej), repliki szaty, płaszcza, spódnicy (po `uo_cloth_bake.py`), katany i tarczy, raport HTML,
       porównanie z `body13/itemval.py` (wymaga `numba`, pytanie otwarte).
-- [ ] **3. Broń w lewej dłoni (4.2).** Presety `crossbow → hand.L`, `weapon2h`, `staff`, `polearm`; kalibracja lewej dłoni
-      albo osobnej kości `weapon2h` (jak `shield.L`); plik chwytów na klasę broni. Odbiór: błąd ≤ 1,5–2 px (dziś 5–6 px).
+- [x] **3. Broń w lewej dłoni (4.2). ZROBIONE w sesji 5** (kość na klasę broni, patrz dziennik): `polearm.L` (kij, włócznia, halabarda, berdysz, oszczep, widły, kostur), `axe2h.L`
+      (topory 2H, siekiera, młot), `bow.L` (łuk, kusze). Błąd (chamfer px, zmierzony na `.blend` i w pełnym renderze): kij 5,1 -> 0,6-0,8, włócznia 6,0 -> 0,7, topór 3,7 -> 1,4-1,8, łuk 3,1 -> 1,8-1,9.
+      Plik chwytów: `pipeline/weapon_motion.json`. Dokładne liczby: `docs/qa/weapons_left_hand.json`.
 - [ ] **4. `EDGE_COVER` (4.3).** Domknięcie 1-pikselowych pasków skóry. Odbiór: 0 pikseli skóry przy krawędzi obcisłych przedmiotów.
 - [ ] 5. **(WYSOKI PRIORYTET po baseline'ie, realizuje cel nadrzędny)** Analiza klatek ekwipunku pod kątem lepszego ciała: rękawice 530 / buty 477 / hełm 563 jako dodatkowe ograniczenie
       orientacji dłoni, stóp i głowy przy dopasowaniu póz. Pomysł z sesji 1, jeszcze nie sprawdzony.
@@ -223,7 +224,27 @@ kolejne kroki miały liczby „przed/po”.
 - **Wynik (kierunek 3 wyłączony z dopasowania):** IoU 0,8979 -> 0,8996 (+0,0017); w próbce dopasowania +0,009. Skala kości nic nie dodaje. Ablacja na 30 pozach: pomagają tylko nogi (+0,002) i ramiona (+0,001); tułów, głowa, miednica pogarszają. Średnie korekty 2–4,7°. Dane: `docs/qa/pose_fit_holdout.json`. **Wniosek: pozy są już tak dobre, jak pozwala sylwetka; nie wgrano do `.blend`** (`model/` bez zmian w tej sesji).
 - Eksport póz z aktualnego `.blend` zajmuje 15 s (`body_pose_export.py`), więc dane do analiz odtwarzaj na żywo.
 
-## 8. Następne kroki (sesja 5)
+**Sesja 5 (2026-10-01).** Gałąź sesji `claude/festive-heisenberg-w4x6dy` (zadanie narzucało gałąź), po testach przewinięta na `main`.
+- Środowisko od zera (sekcja 4), klient pobrany (`anim.idx/.mul`, `Bodyconv.def`, `Equipconv.def`, `tiledata.mul` rozpakowane do `uo_client/`), kopia `model/` w `/home/user/UO_Model3D_backup/` (tymczasowa).
+- **Krok 3 (broń w lewej dłoni).** Narzędzia (numpy, bez Cycles): `pipeline/weapon_pose_export.py` (macierze kości dłoni i kamera dla 210 póz × 5 kierunków, 2 s) i `pipeline/weapon_fit.py`
+  (maski sprite'ów broni z `anim.mul`, chamfer kij↔sprite jak w raporcie 8.3; polecenia `rigid`, `perpose`, `class`, `cross`, `xline`). Zaczep kamery: x = 36·X + 128,5 (zgodnie z istniejącymi narzędziami).
+  Pomiar „przed” odtwarza raport: sztywny kij w `hand.L` 5,1 px (kij), 6,0 (włócznia), 3,1 (łuk); w `hand.R` 8,5-10 px; broń 1H (katana, miecze, maczugi, topory 1H, różdżki, krótka włócznia 639, wędka) siedzi w `hand.R` (1,6-2,2 px).
+  Skala pozy kości dłoni sięga 0,9-1,3: kość broni ma `inherit_scale = NONE`, dopasowanie robione na macierzy bez skali (o ok. 0,1 px lepiej).
+  Ruch jednego chwytu na klatkę (obrót + przesunięcie w osiach `hand.L`, wokół punktu linii najbliższego początku kości; zakres do 94°, średnio ok. 30°) dopasowany wspólnie na wielu broniach klasy. Klasy mają **różny** ruch:
+  ruch kija nie przenosi się na topory i łuki (2,6-3,0 px), więc trzy kości. Weryfikacja: kij+berdysz+włócznia dopasowane, halabarda/czarny kij/gnarled 0,8-1,0 px poza próbą; oszczep/widły/kostur 0,7-0,95 px poza próbą.
+  Głowa (cięższy koniec) wszystkich klas jest na końcu `+DIR` linii (zmierzone z pikseli).
+- Wgrane do `model/UO_Body_0x190.blend` (BINARNY, zmieniony): 3 nowe kości (dzieci `hand.L`, osie jak `hand.L`, głowa kości w punkcie chwytu, bez wag na ciele) z kluczami 210 póz (`uo_weapon_bones.py`),
+  osadzone teksty `uo_bind_item.py` (nowe presety), `uo_weapon_bones.py`, `uo_place_weapon.py`, `weapon_motion.json`. Ciało i jego deformacja bez zmian (sprawdzone: max różnica wierzchołków 0).
+  `uo_bind_item.py`: `RIGID` ma `polearm`/`staff`/`weapon2h` -> `polearm.L`, `axe2h` -> `axe2h.L`, `bow`/`crossbow` -> `bow.L` (stary błąd `crossbow -> hand.R` usunięty; w starszym pliku bez tych kości spada do `hand.L`).
+- Test w pełnym potoku (`pipeline/test_weapons.py` + `test_weapons_pre.py`: cienki walec w pozie spoczynkowej na linii klasy, `uo_bind_item.py`, `render_uo_layer.py`, 256×256, 8 akcji × 5 kierunków): kij 648 sztywno w `hand.L` 6,02 px -> `polearm.L` 0,77 px;
+  berdysz 1,08; topór 611 `axe2h.L` 1,83; łuk 649 `bow.L` 1,89. Zgadza się z pomiarem numpy (siedem dziesiątych piksela różnicy to grubość walca).
+- Dokumentacja: README.md i README_EN.md (tabela PART i skryptów).
+
+## 8. Następne kroki (sesja 6)
+
+0c. (Sesja 5, gotowe) krok 3. Zostaje do rozważenia: **obrót broni wokół własnej osi (roll)** nie jest skalibrowany (kij to prosta, nie widać obrotu); topory i halabardy z płaskim ostrzem mogą być obrócone inaczej niż w UO.
+    Sprawdzić na sprite'ach ostrza (np. 613, 624) i dodać do dopasowania człon obrotu wokół osi. Kostur pasterski 621, oszczep 626 i widły 636 już działają na `polearm.L`, siekiera 615 i młot 646 na `axe2h.L` (nie są w pliku jako wagi klasy, tylko sprawdzone poza próbą). Następne po tym: krok 4 (`EDGE_COVER`) albo krok 5 (dłonie/rękawice).
+
 
 0. (Sesja 4) Poprawka póz sprawdzona i odrzucona jako słaba dźwignia (patrz dziennik). Sylwetka ciała ma granicę ok. 0,90, błąd rozłożony równo na części. Zamiast dalszej gonitwy za IoU sylwetki rozważ: (a) pozy palców/dłoni (rękawice 0,50 to najgorszy przedmiot w `test_items`), (b) kroki 3 i 4 (broń w lewej dłoni, `EDGE_COVER`), (c) rozszerzenie baseline'u `test_items` (szata, płaszcz, spódnica, katana, tarcza).
 
@@ -246,6 +267,7 @@ kolejne kroki miały liczby „przed/po”.
 4. Na koniec zaktualizuj ten plik, commit i `git push origin main`, i powiedz użytkownikowi, że temat jest zamknięty.
 
 ## 9. Pytania otwarte do użytkownika
+
 
 - ~~Warstwa korekt per klatka~~: rozstrzygnięte w sesji 2, **nie** (patrz sekcja 3). Nie wracaj do tego bez prośby użytkownika.
 - Czy wolno zainstalować `numba` i uruchomić stary `body13/itemval.py`, żeby porównać go z `test_items.py`? (Użytkownik odrzucił to w sesji 1
