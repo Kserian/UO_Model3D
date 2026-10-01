@@ -1,0 +1,498 @@
+================================================================================================
+ MODEL 3D POSTACI ULTIMA ONLINE DO ANIMOWANIA UBRAŃ, ZBROI I BRONI
+ Rozwijać UO_Model3D czy budować nowy? Raport i rekomendacja
+================================================================================================
+ Data:     2026-10-01
+ Zakres:   repozytorium Kserian/UO_Model3D (commit ea55c0b), dane klienta Nelderim
+           (Nelderim_dane_klienta_SpriteMotion.zip), SpriteMotion-UO-Toolkit.zip,
+           Maupishon/nelderim-asset-pipeline, propozycje: ChatGPT, „Ultacode”, DeepSeek, Gemini.
+ Zasada:   skryptów (ani UO_Model3D, ani SpriteMotion) nie traktowałem jako wiarygodnych.
+           Każda liczba bez dopisku „wg README” lub „wg dokumentacji” została zmierzona
+           moim własnym kodem na dostarczonych plikach.
+================================================================================================
+
+
+0. WERDYKT
+================================================================================================
+
+ROZWIJAĆ UO_Model3D. NIE BUDOWAĆ NOWEGO MODELU.
+
+Uzasadnienie w jednym akapicie:
+  Najtrudniejsza i najdroższa część jest w UO_Model3D zrobiona i sprawdziłem ją niezależnie:
+    - kamera wyznaczona z klatek;
+    - proporcje ciała;
+    - 210 póz dopasowanych do 5 kierunków naraz, czyli 1050 widoków.
+  Mój własny rasteryzer na pliku .blend daje IoU sylwetki 0,884 (akcje bez konia), równo we
+  wszystkich akcjach (0,85–0,91). Tryb EXACT_BODY odtwarza oryginał co do piksela. Chwyt katany
+  trzyma się oryginału z błędem ~0,9 px.
+  Alternatywy wypadają gorzej:
+    - model SpriteMotion: IoU 0,56–0,69 i 6 zatwierdzonych póz na 1680;
+    - propozycje czterech LLM: plany, które UO_Model3D już zrealizował.
+  Nowy model musiałby powtórzyć miesiące dopasowania póz i trafiłby w tę samą granicę:
+  czysty szkielet daje ok. 0,88, a ~0,98 wymaga korekt na klatkę.
+
+  Słabości, które zmierzyłem, nie siedzą w rdzeniu modelu, tylko w warstwie renderu i produkcji
+  przedmiotów. Da się je naprawić przyrostowo (rozdz. 3 i 4):
+    1) płótno renderu 136×120 ucina broń i wysokie nakrycia głowy;
+    2) broń dwuręczna, łuki i kusze w oryginale idą za LEWĄ dłonią, a model i presety zakładają
+       prawą (kusza) albo lewa dłoń nie jest skalibrowana;
+    3) 1-pikselowe paski skóry przy krawędziach obcisłych przedmiotów;
+    4) brak ciała kobiecego i elfów (ale ruch jest ten sam, wystarczy nowa siatka);
+    5) materiał tylko Lambert (brak połysku metalu);
+    6) brak szybkiej ścieżki „wariant istniejącego kroju” (prototyp działa, rozdz. 4.7).
+
+
+================================================================================================
+1. CO SPRAWDZIŁEM I JAK
+================================================================================================
+
+1.1 Twierdzenia z README UO_Model3D, które zweryfikowałem własnym kodem
+
+  Sylwetka (IoU, sam szkielet):
+    README:  0,879.
+    Pomiar:  0,884 bez akcji konnych, 0,865 łącznie. Na koniu oryginał chowa dalszą nogę za
+             koniem, a mój pomiar tego nie wycina.
+    Wynik:   POTWIERDZONE.
+
+  EXACT_BODY (warstwa ciała = oryginał):
+    README:  identyczna.
+    Pomiar:  65 z 65 klatek identycznych (stanie, atak, jazda).
+    Wynik:   POTWIERDZONE.
+
+  Chwyt katany:
+    README:  0,8 px.
+    Pomiar:  0,94 px średnio, mediana 0,21 px.
+    Wynik:   POTWIERDZONE.
+
+  Zapis .vd:
+    README:  poprawny.
+    Pomiar:  typ 2, 35×5, liczby klatek zgodne.
+    Wynik:   POTWIERDZONE.
+
+  Nie sprawdzałem (podaję wg README): dokładności spódnicy (0,83), płaszcza (0,73), tarczy (0,76)
+  ani jakości symulacji tkaniny.
+
+1.2 Słabości znalezione w skryptach (szczegóły w rozdz. 3)
+  - render_uo_layer.py: rozmiar płótna 136×120 wpisany na sztywno w ok. 10 miejscach.
+  - uo_bind_item.py: preset „crossbow” przypina kuszę do hand.R, a dane UO wskazują lewą dłoń.
+    Broń 2H nie ma osobnego presetu ani kalibracji.
+  - README zaleca ubranie „1–2 cm nad skórą”. To tylko 0,4–0,7 px i nie wystarcza (rozdz. 3.3).
+  - Materiał UO_Look = albedo × (0,08 + 0,92·N·L), bez połysku.
+
+1.3 Pomiary własne (skrót, pełne liczby w rozdz. 9)
+  - Inwentaryzacja ekwipunku w kliencie (tiledata + anim*.mul + Bodyconv).
+  - Porównanie ciał 400 / 401 / 605 / 606.
+  - Błędy krawędzi modelu: 1050 widoków.
+  - Jeden stały chwyt dla 16 oryginalnych broni, prawa i lewa dłoń.
+  - Rozmiary oryginalnych klatek ekwipunku względem płótna.
+  - Jointy i strefy ciała SpriteMotion względem UO_Model3D.
+  - Prototyp przemalowania oryginalnej płytówki (527) z kotwiczeniem 3D.
+
+1.4 Niedostępne
+  - Pierwszy link Google Drive (1AF3yb…) wymaga zalogowania.
+  - Plików AnimationFrame*.uop nie ma w paczce. Ludzie (400/401) są i tak w anim.mul.
+
+
+================================================================================================
+2. DLACZEGO ROZWIJAĆ, A NIE BUDOWAĆ OD NOWA
+================================================================================================
+
+2.1 Porównanie dostępnych „modeli”
+
+  UO_Model3D (to repo):
+    - Kamera: wyznaczona z klatek, ortho 28,46°, 36 px/m, 5 kierunków naraz.
+    - Ciało i ruch: MakeHuman, 55 kości, 210 póz × 5 widoków.
+    - Zgodność z oryginałem: IoU 0,884 (mój pomiar), 0,979 w v12 z korektami (wg README).
+    - Stan: działa, renderuje do .vd.
+
+  SpriteMotion-UO-Toolkit:
+    - Kamera: „ground-grid” lub kandydat 0,447, niezweryfikowana.
+    - Ciało i ruch: kilka szkiców (Mixamo, Rigify), osobne akcje na kierunek.
+    - Zgodność z oryginałem: IoU 0,56–0,69 (wg ich dokumentacji), 6 zatwierdzonych póz.
+    - Stan: szkic badawczy.
+
+  Nowy model według propozycji LLM:
+    - Kamera: do wyznaczenia.
+    - Ciało i ruch: do zrobienia.
+    - Zgodność z oryginałem: brak.
+    - Stan: plan.
+
+2.2 Granica dokładności jest strukturalna, nowy model jej nie przeskoczy
+  Oryginał UO wyrenderowano w 1997 r. innym modelem 3D i innym skinowaniem.
+    - Czysty szkielet (LBS) na dowolnej współczesnej siatce daje ok. 0,88 IoU.
+    - v12 dochodził do 0,979 dopiero dzięki 1254 korektom kształtu na klatkę i kierunek, a te
+      korekty musiał kopiować każdy przedmiot.
+  Nowy model miałby ten sam problem. Lepsza droga to dołożyć do renderu tanie domknięcie
+  krawędzi (EDGE_COVER, rozdz. 4.3) i zostawić czysty szkielet.
+
+2.3 Wartość UO_Model3D to dane, nie tylko kod
+  Te dane można przenieść do każdego przyszłego kodu, nawet przy refaktoryzacji:
+    - kamera;
+    - kształt ciała;
+    - 210 póz;
+    - kalibracja prawej dłoni (katana);
+    - ruch kości tarczy;
+    - łańcuchy spódnicy i płaszcza;
+    - bryły konia.
+
+2.4 Kiedy jednak nowy model (rozdz. 5)
+  Tylko dla innego typu ciała (np. gargulce 666/667 z 52 grupami akcji w UOP). Wtedy to nowa
+  siatka i nowe pozy, ale na tych samych narzędziach.
+
+
+================================================================================================
+3. CO DZIŚ OGRANICZA JAKOŚĆ RENDERU (POMIARY)
+================================================================================================
+
+3.1 Płótno renderu 136×120 jest za małe (najpilniejsze)
+  Płótno ma 68 px w lewo, 67 px w prawo, 86 px w górę i 33 px w dół od punktu zaczepienia.
+  Oryginalne animacje ekwipunku, które z niego wychodzą:
+
+    Warstwa                               Wychodzi poza płótno   Maks. nadmiar
+    Broń jednoręczna (OneHanded)          41 z 45                40 px
+    TwoHanded (broń 2H, tarcze, światła)  54 z 63                do 238 px
+    Nakrycia głowy (Helm)                 14 z 56                19 px
+    Ubrania i zbroje                      prawie zawsze się mieszczą
+
+  Przykłady sięgania w górę: kij 617 – 136 px, włócznia 641 – 134 px, halabarda 624 – 126 px,
+  przy 86 px miejsca. Nawet katana 627 wychodzi w 5 klatkach na 1050, broadsword 618 w 86.
+  Skutek: nowa broń, laska, włócznia czy wysoki kapelusz wyrenderowane obecnym skryptem
+  będą ucięte.
+
+3.2 Broń dwuręczna, łuki i kusze idą za LEWĄ dłonią
+  Test: dla każdej oryginalnej broni dopasowałem JEDEN sztywny „kij” w układzie kości dłoni
+  modelu dla wszystkich 1050 widoków. Błąd to średnia odległość kij↔sprite w px.
+
+    Broń 1H, prawa dłoń:
+      katana 0,94 | broadsword 1,20 | sejmitar 1,16 | kryss 1,21 | buława 1,39 | kilof 1,48
+
+    Broń 2H i strzelecka, lewa dłoń (w nawiasie wynik dla prawej dłoni):
+      kusza 2,32 (8,7) | ciężka kusza 2,57 (8,7) | łuk 2,51 (9,1)
+      młot bojowy 3,17 (9,5) | duży topór 3,17 (9,0) | kij 4,94 (10,1)
+      berdysz 5,04 (10,2) | halabarda 5,26 | czarny kij 5,75 | długa włócznia 6,06 (10,9)
+
+  Wnioski:
+    a) Broń 1H: jeden stały chwyt w prawej dłoni wystarcza (~1 px). Prawa dłoń jest dobrze
+       skalibrowana.
+    b) Broń 2H, łuki i kusze w UO są przypięte do lewej dłoni. Preset „crossbow → hand.R”
+       w uo_bind_item.py jest błędny.
+    c) Lewa dłoń modelu nie była kalibrowana na broni, więc długa broń 2H ma 3–6 px błędu
+       (kąt mnożony przez długość drzewca). Potrzebna kalibracja jak dla katany (rozdz. 4.2).
+
+3.3 Krawędź 1 px: paski skóry przy obcisłych przedmiotach
+  - Średnio 47,6 px na klatkę (6,5% pikseli oryginalnego ciała) leży poza sylwetką modelu.
+  - 61,9 px na klatkę modelu leży poza oryginałem.
+  - Z pikseli oryginału, których model nie pokrywa: 86% leży ≤ 1 px od krawędzi modelu,
+    97% ≤ 2 px, 99% ≤ 3 px.
+  - Sylwetka modelu poszerzona o 1 px zostawia odkryte 0,9% pikseli oryginału, o 2 px 0,2%.
+  Skutek: przedmiot obcisły (koszula, rękawy, płytówka, spodnie) zrobiony 1–2 cm nad skórą
+  (0,4–0,7 px) zostawia miejscami 1-pikselowy pasek skóry wzdłuż krawędzi.
+  Na przykładowej koszuli z repo pasków przy krawędzi jest średnio ~3,5 px na klatkę (maks. 10);
+  to górne oszacowanie, bo część to zamierzone brzegi rękawa.
+  EXACT_BODY tego nie usuwa: docina przedmiot po oryginale, ale nie dorysowuje go tam,
+  gdzie model był za wąski.
+
+3.4 Materiały
+  UO_Look to czysty Lambert. Oryginalne zbroje metalowe mają połyski. Nowa płytówka będzie
+  matowa w stosunku do oryginałów, dopóki nie skalibrujemy materiałów na oryginalnych
+  przedmiotach (rozdz. 4.5).
+
+3.5 Ciało kobiece i elfy (brak w modelu)
+  - Ciała 400, 401, 605 i 606 mają TEN SAM RUCH szkieletu. Ramki ograniczające różnią się
+    średnio o mniej niż 0,5 px. Wspólne przedmioty (koszula 434, spodnie 431, płytówka 527,
+    rękawice 530, buty 477, hełm 563, szata 469, katana 627, tarcza 582) leżą na 400 i 401
+    identycznie.
+  - Prawdziwe kobiece ciało UO jest w elfce 606 (anim5 #523): biust, talia, bikini.
+    IoU z 400 wynosi 0,89 równo we wszystkich 35 akcjach, czyli inny kształt przy tym samym ruchu.
+  - Model męski na 606 daje IoU 0,846, wobec 0,884 na 400. Dopasowanie samej siatki kobiecej
+    przy zamrożonych pozach powinno przywrócić ~0,88.
+  - ANOMALIA: body 401 w dostarczonym anim.mul jest prawie kopią ciała męskiego. Ma identyczne
+    kolory na wspólnych pikselach, różni się tylko krawędziami (IoU z 400 = 0,952) i wygląda
+    jak mężczyzna w przepasce. Gump paperdolla 13 to kobieta. Plik anim.mul ma datę 2026-09-28.
+    Sprawdźcie w grze lub w UOFiddlerze, jak wygląda naga postać kobieca na Nelderim.
+  - Elf męski 605 to praktycznie ciało 400 (IoU 0,995).
+
+
+================================================================================================
+4. PLAN ROZWOJU UO_Model3D: CO ZMIENIĆ DLA LEPSZEGO RENDERU
+================================================================================================
+
+Kolejność według stosunku zysku do kosztu. Każdy punkt ma kryterium odbioru.
+
+PRIORYTET 1: poprawność renderu (tanie, duży efekt)
+
+4.1 Parametryzowane płótno renderu                                          [1–2 dni]
+  - Co: zamienić stałe 136×120 / ANCHOR (68,86) w render_uo_layer.py (render, rasteryzacja
+    holdoutu, atlas oryginałów, maski konia, meta.json) na parametr CANVAS, np. 256×256
+    z punktem zaczepienia (128,192) jak w ClassicUO i SpriteMotion. Skala 36 px/m bez zmian:
+    ortho_scale rośnie proporcjonalnie, przesunięcie kamery trzyma punkt zaczepienia.
+    Atlas oryginałów i maski konia wystarczy wkleić w środek większego płótna.
+    Zapis .vd i tak przycina klatki do zawartości.
+  - Odbiór: dla klas z rozdz. 3.1 zero przyciętych klatek. Kontrola automatyczna: przedmiot
+    nie dotyka krawędzi płótna.
+
+4.2 Broń: właściwa dłoń i kalibracja lewej dłoni                            [3–5 dni]
+  - Co (a): presety w uo_bind_item.py:
+      crossbow → hand.L;
+      nowe presety weapon2h, staff, polearm → hand.L;
+      weapon (1H) zostaje na hand.R.
+    Dokumentacja: „UO trzyma broń 2H, łuki i kusze w lewej dłoni”.
+  - Co (b): kalibracja ruchu lewej dłoni na oryginalnej broni 2H, tak jak katana dla prawej.
+    Dwie możliwości:
+      * obrót hand.L per klatka dopasowany do sprite'ów kija 648, berdysza 614 i włóczni 641
+        we wszystkich 5 kierunkach naraz;
+      * albo osobna kość „weapon2h” z ruchem per klatka, jak już działająca kość tarczy shield.L.
+        To pewniejsze, bo oryginalna broń nie musi być sztywno w dłoni.
+  - Co (c): plik chwytów na klasę broni (JSON), wyznaczony automatycznie z oryginałów.
+    Nowa broń dostaje chwyt swojej klasy: punkt chwytu, oś klingi lub drzewca, długość.
+  - Odbiór: średni błąd ≤ 1,5–2 px względem oryginalnej broni tej klasy, także dla włóczni
+    i kija (dziś 5–6 px).
+
+4.3 EDGE_COVER: domknięcie krawędzi obcisłych przedmiotów                   [2–4 dni]
+  - Co: krok postprocesu w render_uo_layer.py, dla każdej klatki i kierunku:
+      1) C = piksele, gdzie przedmiot przykrywa ciało modelu (głębia przedmiotu ≤ głębia ciała);
+      2) F = piksele oryginalnego ciała, których nie rysuje przedmiot, leżące ≤ k px od C
+         (k = 1, maks. 2) i przy krawędzi sylwetki modelu, z pominięciem części ciała, które
+         są przed przedmiotem (OCCLUDERS);
+      3) piksele F dostają kolor najbliższego piksela przedmiotu.
+    Przedmiot „sięga” wtedy do oryginalnego obrysu tam, gdzie model był o 1 px za wąski.
+    Alternatywa ręczna: obcisłe zbroje ≥ 3 cm nad skórą (1 px = 2,8 cm). Do poprawienia w README.
+  - Odbiór: przy obcisłych przedmiotach 0 pikseli skóry przy zewnętrznej krawędzi
+    (metryka z rozdz. 3.3), bez zmian w miejscach, gdzie przedmiot naprawdę się kończy
+    (mankiet, dekolt).
+
+PRIORYTET 2: dokładność i zakres
+
+4.4 Ciało kobiece (i elfy) na tym samym szkielecie                        [1–2 tygodnie]
+  - Co: siatka MakeHuman female (CC0) przeniesiona na ten sam rig UO. Dopasowanie TYLKO
+    kształtu (pozy zamrożone, te same 210 póz) do klatek ciała kobiecego. Wzorzec: prawdziwe
+    401, jeśli w kliencie zostanie przywrócone; inaczej 606 bez uszu. Tekstura z klatek jak dla
+    400. Przełącznik ciała w .blend (np. uo_body_id 400/401).
+  - Przedmioty: te same pliki 3D, ponowne uo_bind_item na siatce kobiecej. Osobna animacja
+    damska jest potrzebna tylko dla krojów damskich (Equipconv.def, np. 921–927). Klasyczne
+    ubrania UO są wspólne dla obu płci.
+  - Odbiór: IoU ≥ 0,87 względem kobiecego wzorca (dziś 0,846 modelem męskim).
+
+4.5 Kalibracja materiałów na oryginalnych przedmiotach                     [3–5 dni]
+  - Co: dopasować prosty model cieniowania per klasa materiału:
+      ambient + diffuse + połysk Phonga (siła, ostrość),
+    przy znanym świetle UO (uo_light_camera_space), na pikselach oryginalnych przedmiotów:
+      metal: płytówka 527, hełm 563;
+      skóra: 542/543;
+      tkanina: koszula 434, szata 469.
+    Normalne brać z ciała modelu pod obcisłym przedmiotem. Wynik: 3–4 presety w grupie UO_Look
+    (cloth / leather / metal / gold).
+  - Odbiór: histogram jasności nowej płytówki zbliżony do oryginału. Przegląd A/B na
+    oryginalnym ciele.
+
+PRIORYTET 3: wydajność produkcji
+
+4.6 Testy regresyjne i raport QA                                            [ok. 1 tydzień]
+  - Co: zestaw 6–8 prostych replik 3D oryginalnych przedmiotów (koszula, spodnie, płytówka,
+    szata, płaszcz, buty, hełm, katana, tarcza), renderowanych pełnym pipeline'em
+    i porównywanych z oryginałami: IoU przedmiotu, paski skóry, dziury, odpryski, przycięcia
+    płótna, liczba kolorów w bloku, test hue.
+    Raport HTML: tabela akcje × kierunki i podgląd złożony na oryginalnym ciele w 8 kierunkach.
+    Uruchamiany po każdej zmianie skryptów.
+  - Odbiór: każda zmiana kodu daje liczby „przed/po” zamiast oceny na oko.
+
+4.7 Ścieżka A: przemalowanie natywnej sylwetki z kotwiczeniem 3D            [ok. 1 tydzień]
+  - Kiedy: nowy przedmiot jest wariantem istniejącego kroju UO (szata, tunika, płytówka,
+    kolczuga, skóra, buty, rękawice, płaszcz, suknia). To większość potrzeb sharda.
+  - Jak: bierzemy oryginalną animację przedmiotu (sylwetka, kontur, fałdy). Dla każdego jej
+    piksela model 3D podaje punkt ciała w pozie spoczynkowej. Projekt (rysunek przód/tył albo
+    tekstura UV) odczytujemy w tym punkcie i mnożymy przez jasność oryginału.
+  - Efekt: sylwetka i zasłanianie są oryginalne (dopasowanie co do piksela), a wzór (pas, herb,
+    lamówka, kolor przód/tył) trzyma się tego samego miejsca na ciele we wszystkich klatkach
+    i kierunkach.
+  - Prototyp: zrobiłem go na płytówce 527 (tabard z czerwonym pasem, złotą przepaską na piersi
+    i niebieskimi plecami). Działa w chodzie, ataku, czarze i 5 kierunkach. Drobne artefakty
+    pojawiają się tylko w skrajnych klatkach upadku.
+  - Różnica względem SpriteMotion: outfit-lab robi to samo w 2D (dopasowanie liniami), więc
+    wzory „pływają” między kierunkami. Kotwiczenie 3D to usuwa.
+  - Ograniczenie: nie zmienia sylwetki. Nowe kształty idą ścieżką B (pełny przedmiot 3D).
+
+4.8 Spięcie z nelderim-asset-pipeline                                       [kilka dni]
+  - .vd z UO_Model3D → receptura nelderim-asset-pipeline (ID animacji, tiledata, art,
+    gump męski 50000+ID i damski 60000+ID) → kontrola kolizji ID → zapis do klienta → klasa
+    ServUO.
+  - Opcjonalnie: render podkładu gumpa paperdolla i ikony z tego samego modelu 3D.
+
+4.9 Opcjonalnie: warstwa korekt per klatka dla przedmiotów „co do piksela”
+  - Jeśli po EDGE_COVER obcisłe zbroje nadal nie są wystarczające: przywrócić korekty z v12
+    (są w historii git, commit 1e3ec8f; skrypt uo_transfer_corrections.py) jako OPCJONALNĄ
+    warstwę stosowaną tylko w renderze. Szkielet i animacje zostają czyste.
+
+
+================================================================================================
+5. KIEDY JEDNAK BUDOWAĆ NOWY MODEL
+================================================================================================
+
+  - Inny typ ciała z innym ruchem: gargulce (666/667, 52 grupy akcji w UOP), stwory. Wtedy nowa
+    siatka i dopasowanie póz, ale NA TYCH SAMYCH narzędziach (kamera, rasteryzer, dopasowanie
+    wielowidokowe, render .vd).
+  - NIE dla kobiety ani elfów: ten sam ruch, wystarczy nowa siatka (rozdz. 4.4).
+  - NIE dla lepszej zgodności: granica 0,88 jest strukturalna dla czystego szkieletu
+    (rozdz. 2.2). Zgodność poprawiają EDGE_COVER i opcjonalne korekty (4.3, 4.9).
+  - Jeśli kod okaże się zbyt trudny w utrzymaniu: refaktoryzować i dodać testy z 4.6,
+    zachowując dane (kamera, kształt, pozy, kalibracje). Nie zaczynać od zera.
+
+
+================================================================================================
+6. OCENA PROPOZYCJI CZTERECH LLM (KRÓTKO)
+================================================================================================
+
+ChatGPT
+  Trafne:
+    - metodyka: vertical slice, porównanie sprite-to-sprite;
+    - klatki ubrań jako dane pomiarowe (dokładnie to zrobił UO_Model3D);
+    - osobna siatka 401 na zgodnym szkielecie (zgodne z pomiarem: ruch ten sam, kształt inny).
+  Błędne:
+    - „34 akcje × 8 kierunków” (jest 35 akcji, zapisane 5 kierunków, 3 rysowane lustrem);
+    - brak parametrów kamery i formatów.
+  Status: wszystko z rdzenia propozycji już jest w UO_Model3D.
+
+„Ultacode”
+  Trafne (najlepsza z czterech):
+    - 35 grup akcji, 5 kierunków + tabela luster;
+    - paleta 256 × RGB555 na blok, brak półprzezroczystości;
+    - render z ciałem jako holdout, szarości pod hue;
+    - MakeHuman, sockety;
+    - dopasowanie wielowidokowe, dopasowanie broni do oryginału.
+  Błędne:
+    - kamera „start od 45°” (jest 28,46°);
+    - cel IoU ≥ 0,95 samymi kośćmi jest nieosiągalny (0,88; 0,98 tylko z korektami na klatkę);
+    - kobieta „30–50% pracy” (wystarczy nowa siatka);
+    - brak problemów płótna, lewej dłoni i krawędzi 1 px.
+  Status: w praktyce zrealizowana przez UO_Model3D.
+
+DeepSeek
+  Trafne:
+    - rozdział o wykorzystaniu animacji ubrań.
+  Błędne:
+    - błędne liczby klatek (chód i bieg 5 zamiast 10, ataki 4–6 zamiast 7);
+    - „34 akcje”;
+    - stała rozdzielczość 64×64 / 128×128 (klatki są przycinane do zawartości);
+    - niesprawdzone sugestie (konwersje NWN2, uo-rust-libs).
+  Status: najsłabsza.
+
+Gemini
+  Trafne:
+    - kamera ortograficzna, holdout;
+    - Data Transfer wag;
+    - wspólny rig dla 401.
+  Błędne:
+    - „UO = dimetria 2:1”: kafle UO to romby 44×44 (1:1), a kamerę postaci zmierzono na 28,46°;
+    - „renderować 8 kierunków obracając root”: klient ma zapisane 5, a 3 rysuje lustrem;
+    - rozmiary i liczby klatek.
+  Status: krótka; kluczowe twierdzenia geometryczne są nieprecyzyjne.
+
+
+================================================================================================
+7. SPRITEMOTION-UO-TOOLKIT: CO WZIĄĆ, CZEGO NIE
+================================================================================================
+
+  Model i jointy:
+    - Szkic 3D ma IoU 0,56–0,69 (wg ich dokumentacji), a zatwierdzonych póz jest 6 na 1680
+      (akcja 22, SE).
+    - Ich szkielet 2D „astra” różni się od jointów rzutowanych z UO_Model3D o 2–3 px (mediana).
+    - Na 6 zatwierdzonych pozach łokcie i kolana różnią się o ~6 px; jeden widok nie wyznacza
+      głębi, co sami przyznają.
+    - Etykiety lewa/prawa są niespójne: A = lewa w estymatach, A = prawa w zatwierdzonych.
+    → Nie poprawią UO_Model3D, który ma spójne jointy 3D dla wszystkich 1050 widoków.
+
+  Strefy ciała (maski z oryginalnych ubrań):
+    - Pomysł dobry. Zgodność z częściami ciała UO_Model3D: 73% pikseli.
+    - Po strefach: głowa i tułów 0,90–0,91, uda 0,91, stopy 0,98, przedramiona 0,73,
+      ramiona 0,68, dłonie 0,63.
+    - Nie rozróżniają lewej i prawej strony ani głębi.
+    → Przydatne jako niezależna kontrola w QA (4.6). Do budowy modelu nie są potrzebne.
+
+  Kamera:
+    - „ground-grid” to siatka kafli, a nie kamera postaci.
+    - Kamera UO_Model3D w ich notacji to [[22, 22, 0], [10.48, -10.48, -27.35]] na kafel.
+    → Używać kamery UO_Model3D.
+
+  Outfit-lab:
+    - Dobry kierunek: natywne sylwetki, porównanie UO/New/Off, 8 kierunków, ewidencja.
+    - 2D przenoszenie tekstury ma ograniczenia (rozdz. 4.7). AxisFit broni działa w 2D tylko
+      dla wąskiej broni.
+    → Przejąć pomysł ścieżki A, ale z kotwiczeniem 3D. Przejąć dyscyplinę przeglądu.
+
+  Hub i nelderim-asset-pipeline:
+    → Użyć jako etapu końcowego (4.8).
+
+
+================================================================================================
+8. DANE KLIENTA NELDERIM: FAKTY ISTOTNE DLA RENDERU
+================================================================================================
+
+  Ludzie:
+    - 35 akcji × 5 zapisanych kierunków; 210 klatek na kierunek; 1050 obrazków na ciało.
+    - Klatki na akcję:
+        0–3 chód/bieg: 10;  4 stanie: 1;  5–6 fidget: 5;  7–8 postawa: 1;  9–14 ataki: 7;
+        15 chód bojowy: 10;  16–19 czary, łuk, kusza: 7;  20 trafienie: 5;  21–22 śmierć: 6;
+        23–24 jazda: 5;  25 stanie konno: 1;  26–27: 5;  28: 7;  29: 5;  30 blok: 5;
+        31 cios: 7;  32–34: 5.
+    - Blok (akcja+kierunek): paleta 256 kolorów RGB555, RLE, 0x0000 = przezroczysty.
+
+  Ekwipunek:
+    - 1109 przedmiotów ubieralnych z animacją; 614 unikalnych ID animacji.
+    - 354 animacje mają komplet 35×5, a 353 z nich mają liczbę klatek identyczną z ciałem 400.
+    - To ok. 370 tys. oryginalnych klatek zsynchronizowanych z ciałem: zbiór kalibracyjny
+      i testowy dla broni, materiałów, QA oraz szablony dla ścieżki A.
+
+  Konwersje:
+    - Equipconv.def dla 401 ma ok. 30 konwersji (SE/ML, smocza zbroja, elven plate, wpisy
+      Nelderim). Klasyczne ubrania i zbroje są wspólne dla obu płci.
+    - Własne animacje Nelderim siedzą w anim3/anim4 przez Bodyconv.def
+      (np. 420 Cloth Hood → anim4 #521, 422 Plecak → anim3 #497).
+
+
+================================================================================================
+9. ZAŁĄCZNIK: LICZBY Z POMIARÓW
+================================================================================================
+
+9.1 Model UO_Model3D vs oryginał body 400 (mój rasteryzer, plik .blend, 1050 widoków)
+  - IoU: średnia 0,865 (wszystkie), 0,884 bez akcji konnych, mediana 0,882, p10 0,795.
+  - IoU per akcja (bez konia):
+      chód 0,90 | stanie 0,91 | ataki 0,86–0,89 | czary 0,85–0,88 | śmierć 0,86 | ukłon/salut 0,89–0,90
+  - Piksele na klatkę: ciało 735,8 | brakujące 47,6 | nadmiarowe 61,9.
+  - Brakujące piksele, odległość od krawędzi modelu: ≤ 1 px 86,4% | ≤ 2 px 97,1% | ≤ 3 px 99,2%.
+  - Model poszerzony o 0 / 1 / 2 px zostawia odkryte 6,47% / 0,88% / 0,19% pikseli oryginału.
+
+9.2 Ciała
+  - 401 vs 400: IoU 0,952; kolory identyczne na wspólnych pikselach; 88% różnic ≤ 1 px od
+    krawędzi 400.
+  - 606 vs 400: IoU 0,89–0,90 w każdej akcji; ramki ograniczające ±0,5 px; 12% identycznych kolorów.
+  - 605 vs 400: IoU 0,995.
+  - Model męski: na 400 0,884 | na 401 0,887 | na 606 0,846 (bez akcji konnych).
+
+9.3 Broń: jeden sztywny chwyt na broń, średnia odległość kij↔sprite w px (mediana)
+  Prawa dłoń:
+    katana 0,94 (0,21) | broadsword 1,20 (0,36) | sejmitar 1,16 (0,35) | kryss 1,21 (0,58)
+    buława 1,39 (0,52) | kilof 1,48 (0,87)
+  Lewa dłoń:
+    kusza 2,32 (1,67) | ciężka kusza 2,57 (2,04) | łuk 2,51 (1,94) | młot bojowy 3,17 (2,34)
+    duży topór 3,17 (2,48) | kij 4,94 (4,41) | berdysz 5,04 (4,49) | halabarda 5,26 (4,72)
+    czarny kij 5,75 (5,31) | długa włócznia 6,06 (5,74)
+  Ta sama broń 2H i strzelecka w prawej dłoni: 8,7–10,9 px.
+
+9.4 Płótno 136×120 względem oryginalnych animacji ekwipunku
+  - Wychodzi poza płótno: 116 z 354 animacji.
+      OneHanded 41/45 (maks. +40 px) | TwoHanded 54/63 | Helm 14/56 (maks. +19 px)
+      OuterTorso 1/27 | Cloak 1/5 | pozostałe ~0.
+
+9.5 SpriteMotion vs UO_Model3D
+  - Jointy, mediana różnicy [px]:
+      głowa 1,1 | łokieć 2,3 | nadgarstek 2,4 | bark 2,6 | biodro 3,1 | kolano 2,6 | kostka 2,1
+  - Strefy ciała: zgodność 73% pikseli.
+
+9.6 Weryfikacja renderera UO_Model3D (bpy 4.2, Cycles)
+  - EXACT_BODY: 65/65 klatek identycznych z oryginałem.
+  - Przykładowa koszula: .vd poprawny (typ 2, 35×5); różnica względem pliku w repo średnio
+    8,5 px na klatkę (plik w repo wyrenderowany starszą wersją skryptu).
+
+================================================================================================
+KONIEC RAPORTU
+================================================================================================
