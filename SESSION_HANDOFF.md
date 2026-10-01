@@ -39,8 +39,8 @@ na naszym ciele, wyrenderowany do `.vd`, zgadza się z oryginalnym ciałem i ory
   zaraz po baseline'ie.
 - `EDGE_COVER` (krok 4) tylko ukrywa błąd ciała w renderze (dociąga przedmiot do oryginalnego obrysu), nie poprawia modelu. Nie zastępuje kroku 5.
 - Poprawianie samej sylwetki ma granicę ok. 0,88 dla czystego szkieletu (raport 2.2). v12 miał 0,979 dzięki 1254 korektom kształtu na klatkę,
-  które każdy przedmiot musiał kopiować (commit `1e3ec8f`, `pipeline/uo_transfer_corrections.py`). Możliwa opcjonalna warstwa korekt
-  stosowana tylko w renderze (raport 4.9): decyzja użytkownika, patrz sekcja 9.
+  które każdy przedmiot musiał kopiować (commit `1e3ec8f`, `pipeline/uo_transfer_corrections.py`). Warstwa korekt w renderze (raport 4.9)
+  odrzucona przez użytkownika (sekcja 3): poprawiamy model, nie maskujemy go.
 
 Model 3D nagiego ciała UO (body 0x190 / 400) służy do generowania animacji ubrań, zbroi, broni, butów i tarcz w formacie
 `.vd` dla klienta Ultima Online (serwer: Nelderim). Kolejność prac wybrana przez użytkownika:
@@ -95,6 +95,7 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
 | Praca | Na `main`; backup w `/home/user/UO_Model3D_backup/` (tylko w sesji 1) i w gałęzi `claude/friendly-knuth-44xtfw` |
 | Klatki ciała | Zostają |
 | Anim3/anim4 z klienta | Niepotrzebne |
+| Warstwa korekt kształtu per klatka (v12) | **NIE** (sesja 2, decyzja użytkownika). Ciało ma być poprawiane samo, w modelu 3D, tak by nowe przedmioty dobrze pasowały i wyglądały w grze. |
 
 ## 4. Środowisko i uruchamianie
 
@@ -203,21 +204,24 @@ kolejne kroki miały liczby „przed/po”.
 - Krok 2: repliki dopasowane do sprite'ów, naprawiony błąd wag, baseline zapisany (patrz sekcja 6). Zmienione pliki: `pipeline/test_items.py`,
   `pipeline/test_items_pre.py`, nowy `docs/qa/items_baseline.json`.
 
+- Krok 5 rozpoczęty: `pipeline/body_silhouette_qa.py` (sylwetka czystego ciała 3D vs 1050 oryginalnych klatek) i pomiar „przed”:
+  `docs/qa/body_silhouette_baseline.json`. **IoU 0,876** (zgodne z raportem 0,88), stosunek pól 0,998 (ciało nie jest ogólnie grubsze/chudsze, błąd to kształt i poza),
+  nadmiar 47 px, braki 50 px na klatkę, kierunki 0,872–0,880, najgorsze akcje 29, 25, 26, 17, 28, 21 (0,825–0,851). Render ciała 35 akcji trwa ok. 15 min
+  (`run_render_headless.py ... LAYER='"body"' EXACT_BODY=False EXACT_COLORS=False CANVAS='(136,120)' ANCHOR='(68,86)'`, uruchamiaj w tle).
+
 ## 8. Następne kroki (sesja 3)
 
 1. Kopia zapasowa `model/` poza repo, środowisko (sekcja 4).
 2. Krok 5 (poprawa ciała, wysoki priorytet): baseline jest (sekcja 6). Najpierw sprawdź, skąd biorą się paski ≤ 1 px (obrys ciała vs sprite w `04_stand`:
    porównaj sylwetkę ciała z klatkami koszuli 434 / spodni 431 / butów 477 / hełmu 563 i policz, o ile px sprite wychodzi poza ciało), potem rękawice 530
    i buty 477 jako ograniczenie orientacji dłoni i stóp. Mierz skutek w `test_items.py` (przed/po względem `docs/qa/items_baseline.json`).
-   Przed krokiem 5 zapytaj użytkownika o warstwę korekt per klatka (sekcja 9).
 3. Krok 4 (`EDGE_COVER`) i krok 3 (broń w lewej dłoni; klient potrzebny do `.vd` kijów 648, berdysza 614, włóczni 641, kuszy, łuku,
    mapowanie w `client/extract/item_animations.json`) dopiero potem.
 4. Na koniec zaktualizuj ten plik, commit i `git push origin main`, i powiedz użytkownikowi, że temat jest zamknięty.
 
 ## 9. Pytania otwarte do użytkownika
 
-- **Decyzja do podjęcia:** czy dopuszczasz opcjonalną warstwę korekt kształtu per klatka (jak v12, IoU 0,979), stosowaną tylko w renderze, żeby
-  ciało dokładniej odwzorowywało UO, przy czystym szkielecie i animacjach? Zapytaj użytkownika przed krokiem 5, bo zmienia to jego zakres.
+- ~~Warstwa korekt per klatka~~: rozstrzygnięte w sesji 2, **nie** (patrz sekcja 3). Nie wracaj do tego bez prośby użytkownika.
 - Czy wolno zainstalować `numba` i uruchomić stary `body13/itemval.py`, żeby porównać go z `test_items.py`? (Użytkownik odrzucił to w sesji 1
   bez podania powodu, więc zapytaj, zanim to zrobisz.)
 - Czy `Nelderim_dane_klienta_SpriteMotion.zip` z raportu to ten sam zestaw co klient, który użytkownik udostępnia?
