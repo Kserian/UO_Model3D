@@ -254,6 +254,8 @@ items into it, not the other way round.
                                # no holes); 0 = plain Cycles holdout
    OCCLUDERS = [...]           # body parts that may hide the item: arms, hands, head, legs; never the torso
                                # (items are worn over it)
+   OWN_PARTS_NEVER_HIDE = True # body parts the item is skinned to (trousers: thighs, shins) never hide it: the item wraps
+                               # them, and their skin in front of the shell cut 1-px strips off the sides
    DESPECKLE = 28              # single dark dots inside the item (deep details, rivets) take the colour around
                                # them (0 = off)
    FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled (0 = off)

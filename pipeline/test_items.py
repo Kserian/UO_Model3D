@@ -38,10 +38,10 @@ DEFAULT_ITEMS = "shirt,plate,pants,boots,gloves,helm"
 DEFAULT_ACTIONS = "04_stand,00_walk_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward,25_mounted_stand"
 
 
-def render(blend, out, item, actions, canvas, anchor, fit, spec_path):
+def render(blend, out, item, actions, canvas, anchor, fit, spec_path, extra=()):
     env = dict(os.environ, UO_TEST_SPEC=spec_path, UO_TEST_ITEM=item, UO_TEST_FIT="1" if fit else "0", UO_TEST_SCRIPTS=HERE)
     cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, out, "--pre", os.path.join(HERE, "test_items_pre.py"),
-           'LAYER="clothing"', "ONLY=%r" % (actions,), "CANVAS=%r" % (canvas,), "ANCHOR=%r" % (anchor,)]
+           'LAYER="clothing"', "ONLY=%r" % (actions,), "CANVAS=%r" % (canvas,), "ANCHOR=%r" % (anchor,)] + list(extra)
     r = subprocess.run(cmd, capture_output=True, text=True, env=env)
     if r.returncode:
         sys.exit("render of %s failed:\n%s\n%s" % (item, r.stdout[-2000:], r.stderr[-2000:]))
@@ -98,6 +98,7 @@ if __name__ == "__main__":
     ap.add_argument("--fit", action="store_true", help="also run uo_fit_item.py before uo_bind_item.py")
     ap.add_argument("--canvas", default="256,256"); ap.add_argument("--anchor", default="128,192")
     ap.add_argument("--tmp"); ap.add_argument("--out"); ap.add_argument("--img")
+    ap.add_argument("--set", action="append", default=[], metavar="NAME=VALUE", help="extra render_uo_layer.py setting, e.g. --set HOLDOUT_MARGIN=0.05 (repeatable)")
     a = ap.parse_args()
     tmp = os.path.abspath(a.tmp) if a.tmp else tempfile.mkdtemp(prefix="test_items_")
     os.makedirs(tmp, exist_ok=True)
@@ -109,7 +110,7 @@ if __name__ == "__main__":
     print("%-7s %6s %6s %8s %8s %6s %6s %7s %7s | %s" % ("item", "frames", "IoU", "outside", "missing", "strip", "pieces", "clipped", "colors", "IoU per action"))
     for item in a.items.split(","):
         t0 = time.time()
-        root = render(os.path.abspath(a.blend), os.path.join(tmp, item), item, actions, canvas, anchor, a.fit, spec_path)
+        root = render(os.path.abspath(a.blend), os.path.join(tmp, item), item, actions, canvas, anchor, a.fit, spec_path, a.set)
         rows, blocks, imgs = measure(root, item, canvas, anchor, show)
         res[item] = s = summarize(rows, blocks)
         print("%-7s %6d %6.3f %8.1f %8.1f %6.1f %6.2f %7d %7d | %s   (%.0fs)" % (

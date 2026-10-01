@@ -39,7 +39,10 @@ HOLDOUT_MARGIN = 0.01              # m: in the clothing layer the body hides an 
 OCCLUDERS = ["head", "upper_arm", "forearm", "hand", "thigh", "shin", "foot"]   # body parts that may hide items
                                    # (with HOLDOUT_MARGIN > 0); the torso (pelvis, spine, chest, neck) never does, because
                                    # items are worn over it and a torso poking through is a model error, not an occluder
-DESPECKLE = 28                     # clothing: single dark pixels inside the item darker than their neighbours by more
+OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs item: thighs, shins, pelvis) never hide it: the item
+                                   # wraps them, so their skin in front of the item shell is the item's own edge, not an occluder
+                                   # (it cut 1-px strips off the sides of trousers). False = every OCCLUDERS part may hide it
+DESPECKLE = 28                    # clothing: single dark pixels inside the item darker than their neighbours by more
                                    # than this (0-255) take the colour around them - deep sculpt details / rivets that
                                    # turn into black dots at UO size. 0 = off
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
@@ -419,7 +422,33 @@ def body_part_mask(parts):
     return np.array([names[k] in parts for k in dom])
 
 
-OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))
+def worn_parts(share=0.04):
+    """body parts (names without .L / .R) the visible items are skinned to: an item wraps them, so they never hide it.
+    A part counts when it carries at least `share` of an item's total skin weight. Rigid items (one bone: weapons, shields,
+    quivers) wrap nothing, except on the head (hair, hats), which they sit on."""
+    sub = {"upper_arm_twist": "upper_arm", "forearm_twist": "forearm", "toe": "foot"}
+    out = set()
+    for o in clothes:
+        if o.hide_render or not o.vertex_groups:
+            continue
+        names = [g.name.split(".")[0] for g in o.vertex_groups]
+        names = ["hand" if n.startswith("finger") else sub.get(n, n) for n in names]
+        tot = {}
+        for v in o.data.vertices:
+            for g in v.groups:
+                tot[names[g.group]] = tot.get(names[g.group], 0.0) + g.weight
+        if len(o.vertex_groups) == 1:
+            out |= {p for p in tot if p == "head"}
+            continue
+        s = sum(tot.values())
+        out |= {p for p, w in tot.items() if s > 0 and w / s >= share}
+    return out
+
+
+WORN = worn_parts() if (LAYER == "clothing" and OWN_PARTS_NEVER_HIDE) else set()
+OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP keeps the items away from
+HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
+print("render_uo_layer: items wrap %s; body parts that may hide them: %s" % (sorted(WORN), sorted(set(OCCLUDERS) - WORN)))
 
 
 def raster(objs, tri_mask=None):
@@ -470,7 +499,7 @@ def body_occlusion(free, margin):
     """the clothing render without the body, with the body in front of the item removed. The body hides a pixel only
     where it is more than `margin` in front of the visible item surface. Returns (hold, body coverage)."""
     cov, _ = raster([body])
-    occ, zb = raster([body], OCCLUDER_TRIS)            # only the parts that may hide items (not the torso)
+    occ, zb = raster([body], HIDER_TRIS)               # only the parts that may hide items (not the torso)
     _, zi = raster([o for o in clothes if not o.hide_render])
     seen = free[..., 3] >= 0.5
     for _ in range(2):                                  # item pixels Cycles drew but the raster missed: neighbour depth

@@ -172,7 +172,8 @@ kolejne kroki miały liczby „przed/po”.
 - [x] **3. Broń w lewej dłoni (4.2). ZROBIONE w sesji 5** (kość na klasę broni, patrz dziennik): `polearm.L` (kij, włócznia, halabarda, berdysz, oszczep, widły, kostur), `axe2h.L`
       (topory 2H, siekiera, młot), `bow.L` (łuk, kusze). Błąd (chamfer px, zmierzony na `.blend` i w pełnym renderze): kij 5,1 -> 0,6-0,8, włócznia 6,0 -> 0,7, topór 3,7 -> 1,4-1,8, łuk 3,1 -> 1,8-1,9.
       Plik chwytów: `pipeline/weapon_motion.json`. Dokładne liczby: `docs/qa/weapons_left_hand.json`.
-- [ ] **4. `EDGE_COVER` (4.3).** Domknięcie 1-pikselowych pasków skóry. Odbiór: 0 pikseli skóry przy krawędzi obcisłych przedmiotów.
+- [~] **4. `EDGE_COVER` (4.3).** Główna przyczyna pasków znaleziona i naprawiona w sesji 6 (reguła `OWN_PARTS_NEVER_HIDE`, patrz dziennik): `test_items` 0,691 -> 0,717.
+      Sam `EDGE_COVER` po tej naprawie daje już tylko +0,015-0,025 (symulacja offline), a zysk leży głównie przy talii/dole (nieprecyzyjne cięcia repliki), nie na bokach, więc **odłożony**; wracaj do niego tylko, jeśli paski ≤ 1 px nadal będą widoczne na prawdziwych przedmiotach.
 - [ ] 5. **(WYSOKI PRIORYTET po baseline'ie, realizuje cel nadrzędny)** Analiza klatek ekwipunku pod kątem lepszego ciała: rękawice 530 / buty 477 / hełm 563 jako dodatkowe ograniczenie
       orientacji dłoni, stóp i głowy przy dopasowaniu póz. Pomysł z sesji 1, jeszcze nie sprawdzony.
 - [ ] 6. Materiały (4.5), ciało kobiece/elfy (4.4), ścieżka A „przemalowanie z kotwiczeniem 3D” (4.7), spięcie z nelderim-asset-pipeline (4.8).
@@ -240,7 +241,20 @@ kolejne kroki miały liczby „przed/po”.
   berdysz 1,08; topór 611 `axe2h.L` 1,83; łuk 649 `bow.L` 1,89. Zgadza się z pomiarem numpy (siedem dziesiątych piksela różnicy to grubość walca).
 - Dokumentacja: README.md i README_EN.md (tabela PART i skryptów).
 
-## 8. Następne kroki (sesja 6)
+**Sesja 6 (2026-10-01).** Gałąź sesji `ccr-9ece647f-fy9cvt` (zadanie narzucało gałąź), po testach przewinięta na `main`. Środowisko od zera (`pip install numpy pillow scipy "bpy==4.2.*"`), klient niepotrzebny (sprite'y w `pipeline/body13/mul/`).
+- Wybór: krok 5 (rękawice). Pomiar pokazał, że sprite'y rękawic nie dają nowego ograniczenia: dłoń w `hand.R/L` ma błąd ok. 2-3 px/klatkę, tak jak reszta ciała, a obrys dłoni już wynika z klatek samego ciała. IoU rękawic 0,50 to głównie różnica między powłoką repliki a narysowanym sprite'em (palce, mankiet), nie błąd ciała.
+- **Diagnoza braków przedmiotów (zmierzona na klatkach):** 70-85% pikseli „brak" (sprite ma, render nie) leży **wewnątrz sylwetki modelu ciała**, a nie poza nią. Czyli to nie błąd obrysu ciała (krok 5), tylko render: części ciała z `OCCLUDERS` (udo, goleń, ramię...) zasłaniały przedmiot, który same okrywają, i obcinały mu krawędzie. Test: `OCCLUDERS=[]` daje spodnie 0,757 -> 0,829.
+- **Poprawka w `render_uo_layer.py`:** nowe `OWN_PARTS_NEVER_HIDE = True` + `worn_parts()`: części ciała, do których przedmiot jest oskórowany (próg 4% wag; przedmioty sztywne z jedną kością: weapon, shield, quiver nie okrywają niczego, poza `head`), nie zasłaniają go. `HIDER_TRIS` (holdout) osobno od `OCCLUDER_TRIS` (`BODY_GAP` nadal odpycha przedmiot od wszystkich okluderów).
+- **Wynik (`test_items`, replika, 6 przedmiotów × 6 akcji × 5 kierunków, 256×256):** średnia 0,691 -> 0,717: koszula 0,681 -> 0,706, płytówka 0,693 -> 0,690 (bez zmian), spodnie 0,752 -> 0,799, buty 0,755 -> 0,768, rękawice 0,503 -> 0,558, hełm 0,762 -> 0,780. Dane: `docs/qa/items_after_own_parts.json`. Nadmiar px rośnie (koszula 37 -> 42), bo okluder przycinał też nadmiar repliki.
+- Symulacja EDGE_COVER offline (dokładany pasek ≤ 1 px do oryginalnego obrysu): przed naprawą +0,04..0,07, po naprawie +0,015..0,025; ograniczony do pasa przy krawędzi modelu daje ~0. Patrz krok 4.
+- `test_items.py`: nowa opcja `--set NAME=VALUE` (dowolne ustawienie `render_uo_layer.py`). `test_canvas.py`: wyłącza nową regułę w teście kanwy (referencja ea55c0b jej nie ma); wynik jak przed zmianą (15 OK, 256×256 clothing FAIL o 2 px = zaokrąglenia, jak w sesji 1).
+- `model/UO_Body_0x190.blend` ZMIENIONY (binarny): tylko osadzony tekst `render_uo_layer.py` (sync). Kopia: `/home/user/UO_Model3D_backup/` (tymczasowa) i commit `a99e81f`.
+- Uwaga do metryki: replika w `test_items` ma niedokładne cięcia (talia, dół, dekolt), więc część „braków" to artefakt repliki, nie renderu.
+
+## 8. Następne kroki (sesja 7)
+
+0d. (Sesja 6) Zostaje: (a) prawdziwy przedmiot zamiast repliki (np. sprawdzić koszulę/spodnie/płytówkę zrobioną ręcznie) dla oceny reguły `OWN_PARTS_NEVER_HIDE`; płytówka nie zyskała (0,690), sprawdź czemu (okluder uda/ramion przy grubszej powłoce);
+    (b) dokładniejsze cięcia repliki w `test_items.py` (zrange z sprite'a po akcjach), żeby metryka nie mieszała błędu repliki z błędem renderu; (c) krok 6 (materiały) albo krok 7 (tworzenie przedmiotów), skoro ciało i render są blisko granicy.
 
 0c. (Sesja 5, gotowe) krok 3. Zostaje do rozważenia: **obrót broni wokół własnej osi (roll)** nie jest skalibrowany (kij to prosta, nie widać obrotu); topory i halabardy z płaskim ostrzem mogą być obrócone inaczej niż w UO.
     Sprawdzić na sprite'ach ostrza (np. 613, 624) i dodać do dopasowania człon obrotu wokół osi. Kostur pasterski 621, oszczep 626 i widły 636 już działają na `polearm.L`, siekiera 615 i młot 646 na `axe2h.L` (nie są w pliku jako wagi klasy, tylko sprawdzone poza próbą). Następne po tym: krok 4 (`EDGE_COVER`) albo krok 5 (dłonie/rękawice).
