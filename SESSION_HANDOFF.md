@@ -209,7 +209,19 @@ kolejne kroki miały liczby „przed/po”.
   nadmiar 47 px, braki 50 px na klatkę, kierunki 0,872–0,880, najgorsze akcje 29, 25, 26, 17, 28, 21 (0,825–0,851). Render ciała 35 akcji trwa ok. 15 min
   (`run_render_headless.py ... LAYER='"body"' EXACT_BODY=False EXACT_COLORS=False CANVAS='(136,120)' ANCHOR='(68,86)'`, uruchamiaj w tle).
 
-## 8. Następne kroki (sesja 3)
+**Sesja 3 (2026-10-01).** Praca na gałęzi sesji `ccr-22f58077-ol0axl` (zadanie narzucało gałąź). **Użytkownik: nic nie pushować, zmiany mają zostać lokalnie** (commity lokalne, bez `git push`).
+- Krok 5a: pomiar błędu per część ciała bez Cycles (szybki raster, 25 s na 1050 klatek): `pipeline/body_part_raster.py` + `body_part_qa.py`; zgodny z Cycles
+  (różnica ok. 7 px/klatkę), po uwzględnieniu proxy konia w akcjach 23–29 IoU 0,879 (baseline Cycles 0,876). Błąd rozłożony równo na wszystkie części (uda, golenie, głowa, ramiona), brak jednej dominującej. Globalne przesunięcie o 0,25–0,5 px pogarsza wynik: zaczep jest dobry.
+- Znalezione: kości `clavicle.L/R` mają Deform wyłączony, Blender pomija ich grupy i renormalizuje wagi (`pipeline/body_pose_export.py` to uwzględnia; LBS odtwarza ciało co do 0,1 mm).
+- Krok 5c: `body_pose_export.py` (dane póz do npz) -> `body_shape_fit.py` (przesunięcia D wierzchołków spoczynkowych z kontur-ograniczeń: sygnowana odległość konturu modelu od konturu sprite'a, układ rozwiązywany rzadko z gładkością ważoną 1/długość krawędzi, naprawa odwróconych ścianek) -> `body_shape_apply.py` (zapis do `.blend`). Parametry finalne: `--iters 2 --lam 100000 --mu 100 --weighted --holdout 0 --maxd 0.04`.
+- **Wynik (sylwetka 1050 klatek, Blender): IoU 0,879 -> 0,8945.** Na klatkach wyłączonych z dopasowania (akcje % 5 == 2) +0,013; bez jednego kierunku (dir 2) +0,019; bez dir 4 brak zysku (skrajny widok nie wynika z innych). Przedmioty (`test_items.py`, replika): średnia 0,677 -> 0,691 (koszula 0,662->0,681, płytówka 0,679->0,693, spodnie 0,721->0,752, buty 0,742->0,755, rękawice 0,496->0,503, hełm 0,764->0,762); zapisane w `docs/qa/items_after_shape.json`, części ciała przed/po w `docs/qa/body_parts_before.json` / `body_parts_after.json`.
+- `model/UO_Body_0x190.blend` ZMIENIONY (binarny): siatka `UO_Body` przesunięta o `pipeline/body_shape_delta.npz` (średnio 1,4 cm, maks. 4 cm; 8 odwróconych ścianek na 26,7 tys., głównie kciuk i palce stóp). Wagi, UV, szkielet, teksty bez zmian. Kopia sprzed zmiany: commit `053e219` (plik `model/` w git) i `/home/user/UO_Model3D_backup/` (tylko ta sesja).
+- Odrzucone w drodze: regularyzacja membranowa bez wag (2000+ odwróconych ścianek), przesunięcia tylko po normalnej (też odwracały ścianki), `bilap`.
+
+## 8. Następne kroki (sesja 4)
+
+0. (Sesja 3, gotowe) kształt ciała dopasowany, patrz dziennik. Następna dźwignia: **poprawka póz** (kości główne × 210 póz × 5 widoków) liniaryzacją konturów jak w `body_shape_fit.py`; poza zapisana w fcurves (kwaternion + skala + lokacja pelvis, klatki 1+3i); nowa siatka wymaga ponownego sprawdzenia. Potem dłonie (sprite+ w `hand.R` największy) i głowa.
+
 
 1. Kopia zapasowa `model/` poza repo, środowisko (sekcja 4).
 2. Krok 5 (poprawa ciała, wysoki priorytet, bez warstwy korekt: decyzja użytkownika). Pomiary „przed” są: `docs/qa/body_silhouette_baseline.json`
