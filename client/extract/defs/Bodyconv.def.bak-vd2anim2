@@ -1,0 +1,858 @@
+# This file overloads the data loaded from the CD/HD cache system from a very				
+"# low level.  Given a object type, it will return the index in"				
+# anim2.mul/anim3.mul/etc the game should use instead of art from anim.mul				
+#				
+# 0 - 199 = MOnsters				
+# 200 - 399 = Animals				
+# 400 + = HUmans/Elves and Equipment				
+#				
+# The maximum value for an index is 2048.				
+#				
+# <Object> <LBR version (anim2)> <AoS version (anim3)> <AoW version (anim4)><Mondain version (anim5)>				
+#				
+157	1	-1	-1	-1	-1
+173	2	-1	-1	-1	-1
+11	3	-1	-1	-1	-1
+19	3	-1	-1	-1	-1
+20	4	-1	-1	-1	-1
+
+# This was the original line for the giant spiders since LBR				
+#28	5	-1	-1	-1	-1
+#This line reverts the spiders back to the original style				
+28	-1	-1	-1	-1	-1
+
+
+101	6	-1	-1	-1	-1
+
+# This was the original line for the Daemon since LBR				
+#9	9	-1	-1	-1	-1
+#This line reverts the Daemon back to the original style				
+9	-1	-1	-1	-1	-1
+
+
+10	7	-1	-1	-1	-1
+38	8	-1	-1	-1	-1
+40	9	-1	-1	-1	-1
+102	10	-1	-1	-1	-1
+43	11	-1	-1	-1	-1
+103	12	-1	-1	-1	-1
+104	13	-1	-1	-1	-1
+62	14	-1	-1	-1	-1
+128	15	-1	-1	-1	-1
+176	16	-1	-1	-1	-1
+#130	17	-1	-1	-1
+74	18	-1	-1	-1	-1
+77	19	-1	-1	-1	-1
+124	20	-1	-1	-1	-1
+125	21	-1	-1	-1	-1
+126	21	-1	-1	-1	-1
+146	22	-1	-1	-1	-1
+148	23	-1	-1	-1	-1
+
+# This was the original line for the wraith since LBR				
+#26	24	-1	-1	-1	-1
+# This reverts the asset back to its original version				
+26	-1	-1	-1	-1	-1
+
+
+149	25	-1	-1	-1	-1
+152	26	-1	-1	-1	-1
+76	27	-1	-1	-1	-1
+154	28	-1	-1	-1	-1
+752	29	-1	-1	-1	-1
+182	30	-1	-1	-1	-1
+189	31	-1	-1	-1	-1
+764	32	-1	-1	-1	-1
+765	33	-1	-1	-1	-1
+766	34	-1	-1	-1	-1
+767	35	-1	-1	-1	-1
+768	36	-1	-1	-1	-1
+
+770	38	-1	-1	-1	-1
+771	39	-1	-1	-1	-1
+772	40	-1	-1	-1	-1
+773	41	-1	-1	-1	-1
+774	42	-1	-1	-1	-1
+775	43	-1	-1	-1	-1
+776	44	-1	-1	-1	-1
+777	45	-1	-1	-1	-1
+778	46	-1	-1	-1	-1
+779	47	-1	-1	-1	-1
+780	48	-1	-1	-1	-1
+781	49	-1	-1	-1	-1
+782	50	-1	-1	-1	-1
+783	51	-1	-1	-1	-1
+784	52	-1	-1	-1	-1
+785	53	-1	-1	-1	-1
+786	54	-1	-1	-1	-1
+787	55	-1	-1	-1	-1
+788	56	-1	-1	-1	-1
+789	57	-1	-1	-1	-1
+792	59	-1	-1	-1	-1
+
+796	61	-1	-1	-1	-1
+797	62	-1	-1	-1	-1
+172	62	-1	-1	-1	-1
+798	63	-1	-1	-1	-1
+46	63	-1	-1	-1	-1
+123	64	-1	-1	-1	-1
+175	65	-1	-1	-1	-1
+174	66	-1	-1	-1	-1
+181	67	-1	-1	-1	-1
+132	68	-1	-1	-1	-1
+999	69	-1	-1	-1	-1
+67	70	-1	-1	-1	-1
+753	71	-1	-1	-1	-1
+754	72	-1	-1	-1	-1
+755	73	-1	-1	-1	-1
+758	74	-1	-1	-1	-1
+756	75	-1	-1	-1	-1
+757	76	-1	-1	-1	-1
+763	77	-1	-1	-1	-1
+122	200	-1	-1	-1	-1
+187	201	-1	-1	-1	-1
+188	202	-1	-1	-1	-1
+791	203	-1	-1	-1	-1
+793	204	-1	-1	-1	-1
+794	205	-1	-1	-1	-1
+799	206	-1	-1	-1	-1
+
+
+#				
+# Ethereal Mounts (Year 5 Rewards)				
+#				
+191	68	-1	-1	-1	-1
+192	200	-1	-1	-1	-1
+193	201	-1	-1	-1	-1
+194	205	-1	-1	-1	-1
+195	203	-1	-1	-1	-1
+
+#				
+# Solens (Ant Persons)				
+#				
+804	51	-1	-1	-1	-1
+805	49	-1	-1	-1	-1
+806	50	-1	-1	-1	-1
+807	51	-1	-1	-1	-1
+808	51	-1	-1	-1	-1
+
+
+#				
+# FOR PLAYERS TRANSMUTED INTO STUFF VIA NECRO				
+#				
+746	53	-1	-1	-1	-1
+747	-1	310	-1	-1	-1
+748	24	-1	-1	-1	-1
+
+#				
+# AOS BEGINS HERE				
+#				
+930	-1	930	-1	-1	-1
+931	-1	931	-1	-1	-1
+932	-1	932	-1	-1	-1
+933	-1	933	-1	-1	-1
+934	-1	934	-1	-1	-1
+935	-1	935	-1	-1	-1
+936	-1	936	-1	-1	-1
+937	-1	937	-1	-1	-1
+938	-1	938	-1	-1	-1
+939	-1	939	-1	-1	-1
+940	-1	940	-1	-1	-1
+
+
+300	-1	300	-1	-1	-1
+301	-1	301	-1	-1	-1
+302	-1	302	-1	-1	-1
+303	-1	303	-1	-1	-1
+304	-1	304	-1	-1	-1
+305	-1	305	-1	-1	-1
+306	-1	306	-1	-1	-1
+307	-1	307	-1	-1	-1
+308	-1	308	-1	-1	-1
+309	-1	309	-1	-1	-1
+310	-1	310	-1	-1	-1
+311	-1	311	-1	-1	-1
+312	-1	312	-1	-1	-1
+313	-1	313	-1	-1	-1
+314	-1	314	-1	-1	-1
+315	-1	315	-1	-1	-1
+316	-1	316	-1	-1	-1
+317	-1	317	-1	-1	-1
+318	-1	318	-1	-1	-1
+319	-1	319	-1	-1	-1
+
+#				
+# SE BEGINS HERE				
+#				
+# Monsters and sea creatures				
+240	-1	-1	1	-1	-1
+241	-1	-1	2	-1	-1
+242	-1	-1	3	-1	-1
+244	-1	-1	4	-1	-1
+245	-1	-1	5	-1	-1
+247	-1	-1	6	-1	-1
+249	-1	-1	7	-1	-1
+250	-1	-1	8	-1	-1
+251	-1	-1	9	-1	-1
+252	-1	-1	10	-1	-1
+253	-1	-1	11	-1	-1
+255	-1	-1	12	-1	-1
+196	-1	-1	13	-1	-1
+199	-1	-1	14	-1	-1
+
+# Animals				
+243	-1	-1	201	-1	-1
+246	-1	-1	202	-1	-1
+248	-1	-1	203	-1	-1
+254	-1	-1	204	-1	-1
+169	203	-1	-1	-1	-1
+
+# Equipment				
+425	-1	-1	410	-1	-1
+426	-1	-1	411	-1	-1
+423	-1	-1	412	-1	-1
+424	-1	-1	413	-1	-1
+442	-1	-1	414	-1	-1
+443	-1	-1	415	-1	-1
+444	-1	-1	416	-1	-1
+445	-1	-1	417	-1	-1
+446	-1	-1	418	-1	-1
+450	-1	-1	419	-1	-1
+451	-1	-1	420	-1	-1
+456	-1	-1	421	-1	-1
+457	-1	-1	422	-1	-1
+458	-1	-1	423	-1	-1
+459	-1	-1	424	-1	-1
+460	-1	-1	425	-1	-1
+461	-1	-1	426	-1	-1
+462	-1	-1	427	-1	-1
+463	-1	-1	428	-1	-1
+464	-1	-1	429	-1	-1
+467	-1	-1	430	-1	-1
+470	-1	-1	431	-1	-1
+471	-1	-1	432	-1	-1
+472	-1	-1	433	-1	-1
+473	-1	-1	434	-1	-1
+474	-1	-1	435	-1	-1
+478	-1	-1	436	-1	-1
+487	-1	-1	516	-1	-1
+488	-1	-1	518	-1	-1
+489	-1	-1	519	-1	-1
+491	-1	-1	520	-1	-1
+506	-1	-1	437	-1	-1
+512	-1	-1	438	-1	-1
+513	-1	-1	439	-1	-1
+514	-1	-1	440	-1	-1
+516	-1	-1	441	-1	-1
+517	-1	-1	442	-1	-1
+518	-1	-1	443	-1	-1
+519	-1	-1	444	-1	-1
+520	-1	-1	445	-1	-1
+526	-1	-1	446	-1	-1
+532	-1	-1	447	-1	-1
+533	-1	-1	448	-1	-1
+
+535	-1	-1	450	-1	-1
+536	-1	-1	451	-1	-1
+537	-1	-1	452	-1	-1
+539	-1	-1	453	-1	-1
+547	-1	-1	454	-1	-1
+551	-1	-1	455	-1	-1
+552	-1	-1	456	-1	-1
+553	-1	-1	457	-1	-1
+558	-1	-1	458	-1	-1
+559	-1	-1	459	-1	-1
+567	-1	-1	460	-1	-1
+568	-1	-1	461	-1	-1
+569	-1	-1	462	-1	-1
+570	-1	-1	463	-1	-1
+571	-1	-1	464	-1	-1
+572	-1	-1	465	-1	-1
+575	-1	-1	466	-1	-1
+583	-1	-1	467	-1	-1
+
+812	-1	-1	471	-1	-1
+813	-1	-1	472	-1	-1
+814	-1	-1	473	-1	-1
+815	-1	-1	474	-1	-1
+816	-1	-1	475	-1	-1 # Female Checkered Shirt
+817	-1	-1	476	-1	-1
+818	-1	-1	477	-1	-1
+819	-1	-1	478	-1	-1
+821	-1	-1	479	-1	-1
+822	-1	-1	480	-1	-1
+823	-1	-1	481	-1	-1
+833	-1	-1	482	-1	-1
+834	-1	-1	483	-1	-1
+835	-1	-1	484	-1	-1
+836	-1	-1	485	-1	-1
+837	-1	-1	486	-1	-1
+838	-1	-1	487	-1	-1
+839	-1	-1	488	-1	-1
+840	-1	-1	489	-1	-1
+841	-1	-1	490	-1	-1
+842	-1	-1	491	-1	-1
+
+
+
+#				
+#	EP1			
+####################				
+
+#ep1 monsters				
+256	-1	-1	-1	15	-1	#Chief Paroxysmus
+257	-1	-1	-1	16	-1	#Dread Horn
+258	-1	-1	-1	17	-1	#Lady M
+259	-1	-1	-1	18	-1	#Monstrous Interred Grizzle
+260	-1	-1	-1	19	-1	#Travesty
+261	-1	-1	-1	20	-1	#Shimmering Effusion
+262	-1	-1	-1	21	-1	#Tormented Minotaur
+263	-1	-1	-1	22	-1	#Minotaur
+264	-1	-1	-1	23	-1	#Changeling
+265	-1	-1	-1	24	-1	#Hydra
+266	-1	-1	-1	25	-1	#Dryad
+267	-1	-1	-1	26	-1	#Troglodyte
+269	-1	-1	-1	27	-1	#Thorn bat
+270	-1	-1	-1	28	-1	#Bulbous Putrification
+271	-1	-1	-1	29	-1	#Satyr
+272	-1	-1	-1	30	-1	#Interred Grizzle
+273	-1	-1	-1	31	-1	#Fetid Essence
+
+
+276	-1	-1	-1	34	-1	#Chimera
+280	-1	-1	-1	35	-1	#Plate Armored Minotaur
+281	-1	-1	-1	36	-1	#Leather Armored Minotaur
+285	-1	-1	-1	37	-1	#Reaper Redux
+
+#animals					
+277	-1	-1	-1	205	-1	#Cu Sidhe
+278	-1	-1	-1	206	-1	#Squirrel
+279	-1	-1	-1	207	-1	#Ferret
+282	-1	-1	-1	208	-1	#Parrot
+283	-1	-1	-1	209	-1	#Crow
+284	-1	-1	-1	210	-1	#Mondains Steed
+
+#ep1 equipment				
+942	-1	-1	-1	492	-1
+943	-1	-1	-1	493	-1
+944	-1	-1	-1	494	-1
+945	-1	-1	-1	495	-1
+946	-1	-1	-1	496	-1
+947	-1	-1	-1	497	-1
+948	-1	-1	-1	498	-1
+950	-1	-1	-1	600	-1
+951	-1	-1	-1	601	-1
+952	-1	-1	-1	602	-1
+953	-1	-1	-1	603	-1
+954	-1	-1	-1	604	-1
+955	-1	-1	-1	605	-1
+956	-1	-1	-1	606	-1
+957	-1	-1	-1	607	-1
+958	-1	-1	-1	608	-1
+959	-1	-1	-1	609	-1
+960	-1	-1	-1	610	-1
+961	-1	-1	-1	611	-1
+962	-1	-1	-1	612	-1
+963	-1	-1	-1	613	-1
+964	-1	-1	-1	614	-1
+965	-1	-1	-1	615	-1
+966	-1	-1	-1	616	-1
+967	-1	-1	-1	617	-1
+968	-1	-1	-1	618	-1
+969	-1	-1	-1	619	-1
+974	-1	-1	-1	620	-1
+975	-1	-1	-1	621	-1
+976	-1	-1	-1	622	-1
+977	-1	-1	-1	623	-1
+920	-1	-1	-1	624	-1	
+907	-1	-1	-1	625	-1	
+908	-1	-1	-1	626	-1	
+914	-1	-1	-1	627	-1	
+915	-1	-1	-1	628	-1	
+941	-1	-1	-1	629	-1	
+896	-1	-1	-1	630	-1	 
+897	-1	-1	-1	631	-1	
+898	-1	-1	-1	632	-1	
+899	-1	-1	-1	633	-1	
+886	-1	-1	-1	635	-1	
+916	-1	-1	-1	636	-1	
+917	-1	-1	-1	637	-1	
+918	-1	-1	-1	638	-1	
+919	-1	-1	-1	639	-1	
+978	-1	-1	-1	640	-1	
+979	-1	-1	-1	641	-1
+989	-1	-1	-1	642	-1
+995	-1	-1	-1	643	-1
+996	-1	-1	-1	644	-1
+997	-1	-1	-1	645	-1
+890	-1	-1	-1	646	-1
+891	-1	-1	-1	647	-1
+892	-1	-1	-1	648	-1
+893	-1	-1	-1	649	-1
+894	-1	-1	-1	650	-1
+895	-1	-1	-1	651	-1
+889	-1	-1	-1	652	-1
+
+#ep1 races				
+605	-1	-1	-1	522	-1
+606	-1	-1	-1	523	-1
+607	-1	-1	-1	524	-1		
+608	-1	-1	-1	525	-1		
+
+
+# 8th Anniversary Items						
+
+869	-1	-1	653	-1	-1	#	Helm of Spirituality
+870	-1	-1	654	-1	-1	#	Gorget of Honesty
+871	-1	-1	655	-1	-1	#	Male Breastplate of Justice
+872	-1	-1	656	-1	-1	#	Arms of Compassion
+873	-1	-1	657	-1	-1	#	Gauntlets of Valor
+874	-1	-1	658	-1	-1	#	Legs of Honor
+875	-1	-1	659	-1	-1	#	Sollerets of Sacrifice
+876	-1	-1	660	-1	-1	#	cloak of Humility
+877	-1	-1	661	-1	-1	#	Book 01
+878	-1	-1	662	-1	-1	#	Book 02
+879	-1	-1	663	-1	-1	#	Book 03
+880	-1	-1	664	-1	-1	#	Book 04
+881	-1	-1	665	-1	-1	#	Book 05
+882	-1	-1	666	-1	-1	#	Book 06
+883	-1	-1	667	-1	-1	#	Book 07
+884	-1	-1	668	-1	-1	#	Book 08
+887	-1	-1	669	-1	-1	#	Quiver of Infinity
+888	-1	-1	670	-1	-1	#	Dupres Shield
+868	-1	-1	671	-1	-1	#	Female Breastplate of Justice
+# PUB 39 Fixes						
+866	-1	-1	672	-1	-1	#	H_M_WingedHelm
+867	-1	-1	673	-1	-1	#	H_F_WingedHelm
+679	-1	-1	674	-1	-1	#	H_M_Dragon_Arms
+680	-1	-1	675	-1	-1	#	H_M_Dragon_Chest
+681	-1	-1	676	-1	-1	#	H_M_Dragon_Gauntlests
+682	-1	-1	677	-1	-1	#	H_M_Dragon_Helm
+683	-1	-1	678	-1	-1	#	H_M_Dragon_Legs
+684	-1	-1	679	-1	-1	#	H_F_Dragon_Arms
+685	-1	-1	680	-1	-1	#	H_F_Dragon_Chest
+686	-1	-1	682	-1	-1	#	H_F_Dragon_Helmet
+687	-1	-1	683	-1	-1	#	H_F_Dragon_Legs
+688	-1	-1	681	-1	-1	#	H_F_Dragon_Gauntlets
+
+# PUB 42 Fixes						
+
+689	-1	-1	-1	38	-1	#	Time Lord
+704	-1	-1	-1	39	-1	#	?
+
+# NEW ADDITIONS -JP						
+95	-1	95	-1	-1	-1	#	Turkey
+
+# PUB 52 Additions						
+197	-1	-1	-1	197	-1	# 	Order Variant
+198	-1	-1	-1	198	-1	# 	Chaos Variant
+
+# UOSA Creatures						
+666	-1	-1	-1	666	-1	# 	Gargoyle Male
+667	-1	-1	-1	667	-1	# 	Gargoyle Female
+713	-1	-1	-1	713	-1	# 	Abyssal_Infernal
+714	-1	-1	-1	714	-1	# 	Beetle_Iron
+715	-1	-1	-1	715	-1	# 	Boura
+716	-1	-1	-1	716	-1	# 	ChickenLizard
+717	-1	-1	-1	717	-1	# 	Clockwork_Scorpion
+718	-1	-1	-1	718	-1	# 	Dragon_Faerie
+719	-1	-1	-1	719	-1	# 	Dragon_Wolf
+720	-1	-1	-1	720	-1	# 	Elemental_Lava
+721	-1	-1	-1	721	-1	# 	Flayer
+722	-1	-1	-1	722	-1	# 	Gargoyle_Undead
+723	-1	-1	-1	723	-1	# 	Green Goblin
+724	-1	-1	-1	724	-1	# 	Gremlin
+725	-1	-1	-1	725	-1	# 	Humunculous
+726	-1	-1	-1	726	-1	# 	Kepetch
+727	-1	-1	-1	727	-1	# 	Kepetch_Shorn
+728	-1	-1	-1	728	-1	# 	Medusa
+729	-1	-1	-1	729	-1	# 	Mimic
+730	-1	-1	-1	730	-1	# 	Raptor
+732	-1	-1	-1	732	-1	# 	RotWorm
+733	-1	-1	-1	733	-1	# 	Skree
+734	-1	-1	-1	734	-1	# 	Slith
+735	-1	-1	-1	735	-1	# 	Spider_Female
+736	-1	-1	-1	736	-1	# 	Spider_Male
+737	-1	-1	-1	737	-1	# 	Spider_TrapDoor
+738	-1	-1	-1	738	-1	# 	Trapdoor_Creature
+739	-1	-1	-1	739	-1	# 	Wolf_Leather
+293	-1	-1	-1	744	-1	# 	Gargoyle_Pet
+286	-1	-1	-1	286	-1	# 	RotWorm_Juvenile
+287	-1	-1	-1	287	-1	# 	BloodWorm
+692	-1	-1	-1	129	-1	# 	AnimatedWeapon
+830	-1	-1	-1	830	-1	# 	Primevil Lich
+829	-1	-1	-1	829	-1	# 	Rising Colosus
+741	-1	-1	-1	741	-1	# 	Slasher of Veils
+826	-1	-1	-1	826	-1	# 	Stygian Dragon
+740	-1	-1	-1	740	-1	# 	Shadow Dweller
+742	-1	-1	-1	742	-1	# 	Tunnel Spirit Body
+743	-1	-1	-1	743	-1	# 	Tunnel Spirit Tentacle
+334	-1	-1	-1	334	-1	# 	Grey Goblin
+832	-1	-1	-1	145	-1	# 	Phoenix Bird
+831	-1	-1	-1	831	-1	# 	Parrot Bird
+
+# UOSA Wearables						
+585	-1	-1	-1	100	-1	# 	Leather_Arms_Female
+586	-1	-1	-1	101	-1	# 	Leather_Arms_Male
+587	-1	-1	-1	102	-1	# 	Leather_Chest_Female
+588	-1	-1	-1	103	-1	# 	Leather_Chest_Male
+589	-1	-1	-1	104	-1	# 	Leather_Legs_Female
+590	-1	-1	-1	105	-1	# 	Leather_Legs_Male
+591	-1	-1	-1	106	-1	# 	Plate_Arms_Female
+592	-1	-1	-1	107	-1	# 	Plate_Arms_Male
+593	-1	-1	-1	108	-1	# 	Plate_Chest_Female
+594	-1	-1	-1	109	-1	# 	Plate_Chest_Male
+595	-1	-1	-1	110	-1	# 	Plate_Kilt_Female
+596	-1	-1	-1	111	-1	# 	Plate_Kilt_Male
+597	-1	-1	-1	112	-1	# 	Plate_Legs_Female
+598	-1	-1	-1	113	-1	# 	Plate_Legs_Male
+599	-1	-1	-1	114	-1	# 	Stone_Arms_Female
+600	-1	-1	-1	133	-1	# 	Armor_Stone_Arms_Male
+601	-1	-1	-1	134	-1	# 	Armor_Stone_Chest_Female
+602	-1	-1	-1	135	-1	# 	Armor_Stone_Chest_Male
+603	-1	-1	-1	136	-1	# 	Armor_Stone_Kilt_Female
+604	-1	-1	-1	137	-1	# 	Armor_Stone_Kilt_Male
+609	-1	-1	-1	138	-1	# 	Armor_Stone_Legs_Female
+610	-1	-1	-1	139	-1	# 	Armor_Stone_Legs_Male
+654	-1	-1	-1	140	-1	# 	Clothing_Arms_Female
+655	-1	-1	-1	141	-1	# 	Clothing_Arms_Male
+656	-1	-1	-1	142	-1	# 	Clothing_Chest_Female
+657	-1	-1	-1	143	-1	# 	Clothing_Chest_Male
+658	-1	-1	-1	144	-1	# 	Clothing_Kilt_Female
+659	-1	-1	-1	142	-1	# 	Clothing_Kilt_Male
+660	-1	-1	-1	143	-1	# 	Clothing_Legs_Female
+661	-1	-1	-1	144	-1	# 	Clothing_Legs_Male
+663	-1	-1	-1	115	-1	# 	Leather_Kilt_Female
+664	-1	-1	-1	116	-1	# 	Leather_Kilt_Male
+662	-1	-1	-1	117	-1	# 	Axe_Dual_Short
+668	-1	-1	-1	118	-1	# 	Sword_Bloodblade
+669	-1	-1	-1	119	-1	# 	Boomerang
+670	-1	-1	-1	120	-1	# 	Sword_Broadsword
+672	-1	-1	-1	121	-1	# 	Glave_Cyclone
+673	-1	-1	-1	122	-1	# 	Dagger
+674	-1	-1	-1	123	-1	# 	Mace_Disk
+675	-1	-1	-1	124	-1	# 	Spear_Dual_Pointed
+676	-1	-1	-1	125	-1	# 	Staff_Glass
+677	-1	-1	-1	126	-1	# 	Staff_Serpentstone
+678	-1	-1	-1	127	-1	# 	Sword_Shortblade
+690	-1	-1	-1	128	-1	# 	Sword_Talwar
+693	-1	-1	-1	130	-1	# 	Glave_Soul
+671	-1	-1	-1	131	-1	# 	Sword_Dread
+691	-1	-1	-1	132	-1	# 	Sword_Glass
+320	-1	-1	-1	320	-1	#	FishingPole_Gargoyle
+321	-1	-1	-1	321	-1	#	Lantern_Off_Gargoyle
+322	-1	-1	-1	322	-1	#	Lantern_On_Gargoyle
+323	-1	-1	-1	323	-1	#	Pickaxe_Gargoyle
+324	-1	-1	-1	324	-1	#	Shepards_Crook_Gargoyle
+325	-1	-1	-1	325	-1	#	Smithyhammer_Gargoyle
+326	-1	-1	-1	326	-1	#	Spellbook_BookOfArms_Gargoyle
+327	-1	-1	-1	327	-1	#	Spellbook_Bushido_Gargoyle
+328	-1	-1	-1	328	-1	#	Spellbook_Chivalry_Gargoyle
+329	-1	-1	-1	329	-1	#	Spellbook_Gargoyle
+330	-1	-1	-1	330	-1	#	Spellbook_Necromancy_Gargoyle
+331	-1	-1	-1	331	-1	#	Spellbook_Ninjutsu_Gargoyle
+332	-1	-1	-1	332	-1	#	Spellbook_SpellWeaving_Gargoyle
+333	-1	-1	-1	333	-1	#	Weapon_Wand_Gargoyle_Legacy
+335	-1	-1	-1	335	-1	#	Weapon_Shield_Leather_Medium_Gargoyle_Legacy
+336	-1	-1	-1	336	-1	#	Weapon_Shield_Leather_Small_Gargoyle_Legacy
+337	-1	-1	-1	337	-1	#	Weapon_Shield_Plate_Large_Gargoyle_Legacy
+338	-1	-1	-1	338	-1	#	Weapon_Shield_Plate_Medium_Gargoyle_Legacy
+339	-1	-1	-1	339	-1	#	Weapon_Shield_Plate_Small_Gargoyle_Legacy
+340	-1	-1	-1	340	-1	#	Weapon_Shield_Scale_Large_Gargoyle_Legacy
+341	-1	-1	-1	341	-1	#	Gargoyle Robe_Fancy
+342	-1	-1	-1	342	-1	#	Gargoyle Robe_Regular
+343	-1	-1	-1	343	-1	#	Weapon_Shield_Scale_Chaos_Gargoyle
+344	-1	-1	-1	344	-1	#	Weapon_Shield_Scale_Order_Gargoyle
+
+483	-1	-1	-1	345	-1	#	Horns_Gargoyle_Male_Legacy
+485	-1	-1	-1	346	-1	#	Horns_Gargoyle_Male_Legacy
+843	-1	-1	-1	347	-1	#	Horns_Gargoyle_Male_Legacy
+499	-1	-1	-1	348	-1	#	Horns_Gargoyle_Male_Legacy
+696	-1	-1	-1	349	-1	#	Horns_Gargoyle_Male_Legacy
+697	-1	-1	-1	350	-1	#	Horns_Gargoyle_Male_Legacy
+698	-1	-1	-1	351	-1	#	Horns_Gargoyle_Male_Legacy
+699	-1	-1	-1	352	-1	#	Horns_Gargoyle_Male_Legacy
+769	-1	-1	-1	353	-1	#	Horns_Gargoyle_Female_Legacy
+541	-1	-1	-1	355	-1	#	Horns_Gargoyle_Female_Legacy
+795	-1	-1	-1	356	-1	#	Horns_Gargoyle_Female_Legacy
+632	-1	-1	-1	370	-1	#	Female gargoyle horns
+707	-1	-1	-1	371	-1	#	Female gargoyle horns
+475	-1	-1	-1	372	-1	#	Female gargoyle horns
+647	-1	-1	-1	358	-1	#	Horns_Facial_Male
+650	-1	-1	-1	359	-1	#	Horns_Facial_Male
+652	-1	-1	-1	360	-1	#	Horns_Facial_Male
+665	-1	-1	-1	361	-1	#	Horns_Facial_Male
+547	-1	-1	-1	357	-1	#	Clothing_Robe_Deathshroud_Gargoyle_Legacy
+809	-1	-1	-1	358	-1	#	Ninja jacket Cloth Female
+810	-1	-1	-1	357	-1	#	Ninja Jacket Leather Feamale
+811	-1	-1	-1	360	-1	#	Shirt Doublet Female
+407	-1	-1	-1	-1	-1	#	Tall Straw Hat
+708	-1	-1	-1	362	-1	#	Horns_Gargoyle_Female_Legacy
+534	-1	-1	-1	363	-1	#	Horns_Gargoyle_Female_Legacy
+427	-1	-1	-1	364	-1	#	Human Mysticism Spellbook
+428	-1	-1	-1	365	-1	#	Gargoyle Mysticism Spellbook
+705	-1	-1	-1	366	-1	#	Stone Form
+509	-1	-1	-1	367	-1	#	Horns_Gargoyle_Male
+885	-1	-1	-1	368	-1	#	Gargoyle Ankh Asset - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL
+865	-1	-1	-1	369	-1	#	HUMAN Ankh Asset - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL
+510	-1	-1	-1	370	-1	#	Generic necklace both HUamns and Gargs - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL
+436	-1	-1	-1	371	-1	#	Gargoyle Bracelet - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL
+437	-1	-1	-1	372	-1	#	Gargoyle Earrings - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL
+438	-1	-1	-1	373	-1	#	Gargoyle Ring - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL
+439	-1	-1	-1	374	-1	#	Gargoyle Necklace - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL
+1026	-1	-1	-1	376	-1	#	Uber Turkey
+433	-1	-1	-1	377	-1	#	Halloween Mask (Paperdoll Only)	
+1027	-1	-1	-1	379	-1	# WEAPON_Gargoyle_Bardich_2H
+1028	-1	-1	-1	380	-1	# WEAPON_Gargoyle_BattleAxe_2H
+1029	-1	-1	-1	381	-1	# WEAPON_Gargoyle_BoneHarvester_1H
+1030	-1	-1	-1	382	-1	# WEAPON_Gargoyle_ButchersKnife_1H
+1032	-1	-1	-1	383	-1	# WEAPON_Gargoyle_Cleaver_1H
+1033	-1	-1	-1	384	-1	# WEAPON_Gargoyle_Daisho_2H
+1034	-1	-1	-1	385	-1	# WEAPON_Gargoyle_Katana_1H
+1035	-1	-1	-1	386	-1	# WEAPON_Gargoyle_KrissKnife_1H
+1036	-1	-1	-1	387	-1	# WEAPON_Gargoyle_Lance_2H
+1037	-1	-1	-1	388	-1	# WEAPON_Gargoyle_Maul
+1038	-1	-1	-1	389	-1	# WEAPON_Gargoyle_NewGlave01_1H
+1039	-1	-1	-1	390	-1	# WEAPON_Gargoyle_NewGlave02_1H
+1040	-1	-1	-1	391	-1	# WEAPON_Gargoyle_Pike_2H
+1041	-1	-1	-1	392	-1	# WEAPON_Gargoyle_Scythe_2H
+1042	-1	-1	-1	393	-1	# WEAPON_Gargoyle_Staff_Gnarled_2H
+1043	-1	-1	-1	394	-1	# WEAPON_Gargoyle_Tekagi_2H
+1044	-1	-1	-1	395	-1	# WEAPON_Gargoyle_Tessen_2H_001044
+1045	-1	-1	-1	396	-1	# WEAPON_Gargoyle_WarFork_1H_001045
+1046	-1	-1	-1	397	-1	# WEAPON_Gargoyle_WarHammer_2H_001046
+1047	-1	-1	-1	378	-1	# WEAPON_Gargoyle_Axe_2H
+1048	-1	-1	-1	398	-1	# GARGOYLE Talons Leather Female
+1049	-1	-1	-1	399	-1	# GARGOYLE Talons Leather Male
+1050	-1	-1	-1	400	-1	# GARGOYLE Talons Plate Female
+1051	-1	-1	-1	401	-1	# GARGOYLE Talons Plate Male
+1053	-1	-1	-1	415	-1	# Gargoyle Belt
+1054	-1	-1	-1	416	-1	# Gargoyle Half Apron
+1055	-1	-1	-1	402	-1	# Armor_Cloth_Wings_Female
+1056	-1	-1	-1	403	-1	# Armor_Cloth_Wings_Male
+1057	-1	-1	-1	404	-1	# Armor_Leather_Wings_Female
+1058	-1	-1	-1	405	-1	# Armor_Leather_Wings_Male
+1063	-1	-1	-1	410	-1	# Gargoyle Female Glasses
+1064	-1	-1	-1	411	-1	# Gargoyle Male Glasses
+1065	-1	-1	-1	412	-1	# Gargoyle Female Sash
+1066	-1	-1	-1	413	-1	# Gargoyle Male Sash
+1062	-1	941	-1	-1	-1	# Human Barding Spellbook
+1067	-1	-1	-1	417	-1	# Gargoyle Barding Spellbook
+1068	-1	-1	-1	418	-1	# Scalis
+1069	-1	-1	-1	419	-1	# AncientHellHound
+1070	-1	-1	-1	420	-1	# Werewolf
+1071	-1	-1	-1	421	-1	# VirtueBane
+1244 	-1	-1	-1	422	-1	# Water Spirit
+1245 	-1	-1	-1	423	-1	# Water Spirit Tentacle
+1246 	-1	-1	-1	424	-1	# Pumpkin 01
+1247 	-1	-1	-1	425	-1	# Pumpkin 02
+1248 	-1	-1	-1	426	-1	# Special Guest
+1249 	-1	-1	-1	427	-1	# Human 15 Robe Male
+1250 	-1	-1	-1	428	-1	# Human 15 Robe Female
+1251 	-1	-1	-1	429	-1	# Gargoyle 15 Robe Male
+1252 	-1	-1	-1	430	-1	# Gargoyle 15 Robe Female
+1253 	-1	-1	-1	431	-1	# LBT
+1261 	-1	432	-1	-1	-1	# Human Robe BG Male
+1262 	-1	433	-1	-1	-1	# Human Robe BG Female
+1263 	-1	434	-1	-1	-1	# Shield_Vice
+1265 	-1	435	-1	-1	-1	# Shield_Virtue
+1267 	-1	436	-1	-1	-1	# EQUIP_Shoes_Jester
+1269 	-1	437	-1	-1	-1	# EQUIP_Hat_Chef
+1271 	-1	438	-1	-1	-1	# EQUIP_Kilt01
+1273 	-1	439	-1	-1	-1	# EQUIP_Kilt02
+1275 	-1	440	-1	-1	-1	# EQUIP_Kilt03
+1278 	-1	441	-1	-1	-1	# EQUIP_Dress_Red
+1279 	-1	442	-1	-1	-1	# Shield_Vice_Gargoyle
+1280 	-1	443	-1	-1	-1	# Shield_Virtue_Gargoyle
+1284 	-1	444	-1	-1	-1	# EQUIP_Dress_Wed
+1285	-1	445	-1	-1	-1	# Dino_Dimetrosaur
+1286	-1	446	-1	-1	-1	# Dino_Gallusaurus
+1287	-1	447	-1	-1	-1	# Dino_Archaeosaurus
+1288	-1	448	-1	-1	-1	# Dragon_Turtle
+1289	-1	449	-1	-1	-1	# Dino_Najasaurus
+1290	-1	450	-1	-1	-1	# Dino_Allosaurus
+1291	-1	451	-1	-1	-1	# Dino_Saurosaurus
+1292	-1	452	-1	-1	-1	# Dino_Anchisaur
+1293	-1	453	-1	-1	-1	# Dino_Myrmidex
+1294	-1	454	-1	-1	-1	# Dragon_Turtle_Baby
+1295	-1	455	-1	-1	-1	# EQUIP_Chest_Tiger_H_M
+1296	-1	456	-1	-1	-1	# EQUIP_Chest_Tiger_H_F
+1297	-1	457	-1	-1	-1	# EQUIP_Pants_Long_Tiger_H
+1298	-1	458	-1	-1	-1	# EQUIP_Pants_Short_Tiger_H
+1299	-1	459	-1	-1	-1	# EQUIP_Skirt_Long_Tiger_H
+1300	-1	460	-1	-1	-1	# EQUIP_Skirt_Short_Tiger_H
+1301	-1	461	-1	-1	-1	# EQUIP_Helm_Tiger_H
+1302	-1	462	-1	-1	-1	# EQUIP_Collar_Tiger_H
+1303	-1	463	-1	-1	-1	# EQUIP_Chest_Turtle_H_M
+1304	-1	464	-1	-1	-1	# EQUIP_Chest_Turtle_H_F
+1305	-1	465	-1	-1	-1	# EQUIP_Pants_Long_Turtle_H
+1306	-1	466	-1	-1	-1	# EQUIP_Helm_Turtle_H
+1307	-1	467	-1	-1	-1	# EQUIP_Bracers_Turtle_H
+1308	-1	468	-1	-1	-1	# Gorilla_Giant
+1309	-1	469	-1	-1	-1	# Baby_Tiger
+1400	-1	470	-1	-1	-1	# Dino_Trex
+1401	-1	471	-1	-1	-1	# Turanchula_Mount
+1402	-1	472	-1	-1	-1	# Myrmidex_Drone
+1403	-1	473 -1	-1	-1	# Myrmidex_Warrior
+1404	-1	474 -1	-1	-1	# Myrmidex_Queen
+1405	-1	475	-1	-1	-1	# DrSpector
+1406	-1	476	-1	-1	-1	# Golem_Aztec
+1407	-1	477	-1	-1	-1	# Horse_Unicorn_RB
+1408	-1	478	-1	-1	-1	# Horse_Palimino
+1409	-1	479	-1	-1	-1	# Dragon_Hildebrandt
+1410	-1	480	-1	-1	-1	# Canine_Windrunner
+1411	-1	481	-1	-1	-1	# EQUIP_Dress_Wedding
+1412	-1	482	-1	-1	-1	# EQUIP_Hat_TopHat
+1413 	-1	483	-1	-1	-1	# EQUIP_Shirt_Tux
+1414	-1	484	-1	-1	-1	# EQUIP_Pants_Wedding
+1415	-1	485	-1	-1	-1	# Dino_Triceratops
+1416	-1	486	-1	-1	-1	# Tiger_Sabertooth
+1417	-1	487	-1	-1	-1	# Dragon_Small_Platinum
+1418	-1	488	-1	-1	-1	# Dragon_Ele_Platinum
+1419	-1	489	-1	-1	-1	# Dragon_Small_Crimson
+1420	-1	490	-1	-1	-1	# Dragon_Ele_Crimson
+1421	-1	491	-1	-1	-1	# Dragon_Small_Stygian
+1422	-1	492	-1	-1	-1	# Dragon_Ele_Stygian
+1423	-1	493	-1	-1	-1	# Fox_Small
+1424	-1	494	-1	-1	-1	# Beetle_Rhino
+1425	-1	495	-1	-1	-1	# Goat_Necromancer
+1426	-1	496	-1	-1	-1	# Lion
+1427	-1	-1	497	-1	-1	# Titan_Water_Tentacle
+1428	-1	-1	498	-1	-1	# JackintheBox
+1429	-1	-1	499	-1	-1	# Haunted_Vale
+1430	-1	-1	500	-1	-1	# Hat_Wed_Haunted
+1431	-1	-1	501	-1	-1	# Titan_Earth_Head
+1432	-1	-1	502	-1	-1	# Titan_Air_Whirlwind
+1433	-1	-1	503	-1	-1	# Titan_Fire_Demon
+1434 	-1	-1	504	-1	-1  # Dragon_Asian_Mount
+1435	-1	-1	505	-1	-1  # EQUIP_Robe_Store_M01
+1436	-1	-1	506	-1	-1  # EQUIP_Robe_Store_F01
+1437	-1	-1	507	-1	-1  # EQUIP_Robe_Store_M02
+1438	-1	-1	508	-1	-1  # EQUIP_Robe_Store_F02
+1439	-1	-1	509	-1	-1  # EQUIP_Robe_Store_M03
+1440	-1	-1	510	-1	-1	# Bird_Peacock_Mount
+1441	511	-1	-1	-1	-1	# Tiger_Undead_Mount
+1442	-1	-1	512	-1	-1  # EQUIP_Robe_Store_F03
+1443	-1	-1	513	-1	-1  # EQUIP_Robe_Store_M04
+1444	-1	-1	514	-1	-1  # EQUIP_Robe_Store_F04
+1445	-1	-1	515	-1	-1  # EQUIP_Robe_Store_M05
+1446	-1	-1	570	-1	-1  # EQUIP_Robe_Store_F05
+1447	517	-1	-1	-1	-1  # EQUIP_Male_H_Hair
+1448	518	-1	-1	-1	-1  # EQUIP_Male_H_Hair
+1449	519	-1	-1	-1	-1  # EQUIP_Male_H_Hair
+1450	520	-1	-1	-1	-1  # EQUIP_Male_H_Hair
+1451	521	-1	-1	-1	-1  # EQUIP_Male_H_Beard
+1452	522	-1	-1	-1	-1  # EQUIP_Male_H_Beard
+1453	523	-1	-1	-1	-1  # EQUIP_Male_H_Beard
+1454	524	-1	-1	-1	-1  # EQUIP_Male_H_Beard
+1455	525	-1	-1	-1	-1  # EQUIP_Female_H_Hair
+1456	526	-1	-1	-1	-1  # EQUIP_Female_H_Hair
+1457	527	-1	-1	-1	-1  # EQUIP_Female_H_Hair
+1458	528	-1	-1	-1	-1  # EQUIP_Female_H_Hair
+1459	529	-1	-1	-1	-1  # EQUIP_Male_E_Hair
+1460	530	-1	-1	-1	-1  # EQUIP_Male_E_Hair
+1461	531	-1	-1	-1	-1  # EQUIP_Male_E_Hair
+1462	532	-1	-1	-1	-1  # EQUIP_Male_E_Hair
+1463	533	-1	-1	-1	-1  # EQUIP_Female_E_Hair
+1464	534	-1	-1	-1	-1  # EQUIP_Female_E_Hair
+1465	535	-1	-1	-1	-1  # EQUIP_Female_E_Hair
+1466	536	-1	-1	-1	-1  # EQUIP_Female_E_Hair
+1467	537	-1	-1	-1	-1  # EQUIP_Male_G_Horns
+1468	538	-1	-1	-1	-1  # EQUIP_Male_G_Horns
+1469	539	-1	-1	-1	-1  # EQUIP_Male_G_Horns
+1470	540	-1	-1	-1	-1  # EQUIP_Male_G_Horns
+1471	541	-1	-1	-1	-1  # EQUIP_Male_G_Beard_Horns
+1472	542	-1	-1	-1	-1  # EQUIP_Male_G_Beard_Horns
+1473	543	-1	-1	-1	-1  # EQUIP_Male_G_Beard_Horns
+1474	544	-1	-1	-1	-1  # EQUIP_Male_G_Beard_Horns
+1475	545	-1	-1	-1	-1  # EQUIP_Female_G_Horns
+1476	546	-1	-1	-1	-1  # EQUIP_Female_G_Horns
+1477	547	-1	-1	-1	-1  # EQUIP_Female_G_Horns
+1478	548	-1	-1	-1	-1  # EQUIP_Female_G_Horns
+1479    -1	-1	549	-1	-1	# Khal_Ankur
+1480    550	-1	-1	-1	-1	# EQUIP_Male_H_Mask_Khal_Ankur
+1481    551	-1	-1	-1	-1	# EQUIP_Female_H_Mask_Khal_Ankur
+1482   	552	-1	-1	-1	-1	# EQUIP_Male_G_Necklace_Khal_Ankur
+1483    553	-1	-1	-1	-1	# EQUIP_Female_G_Necklace_Khal_Ankur
+1484    554	-1	-1	-1	-1	# Krumpus
+1485    555	-1	-1	-1	-1	# Krumpus Imp
+1486	556	-1	-1	-1	-1	# EQUIP_Whip_1H_Blunt
+1488	557	-1	-1	-1	-1	# EQUIP_Gargoyle_Whip_1H_Blunt
+1490	558	-1	-1	-1	-1	# EQUIP_Whip_1H_Pierce
+1492	559	-1	-1	-1	-1	# EQUIP_Gargoyle_Whip_1H_Pierce
+1494	560	-1	-1	-1	-1	# EQUIP_Whip_1H_Slash
+1496	561	-1	-1	-1	-1	# EQUIP_Gargoyle_Whip_1H_Slash
+1498    562	-1	-1	-1	-1	# EQUIP_Male_Boots_Holiday
+1499    563	-1	-1	-1	-1	# EQUIP_Female_Boots_Holiday
+1500    564	-1	-1	-1	-1	# EQUIP_Male_Hat_Santa
+1501    565	-1	-1	-1	-1	# EQUIP_Female_Hat_Santa
+1502    566	-1	-1	-1	-1	# GARGOYLE_Talons_Holiday_Male
+1503    567	-1	-1	-1	-1	# GARGOYLE_Talons_Holiday_Female
+1504    568	-1	-1	-1	-1  # Gargoyle Earrings - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL - Male - Holiday	
+1505    569	-1	-1	-1	-1  # Gargoyle Earrings - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL - Female - Holiday
+1506	570	-1  -1  -1	-1  # EQUIP_H_Male_Parrot_Epaulets- NO ANIMATION - PLACEHOLDER FOR PAPERDOLL 
+1507	571	-1  -1  -1	-1	# EQUIP_H_Female_Parrot_Epaulets - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL 
+1508	572 -1  -1  -1	-1	# Gargoyle_Male_Parrot_Epaulets - NO ANIMATION - PLACEHOLDER FOR PAPERDOLL 
+1509	573 -1  -1  -1	-1  # Gargoyle_Female_Parrot_Epaulets- NO ANIMATION - PLACEHOLDER FOR PAPERDOLL
+1510	586	-1	-1	-1	-1  # Crab_Coconut_Mount
+1511	587	-1	-1	-1	-1  # Crab_Coconut_Small
+1512	588	-1	-1	-1	-1  # Crab_Coconut_Large
+1513	-1	589	-1	-1	-1  # EQUIP_Helm_Pumpkin
+1515	-1	590	-1	-1	-1	# EQUIP_Bottle_1H
+1516	-1	591	-1	-1	-1	# EQUIP_Neck_Mempo
+1517	-1	592	-1	-1	-1	# EQUIP_Belt_Mace
+1518	-1	593	-1	-1	-1	# EQUIP_Hood_Assassin
+1519	-1	594	-1	-1	-1	# EQUIP_Belt_Sword
+1520	-1	595	-1	-1	-1	# EQUIP_Hood_Mage
+1521	-1	596	-1	-1	-1	# EQUIP_Belt_Dagger
+1522	-1	597	-1	-1	-1	# EQUIP_Tabbard
+1523	-1	598	-1	-1	-1	# EQUIP_Cloak_Quarter
+1524	-1	599	-1	-1	-1	# EQUIP_Hat_Bake_Kitsune
+1525	-1	600	-1	-1	-1	# EQUIP_Tabbard_Gargoyle
+1526	-1	601	-1	-1	-1	# War_Boar_Mount
+1527	-1	602	-1	-1	-1	# Capybara_Mount
+1528	-1	603	-1	-1	-1	# Capybara_Baby
+1529 	-1	604	-1	-1	-1	# EQUIP_Shield_Pirate_Male_H
+1530 	-1	605	-1	-1	-1	# EQUIP_Shield_Pirate_Female_H
+1531 	-1	606	-1	-1	-1	# Equip_Shield_Pirate_Male_G
+1532 	-1	607	-1	-1	-1	# Equip_Shield_Pirate_Female_G
+1541	-1	608	-1	-1	-1	# Rabbit_Doom
+1542	-1	609	-1	-1	-1	# Rabbit_Doom_Baby
+1543 	-1	618	-1	-1  -1	# Weapon_Wand_H
+1544 	-1	619	-1	-1	-1	# EQUIP_Lantern_H_On
+1545 	-1	620	-1	-1	-1	# EQUIP_Lantern_H_Off
+1546	-1	621	-1	-1	-1	# Dog_Newfoundland
+1547	-1	622	-1	-1	-1	# Dog_Alaskan_Malamute
+1548	-1	623	-1	-1	-1	# Dog_Great_Dane
+1549	-1	624	-1	-1	-1	# Dog_Saint_Bernard
+1550 	-1	625	-1	-1	-1	# EQUIP_Orb_H
+1551	-1	626	-1	-1	-1	# Dog_Black_Russian_terrier
+1552	-1	627	-1	-1	-1	# Dog_Rottweiler
+1554    -1  629 -1  -1  -1	# WEAPON_Staff_Candycane_H
+1555    -1  630 -1  -1  -1	# WEAPON_Staff_Candycane_G
+1565    -1	640	-1	-1	-1	# EQUIP_Belt_Demon_H
+1566    -1	641	-1	-1	-1	# EQUIP_Belt_Demon_G
+1567 	-1	642	-1	-1	-1	# Weapon_Wand_Garg
+1568 	-1	643	-1	-1	-1	# EQUIP_Lantern_Garg_On
+1569 	-1	644	-1	-1	-1	# EQUIP_Lantern_Garg_Off
+1570 	-1	645	-1	-1	-1	# EQUIP_Orb_Garg
+1533 	-1	-1	-1	-1	300	# Equip_Sash_H_Empty NL
+1534 	-1	-1	-1	-1	301	# Equip_Sash_H_1thirdfull NL
+1535 	-1	-1	-1	-1	302	# Equip_Sash_H_2thirdfull NL
+1536 	-1	-1	-1	-1	303	# Equip_Sash_H_Full NL
+1537 	-1	-1	-1	-1	304	# Equip_Sash_G_Empty NL
+1538 	-1	-1	-1	-1	305	# Equip_Sash_G_1thirdfull NL
+1539 	-1	-1	-1	-1	306	# Equip_Sash_G_2thirdfull NL
+1540 	-1	-1	-1	-1	307	# Equip_Sash_G_Full NL
+1556 	-1	-1	-1	-1	308	# EQUIP_Armor_Gloves_Leather_Arcane NL
+1557 	-1	-1	-1	-1	309	# EQUIP_Armor_Arms_Leather_Arcane NL
+1558 	-1	-1	-1	-1	310	# EQUIP_Armor_Legs_Leather_Arcane NL
+1559 	-1	-1	-1	-1	311	# EQUIP_Armor_Jacket_Leather_Arcane_Male NL
+1560 	-1	-1	-1	-1	312	# EQUIP_Armor_Jacket_Leather_Arcane_Female NL
+1561 	-1	-1	-1	-1	313	# EQUIP_Armor_Helmet_Ringmail NL
+1562 	-1	-1	-1	-1	314	# EQUIP_Armor_Helmet_Leather_Studded NL
+1563 	-1	-1	-1	-1	315	# EQUIP_Armor_Gloves_Chainmail NL
+1564 	-1	-1	-1	-1	316	# EQUIP_Armor_Arms_Chainmail NL
+1553	-1	-1	-1	-1	317	# Sphinx NL
+1571    -1	646	-1	-1	-1  # EQUIP_Shield_Hildebrandt_H
+1572    -1	647	-1	-1	-1  # EQUIP_Shield_Hildebrandt_G

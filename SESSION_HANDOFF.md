@@ -47,12 +47,21 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
   Animacje własne Nelderim (`anim3`/`anim4`, np. 420 Cloth Hood, 422 Plecak) **nie są potrzebne**: decyzja użytkownika,
   oryginalnych animacji jest wystarczająco dużo.
 - **Gdzie rozpakować:** `uo_client/` w katalogu repo (ignorowane przez git).
-- **Stan dostępu (sesja 1):** link jest PRYWATNY. Nieuwierzytelnione pobranie zwraca stronę logowania Google, więc `gdown`
-  i `curl` nie działają. Użytkownik musi ustawić udostępnianie na „Każdy mający link: Przeglądający” albo wgrać plik
-  bezpośrednio do sesji. Spróbuj najpierw: `pip install gdown && gdown 1R80D0FN_RO7xuJ7X-yz13ZRdTemNZmIz -O uo_client/client_download`.
-- **2a. Wyciąg do repo** (uzupełnij po pierwszym pobraniu): `client/extract/` — pliki `anim_NNNN.vd` potrzebnych ID (ekwipunek
-  do kalibracji i testów), `Bodyconv.def`, `Equipconv.def`, wyniki pomiarów (JSON/CSV, np. zasięg klatek względem zaczepu).
-  Opisz tu, co dokładnie tam jest i jak to wyciągnięto.
+- **Pobieranie (działa, link jest publiczny):** `pip install gdown && mkdir -p uo_client && gdown 1R80D0FN_RO7xuJ7X-yz13ZRdTemNZmIz -O uo_client/client_download`
+  (2,64 GB, ok. 20 s). Jeśli zwróci stronę logowania, link znów jest prywatny: poproś użytkownika o „Każdy mający link”.
+- **Rozpakowanie:** to RAR5 (5 GB po rozpakowaniu, 2336 plików, główny katalog `NelderimServUO/`). Działa tylko oficjalny
+  `unrar`: `apt-get update && apt-get install -y unrar` (UNRAR 7.00). `7zip` i `unrar-free` z apt nie obsługują RAR5, `unar`
+  psuje duże pliki. Wypakowuj tylko potrzebne pliki, np.
+  `cd uo_client && unrar x -y -idq client_download NelderimServUO/anim.idx NelderimServUO/anim.mul ...`.
+  Klient zawiera też ustawienia i wtyczki użytkownika (RazorEnhanced itp.): nie wypakowuj i nie commituj ich.
+- **Stan klienta:** `anim.mul`/`anim.idx` są bajt w bajt identyczne z `*_BACKUP_przed_vd`, czyli oryginalne. `anim2` i `anim4`
+  zawierają własne animacje Nelderim (zmiany z 2026-09).
+- **2a. Wyciąg w repo:** `client/extract/` (opis i polecenia odtwarzające w `client/extract/README.md`): pliki `.def`,
+  `equipment_extent.json` (zasięg każdej animacji ludzi/ekwipunku względem zaczepu), `item_animations.json` (przedmioty ubieralne:
+  warstwa, nazwa, plik animacji, zasięg). Skrypty: `pipeline/measure_equipment_extent.py`, `pipeline/extract_tiledata.py`.
+  Pliki `.vd` konkretnych animacji wyciągaj `vdtool/mul2vd.py` wtedy, gdy są potrzebne (kalibracja broni, testy), i dodawaj do
+  `client/extract/vd/`. Uwaga: `mul2vd.py` zakłada ID lokalne w pliku i tylko `anim.idx/.mul`; dla `anim2`..`anim5` trzeba mu podać
+  inne pliki (`python vdtool/mul2vd.py anim3.idx anim3.mul wyjscie <id>`).
 - **Wyciąganie animacji:** `python vdtool/mul2vd.py anim.idx anim.mul <katalog_wyjściowy> 527 563 ...` daje `anim_NNNN.vd`,
   a `python vdtool/vdtool.py extract plik.vd praca` rozpakowuje je do PNG. Narzędzie czyta tylko `anim.idx`/`anim.mul`
   i ID od 400 w górę to ludzie i ekwipunek (35 akcji × 5 kierunków).
@@ -67,7 +76,7 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
 | Decyzja | Wartość |
 |---|---|
 | Rozwijać czy budować od nowa | Rozwijać UO_Model3D |
-| Płótno renderu | Parametr `CANVAS`; wartość robocza 256×256 z zaczepieniem (128,192) = 192 px w górę, 128 na boki, 64 w dół (dziś 136×120 / (68,86)). **Ostatecznie ma ją potwierdzić pomiar zasięgu klatek ekwipunku z klienta.** Wybór rozmiaru zostawił użytkownik. |
+| Płótno renderu | Parametr `CANVAS`; **256×256 z zaczepieniem (128,192)** = 192 px w górę, 128 na boki, 64 w dół (dziś 136×120 / (68,86)). **Potwierdzone pomiarem** (sesja 1): mieszczą się 444 z 449 animacji ludzi/ekwipunku; z 392 animacji ubieralnych poza płótnem są 4, żadna to zwykła broń czy ubranie: `Lantern_off` (aura do 306 px), epolety z papugą (187 px), `Cloth Ninja Jacket` (+2 px w górę), jedna bez nazwy (anim id 871). Dla tych rób większe `CANVAS` ręcznie. Dziś 136×120: poza płótnem 50/52 broni 1H, 57/66 TwoHanded, 26/60 hełmów (maks. +239 px). Wybór rozmiaru zostawił użytkownik. |
 | Praca | Na `main`; backup w `/home/user/UO_Model3D_backup/` (tylko w sesji 1) i w gałęzi `claude/friendly-knuth-44xtfw` |
 | Klatki ciała | Zostają |
 | Anim3/anim4 z klienta | Niepotrzebne |
@@ -112,7 +121,7 @@ Numeracja jak w raporcie (rozdz. 4). Kolejność zmieniona względem raportu: te
 kolejne kroki miały liczby „przed/po”.
 
 - [ ] **1. Parametr `CANVAS` / `ANCHOR` (raport 4.1).** Analiza zrobiona (sekcja 5), kodu jeszcze nie ruszono.
-  - [ ] 1a. Pomiar zasięgu wszystkich klatek ekwipunku względem zaczepu (potrzebny klient) → potwierdzić rozmiar płótna.
+  - [x] 1a. Pomiar zasięgu wszystkich klatek ekwipunku względem zaczepu → rozmiar płótna potwierdzony (sekcja 3).
   - [ ] 1b. Parametr w `render_uo_layer.py`: `ortho_scale = W/36`, przesunięcie kamery policzone tak, żeby punkt
         (0, 0, 0,07 m) wylądował na `ANCHOR` (sprawdzić rzutowaniem), atlas i maski konia wklejone ze przesunięciem
         `ANCHOR − (68,86)`, rasteryzer na `W`×`H`, `meta.json`.
@@ -136,18 +145,18 @@ kolejne kroki miały liczby „przed/po”.
 - Zainstalowano środowisko (sekcja 4) i potwierdzono w kodzie dwa twierdzenia raportu: sztywne 136×120 oraz `crossbow → hand.R`.
 - Odczytano parametry kamery i węzłów atlasu z `.blend` (sekcja 5). Ustalono plan `CANVAS` i zasady pracy (sekcja 0).
 - Użytkownik zmienił decyzję o pracy: zamiast kopii roboczej repo — kopia zapasowa modelu i praca na `main`.
-- Użytkownik podał link do klienta (Google Drive), ale plik jest prywatny: pobranie nie powiodło się (sekcja 2).
-- **Żaden plik kodu ani modelu nie został zmieniony.** Dodano tylko: `SESSION_HANDOFF.md`, `CLAUDE.md`, `docs/RAPORT_model3D_UO.txt`,
+- Klient (Google Drive, link publiczny) pobrany i wypakowany częściowo; wyciąg w `client/extract/` (sekcja 2a).
+- Krok 1a zrobiony: `pipeline/measure_equipment_extent.py` i `pipeline/extract_tiledata.py`. Wyniki zgadzają się z tabelą
+  z raportu (maks. nadmiar 239 px vs 238, hełmy +20 vs +19), więc pomiar i raport się wzajemnie potwierdzają.
+- **Żaden plik modelu (`model/`) ani render nie został zmieniony.** Dodano tylko: `SESSION_HANDOFF.md`, `CLAUDE.md`, `docs/RAPORT_model3D_UO.txt`,
   wpis `uo_client/` w `.gitignore`.
 
 ## 8. Następne kroki (sesja 2)
 
-1. Spróbuj pobrać klienta z linku w sekcji 2. Jeśli nadal prywatny, poproś użytkownika o zmianę udostępniania i nie rób nic więcej z klientem.
-2. Zrób kopię zapasową `model/` poza repo (sekcja 0), zainstaluj środowisko (sekcja 4).
-3. Krok 1a: pobierz klienta do `uo_client/`, wyciągnij animacje ekwipunku i zmierz zasięg względem zaczepu (68,86). Zapisz wynik
-   i ostateczny rozmiar płótna w sekcji 3.
-4. Krok 1b–1d, odbiór jak w sekcji 6.
-5. Na koniec zaktualizuj ten plik, commit i push na `main`.
+1. Zrób kopię zapasową `model/` poza repo (sekcja 0), zainstaluj środowisko (sekcja 4). Klient jest potrzebny dopiero od kroku
+   3 (broń); wyciąg do kroków 1–2 jest już w `client/extract/`.
+2. Kroki 1b–1d (patrz sekcja 6), odbiór jak tam opisano. Płótno: 256×256, zaczep (128,192).
+3. Na koniec zaktualizuj ten plik, commit i push na `main`.
 
 ## 9. Pytania otwarte do użytkownika
 

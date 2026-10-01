@@ -1,0 +1,13930 @@
+{
+ "layers": {
+  "1": "OneHanded",
+  "2": "TwoHanded",
+  "3": "Shoes",
+  "4": "Pants",
+  "5": "Shirt",
+  "6": "Helm",
+  "7": "Gloves",
+  "8": "Ring",
+  "9": "Talisman",
+  "10": "Neck",
+  "11": "Hair",
+  "12": "Waist",
+  "13": "InnerTorso",
+  "14": "Bracelet",
+  "16": "FacialHair",
+  "17": "MiddleTorso",
+  "18": "Earrings",
+  "19": "Arms",
+  "20": "Cloak",
+  "21": "Backpack",
+  "22": "OuterTorso",
+  "23": "OuterLegs",
+  "24": "InnerLegs"
+ },
+ "stats_by_layer": {
+  "OneHanded": {
+   "animations": 52,
+   "over_136x120": 50,
+   "max_over_136x120": 41,
+   "over_256x256": 0,
+   "max_over_256x256": -9
+  },
+  "TwoHanded": {
+   "animations": 66,
+   "over_136x120": 57,
+   "max_over_136x120": 239,
+   "over_256x256": 1,
+   "max_over_256x256": 179
+  },
+  "Shoes": {
+   "animations": 10,
+   "over_136x120": 0,
+   "max_over_136x120": -15,
+   "over_256x256": 0,
+   "max_over_256x256": -45
+  },
+  "Pants": {
+   "animations": 30,
+   "over_136x120": 1,
+   "max_over_136x120": 2,
+   "over_256x256": 0,
+   "max_over_256x256": -29
+  },
+  "Shirt": {
+   "animations": 13,
+   "over_136x120": 1,
+   "max_over_136x120": 2,
+   "over_256x256": 0,
+   "max_over_256x256": -28
+  },
+  "Helm": {
+   "animations": 60,
+   "over_136x120": 26,
+   "max_over_136x120": 20,
+   "over_256x256": 0,
+   "max_over_256x256": -10
+  },
+  "Gloves": {
+   "animations": 10,
+   "over_136x120": 4,
+   "max_over_136x120": 2,
+   "over_256x256": 0,
+   "max_over_256x256": -29
+  },
+  "Neck": {
+   "animations": 11,
+   "over_136x120": 0,
+   "max_over_136x120": -6,
+   "over_256x256": 0,
+   "max_over_256x256": -36
+  },
+  "Hair": {
+   "animations": 37,
+   "over_136x120": 3,
+   "max_over_136x120": 1,
+   "over_256x256": 0,
+   "max_over_256x256": -30
+  },
+  "Waist": {
+   "animations": 8,
+   "over_136x120": 0,
+   "max_over_136x120": -10,
+   "over_256x256": 0,
+   "max_over_256x256": -40
+  },
+  "InnerTorso": {
+   "animations": 28,
+   "over_136x120": 2,
+   "max_over_136x120": 108,
+   "over_256x256": 2,
+   "max_over_256x256": 17
+  },
+  "FacialHair": {
+   "animations": 11,
+   "over_136x120": 0,
+   "max_over_136x120": -6,
+   "over_256x256": 0,
+   "max_over_256x256": -36
+  },
+  "MiddleTorso": {
+   "animations": 7,
+   "over_136x120": 0,
+   "max_over_136x120": -3,
+   "over_256x256": 0,
+   "max_over_256x256": -33
+  },
+  "Earrings": {
+   "animations": 1,
+   "over_136x120": 1,
+   "max_over_136x120": 1,
+   "over_256x256": 0,
+   "max_over_256x256": -30
+  },
+  "Arms": {
+   "animations": 14,
+   "over_136x120": 0,
+   "max_over_136x120": -2,
+   "over_256x256": 0,
+   "max_over_256x256": -32
+  },
+  "Cloak": {
+   "animations": 5,
+   "over_136x120": 1,
+   "max_over_136x120": 5,
+   "over_256x256": 0,
+   "max_over_256x256": -25
+  },
+  "OuterTorso": {
+   "animations": 26,
+   "over_136x120": 3,
+   "max_over_136x120": 137,
+   "over_256x256": 1,
+   "max_over_256x256": 87
+  },
+  "OuterLegs": {
+   "animations": 7,
+   "over_136x120": 0,
+   "max_over_136x120": -12,
+   "over_256x256": 0,
+   "max_over_256x256": -42
+  }
+ },
+ "animations": {
+  "61": {
+   "src": "anim:61",
+   "layers": [
+    25
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16141,
+     "RDrake"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "173": {
+   "src": "anim2:2",
+   "layers": [
+    25
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16145,
+     "RHugeSpider"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "335": {
+   "src": "anim5:335",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16897,
+     "Gargish Kite Shield"
+    ],
+    [
+     16902,
+     "Gargish Kite Shield"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "336": {
+   "src": "anim5:336",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16896,
+     "Gargish Wooden Shiel"
+    ],
+    [
+     16903,
+     "Gargish Wooden Shiel"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "337": {
+   "src": "anim5:337",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16900,
+     "Large Plate Shield"
+    ],
+    [
+     16904,
+     "Large Plate Shield"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "338": {
+   "src": "anim5:338",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16899,
+     "Medium Plate Shield"
+    ],
+    [
+     16905,
+     "Medium Plate Shield"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "339": {
+   "src": "anim5:339",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16898,
+     "Small Plate Shield"
+    ],
+    [
+     16906,
+     "Small Plate Shield"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "340": {
+   "src": "anim5:340",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16901,
+     "Large Stone Shield"
+    ],
+    [
+     16907,
+     "Large Stone Shield"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "341": {
+   "src": "anim5:341",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16386,
+     "Gargish Fancy Robe"
+    ],
+    [
+     16387,
+     "Gargish Fancy Robe"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "342": {
+   "src": "anim5:342",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16384,
+     "Gargish Robe"
+    ],
+    [
+     16385,
+     "Gargish Robe"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "343": {
+   "src": "anim5:343",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16936,
+     "Gargish Chaos Shield"
+    ],
+    [
+     16937,
+     "Gargish Chaos Shield"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "344": {
+   "src": "anim5:344",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16938,
+     "Gargish Order Shield"
+    ],
+    [
+     16940,
+     "Gargish Order Shield"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "404": {
+   "src": "anim:404",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5907,
+     "floppy hat"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 81,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "405": {
+   "src": "anim:405",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5908,
+     "wide-brim hat"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 80,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "406": {
+   "src": "anim:406",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5909,
+     "cap"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "407": {
+   "src": "anim:407",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5910,
+     "tall straw hat"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 83,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "408": {
+   "src": "anim:408",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5911,
+     "straw hat"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 80,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "409": {
+   "src": "anim:409",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5912,
+     "wizard's hat"
+    ]
+   ],
+   "extent": {
+    "left": 72,
+    "right": 72,
+    "up": 83,
+    "down": 37
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "410": {
+   "src": "anim:410",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5913,
+     "bonnet"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "411": {
+   "src": "anim:411",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5914,
+     "feathered hat"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 81,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "412": {
+   "src": "anim:412",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5915,
+     "tricorne hat"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 85,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "413": {
+   "src": "anim:413",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5916,
+     "jester hat"
+    ],
+    [
+     5934,
+     "jester's cap"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 85,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "414": {
+   "src": "anim:414",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5445,
+     "bear mask"
+    ],
+    [
+     5446,
+     "bear mask"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 84,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "415": {
+   "src": "anim:415",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5447,
+     "deer mask"
+    ],
+    [
+     5448,
+     "deer mask"
+    ]
+   ],
+   "extent": {
+    "left": 86,
+    "right": 86,
+    "up": 99,
+    "down": 53
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "416": {
+   "src": "anim:416",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5147,
+     "orc mask"
+    ],
+    [
+     5148,
+     "orc mask"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "417": {
+   "src": "anim:417",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5449,
+     "tribal mask"
+    ],
+    [
+     5450,
+     "tribal mask"
+    ]
+   ],
+   "extent": {
+    "left": 71,
+    "right": 71,
+    "up": 85,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "418": {
+   "src": "anim:418",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5451,
+     "tribal mask"
+    ],
+    [
+     5452,
+     "tribal mask"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 81,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "419": {
+   "src": "anim:419",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5443,
+     "skullcap"
+    ],
+    [
+     5444,
+     "skullcap"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "422": {
+   "src": "anim:422",
+   "layers": [
+    21
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     2482,
+     "backpack"
+    ],
+    [
+     3701,
+     "backpack"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "423": {
+   "src": "anim4:412",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10129,
+     "Leather Ninja Pants"
+    ],
+    [
+     10204,
+     "Leather Ninja Pants"
+    ]
+   ],
+   "extent": {
+    "left": 44,
+    "right": 44,
+    "up": 59,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "424": {
+   "src": "anim4:413",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10130,
+     "Leather Ninja Mitts"
+    ],
+    [
+     10205,
+     "Leather Ninja Mitts"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 85,
+    "down": 33
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "425": {
+   "src": "anim4:410",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10126,
+     "Leather Ninja Hood"
+    ],
+    [
+     10201,
+     "Leather Ninja Hood"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "426": {
+   "src": "anim4:411",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10131,
+     "Leather Ninja Jacket"
+    ],
+    [
+     10206,
+     "Leather Ninja Jacket"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "427": {
+   "src": "anim5:364",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     11677,
+     "MysticSpellBook East"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "430": {
+   "src": "anim:430",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5422,
+     "short pants"
+    ],
+    [
+     5423,
+     "short pants"
+    ]
+   ],
+   "extent": {
+    "left": 40,
+    "right": 40,
+    "up": 56,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "431": {
+   "src": "anim:431",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5433,
+     "long pants"
+    ],
+    [
+     5434,
+     "long pants"
+    ]
+   ],
+   "extent": {
+    "left": 40,
+    "right": 40,
+    "up": 56,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "433": {
+   "src": "anim5:377",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     6588,
+     "Halloween Mask"
+    ],
+    [
+     6589,
+     "Halloween Mask"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "434": {
+   "src": "anim:434",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5399,
+     "shirt"
+    ],
+    [
+     5400,
+     "shirt"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 71,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "435": {
+   "src": "anim:435",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7933,
+     "fancy shirt"
+    ],
+    [
+     7934,
+     "fancy shirt"
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "436": {
+   "src": "anim5:371",
+   "layers": [
+    14
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16913,
+     "Gargish Bracelet"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "437": {
+   "src": "anim5:372",
+   "layers": [
+    18
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16915,
+     "Gargish Earrings"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "438": {
+   "src": "anim5:373",
+   "layers": [
+    8
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16914,
+     "Gargish Ring"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "439": {
+   "src": "anim5:374",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16912,
+     "Gargish Necklace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "442": {
+   "src": "anim4:414",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10100,
+     "Mail Hatsuburi"
+    ],
+    [
+     10175,
+     "Mail Hatsuburi"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "443": {
+   "src": "anim4:415",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10101,
+     "Plate Hatsuburi"
+    ],
+    [
+     10176,
+     "Plate Hatsuburi"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 78,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "444": {
+   "src": "anim4:416",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10102,
+     "Leather Jingasa"
+    ],
+    [
+     10177,
+     "Leather Jingasa"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "445": {
+   "src": "anim4:417",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10103,
+     "Plate Jingasa"
+    ],
+    [
+     10178,
+     "Plate Jingasa"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "446": {
+   "src": "anim4:418",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10113,
+     "Plate Jingasa"
+    ],
+    [
+     10188,
+     "Plate Jingasa"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "447": {
+   "src": "anim:447",
+   "layers": [
+    22
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     7937,
+     "plain dress"
+    ],
+    [
+     7938,
+     "plain dress"
+    ],
+    [
+     9855,
+     "long dress"
+    ],
+    [
+     9856,
+     "long dress"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 73,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "448": {
+   "src": "anim:448",
+   "layers": [
+    22
+   ],
+   "n_items": 8,
+   "items": [
+    [
+     7935,
+     "fancy dress"
+    ],
+    [
+     7936,
+     "fancy dress"
+    ],
+    [
+     8973,
+     "gilded dress"
+    ],
+    [
+     8974,
+     "gilded dress"
+    ],
+    [
+     9851,
+     "fancy dress"
+    ],
+    [
+     9852,
+     "fancy dress"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 73,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "449": {
+   "src": "anim:449",
+   "layers": [
+    23
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5398,
+     "skirt"
+    ],
+    [
+     5425,
+     "skirt"
+    ]
+   ],
+   "extent": {
+    "left": 43,
+    "right": 43,
+    "up": 60,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "450": {
+   "src": "anim4:419",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10116,
+     "Plate Jingasa"
+    ],
+    [
+     10191,
+     "Plate Jingasa"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "451": {
+   "src": "anim4:420",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10104,
+     "Plate Kabuto"
+    ],
+    [
+     10179,
+     "Plate Kabuto"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 82,
+    "down": 36
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "455": {
+   "src": "anim:455",
+   "layers": [
+    23
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5431,
+     "kilt"
+    ],
+    [
+     5432,
+     "kilt"
+    ]
+   ],
+   "extent": {
+    "left": 43,
+    "right": 43,
+    "up": 60,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "456": {
+   "src": "anim4:421",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10105,
+     "Plate Mempo"
+    ],
+    [
+     10180,
+     "Plate Mempo"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 73,
+    "down": 25
+   },
+   "frames": 916,
+   "complete": false
+  },
+  "457": {
+   "src": "anim4:422",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10107,
+     "Leather Do"
+    ],
+    [
+     10182,
+     "Leather Do"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "458": {
+   "src": "anim4:423",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10108,
+     "Studded Do"
+    ],
+    [
+     10183,
+     "Studded Do"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "459": {
+   "src": "anim4:424",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10109,
+     "Plate Do"
+    ],
+    [
+     10184,
+     "Plate Do"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "462": {
+   "src": "anim4:427",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10117,
+     "Plate Kabuto"
+    ],
+    [
+     10192,
+     "Plate Kabuto"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 82,
+    "down": 36
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "463": {
+   "src": "anim4:428",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10121,
+     "Plate Kabuto"
+    ],
+    [
+     10196,
+     "Plate Kabuto"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 78,
+    "down": 32
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "464": {
+   "src": "anim4:429",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10148,
+     "Wakizashi"
+    ],
+    [
+     10223,
+     "Wakizashi"
+    ]
+   ],
+   "extent": {
+    "left": 80,
+    "right": 80,
+    "up": 91,
+    "down": 38
+   },
+   "frames": 1044,
+   "complete": true
+  },
+  "465": {
+   "src": "anim:465",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5437,
+     "full apron"
+    ],
+    [
+     5438,
+     "full apron"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "466": {
+   "src": "anim:466",
+   "layers": [
+    12
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5435,
+     "half apron"
+    ],
+    [
+     5436,
+     "half apron"
+    ]
+   ],
+   "extent": {
+    "left": 40,
+    "right": 40,
+    "up": 57,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "467": {
+   "src": "anim4:430",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10152,
+     "Bokuto"
+    ],
+    [
+     10227,
+     "Bokuto"
+    ]
+   ],
+   "extent": {
+    "left": 87,
+    "right": 87,
+    "up": 101,
+    "down": 42
+   },
+   "frames": 1047,
+   "complete": true
+  },
+  "468": {
+   "src": "anim:468",
+   "layers": [
+    20
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     5397,
+     "cloak"
+    ],
+    [
+     5424,
+     "cloak"
+    ],
+    [
+     8969,
+     "fur cape"
+    ],
+    [
+     8970,
+     "fur cape"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 75,
+    "down": 38
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "469": {
+   "src": "anim:469",
+   "layers": [
+    22
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     7939,
+     "robe"
+    ],
+    [
+     7940,
+     "robe"
+    ],
+    [
+     9708,
+     "robe"
+    ],
+    [
+     9709,
+     "robe"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "470": {
+   "src": "anim4:431",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10153,
+     "Daisho"
+    ],
+    [
+     10228,
+     "Daisho"
+    ]
+   ],
+   "extent": {
+    "left": 86,
+    "right": 86,
+    "up": 100,
+    "down": 42
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "471": {
+   "src": "anim4:432",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10106,
+     "Leather Mempo"
+    ],
+    [
+     10181,
+     "Leather Mempo"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 73,
+    "down": 25
+   },
+   "frames": 923,
+   "complete": false
+  },
+  "472": {
+   "src": "anim4:433",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10141,
+     "Studded Mempo"
+    ],
+    [
+     10216,
+     "Studded Mempo"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 74,
+    "down": 27
+   },
+   "frames": 923,
+   "complete": false
+  },
+  "473": {
+   "src": "anim4:434",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10110,
+     "Samurai Armor Arms"
+    ],
+    [
+     10185,
+     "Samurai Armor Arms"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 82,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "474": {
+   "src": "anim4:435",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10111,
+     "Samurai Armor Arms"
+    ],
+    [
+     10186,
+     "Samurai Armor Arms"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 82,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "475": {
+   "src": "anim5:372",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17066,
+     "Female Gargoyle Horn"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "476": {
+   "src": "anim:476",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5905,
+     "thigh boots"
+    ],
+    [
+     5906,
+     "thigh boots"
+    ]
+   ],
+   "extent": {
+    "left": 34,
+    "right": 34,
+    "up": 56,
+    "down": 18
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "477": {
+   "src": "anim:477",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5899,
+     "boots"
+    ],
+    [
+     5900,
+     "boots"
+    ]
+   ],
+   "extent": {
+    "left": 29,
+    "right": 29,
+    "up": 54,
+    "down": 15
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "478": {
+   "src": "anim4:436",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10112,
+     "Samurai Armor Arms"
+    ],
+    [
+     10187,
+     "Samurai Armor Arms"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 82,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "479": {
+   "src": "anim:479",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5901,
+     "sandals"
+    ],
+    [
+     5902,
+     "sandals"
+    ]
+   ],
+   "extent": {
+    "left": 28,
+    "right": 28,
+    "up": 51,
+    "down": 15
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "480": {
+   "src": "anim:480",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5903,
+     "shoes"
+    ],
+    [
+     5904,
+     "shoes"
+    ]
+   ],
+   "extent": {
+    "left": 29,
+    "right": 29,
+    "up": 41,
+    "down": 15
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "481": {
+   "src": "anim:481",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8965,
+     "flower garland"
+    ],
+    [
+     8966,
+     "flower garland"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "482": {
+   "src": "anim:482",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8967,
+     "fur boots"
+    ],
+    [
+     8968,
+     "fur boots"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "483": {
+   "src": "anim5:345",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16984,
+     "Male Gargoyle Horns"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "484": {
+   "src": "anim:484",
+   "layers": [
+    23
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8971,
+     "fur surong"
+    ],
+    [
+     8972,
+     "fur surong"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "485": {
+   "src": "anim5:346",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16985,
+     "Male Gargoyle Horns"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "486": {
+   "src": "anim:486",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8975,
+     "formal shirt"
+    ],
+    [
+     8976,
+     "formal shirt"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "487": {
+   "src": "anim4:516",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10118,
+     "Leather Suneate"
+    ],
+    [
+     10193,
+     "Leather Suneate"
+    ]
+   ],
+   "extent": {
+    "left": 42,
+    "right": 42,
+    "up": 59,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "488": {
+   "src": "anim4:518",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10119,
+     "Studded Suneate"
+    ],
+    [
+     10194,
+     "Studded Suneate"
+    ]
+   ],
+   "extent": {
+    "left": 42,
+    "right": 42,
+    "up": 58,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "489": {
+   "src": "anim4:519",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10120,
+     "Plate Suneate"
+    ],
+    [
+     10195,
+     "Plate Suneate"
+    ]
+   ],
+   "extent": {
+    "left": 42,
+    "right": 42,
+    "up": 58,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "490": {
+   "src": "anim:490",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5441,
+     "body sash"
+    ],
+    [
+     5442,
+     "body sash"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "491": {
+   "src": "anim4:520",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10122,
+     "Leather Haidate"
+    ],
+    [
+     10197,
+     "Leather Haidate"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 57,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "492": {
+   "src": "anim:492",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5439,
+     "bandana"
+    ],
+    [
+     5440,
+     "bandana"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 78,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "493": {
+   "src": "anim:493",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     4229,
+     "necklace"
+    ],
+    [
+     7941,
+     "bead necklace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "494": {
+   "src": "anim:494",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     4233,
+     "necklace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "495": {
+   "src": "anim:495",
+   "layers": [
+    14
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     4230,
+     "bracelet"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "496": {
+   "src": "anim:496",
+   "layers": [
+    18
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     4231,
+     "earrings"
+    ],
+    [
+     7943,
+     "earrings"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "497": {
+   "src": "anim:497",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     4232,
+     "necklace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "498": {
+   "src": "anim:498",
+   "layers": [
+    8
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     4234,
+     "ring"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "499": {
+   "src": "anim5:348",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16987,
+     "Male Gargoyle Head H"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "500": {
+   "src": "anim:500",
+   "layers": [
+    2
+   ],
+   "n_items": 6,
+   "items": [
+    [
+     2581,
+     "lantern"
+    ],
+    [
+     2582,
+     "lantern"
+    ],
+    [
+     2583,
+     "lantern"
+    ],
+    [
+     2594,
+     "lantern"
+    ],
+    [
+     2595,
+     "lantern"
+    ],
+    [
+     2596,
+     "lantern"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 82,
+    "down": 37
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "501": {
+   "src": "anim:501",
+   "layers": [
+    2
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     2578,
+     "torch"
+    ],
+    [
+     2579,
+     "torch"
+    ],
+    [
+     2580,
+     "torch"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 103,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "502": {
+   "src": "anim:502",
+   "layers": [
+    2
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     2575,
+     "candle"
+    ],
+    [
+     2576,
+     "candle"
+    ],
+    [
+     2577,
+     "candle"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 87,
+    "down": 33
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "503": {
+   "src": "anim:503",
+   "layers": [
+    2
+   ],
+   "n_items": 6,
+   "items": [
+    [
+     2584,
+     "lantern"
+    ],
+    [
+     2597,
+     "lantern"
+    ],
+    [
+     16638,
+     "Red lantern"
+    ],
+    [
+     16639,
+     "BLue lantern"
+    ],
+    [
+     16640,
+     "Green lantern"
+    ],
+    [
+     16641,
+     "Purple lantern"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 82,
+    "down": 37
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "504": {
+   "src": "anim:504",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3940,
+     "torch%es%"
+    ],
+    [
+     3947,
+     "torch%es%"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 90,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "505": {
+   "src": "anim:505",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     2600,
+     "candle%s%"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 84,
+    "down": 32
+   },
+   "frames": 1044,
+   "complete": true
+  },
+  "506": {
+   "src": "anim4:437",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10125,
+     "Plate Haidate"
+    ],
+    [
+     10200,
+     "Plate Haidate"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 58,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "507": {
+   "src": "anim:507",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7946,
+     "silver necklace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "508": {
+   "src": "anim:508",
+   "layers": [
+    14
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7942,
+     "bracelet"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "510": {
+   "src": "anim5:370",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7944,
+     "necklace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "511": {
+   "src": "anim:511",
+   "layers": [
+    8
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7945,
+     "ring"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "512": {
+   "src": "anim4:438",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10123,
+     "Studded Haidate"
+    ],
+    [
+     10198,
+     "Studded Haidate"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 58,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "513": {
+   "src": "anim4:439",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10127,
+     "Leather Ninja Hood"
+    ],
+    [
+     10202,
+     "Leather Ninja Hood"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "514": {
+   "src": "anim4:440",
+   "layers": [
+    12
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     10128,
+     "Leather Ninja Belt"
+    ],
+    [
+     10203,
+     "Leather Ninja Belt"
+    ],
+    [
+     41462,
+     "First Aid Belt"
+    ]
+   ],
+   "extent": {
+    "left": 44,
+    "right": 44,
+    "up": 60,
+    "down": 23
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "516": {
+   "src": "anim4:441",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10136,
+     "Kasa"
+    ],
+    [
+     10211,
+     "Kasa"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "517": {
+   "src": "anim4:442",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10137,
+     "Kamishimo "
+    ],
+    [
+     10212,
+     "Kamishimo "
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "518": {
+   "src": "anim4:443",
+   "layers": [
+    23
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10138,
+     "Hakama"
+    ],
+    [
+     10213,
+     "Hakama"
+    ]
+   ],
+   "extent": {
+    "left": 42,
+    "right": 42,
+    "up": 58,
+    "down": 21
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "519": {
+   "src": "anim4:444",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10146,
+     "No-Dachi"
+    ],
+    [
+     10221,
+     "No-Dachi"
+    ]
+   ],
+   "extent": {
+    "left": 90,
+    "right": 90,
+    "up": 107,
+    "down": 45
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "520": {
+   "src": "anim4:445",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10147,
+     "Tessen"
+    ],
+    [
+     10222,
+     "Tessen"
+    ]
+   ],
+   "extent": {
+    "left": 77,
+    "right": 77,
+    "up": 95,
+    "down": 36
+   },
+   "frames": 1046,
+   "complete": true
+  },
+  "521": {
+   "src": "anim:521",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5083,
+     "studded tunic"
+    ],
+    [
+     5090,
+     "studded tunic"
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 75,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "522": {
+   "src": "anim:522",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5082,
+     "studded leggings"
+    ],
+    [
+     5089,
+     "studded leggings"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "523": {
+   "src": "anim:523",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5076,
+     "studded sleeves"
+    ],
+    [
+     5084,
+     "studded sleeves"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "524": {
+   "src": "anim:524",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5077,
+     "studded gloves"
+    ],
+    [
+     5085,
+     "studded gloves"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "525": {
+   "src": "anim:525",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5078,
+     "studded gorget"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 71,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "526": {
+   "src": "anim4:446",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10151,
+     "Lajatang"
+    ],
+    [
+     10226,
+     "Lajatang"
+    ]
+   ],
+   "extent": {
+    "left": 89,
+    "right": 89,
+    "up": 96,
+    "down": 43
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "527": {
+   "src": "anim:527",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5141,
+     "platemail"
+    ],
+    [
+     5142,
+     "platemail"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 70,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "528": {
+   "src": "anim:528",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5136,
+     "platemail arms"
+    ],
+    [
+     5143,
+     "platemail arms"
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "529": {
+   "src": "anim:529",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5137,
+     "platemail legs"
+    ],
+    [
+     5146,
+     "platemail legs"
+    ]
+   ],
+   "extent": {
+    "left": 39,
+    "right": 39,
+    "up": 56,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "530": {
+   "src": "anim:530",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5140,
+     "platemail gloves"
+    ],
+    [
+     5144,
+     "platemail gloves"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 86,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "531": {
+   "src": "anim:531",
+   "layers": [
+    10
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     5139,
+     "platemail gorget"
+    ],
+    [
+     9803,
+     "plate gorget"
+    ],
+    [
+     9804,
+     "plate gorget"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "532": {
+   "src": "anim4:447",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10154,
+     "Fukiya"
+    ],
+    [
+     10229,
+     "Fukiya"
+    ]
+   ],
+   "extent": {
+    "left": 75,
+    "right": 75,
+    "up": 86,
+    "down": 36
+   },
+   "frames": 1039,
+   "complete": true
+  },
+  "533": {
+   "src": "anim4:448",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10155,
+     "Tekagi"
+    ],
+    [
+     10230,
+     "Tekagi"
+    ]
+   ],
+   "extent": {
+    "left": 77,
+    "right": 77,
+    "up": 94,
+    "down": 41
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "534": {
+   "src": "anim5:363",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17073,
+     "Horns Facial Gargoyl"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "535": {
+   "src": "anim4:450",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10157,
+     "Kama"
+    ],
+    [
+     10232,
+     "Kama"
+    ]
+   ],
+   "extent": {
+    "left": 77,
+    "right": 77,
+    "up": 91,
+    "down": 37
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "536": {
+   "src": "anim4:451",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10158,
+     "Nunchaku"
+    ],
+    [
+     10233,
+     "Nunchaku"
+    ]
+   ],
+   "extent": {
+    "left": 72,
+    "right": 72,
+    "up": 88,
+    "down": 35
+   },
+   "frames": 1027,
+   "complete": true
+  },
+  "537": {
+   "src": "anim4:452",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10159,
+     "Sai"
+    ],
+    [
+     10234,
+     "Sai"
+    ]
+   ],
+   "extent": {
+    "left": 82,
+    "right": 82,
+    "up": 90,
+    "down": 40
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "538": {
+   "src": "anim:538",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5055,
+     "chainmail tunic"
+    ],
+    [
+     5060,
+     "chainmail tunic"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "539": {
+   "src": "anim4:453",
+   "layers": [
+    7
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     13007,
+     "stare rekawice"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 84,
+    "down": 33
+   },
+   "frames": 1012,
+   "complete": true
+  },
+  "540": {
+   "src": "anim:540",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5054,
+     "chainmail leggings"
+    ],
+    [
+     5059,
+     "chainmail leggings"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 56,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "541": {
+   "src": "anim5:355",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16994,
+     "Female Horns"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "542": {
+   "src": "anim:542",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5068,
+     "leather tunic"
+    ],
+    [
+     5075,
+     "leather tunic"
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 75,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "543": {
+   "src": "anim:543",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5067,
+     "leather leggings"
+    ],
+    [
+     5074,
+     "leather leggings"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 56,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "544": {
+   "src": "anim:544",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5061,
+     "leather sleeves"
+    ],
+    [
+     5069,
+     "leather sleeves"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "545": {
+   "src": "anim:545",
+   "layers": [
+    7
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     5062,
+     "Leather Gloves"
+    ],
+    [
+     5070,
+     "Leather Gloves"
+    ],
+    [
+     5099,
+     "ringmail gloves"
+    ],
+    [
+     5106,
+     "ringmail gloves"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 84,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "546": {
+   "src": "anim:546",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     5063,
+     "leather gorget"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 71,
+    "down": 25
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "548": {
+   "src": "anim:548",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5100,
+     "ringmail tunic"
+    ],
+    [
+     5101,
+     "ringmail tunic"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 72,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "549": {
+   "src": "anim:549",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5104,
+     "ringmail leggings"
+    ],
+    [
+     5105,
+     "ringmail leggings"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 57,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "550": {
+   "src": "anim:550",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5102,
+     "ringmail sleeves"
+    ],
+    [
+     5103,
+     "ringmail sleeves"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "552": {
+   "src": "anim4:456",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10139,
+     "Tattsuke-Hakama"
+    ],
+    [
+     10214,
+     "Tattsuke-Hakama"
+    ]
+   ],
+   "extent": {
+    "left": 44,
+    "right": 44,
+    "up": 59,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "553": {
+   "src": "anim4:457",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10140,
+     "Hakama-Shita"
+    ],
+    [
+     10215,
+     "Hakama-Shita"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 78,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "554": {
+   "src": "anim:554",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5199,
+     "bone armor"
+    ],
+    [
+     5204,
+     "bone armor"
+    ]
+   ],
+   "extent": {
+    "left": 61,
+    "right": 61,
+    "up": 77,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "555": {
+   "src": "anim:555",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5202,
+     "bone leggings"
+    ],
+    [
+     5207,
+     "bone legs"
+    ]
+   ],
+   "extent": {
+    "left": 31,
+    "right": 31,
+    "up": 56,
+    "down": 18
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "556": {
+   "src": "anim:556",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5198,
+     "bone arms"
+    ],
+    [
+     5203,
+     "bone arms"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 81,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "557": {
+   "src": "anim:557",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5200,
+     "bone gloves"
+    ],
+    [
+     5205,
+     "bone gloves"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 85,
+    "down": 34
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "558": {
+   "src": "anim4:458",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10114,
+     "Male Kimono"
+    ],
+    [
+     10189,
+     "Male Kimono"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "559": {
+   "src": "anim4:459",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10115,
+     "Female Kimono"
+    ],
+    [
+     10190,
+     "Female Kimono"
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 78,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "560": {
+   "src": "anim:560",
+   "layers": [
+    6
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     7609,
+     "leather cap"
+    ],
+    [
+     7610,
+     "leather cap"
+    ],
+    [
+     9873,
+     "leather cap"
+    ],
+    [
+     9874,
+     "leather cap"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "561": {
+   "src": "anim:561",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5051,
+     "chainmail  coif"
+    ],
+    [
+     5056,
+     "chainmail coif"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "562": {
+   "src": "anim:562",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5201,
+     "bone helmet"
+    ],
+    [
+     5206,
+     "bone helmet"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 81,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "563": {
+   "src": "anim:563",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5138,
+     "plate helm"
+    ],
+    [
+     5145,
+     "plate helm"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "564": {
+   "src": "anim:564",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5134,
+     "bascinet"
+    ],
+    [
+     5135,
+     "bascinet"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 80,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "565": {
+   "src": "anim:565",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5130,
+     "helmet"
+    ],
+    [
+     5131,
+     "helmet"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "566": {
+   "src": "anim:566",
+   "layers": [
+    6
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     9068,
+     "kabuto"
+    ],
+    [
+     9069,
+     "kabuto"
+    ],
+    [
+     9869,
+     "kabuto"
+    ],
+    [
+     9870,
+     "kabuto"
+    ]
+   ],
+   "extent": {
+    "left": 73,
+    "right": 73,
+    "up": 86,
+    "down": 37
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "567": {
+   "src": "anim4:460",
+   "layers": [
+    12
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10144,
+     "Obi "
+    ],
+    [
+     10219,
+     "Obi "
+    ]
+   ],
+   "extent": {
+    "left": 43,
+    "right": 43,
+    "up": 58,
+    "down": 19
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "568": {
+   "src": "anim4:461",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10145,
+     "Jin-Baori"
+    ],
+    [
+     10220,
+     "Jin-Baori"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "569": {
+   "src": "anim4:462",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10134,
+     "Samurai Sandal/Tabi"
+    ],
+    [
+     10209,
+     "Samurai Sandal/Tabi"
+    ]
+   ],
+   "extent": {
+    "left": 29,
+    "right": 29,
+    "up": 40,
+    "down": 15
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "571": {
+   "src": "anim4:464",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10132,
+     "Cloth Ninja Jacket"
+    ],
+    [
+     10207,
+     "Cloth Ninja Jacket"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 194,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "572": {
+   "src": "anim4:465",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10135,
+     "Ninja Tall Tabi"
+    ],
+    [
+     10210,
+     "Ninja Tall Tabi"
+    ]
+   ],
+   "extent": {
+    "left": 28,
+    "right": 28,
+    "up": 50,
+    "down": 14
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "575": {
+   "src": "anim4:466",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10149,
+     "Yumi"
+    ],
+    [
+     10224,
+     "Yumi"
+    ]
+   ],
+   "extent": {
+    "left": 87,
+    "right": 87,
+    "up": 108,
+    "down": 42
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "576": {
+   "src": "anim:576",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7035,
+     "metal shield"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 86,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "577": {
+   "src": "anim:577",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7026,
+     "bronze shield"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 85,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "578": {
+   "src": "anim:578",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7034,
+     "wooden shield"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 86,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "579": {
+   "src": "anim:579",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7027,
+     "buckler "
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 81,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "580": {
+   "src": "anim:580",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7032,
+     "kite shield"
+    ],
+    [
+     7033,
+     "kite shield"
+    ]
+   ],
+   "extent": {
+    "left": 72,
+    "right": 72,
+    "up": 90,
+    "down": 36
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "581": {
+   "src": "anim:581",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7028,
+     "kite shield"
+    ],
+    [
+     7029,
+     "kite shield"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 91,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "582": {
+   "src": "anim:582",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7030,
+     "heater shield"
+    ],
+    [
+     7031,
+     "heater shield"
+    ]
+   ],
+   "extent": {
+    "left": 72,
+    "right": 72,
+    "up": 92,
+    "down": 40
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "583": {
+   "src": "anim4:467",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     10150,
+     "Tetsubo"
+    ],
+    [
+     10225,
+     "Tetsubo"
+    ]
+   ],
+   "extent": {
+    "left": 89,
+    "right": 89,
+    "up": 98,
+    "down": 45
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "584": {
+   "src": "anim:584",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9556,
+     "daemon sword"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "585": {
+   "src": "anim5:100",
+   "layers": [
+    2,
+    19
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     769,
+     "gargoyle_leather_arm"
+    ],
+    [
+     9557,
+     "ettin hammer"
+    ],
+    [
+     16455,
+     "Gargoyle Armor Leath"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "586": {
+   "src": "anim5:101",
+   "layers": [
+    2,
+    19
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     770,
+     "gargoyle_leather_arm"
+    ],
+    [
+     9558,
+     "liche's staff"
+    ],
+    [
+     16456,
+     "Gargoyle Armor Male "
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "587": {
+   "src": "anim5:102",
+   "layers": [
+    1,
+    13
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     771,
+     "gargoyle_leather_che"
+    ],
+    [
+     9559,
+     "lizardman's mace"
+    ],
+    [
+     16457,
+     "Gargoyle Armor Leath"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "588": {
+   "src": "anim5:103",
+   "layers": [
+    2,
+    13
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     772,
+     "gargoyle_leather_che"
+    ],
+    [
+     9560,
+     "lizardman's spear"
+    ],
+    [
+     16458,
+     "Gargoyle Armor Leath"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "589": {
+   "src": "anim5:104",
+   "layers": [
+    2,
+    4
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     773,
+     "gargoyle_leather_leg"
+    ],
+    [
+     9561,
+     "ogre's club"
+    ],
+    [
+     16461,
+     "Gargoyle Armor Leath"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "590": {
+   "src": "anim5:105",
+   "layers": [
+    2,
+    4
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     774,
+     "gargoyle_leather_leg"
+    ],
+    [
+     9562,
+     "ophidian staff"
+    ],
+    [
+     16462,
+     "Gargoyle Armor Leath"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "591": {
+   "src": "anim5:106",
+   "layers": [
+    2,
+    19
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     775,
+     "gargoyle_plate_arms_"
+    ],
+    [
+     9563,
+     "ophidian bardiche"
+    ],
+    [
+     16463,
+     "Gargoyle Armor Plate"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "592": {
+   "src": "anim5:107",
+   "layers": [
+    2,
+    19
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     776,
+     "gargoyle_plate_arms_"
+    ],
+    [
+     9564,
+     "orc club"
+    ],
+    [
+     16464,
+     "Gargoyle Armor Plate"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "593": {
+   "src": "anim5:108",
+   "layers": [
+    1,
+    13
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     777,
+     "gargoyle_plate_chest"
+    ],
+    [
+     9565,
+     "ratman axe"
+    ],
+    [
+     16465,
+     "Gargoyle Armor Plate"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "594": {
+   "src": "anim5:109",
+   "layers": [
+    1,
+    13
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     778,
+     "gargoyle_plate_chest"
+    ],
+    [
+     9566,
+     "ratman sword"
+    ],
+    [
+     16466,
+     "Gargoyle Armor Plate"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "595": {
+   "src": "anim5:110",
+   "layers": [
+    1,
+    7
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     779,
+     "gargoyle_plate_kilt_"
+    ],
+    [
+     9567,
+     "skeleton axe"
+    ],
+    [
+     16467,
+     "Gargoyle Armor Plate"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "596": {
+   "src": "anim5:111",
+   "layers": [
+    1,
+    7
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     780,
+     "gargoyle_plate_kilt_"
+    ],
+    [
+     9568,
+     "skeleton scimitar"
+    ],
+    [
+     16468,
+     "Gargoyle Armor Plate"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "597": {
+   "src": "anim5:112",
+   "layers": [
+    2,
+    4
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     781,
+     "gargoyle_plate_legs_"
+    ],
+    [
+     9569,
+     "terathan staff"
+    ],
+    [
+     16469,
+     "Gargoyle Armor Plate"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "598": {
+   "src": "anim5:113",
+   "layers": [
+    2,
+    4
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     782,
+     "gargoyle_plate_legs_"
+    ],
+    [
+     9570,
+     "terathan spear"
+    ],
+    [
+     16470,
+     "Gargoyle Armor Plate"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "599": {
+   "src": "anim5:114",
+   "layers": [
+    2,
+    19
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     643,
+     "gargoyle_stone_arms_"
+    ],
+    [
+     9572,
+     "troll axe"
+    ],
+    [
+     16471,
+     "Gargoyle Armor Stone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "600": {
+   "src": "anim5:133",
+   "layers": [
+    2,
+    19
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     644,
+     "gargoyle_stone_arms_"
+    ],
+    [
+     9573,
+     "troll maul"
+    ],
+    [
+     16472,
+     "Gargoyle Armor Stone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "601": {
+   "src": "anim5:134",
+   "layers": [
+    2,
+    13
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     645,
+     "gargoyle_stone_chest"
+    ],
+    [
+     9574,
+     "frost troll club"
+    ],
+    [
+     16473,
+     "Gargoyle Armor Stone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "602": {
+   "src": "anim5:135",
+   "layers": [
+    2,
+    13
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     646,
+     "gargoyle_stone_chest"
+    ],
+    [
+     9575,
+     "orc lord battleaxe"
+    ],
+    [
+     16474,
+     "Gargoyle Armor Stone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "603": {
+   "src": "anim5:136",
+   "layers": [
+    2,
+    7
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     647,
+     "gargoyle_stone_kilt_"
+    ],
+    [
+     9576,
+     "orc mage staff"
+    ],
+    [
+     16475,
+     "Gargoyle Armor Stone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "604": {
+   "src": "anim5:137",
+   "layers": [
+    2,
+    7
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     648,
+     "gargoyle_stone_kilt_"
+    ],
+    [
+     9577,
+     "bone mage staff"
+    ],
+    [
+     16476,
+     "Gargoyle Armor Stone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "605": {
+   "src": "anim5:522",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9578,
+     "scale shield"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 84,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "609": {
+   "src": "anim5:138",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     649,
+     "gargoyle_stone_legs_"
+    ],
+    [
+     16477,
+     "Gargoyle Armor Stone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "610": {
+   "src": "anim5:139",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     650,
+     "gargoyle_stone_legs_"
+    ],
+    [
+     16478,
+     "Gargoyle Armor Stone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "611": {
+   "src": "anim:611",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5114,
+     "large battle axe"
+    ],
+    [
+     5115,
+     "large battle axe"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 89,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "612": {
+   "src": "anim:612",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5186,
+     "two handed axe"
+    ],
+    [
+     5187,
+     "two handed axe"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 90,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "613": {
+   "src": "anim:613",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3909,
+     "executioner's axe"
+    ],
+    [
+     3910,
+     "executioner's axe"
+    ]
+   ],
+   "extent": {
+    "left": 74,
+    "right": 74,
+    "up": 98,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "614": {
+   "src": "anim:614",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3917,
+     "bardiche"
+    ],
+    [
+     3918,
+     "bardiche"
+    ]
+   ],
+   "extent": {
+    "left": 89,
+    "right": 89,
+    "up": 122,
+    "down": 44
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "615": {
+   "src": "anim:615",
+   "layers": [
+    1,
+    2
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     3907,
+     "hatchet"
+    ],
+    [
+     3908,
+     "hatchet"
+    ],
+    [
+     3911,
+     "battle axe"
+    ],
+    [
+     3912,
+     "battle axe"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 86,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "616": {
+   "src": "anim:616",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5116,
+     "heavy crossbow"
+    ],
+    [
+     5117,
+     "heavy crossbow"
+    ]
+   ],
+   "extent": {
+    "left": 74,
+    "right": 74,
+    "up": 91,
+    "down": 40
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "617": {
+   "src": "anim:617",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3568,
+     "black staff"
+    ],
+    [
+     3569,
+     "black staff"
+    ]
+   ],
+   "extent": {
+    "left": 102,
+    "right": 102,
+    "up": 136,
+    "down": 52
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "618": {
+   "src": "anim:618",
+   "layers": [
+    1
+   ],
+   "n_items": 8,
+   "items": [
+    [
+     3934,
+     "broadsword"
+    ],
+    [
+     3935,
+     "broadsword"
+    ],
+    [
+     3936,
+     "longsword"
+    ],
+    [
+     3937,
+     "longsword"
+    ],
+    [
+     5047,
+     "long sword"
+    ],
+    [
+     5048,
+     "long sword"
+    ]
+   ],
+   "extent": {
+    "left": 90,
+    "right": 90,
+    "up": 103,
+    "down": 43
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "619": {
+   "src": "anim:619",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3778,
+     "cleaver"
+    ],
+    [
+     3779,
+     "cleaver"
+    ]
+   ],
+   "extent": {
+    "left": 77,
+    "right": 77,
+    "up": 86,
+    "down": 37
+   },
+   "frames": 1033,
+   "complete": false
+  },
+  "620": {
+   "src": "anim:620",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5043,
+     "club"
+    ],
+    [
+     5044,
+     "club"
+    ]
+   ],
+   "extent": {
+    "left": 84,
+    "right": 84,
+    "up": 96,
+    "down": 42
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "621": {
+   "src": "anim:621",
+   "layers": [
+    2
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     3713,
+     "shepherd's crook"
+    ],
+    [
+     3714,
+     "shepherd's crook"
+    ],
+    [
+     5108,
+     "crook"
+    ],
+    [
+     5109,
+     "crook"
+    ]
+   ],
+   "extent": {
+    "left": 75,
+    "right": 75,
+    "up": 108,
+    "down": 38
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "622": {
+   "src": "anim:622",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3921,
+     "dagger"
+    ],
+    [
+     3922,
+     "dagger"
+    ]
+   ],
+   "extent": {
+    "left": 74,
+    "right": 74,
+    "up": 83,
+    "down": 36
+   },
+   "frames": 1019,
+   "complete": false
+  },
+  "623": {
+   "src": "anim:623",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5184,
+     "cutlass"
+    ],
+    [
+     5185,
+     "cutlass"
+    ]
+   ],
+   "extent": {
+    "left": 79,
+    "right": 79,
+    "up": 94,
+    "down": 39
+   },
+   "frames": 1047,
+   "complete": true
+  },
+  "624": {
+   "src": "anim:624",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5182,
+     "halberd"
+    ],
+    [
+     5183,
+     "halberd"
+    ]
+   ],
+   "extent": {
+    "left": 92,
+    "right": 92,
+    "up": 126,
+    "down": 47
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "625": {
+   "src": "anim:625",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5180,
+     "hammer pick"
+    ],
+    [
+     5181,
+     "hammer pick"
+    ]
+   ],
+   "extent": {
+    "left": 87,
+    "right": 87,
+    "up": 97,
+    "down": 44
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "626": {
+   "src": "anim:626",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9586,
+     "javelin"
+    ]
+   ],
+   "extent": {
+    "left": 104,
+    "right": 104,
+    "up": 138,
+    "down": 51
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "627": {
+   "src": "anim:627",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5118,
+     "katana"
+    ],
+    [
+     5119,
+     "katana"
+    ]
+   ],
+   "extent": {
+    "left": 80,
+    "right": 80,
+    "up": 91,
+    "down": 39
+   },
+   "frames": 1044,
+   "complete": true
+  },
+  "628": {
+   "src": "anim:628",
+   "layers": [
+    2
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     5112,
+     "gnarled staff"
+    ],
+    [
+     5113,
+     "gnarled staff"
+    ],
+    [
+     41795,
+     "skull_staff_south"
+    ],
+    [
+     41796,
+     "skull_staff_east"
+    ]
+   ],
+   "extent": {
+    "left": 98,
+    "right": 98,
+    "up": 132,
+    "down": 50
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "629": {
+   "src": "anim:629",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5110,
+     "butcher knife"
+    ],
+    [
+     5111,
+     "butcher knife"
+    ]
+   ],
+   "extent": {
+    "left": 75,
+    "right": 75,
+    "up": 83,
+    "down": 36
+   },
+   "frames": 1018,
+   "complete": false
+  },
+  "630": {
+   "src": "anim:630",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5120,
+     "kryss"
+    ],
+    [
+     5121,
+     "kryss"
+    ]
+   ],
+   "extent": {
+    "left": 86,
+    "right": 86,
+    "up": 98,
+    "down": 42
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "631": {
+   "src": "anim:631",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3932,
+     "mace"
+    ],
+    [
+     3933,
+     "mace"
+    ]
+   ],
+   "extent": {
+    "left": 88,
+    "right": 88,
+    "up": 99,
+    "down": 46
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "632": {
+   "src": "anim5:370",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17067,
+     "Female Gargoyle Horn"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "633": {
+   "src": "anim:633",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5178,
+     "maul"
+    ],
+    [
+     5179,
+     "maul"
+    ]
+   ],
+   "extent": {
+    "left": 86,
+    "right": 86,
+    "up": 97,
+    "down": 43
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "634": {
+   "src": "anim:634",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3915,
+     "double axe"
+    ],
+    [
+     3916,
+     "double axe"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 92,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "635": {
+   "src": "anim:635",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3717,
+     "pickaxe"
+    ],
+    [
+     3718,
+     "pickaxe"
+    ]
+   ],
+   "extent": {
+    "left": 86,
+    "right": 86,
+    "up": 93,
+    "down": 43
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "636": {
+   "src": "anim:636",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3719,
+     "pitchfork"
+    ],
+    [
+     3720,
+     "pitchfork"
+    ]
+   ],
+   "extent": {
+    "left": 89,
+    "right": 89,
+    "up": 121,
+    "down": 47
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "637": {
+   "src": "anim:637",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5045,
+     "scimitar"
+    ],
+    [
+     5046,
+     "scimitar"
+    ]
+   ],
+   "extent": {
+    "left": 85,
+    "right": 85,
+    "up": 99,
+    "down": 41
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "638": {
+   "src": "anim:638",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3780,
+     "skinning knife"
+    ],
+    [
+     3781,
+     "skinning knife"
+    ]
+   ],
+   "extent": {
+    "left": 74,
+    "right": 74,
+    "up": 83,
+    "down": 36
+   },
+   "frames": 1020,
+   "complete": false
+  },
+  "639": {
+   "src": "anim:639",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5122,
+     "short spear"
+    ],
+    [
+     5123,
+     "short spear"
+    ]
+   ],
+   "extent": {
+    "left": 93,
+    "right": 93,
+    "up": 107,
+    "down": 46
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "640": {
+   "src": "anim:640",
+   "layers": [
+    1
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     4020,
+     "sledge hammer"
+    ],
+    [
+     4021,
+     "sledge hammer"
+    ],
+    [
+     5091,
+     "smith's hammer"
+    ],
+    [
+     5092,
+     "smith's hammer"
+    ]
+   ],
+   "extent": {
+    "left": 74,
+    "right": 74,
+    "up": 85,
+    "down": 36
+   },
+   "frames": 1029,
+   "complete": true
+  },
+  "641": {
+   "src": "anim:641",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3938,
+     "Long Spear"
+    ],
+    [
+     3939,
+     "Long Spear"
+    ]
+   ],
+   "extent": {
+    "left": 99,
+    "right": 99,
+    "up": 134,
+    "down": 49
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "642": {
+   "src": "anim:642",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5126,
+     "war mace"
+    ],
+    [
+     5127,
+     "war mace"
+    ]
+   ],
+   "extent": {
+    "left": 79,
+    "right": 79,
+    "up": 91,
+    "down": 40
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "643": {
+   "src": "anim:643",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5049,
+     "viking sword"
+    ],
+    [
+     5050,
+     "viking sword"
+    ]
+   ],
+   "extent": {
+    "left": 92,
+    "right": 92,
+    "up": 105,
+    "down": 45
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "644": {
+   "src": "anim:644",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5039,
+     "war axe"
+    ],
+    [
+     5040,
+     "war axe"
+    ]
+   ],
+   "extent": {
+    "left": 91,
+    "right": 91,
+    "up": 98,
+    "down": 44
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "645": {
+   "src": "anim:645",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5124,
+     "war fork"
+    ],
+    [
+     5125,
+     "war fork"
+    ]
+   ],
+   "extent": {
+    "left": 93,
+    "right": 93,
+    "up": 100,
+    "down": 47
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "646": {
+   "src": "anim:646",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5176,
+     "war hammer"
+    ],
+    [
+     5177,
+     "war hammer"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 91,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "647": {
+   "src": "anim5:358",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17072,
+     "Horns Facial Gargoyl"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "648": {
+   "src": "anim:648",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3721,
+     "quarter staff"
+    ],
+    [
+     3722,
+     "quarter staff"
+    ]
+   ],
+   "extent": {
+    "left": 86,
+    "right": 86,
+    "up": 120,
+    "down": 44
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "649": {
+   "src": "anim:649",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5041,
+     "bow"
+    ],
+    [
+     5042,
+     "bow"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 86,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "650": {
+   "src": "anim5:359",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17071,
+     "Horns Facial Gargoyl"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "651": {
+   "src": "anim:651",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3919,
+     "crossbow"
+    ],
+    [
+     3920,
+     "crossbow"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 87,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "652": {
+   "src": "anim5:360",
+   "layers": [
+    7,
+    11
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11707,
+     "stare rekawice"
+    ],
+    [
+     17070,
+     "Horns Facial Gargoyl"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "653": {
+   "src": "anim:653",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3913,
+     "axe"
+    ],
+    [
+     3914,
+     "axe"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 88,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "654": {
+   "src": "anim5:140",
+   "layers": [
+    2,
+    19
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     1027,
+     "gargoyle_clothing_ar"
+    ],
+    [
+     9584,
+     "hatchet"
+    ],
+    [
+     16479,
+     "Gargoyle Clothing Ar"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "655": {
+   "src": "anim5:141",
+   "layers": [
+    1,
+    19
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     1028,
+     "gargoyle_clothing_ar"
+    ],
+    [
+     9587,
+     "magic sword"
+    ],
+    [
+     16480,
+     "Gargoyle Clothing Ar"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "656": {
+   "src": "anim5:142",
+   "layers": [
+    1,
+    13
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     1029,
+     "gargoyle_clothing_ch"
+    ],
+    [
+     9588,
+     "magic sword"
+    ],
+    [
+     16481,
+     "Gargoyle Clothing Ch"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "657": {
+   "src": "anim5:143",
+   "layers": [
+    1,
+    13
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     1030,
+     "gargoyle_clothing_ch"
+    ],
+    [
+     9589,
+     "magic sword"
+    ],
+    [
+     16482,
+     "Gargoyle Clothing Ch"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "658": {
+   "src": "anim5:144",
+   "layers": [
+    1,
+    7
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     1031,
+     "gargoyle_clothing_ki"
+    ],
+    [
+     9590,
+     "magic sword"
+    ],
+    [
+     16483,
+     "Gargoyle Clothing Ki"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "659": {
+   "src": "anim5:142",
+   "layers": [
+    2,
+    7
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     1032,
+     "gargoyle_clothing_ki"
+    ],
+    [
+     9591,
+     "naginata"
+    ],
+    [
+     16484,
+     "Gargoyle Clothing Ki"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "660": {
+   "src": "anim5:143",
+   "layers": [
+    2,
+    4
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     1033,
+     "gargoyle_clothing_le"
+    ],
+    [
+     9592,
+     "no-dachi"
+    ],
+    [
+     16485,
+     "Gargoyle Clothing Le"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "661": {
+   "src": "anim5:144",
+   "layers": [
+    2,
+    4
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     1034,
+     "gargoyle_clothing_le"
+    ],
+    [
+     9585,
+     "horseman's bow"
+    ],
+    [
+     16486,
+     "Gargoyle Clothing Le"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "662": {
+   "src": "anim5:117",
+   "layers": [
+    1,
+    2
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     2301,
+     "Dual Short Axes"
+    ],
+    [
+     9593,
+     "pick"
+    ],
+    [
+     16488,
+     "Dual Short Axes"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "663": {
+   "src": "anim5:115",
+   "layers": [
+    2,
+    7
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     784,
+     "gargoyle_leather_kil"
+    ],
+    [
+     9595,
+     "spear"
+    ],
+    [
+     16459,
+     "Gargoyle Armor Leath"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "664": {
+   "src": "anim5:116",
+   "layers": [
+    1,
+    7
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     785,
+     "gargoyle_leather_kil"
+    ],
+    [
+     9596,
+     "sword"
+    ],
+    [
+     16460,
+     "Gargoyle Armor Leath"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "665": {
+   "src": "anim5:361",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17069,
+     "Horns Facial Gargoyl"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "666": {
+   "src": "anim5:666",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9598,
+     "shortsword"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "667": {
+   "src": "anim5:667",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9599,
+     "war mace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "668": {
+   "src": "anim5:118",
+   "layers": [
+    1,
+    2
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     2302,
+     "Bloodblade"
+    ],
+    [
+     9579,
+     "magic staff"
+    ],
+    [
+     16498,
+     "Bloodblade"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "669": {
+   "src": "anim5:119",
+   "layers": [
+    1,
+    2
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     2303,
+     "Boomerang"
+    ],
+    [
+     9580,
+     "magic staff"
+    ],
+    [
+     16487,
+     "Boomerang"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "670": {
+   "src": "anim5:120",
+   "layers": [
+    1,
+    2
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     2304,
+     "Stone War Sword"
+    ],
+    [
+     9581,
+     "magic staff"
+    ],
+    [
+     16497,
+     "Stone War Sword"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "671": {
+   "src": "anim5:131",
+   "layers": [
+    1,
+    2
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     2315,
+     "Dread Sword"
+    ],
+    [
+     9582,
+     "magic staff"
+    ],
+    [
+     16500,
+     "Dread Sword"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "672": {
+   "src": "anim5:121",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     2305,
+     "Cyclone"
+    ],
+    [
+     16492,
+     "Cyclone"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "673": {
+   "src": "anim5:122",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     2306,
+     "Gargish Dagger"
+    ],
+    [
+     16490,
+     "Gargish Dagger"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "674": {
+   "src": "anim5:123",
+   "layers": [
+    1,
+    6
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     2307,
+     "Disc Mace"
+    ],
+    [
+     9871,
+     "kabuto mempo"
+    ],
+    [
+     9872,
+     "kabuto mempo"
+    ],
+    [
+     16494,
+     "Disc Mace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "675": {
+   "src": "anim5:124",
+   "layers": [
+    2,
+    13
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     2308,
+     "Dual Pointed Spear"
+    ],
+    [
+     9841,
+     "do-maru"
+    ],
+    [
+     9842,
+     "do-maru"
+    ],
+    [
+     16493,
+     "Dual Pointed Spear"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "676": {
+   "src": "anim5:125",
+   "layers": [
+    2,
+    19
+   ],
+   "n_items": 6,
+   "items": [
+    [
+     2309,
+     "Glass Staff"
+    ],
+    [
+     9835,
+     "kote sleeves"
+    ],
+    [
+     9836,
+     "kote sleeves"
+    ],
+    [
+     16496,
+     "Glass Staff"
+    ],
+    [
+     41799,
+     "gargoyle_skull_staff"
+    ],
+    [
+     41800,
+     "gargoyle_skull_staff"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "677": {
+   "src": "anim5:126",
+   "layers": [
+    2,
+    7
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     2310,
+     "Serpentstone Staff"
+    ],
+    [
+     9847,
+     "kote gloves"
+    ],
+    [
+     9848,
+     "kote gloves"
+    ],
+    [
+     16495,
+     "Serpentstone Staff"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "678": {
+   "src": "anim5:127",
+   "layers": [
+    1,
+    4
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     2311,
+     "Shortblade"
+    ],
+    [
+     9805,
+     "haidate"
+    ],
+    [
+     9806,
+     "haidate"
+    ],
+    [
+     16502,
+     "Shortblade"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "679": {
+   "src": "anim4:674",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9815,
+     "dragon sleeves"
+    ],
+    [
+     9816,
+     "dragon sleeves"
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 79,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "680": {
+   "src": "anim4:675",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9793,
+     "dragon breastplate"
+    ],
+    [
+     9794,
+     "dragon breastplate"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 70,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "681": {
+   "src": "anim4:676",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9795,
+     "dragon gloves"
+    ],
+    [
+     9796,
+     "dragon gloves"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 86,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "682": {
+   "src": "anim4:677",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9797,
+     "dragon helm"
+    ],
+    [
+     9798,
+     "dragon helm"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 82,
+    "down": 36
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "683": {
+   "src": "anim4:678",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9799,
+     "dragon leggings"
+    ],
+    [
+     9800,
+     "dragon leggings"
+    ]
+   ],
+   "extent": {
+    "left": 40,
+    "right": 40,
+    "up": 56,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "684": {
+   "src": "anim4:679",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9817,
+     "amazon armor"
+    ],
+    [
+     9818,
+     "amazon armor"
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 79,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "685": {
+   "src": "anim4:680",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9819,
+     "amazon armor"
+    ],
+    [
+     9820,
+     "amazon armor"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 71,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "686": {
+   "src": "anim4:682",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9821,
+     "amazon armor"
+    ],
+    [
+     9822,
+     "amazon armor"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 81,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "690": {
+   "src": "anim5:128",
+   "layers": [
+    2,
+    22
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     2312,
+     "Gargish Talwar"
+    ],
+    [
+     9857,
+     "kimono"
+    ],
+    [
+     9858,
+     "kimono"
+    ],
+    [
+     16501,
+     "Gargish Talwar"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "691": {
+   "src": "anim5:132",
+   "layers": [
+    1,
+    5
+   ],
+   "n_items": 6,
+   "items": [
+    [
+     2316,
+     "Glass Sword"
+    ],
+    [
+     9831,
+     "ninja shirt"
+    ],
+    [
+     9832,
+     "ninja shirt"
+    ],
+    [
+     16499,
+     "Glass Sword"
+    ],
+    [
+     41797,
+     "gargoyle_skull_sword"
+    ],
+    [
+     41798,
+     "gargoyle_skull_sword"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "692": {
+   "src": "anim5:129",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9891,
+     "ninja mask"
+    ],
+    [
+     9892,
+     "ninja mask"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "693": {
+   "src": "anim5:130",
+   "layers": [
+    1,
+    4
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     2314,
+     "Soul Glaive"
+    ],
+    [
+     9809,
+     "ninja pants"
+    ],
+    [
+     9810,
+     "ninja pants"
+    ],
+    [
+     16491,
+     "Soul Glaive"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "694": {
+   "src": "anim:694",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9867,
+     "hachimaki"
+    ],
+    [
+     9868,
+     "hachimaki"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "695": {
+   "src": "anim:695",
+   "layers": [
+    13,
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9843,
+     "haramaki-do"
+    ],
+    [
+     9844,
+     "haramaki-do"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "696": {
+   "src": "anim5:349",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16988,
+     "Gargoyle Horns"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "697": {
+   "src": "anim5:350",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16989,
+     "gargoyle male Horns"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "698": {
+   "src": "anim5:351",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16990,
+     "Male gargoyle Horns"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "699": {
+   "src": "anim5:352",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16991,
+     "Gargoyle Head Horns"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "700": {
+   "src": "anim:700",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8251,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "701": {
+   "src": "anim:701",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8252,
+     "Long Hair"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "702": {
+   "src": "anim:702",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8253,
+     "Ponytail"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "703": {
+   "src": "anim:703",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8260,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 81,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "707": {
+   "src": "anim5:371",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17012,
+     "Female Gargoyle Horn"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "708": {
+   "src": "anim5:362",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17013,
+     "Female Gargoyle Horn"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "710": {
+   "src": "anim:710",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8261,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "712": {
+   "src": "anim:712",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8262,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "713": {
+   "src": "anim5:713",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9889,
+     "feathered mask"
+    ],
+    [
+     9890,
+     "feathered mask"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "715": {
+   "src": "anim5:715",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9801,
+     "jester pants"
+    ],
+    [
+     9802,
+     "jester pants"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "716": {
+   "src": "anim5:716",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9813,
+     "jester shoes"
+    ],
+    [
+     9814,
+     "jester shoes"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "731": {
+   "src": "anim:731",
+   "layers": [
+    22
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     9712,
+     "death shroud"
+    ],
+    [
+     9713,
+     "death shroud"
+    ],
+    [
+     9861,
+     "death shroud"
+    ],
+    [
+     9862,
+     "death shroud"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "732": {
+   "src": "anim5:732",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9710,
+     "robe"
+    ],
+    [
+     9711,
+     "robe"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "733": {
+   "src": "anim5:733",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9823,
+     "shirt"
+    ],
+    [
+     9824,
+     "shirt"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "734": {
+   "src": "anim5:734",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9825,
+     "shirt"
+    ],
+    [
+     9826,
+     "shirt"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "735": {
+   "src": "anim5:735",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9827,
+     "shirt"
+    ],
+    [
+     9828,
+     "shirt"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "736": {
+   "src": "anim5:736",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9829,
+     "shirt"
+    ],
+    [
+     9830,
+     "shirt"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "740": {
+   "src": "anim5:740",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9885,
+     "robin hood cap"
+    ],
+    [
+     9886,
+     "robin hood cap"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "744": {
+   "src": "anim:744",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9571,
+     "terathan mace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "745": {
+   "src": "anim:745",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9583,
+     "smyth hammer"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "759": {
+   "src": "anim:759",
+   "layers": [
+    20
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9901,
+     "Arcane Cloak"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "760": {
+   "src": "anim:760",
+   "layers": [
+    7
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9904,
+     "Arcane Gloves"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "761": {
+   "src": "anim:761",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9902,
+     "Arcane Robe"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "762": {
+   "src": "anim:762",
+   "layers": [
+    3
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9903,
+     "Arcane Thigh Boots"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "766": {
+   "src": "anim2:34",
+   "layers": [
+    0
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     13164,
+     "stare rekawice"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "769": {
+   "src": "anim5:353",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16993,
+     "Female Gargoyle Horn"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "795": {
+   "src": "anim5:356",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     17011,
+     "Female Gargoyle Horn"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "800": {
+   "src": "anim:800",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8256,
+     "goatee"
+    ]
+   ],
+   "extent": {
+    "left": 54,
+    "right": 54,
+    "up": 71,
+    "down": 25
+   },
+   "frames": 841,
+   "complete": false
+  },
+  "801": {
+   "src": "anim:801",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8254,
+     "long beard"
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 74,
+    "down": 25
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "802": {
+   "src": "anim:802",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8255,
+     "short beard"
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 74,
+    "down": 25
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "803": {
+   "src": "anim:803",
+   "layers": [
+    16
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8257,
+     "mustache"
+    ],
+    [
+     22146,
+     "mustache"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 73,
+    "down": 27
+   },
+   "frames": 852,
+   "complete": false
+  },
+  "843": {
+   "src": "anim5:347",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     16986,
+     "Horns Gargoyle Male"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "865": {
+   "src": "anim5:369",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15285,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "866": {
+   "src": "anim4:672",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9865,
+     "winged helmet"
+    ],
+    [
+     9866,
+     "winged helmet"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "869": {
+   "src": "anim4:653",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11024,
+     ""
+    ],
+    [
+     11025,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 80,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "870": {
+   "src": "anim4:654",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11022,
+     ""
+    ],
+    [
+     11023,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 70,
+    "down": 25
+   },
+   "frames": 1045,
+   "complete": true
+  },
+  "871": {
+   "src": "anim4:655",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11016,
+     ""
+    ],
+    [
+     11017,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 144,
+    "right": 144,
+    "up": 112,
+    "down": 77
+   },
+   "frames": 1034,
+   "complete": true
+  },
+  "872": {
+   "src": "anim4:656",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11018,
+     ""
+    ],
+    [
+     11019,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 72,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "873": {
+   "src": "anim4:657",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11020,
+     ""
+    ],
+    [
+     11021,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 73,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "874": {
+   "src": "anim4:658",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11014,
+     ""
+    ],
+    [
+     11015,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 84,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "875": {
+   "src": "anim4:659",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11026,
+     ""
+    ],
+    [
+     11027,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 28,
+    "right": 28,
+    "up": 38,
+    "down": 14
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "876": {
+   "src": "anim4:660",
+   "layers": [
+    20
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11012,
+     ""
+    ],
+    [
+     11013,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 74,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "877": {
+   "src": "anim4:661",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     11600,
+     "Spell weaving book"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 84,
+    "down": 34
+   },
+   "frames": 1037,
+   "complete": true
+  },
+  "878": {
+   "src": "anim4:662",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9120,
+     "book of ninjitsu"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 84,
+    "down": 33
+   },
+   "frames": 1034,
+   "complete": true
+  },
+  "879": {
+   "src": "anim4:663",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     9100,
+     "book of bushido"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 85,
+    "down": 33
+   },
+   "frames": 1029,
+   "complete": true
+  },
+  "880": {
+   "src": "anim4:664",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     3643,
+     "spellbook"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 85,
+    "down": 35
+   },
+   "frames": 1047,
+   "complete": true
+  },
+  "882": {
+   "src": "anim4:666",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8787,
+     "necromancer book"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 84,
+    "down": 35
+   },
+   "frames": 1046,
+   "complete": true
+  },
+  "883": {
+   "src": "anim4:667",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8788,
+     "book of arms"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 84,
+    "down": 35
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "884": {
+   "src": "anim4:668",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8786,
+     "paladin spellbook"
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 85,
+    "down": 35
+   },
+   "frames": 1046,
+   "complete": true
+  },
+  "886": {
+   "src": "anim5:635",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12231,
+     "Lt_Armor_Gorget"
+    ],
+    [
+     12669,
+     "Lt_Armor_Gorget"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 70,
+    "down": 25
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "887": {
+   "src": "anim4:669",
+   "layers": [
+    20
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11010,
+     ""
+    ],
+    [
+     11011,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 74,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "888": {
+   "src": "anim4:670",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     11009,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 70,
+    "right": 70,
+    "up": 88,
+    "down": 40
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "889": {
+   "src": "anim5:652",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12242,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "890": {
+   "src": "anim5:646",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12236,
+     "Elven_Hair"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "891": {
+   "src": "anim5:647",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12237,
+     "Elven_Hair"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "892": {
+   "src": "anim5:648",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12238,
+     "Elven_Hair"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "893": {
+   "src": "anim5:649",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12239,
+     "Elven_Hair"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "894": {
+   "src": "anim5:650",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12240,
+     "Elven_Hair"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "895": {
+   "src": "anim5:651",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12241,
+     "Elven_Hair"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 81,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "896": {
+   "src": "anim5:630",
+   "layers": [
+    20
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12215,
+     "elven quiver"
+    ],
+    [
+     12657,
+     "M_Elven_Quiver"
+    ]
+   ],
+   "extent": {
+    "left": 55,
+    "right": 55,
+    "up": 68,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "897": {
+   "src": "anim5:631",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12216,
+     "elven glasses"
+    ],
+    [
+     12658,
+     "M_Elven_Glasses"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 74,
+    "down": 22
+   },
+   "frames": 562,
+   "complete": false
+  },
+  "898": {
+   "src": "anim5:632",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12217,
+     "elven robe"
+    ],
+    [
+     12659,
+     "M_Elven_Robe01"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "899": {
+   "src": "anim5:633",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12218,
+     "elven robe"
+    ],
+    [
+     12660,
+     "M_Elven_Robe02"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "900": {
+   "src": "anim:900",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8263,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "901": {
+   "src": "anim:901",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8264,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 78,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "902": {
+   "src": "anim:902",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8265,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "903": {
+   "src": "anim:903",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8266,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 77,
+    "down": 31
+   },
+   "frames": 1044,
+   "complete": true
+  },
+  "904": {
+   "src": "anim:904",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8267,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 74,
+    "down": 27
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "905": {
+   "src": "anim:905",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8268,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 74,
+    "down": 27
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "906": {
+   "src": "anim:906",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8269,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 73,
+    "down": 27
+   },
+   "frames": 852,
+   "complete": false
+  },
+  "907": {
+   "src": "anim5:625",
+   "layers": [
+    5
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12219,
+     "elven shirt Male"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "908": {
+   "src": "anim5:626",
+   "layers": [
+    5
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12220,
+     "elven shirt Male"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "909": {
+   "src": "anim:909",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8097,
+     "tunic"
+    ],
+    [
+     8098,
+     "tunic"
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "910": {
+   "src": "anim:910",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8189,
+     "surcoat"
+    ],
+    [
+     8190,
+     "surcoat"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 72,
+    "down": 28
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "911": {
+   "src": "anim:911",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9706,
+     "checkered shirt"
+    ],
+    [
+     9707,
+     "checkered shirt"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 72,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "912": {
+   "src": "anim:912",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8095,
+     "jester suit"
+    ],
+    [
+     8096,
+     "jester suit"
+    ]
+   ],
+   "extent": {
+    "left": 62,
+    "right": 62,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "913": {
+   "src": "anim:913",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8059,
+     "doublet"
+    ],
+    [
+     8060,
+     "doublet"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 72,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "914": {
+   "src": "anim5:627",
+   "layers": [
+    5
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     12221,
+     "elven shirt"
+    ],
+    [
+     12661,
+     "ElvenShirt1_Male"
+    ],
+    [
+     12664,
+     "FShirt2_Chest"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "915": {
+   "src": "anim5:628",
+   "layers": [
+    5
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     12222,
+     "elven shirt"
+    ],
+    [
+     12662,
+     "ElvenShirt2_Male"
+    ],
+    [
+     12663,
+     "FShirt1_Chest"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "916": {
+   "src": "anim5:636",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12223,
+     "Elven_Hair01_BL_Mu"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "917": {
+   "src": "anim5:637",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12224,
+     "hair"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "918": {
+   "src": "anim5:638",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12225,
+     "hair"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "919": {
+   "src": "anim5:639",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12226,
+     "Elven_Hair04_BR_Mu"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 78,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "920": {
+   "src": "anim5:624",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12227,
+     "Elven_Pants"
+    ],
+    [
+     12665,
+     "Elven_Pants"
+    ]
+   ],
+   "extent": {
+    "left": 43,
+    "right": 43,
+    "up": 57,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "921": {
+   "src": "anim:921",
+   "layers": [
+    5,
+    13
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     7170,
+     "studded armor"
+    ],
+    [
+     7171,
+     "studded armor"
+    ],
+    [
+     9702,
+     "amazon harness"
+    ],
+    [
+     9703,
+     "amazon  harness"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 73,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "922": {
+   "src": "anim:922",
+   "layers": [
+    5,
+    13
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     7172,
+     "plate armor"
+    ],
+    [
+     7173,
+     "plate armor"
+    ],
+    [
+     9704,
+     "elite harness"
+    ],
+    [
+     9705,
+     "elite harness"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 73,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "923": {
+   "src": "anim:923",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7174,
+     "leather armor"
+    ],
+    [
+     7175,
+     "leather armor"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 73,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "924": {
+   "src": "anim:924",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7178,
+     "leather bustier"
+    ],
+    [
+     7179,
+     "leather bustier"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 73,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "925": {
+   "src": "anim:925",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7180,
+     "studded bustier"
+    ],
+    [
+     7181,
+     "studded bustier"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 73,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "926": {
+   "src": "anim:926",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7176,
+     "leather skirt"
+    ],
+    [
+     7177,
+     "leather skirt"
+    ]
+   ],
+   "extent": {
+    "left": 40,
+    "right": 40,
+    "up": 57,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "927": {
+   "src": "anim:927",
+   "layers": [
+    4
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     7168,
+     "leather shorts"
+    ],
+    [
+     7169,
+     "leather shorts"
+    ],
+    [
+     9700,
+     "spiked shorts"
+    ],
+    [
+     9701,
+     "spiked shorts"
+    ]
+   ],
+   "extent": {
+    "left": 38,
+    "right": 38,
+    "up": 55,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "928": {
+   "src": "anim:928",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5128,
+     "close helmet"
+    ],
+    [
+     5129,
+     "close helm"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 80,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "929": {
+   "src": "anim:929",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     5132,
+     "norse helm"
+    ],
+    [
+     5133,
+     "norse helm"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "930": {
+   "src": "anim3:930",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9914,
+     "scythe"
+    ],
+    [
+     9924,
+     "scythe"
+    ]
+   ],
+   "extent": {
+    "left": 88,
+    "right": 88,
+    "up": 105,
+    "down": 41
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "931": {
+   "src": "anim3:931",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9915,
+     "bone harvester"
+    ],
+    [
+     9925,
+     "bone harvester"
+    ]
+   ],
+   "extent": {
+    "left": 81,
+    "right": 81,
+    "up": 91,
+    "down": 39
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "932": {
+   "src": "anim3:932",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9916,
+     "scepter"
+    ],
+    [
+     9926,
+     "scepter"
+    ]
+   ],
+   "extent": {
+    "left": 87,
+    "right": 87,
+    "up": 98,
+    "down": 43
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "933": {
+   "src": "anim3:933",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9917,
+     "bladed staff"
+    ],
+    [
+     9927,
+     "bladed staff"
+    ]
+   ],
+   "extent": {
+    "left": 115,
+    "right": 115,
+    "up": 133,
+    "down": 53
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "934": {
+   "src": "anim3:934",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9918,
+     "pike"
+    ],
+    [
+     9928,
+     "pike"
+    ]
+   ],
+   "extent": {
+    "left": 99,
+    "right": 99,
+    "up": 117,
+    "down": 46
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "935": {
+   "src": "anim3:935",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9919,
+     "double bladed staff"
+    ],
+    [
+     9929,
+     "double bladed staff"
+    ]
+   ],
+   "extent": {
+    "left": 86,
+    "right": 86,
+    "up": 104,
+    "down": 40
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "936": {
+   "src": "anim3:936",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9920,
+     "lance"
+    ],
+    [
+     9930,
+     "lance"
+    ]
+   ],
+   "extent": {
+    "left": 108,
+    "right": 108,
+    "up": 121,
+    "down": 54
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "937": {
+   "src": "anim3:937",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9921,
+     "crescent blade"
+    ],
+    [
+     9931,
+     "crescent blade"
+    ]
+   ],
+   "extent": {
+    "left": 75,
+    "right": 75,
+    "up": 95,
+    "down": 36
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "938": {
+   "src": "anim3:938",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9922,
+     "composite bow"
+    ],
+    [
+     9932,
+     "composite bow"
+    ]
+   ],
+   "extent": {
+    "left": 77,
+    "right": 77,
+    "up": 97,
+    "down": 37
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "939": {
+   "src": "anim3:939",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9923,
+     "repeating crossbow"
+    ],
+    [
+     9933,
+     "repeating crossbow"
+    ]
+   ],
+   "extent": {
+    "left": 75,
+    "right": 75,
+    "up": 93,
+    "down": 38
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "940": {
+   "src": "anim3:940",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9934,
+     "paladin sword"
+    ],
+    [
+     9935,
+     "paladin sword"
+    ]
+   ],
+   "extent": {
+    "left": 96,
+    "right": 96,
+    "up": 109,
+    "down": 47
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "941": {
+   "src": "anim5:629",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12228,
+     "Elven_Boot"
+    ],
+    [
+     12666,
+     "Elven_Boot"
+    ]
+   ],
+   "extent": {
+    "left": 28,
+    "right": 28,
+    "up": 50,
+    "down": 14
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "942": {
+   "src": "anim5:492",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11111,
+     "Elven Plate"
+    ],
+    [
+     12638,
+     "woodland breastplat"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 70,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "943": {
+   "src": "anim5:493",
+   "layers": [
+    12
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11112,
+     "Elven Plate Belt"
+    ],
+    [
+     12639,
+     "woodland belt"
+    ]
+   ],
+   "extent": {
+    "left": 40,
+    "right": 40,
+    "up": 56,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "944": {
+   "src": "anim5:494",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11113,
+     "Elven Plate Gorget"
+    ],
+    [
+     12640,
+     "Elven Plate Gorget"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 71,
+    "down": 25
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "945": {
+   "src": "anim5:495",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11114,
+     "Elven Plate Gloves"
+    ],
+    [
+     12641,
+     "Elven Plate Gloves"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 82,
+    "down": 31
+   },
+   "frames": 1037,
+   "complete": true
+  },
+  "946": {
+   "src": "anim5:496",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11115,
+     "Elven Plate Legs"
+    ],
+    [
+     12642,
+     "Elven Plate Legs"
+    ]
+   ],
+   "extent": {
+    "left": 39,
+    "right": 39,
+    "up": 56,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "947": {
+   "src": "anim5:497",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11116,
+     "Elven Arm Plate"
+    ],
+    [
+     12643,
+     "Elven Arm Plate"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 81,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "948": {
+   "src": "anim5:498",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11117,
+     "Elven Plate"
+    ],
+    [
+     12644,
+     "Elven Plate"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 70,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "950": {
+   "src": "anim5:600",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11550,
+     "Elven Composite Lo"
+    ],
+    [
+     11562,
+     "Elven Composite Lo"
+    ]
+   ],
+   "extent": {
+    "left": 71,
+    "right": 71,
+    "up": 93,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "951": {
+   "src": "anim5:601",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11551,
+     "Magical Shortbow"
+    ],
+    [
+     11563,
+     "Magical Shortbow"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 89,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "952": {
+   "src": "anim5:602",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11552,
+     "Elven Spellblade"
+    ],
+    [
+     11564,
+     "Elven Spellblade"
+    ]
+   ],
+   "extent": {
+    "left": 78,
+    "right": 78,
+    "up": 86,
+    "down": 38
+   },
+   "frames": 1033,
+   "complete": false
+  },
+  "953": {
+   "src": "anim5:603",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11553,
+     "Assassin Spike"
+    ],
+    [
+     11565,
+     "Assassin Spike"
+    ]
+   ],
+   "extent": {
+    "left": 74,
+    "right": 74,
+    "up": 84,
+    "down": 35
+   },
+   "frames": 1006,
+   "complete": false
+  },
+  "954": {
+   "src": "anim5:604",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11554,
+     "Leafblade"
+    ],
+    [
+     11566,
+     "Leafblade"
+    ]
+   ],
+   "extent": {
+    "left": 77,
+    "right": 77,
+    "up": 84,
+    "down": 37
+   },
+   "frames": 1024,
+   "complete": true
+  },
+  "955": {
+   "src": "anim5:605",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11555,
+     "War Cleaver"
+    ],
+    [
+     11567,
+     "War Cleaver"
+    ]
+   ],
+   "extent": {
+    "left": 87,
+    "right": 87,
+    "up": 102,
+    "down": 42
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "956": {
+   "src": "anim5:606",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11556,
+     "Diamond Mace"
+    ],
+    [
+     11568,
+     "Diamond Mace"
+    ]
+   ],
+   "extent": {
+    "left": 79,
+    "right": 79,
+    "up": 89,
+    "down": 39
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "957": {
+   "src": "anim5:607",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11557,
+     "Wild Staff"
+    ],
+    [
+     11569,
+     "Wild Staff"
+    ]
+   ],
+   "extent": {
+    "left": 80,
+    "right": 80,
+    "up": 95,
+    "down": 39
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "958": {
+   "src": "anim5:608",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11558,
+     "Rune Blade"
+    ],
+    [
+     11570,
+     "Rune Blade"
+    ]
+   ],
+   "extent": {
+    "left": 74,
+    "right": 74,
+    "up": 88,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "959": {
+   "src": "anim5:609",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11559,
+     "Radiant Scimitar"
+    ],
+    [
+     11571,
+     "Radiant Scimitar"
+    ]
+   ],
+   "extent": {
+    "left": 91,
+    "right": 91,
+    "up": 106,
+    "down": 45
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "960": {
+   "src": "anim5:610",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11560,
+     "Ornate Axe"
+    ],
+    [
+     11572,
+     "Ornate Axe"
+    ]
+   ],
+   "extent": {
+    "left": 85,
+    "right": 85,
+    "up": 96,
+    "down": 41
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "961": {
+   "src": "anim5:611",
+   "layers": [
+    1
+   ],
+   "n_items": 3,
+   "items": [
+    [
+     526,
+     ""
+    ],
+    [
+     11561,
+     "Elven Machete"
+    ],
+    [
+     11573,
+     "Elven Machete"
+    ]
+   ],
+   "extent": {
+    "left": 84,
+    "right": 84,
+    "up": 96,
+    "down": 41
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "962": {
+   "src": "anim5:612",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11118,
+     "circlet"
+    ],
+    [
+     12645,
+     "Circlet1"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "963": {
+   "src": "anim5:613",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11119,
+     "royal circlet"
+    ],
+    [
+     12646,
+     "Circlet2"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "964": {
+   "src": "anim5:614",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11120,
+     "gemmed circlet"
+    ],
+    [
+     12647,
+     "Circlet3"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "965": {
+   "src": "anim5:615",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11121,
+     "Raven Helm"
+    ],
+    [
+     12648,
+     "Raven Helm"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "966": {
+   "src": "anim5:616",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11122,
+     "Vulture Helm"
+    ],
+    [
+     12649,
+     "Vulture Helm"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "967": {
+   "src": "anim5:617",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11123,
+     "Winged Helm"
+    ],
+    [
+     12650,
+     "Winged Helm"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 79,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "968": {
+   "src": "anim5:618",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11124,
+     "Hide Chest"
+    ],
+    [
+     12651,
+     "Hide Chest"
+    ]
+   ],
+   "extent": {
+    "left": 55,
+    "right": 55,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "969": {
+   "src": "anim5:619",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11125,
+     "Hide Gloves"
+    ],
+    [
+     12652,
+     "Hide Gloves"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 83,
+    "down": 32
+   },
+   "frames": 1040,
+   "complete": true
+  },
+  "970": {
+   "src": "anim:970",
+   "layers": [
+    22
+   ],
+   "n_items": 4,
+   "items": [
+    [
+     8270,
+     "death shroud"
+    ],
+    [
+     9859,
+     "hooded shroud"
+    ],
+    [
+     9860,
+     "hooded shroud"
+    ],
+    [
+     9863,
+     "death shroud"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 81,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "971": {
+   "src": "anim:971",
+   "layers": [
+    23
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     9714,
+     "knee skirt"
+    ],
+    [
+     9715,
+     "knee skirt"
+    ]
+   ],
+   "extent": {
+    "left": 43,
+    "right": 43,
+    "up": 60,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "972": {
+   "src": "anim:972",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     3519,
+     "fishing pole"
+    ],
+    [
+     3520,
+     "fishing pole"
+    ]
+   ],
+   "extent": {
+    "left": 103,
+    "right": 103,
+    "up": 119,
+    "down": 51
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "973": {
+   "src": "anim:973",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7947,
+     "orc helm"
+    ],
+    [
+     7948,
+     "orc helm"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 82,
+    "down": 36
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "974": {
+   "src": "anim5:620",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11126,
+     "Hide Gorget"
+    ],
+    [
+     12653,
+     "Hide Gorget"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 70,
+    "down": 25
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "975": {
+   "src": "anim5:621",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11127,
+     "Hide Paldrons"
+    ],
+    [
+     12654,
+     "Hide Paldrons"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "976": {
+   "src": "anim5:622",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11128,
+     "Hide Pants"
+    ],
+    [
+     12655,
+     "Hide Pants"
+    ]
+   ],
+   "extent": {
+    "left": 39,
+    "right": 39,
+    "up": 56,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "977": {
+   "src": "anim5:623",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     11129,
+     "Hide Female Chest"
+    ],
+    [
+     12656,
+     "Hide Female Chest"
+    ]
+   ],
+   "extent": {
+    "left": 55,
+    "right": 55,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "978": {
+   "src": "anim5:640",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12229,
+     "Lt_Armor_Chest"
+    ],
+    [
+     12667,
+     "Lt_Armor_Chest"
+    ]
+   ],
+   "extent": {
+    "left": 55,
+    "right": 55,
+    "up": 69,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "979": {
+   "src": "anim5:641",
+   "layers": [
+    7
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12230,
+     "Lt_Armor_Gloves"
+    ],
+    [
+     12668,
+     "Lt_Armor_Gloves"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 83,
+    "down": 30
+   },
+   "frames": 1033,
+   "complete": true
+  },
+  "980": {
+   "src": "anim:980",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     3570,
+     " wand"
+    ]
+   ],
+   "extent": {
+    "left": 82,
+    "right": 82,
+    "up": 97,
+    "down": 39
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "981": {
+   "src": "anim:981",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     3571,
+     " wand"
+    ]
+   ],
+   "extent": {
+    "left": 84,
+    "right": 84,
+    "up": 100,
+    "down": 41
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "982": {
+   "src": "anim:982",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     3572,
+     "wand"
+    ]
+   ],
+   "extent": {
+    "left": 83,
+    "right": 83,
+    "up": 97,
+    "down": 40
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "983": {
+   "src": "anim:983",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     3573,
+     "wand"
+    ]
+   ],
+   "extent": {
+    "left": 85,
+    "right": 85,
+    "up": 99,
+    "down": 41
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "984": {
+   "src": "anim:984",
+   "layers": [
+    1
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     3834,
+     "spellbook"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 83,
+    "down": 35
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "987": {
+   "src": "anim:987",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8271,
+     "GM Robe"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 84,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "989": {
+   "src": "anim5:642",
+   "layers": [
+    19
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12232,
+     "Lt_Armor_Paldrons"
+    ],
+    [
+     12670,
+     "Lt_Armor_Paldrons"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 80,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "990": {
+   "src": "anim:990",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8258,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 86,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "991": {
+   "src": "anim:991",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8259,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 84,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "992": {
+   "src": "anim:992",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     7108,
+     "Order shield"
+    ],
+    [
+     7109,
+     "Order shield"
+    ]
+   ],
+   "extent": {
+    "left": 72,
+    "right": 72,
+    "up": 90,
+    "down": 40
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "993": {
+   "src": "anim:993",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     7107,
+     "Chaos shield"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 88,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "994": {
+   "src": "anim:994",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     8272,
+     ""
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 84,
+    "down": 38
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "995": {
+   "src": "anim5:643",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12233,
+     "Lt_Armor_Pants"
+    ],
+    [
+     12671,
+     "Lt_Armor_Pants"
+    ]
+   ],
+   "extent": {
+    "left": 39,
+    "right": 39,
+    "up": 56,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "996": {
+   "src": "anim5:644",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12234,
+     "Lt_Armor_Kilt"
+    ],
+    [
+     12672,
+     "Lt_Armor_Kilt"
+    ]
+   ],
+   "extent": {
+    "left": 42,
+    "right": 42,
+    "up": 59,
+    "down": 21
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "997": {
+   "src": "anim5:645",
+   "layers": [
+    13
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     12235,
+     "LtF_Chest"
+    ],
+    [
+     12673,
+     "LtF_Chest"
+    ]
+   ],
+   "extent": {
+    "left": 55,
+    "right": 55,
+    "up": 69,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1000": {
+   "src": "anim:1000",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15172,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1001": {
+   "src": "anim:1001",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15173,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1002": {
+   "src": "anim:1002",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15174,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1003": {
+   "src": "anim:1003",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15175,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1004": {
+   "src": "anim:1004",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15176,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1005": {
+   "src": "anim:1005",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15177,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1006": {
+   "src": "anim:1006",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15178,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1007": {
+   "src": "anim:1007",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15179,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1008": {
+   "src": "anim:1008",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15180,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1009": {
+   "src": "anim:1009",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15181,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1010": {
+   "src": "anim:1010",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15182,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1011": {
+   "src": "anim:1011",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15183,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1012": {
+   "src": "anim:1012",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15184,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1013": {
+   "src": "anim:1013",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15185,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1014": {
+   "src": "anim:1014",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15186,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1015": {
+   "src": "anim:1015",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15187,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1016": {
+   "src": "anim:1016",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15188,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1017": {
+   "src": "anim:1017",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15189,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1018": {
+   "src": "anim:1018",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15190,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1019": {
+   "src": "anim:1019",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     15191,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1020": {
+   "src": "anim:1020",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     22137,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1021": {
+   "src": "anim:1021",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     22138,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1022": {
+   "src": "anim:1022",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     22139,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1023": {
+   "src": "anim:1023",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     22140,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1024": {
+   "src": "anim:1024",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     22141,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1025": {
+   "src": "anim:1025",
+   "layers": [
+    15
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     22142,
+     ""
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1027": {
+   "src": "anim5:379",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18612,
+     "Gargoyle Bardich EAS"
+    ],
+    [
+     18613,
+     "Gargoyle Bardich SOU"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1028": {
+   "src": "anim5:380",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18608,
+     "Gargoyle BattleAxe E"
+    ],
+    [
+     18609,
+     "Gargoyle BattleAxe S"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1029": {
+   "src": "anim5:381",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18630,
+     "Gargoyle Scythe SOUT"
+    ],
+    [
+     18631,
+     "Gargoyle BoneHarvest"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1030": {
+   "src": "anim5:382",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18614,
+     "Gargoyle ButchersKni"
+    ],
+    [
+     18615,
+     "Gargoyle ButchersKni"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1032": {
+   "src": "anim5:383",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18606,
+     "GargoyleAxe East"
+    ],
+    [
+     18607,
+     "Gargoyle Cleaver SOU"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1033": {
+   "src": "anim5:384",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18640,
+     "Gargoyle Daisho EAST"
+    ],
+    [
+     18641,
+     "Gargoyle Daisho SOUT"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1034": {
+   "src": "anim5:385",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18618,
+     "Gargoyle Katana EAST"
+    ],
+    [
+     18619,
+     "Gargoyle Katana SOUT"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1035": {
+   "src": "anim5:386",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18620,
+     "Gargoyle KrissKnife "
+    ],
+    [
+     18621,
+     "Gargoyle KrissKnife "
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1036": {
+   "src": "anim5:387",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18634,
+     "Gargoyle Pike SOUTH"
+    ],
+    [
+     18635,
+     "Gargoyle Lance SOUTH"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1037": {
+   "src": "anim5:388",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18626,
+     "Gargoyle Maul EAST"
+    ],
+    [
+     18627,
+     "Gargoyle Maul SOUTH"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1040": {
+   "src": "anim5:391",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18632,
+     "Gargoyle Pike EAST"
+    ],
+    [
+     18633,
+     "Gargoyle Pike EAST"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1041": {
+   "src": "anim5:392",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18628,
+     "Gargoyle Scythe EAST"
+    ],
+    [
+     18629,
+     "Gargoyle Scythe EAST"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1042": {
+   "src": "anim5:393",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18616,
+     "Gargoyle Staff Gnarl"
+    ],
+    [
+     18617,
+     "Gargoyle Staff Gnarl"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1043": {
+   "src": "anim5:394",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18638,
+     "Gargoyle Tekagi EAST"
+    ],
+    [
+     18639,
+     "Gargoyle Tekagi SOUT"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1044": {
+   "src": "anim5:395",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18636,
+     "Gargoyle Tessen EAST"
+    ],
+    [
+     18637,
+     "Gargoyle Tessen SOUT"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1045": {
+   "src": "anim5:396",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18622,
+     "Gargoyle WarFork EAS"
+    ],
+    [
+     18623,
+     "Gargoyle WarFork EAS"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1046": {
+   "src": "anim5:397",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18624,
+     "Gargoyle WarHammer E"
+    ],
+    [
+     18625,
+     "Gargoyle WarHammer S"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1047": {
+   "src": "anim5:378",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18610,
+     "GargoyleAxe East"
+    ],
+    [
+     18611,
+     "GargoyleAxe South"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1049": {
+   "src": "anim5:399",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     16856,
+     "Talons Leather SOUTH"
+    ],
+    [
+     16857,
+     "Talons Leather EAST"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1051": {
+   "src": "anim5:401",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     17118,
+     "PlateTalons South"
+    ],
+    [
+     17119,
+     "PlateTalons East"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1053": {
+   "src": "anim5:415",
+   "layers": [
+    12
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     17677,
+     "Gargoyle Belt SOUTH"
+    ],
+    [
+     17678,
+     "Gargoyle Belt EAST"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1054": {
+   "src": "anim5:416",
+   "layers": [
+    12
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     20696,
+     "GargoyleHalfApron SO"
+    ],
+    [
+     20697,
+     "GargoyleHalfApron EA"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1056": {
+   "src": "anim5:403",
+   "layers": [
+    20
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     17828,
+     "WingArmor Cloth SOUT"
+    ],
+    [
+     17829,
+     "WingArmor Cloth EAST"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1058": {
+   "src": "anim5:405",
+   "layers": [
+    20
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     17790,
+     "WingArmor Leather SO"
+    ],
+    [
+     17791,
+     "WingArmor Leather EA"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1062": {
+   "src": "anim3:941",
+   "layers": [
+    1
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     8794,
+     "Bard Spell Book"
+    ],
+    [
+     8795,
+     "Bard Spell Book"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 80,
+    "down": 34
+   },
+   "frames": 1036,
+   "complete": true
+  },
+  "1063": {
+   "src": "anim5:410",
+   "layers": [
+    18
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     17841,
+     "GargoyleGlasses Fema"
+    ],
+    [
+     17843,
+     "GargoyleGlasses Fema"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1064": {
+   "src": "anim5:411",
+   "layers": [
+    18
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     17988,
+     "GargoyleGlasses SOUT"
+    ],
+    [
+     17989,
+     "GargoyleGlasses EAST"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1065": {
+   "src": "anim5:412",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18090,
+     "Gargoyle SashFemale "
+    ],
+    [
+     18091,
+     "Gargoyle SashFemale "
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1066": {
+   "src": "anim5:413",
+   "layers": [
+    17
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     18100,
+     "Gargoyle SashMale SO"
+    ],
+    [
+     18101,
+     "Gargoyle SashMale EA"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1072": {
+   "src": "anim:1072",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     19722,
+     "Gargish Necklace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1073": {
+   "src": "anim:1073",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     19723,
+     "Gargish Necklace"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1234": {
+   "src": "anim:1234",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     4246,
+     "Talisman"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1235": {
+   "src": "anim:1235",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12120,
+     "Talisman"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1236": {
+   "src": "anim:1236",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12121,
+     "Talisman"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1237": {
+   "src": "anim:1237",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12122,
+     "Talisman"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1238": {
+   "src": "anim:1238",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     12123,
+     "Talisman"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1249": {
+   "src": "anim5:427",
+   "layers": [
+    6,
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     19357,
+     "15AnnRobe SOUTH"
+    ],
+    [
+     19358,
+     "15AnnRobe EAST"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 81,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1251": {
+   "src": "anim5:429",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     19359,
+     "15AnnRobeGargoyle SO"
+    ],
+    [
+     19360,
+     "15AnnRobeGargoyle EA"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1257": {
+   "src": "anim:1257",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     39302,
+     "Epaulets Gargoyle SO"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1259": {
+   "src": "anim:1259",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     39301,
+     "Epaulets Human SOUTH"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1261": {
+   "src": "anim3:432",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30742,
+     "Robe_BG SOUTH"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1263": {
+   "src": "anim3:434",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30743,
+     "Shield_Vice"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 87,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1265": {
+   "src": "anim3:435",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30744,
+     "Shield_Virtue"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 88,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1267": {
+   "src": "anim3:436",
+   "layers": [
+    3
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30745,
+     "Shoes_Jester"
+    ]
+   ],
+   "extent": {
+    "left": 30,
+    "right": 30,
+    "up": 45,
+    "down": 14
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1269": {
+   "src": "anim3:437",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30746,
+     "Hat_Chef"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 82,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1271": {
+   "src": "anim3:438",
+   "layers": [
+    23
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30747,
+     "Kilt01"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 58,
+    "down": 21
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1273": {
+   "src": "anim3:439",
+   "layers": [
+    23
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30748,
+     "Kilt02"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 58,
+    "down": 21
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1275": {
+   "src": "anim3:440",
+   "layers": [
+    23
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30749,
+     "Kilt03"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 58,
+    "down": 21
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1278": {
+   "src": "anim3:441",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30750,
+     "Dress_Red_Human_Fema"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 81,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1284": {
+   "src": "anim3:444",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30753,
+     "Dress_Wed_Human_Fema"
+    ]
+   ],
+   "extent": {
+    "left": 52,
+    "right": 52,
+    "up": 67,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1295": {
+   "src": "anim3:455",
+   "layers": [
+    13
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30754,
+     "Chest_Tiger_H_M"
+    ]
+   ],
+   "extent": {
+    "left": 55,
+    "right": 55,
+    "up": 70,
+    "down": 28
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1296": {
+   "src": "anim3:456",
+   "layers": [
+    13
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30755,
+     "Chest_Tiger_H_F"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 71,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1297": {
+   "src": "anim3:457",
+   "layers": [
+    4
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30756,
+     "Pants_Long_Tiger_H"
+    ]
+   ],
+   "extent": {
+    "left": 40,
+    "right": 40,
+    "up": 57,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1298": {
+   "src": "anim3:458",
+   "layers": [
+    4
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30757,
+     "Pants_Short_Tiger_H"
+    ]
+   ],
+   "extent": {
+    "left": 40,
+    "right": 40,
+    "up": 57,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1299": {
+   "src": "anim3:459",
+   "layers": [
+    4
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30758,
+     "Skirt_Long_Tiger_H"
+    ]
+   ],
+   "extent": {
+    "left": 42,
+    "right": 42,
+    "up": 58,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1300": {
+   "src": "anim3:460",
+   "layers": [
+    4
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30759,
+     "Skirt_Short_Tiger_H"
+    ]
+   ],
+   "extent": {
+    "left": 42,
+    "right": 42,
+    "up": 58,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1301": {
+   "src": "anim3:461",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30760,
+     "Helm_Tiger_H"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 80,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1302": {
+   "src": "anim3:462",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30761,
+     "Collar_Tiger_H"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 70,
+    "down": 24
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "1303": {
+   "src": "anim3:463",
+   "layers": [
+    13
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30762,
+     "Chest_Turtle_H_M"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 75,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1304": {
+   "src": "anim3:464",
+   "layers": [
+    13
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30763,
+     "Chest_Turtle_H_F"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 75,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1305": {
+   "src": "anim3:465",
+   "layers": [
+    4
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30764,
+     "Pants_Long_Turtle_H"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 57,
+    "down": 21
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1306": {
+   "src": "anim3:466",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30765,
+     "Helm_Turtle_H"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1307": {
+   "src": "anim3:467",
+   "layers": [
+    19
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     30766,
+     "Bracers_Turtle_H"
+    ]
+   ],
+   "extent": {
+    "left": 61,
+    "right": 61,
+    "up": 79,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1310": {
+   "src": "anim:1310",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     40485,
+     "talisman_tailoring"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1311": {
+   "src": "anim:1311",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     40486,
+     "talisman_alchemy"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1312": {
+   "src": "anim:1312",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     40487,
+     "talisman_cooking"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1313": {
+   "src": "anim:1313",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     40488,
+     "talisman_inscription"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1314": {
+   "src": "anim:1314",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     40489,
+     "talisman_fletching"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1315": {
+   "src": "anim:1315",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     40490,
+     "talisman_blacksmithi"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1316": {
+   "src": "anim:1316",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     40491,
+     "talisman_tinkering"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1317": {
+   "src": "anim:1317",
+   "layers": [
+    9
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     40492,
+     "talisman_carpentry"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1411": {
+   "src": "anim3:481",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     40687,
+     "Dress_Wedding_Human_"
+    ],
+    [
+     40688,
+     "Dress_Wedding_Human_"
+    ]
+   ],
+   "extent": {
+    "left": 64,
+    "right": 64,
+    "up": 81,
+    "down": 29
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1412": {
+   "src": "anim3:482",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     40697,
+     "Hat_Wedding_TopHat_s"
+    ],
+    [
+     40698,
+     "Hat_Wedding_TopHat_e"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 83,
+    "down": 34
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1413": {
+   "src": "anim3:483",
+   "layers": [
+    5
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     40699,
+     "Shirt_Tux_south"
+    ],
+    [
+     40700,
+     "Shirt_Tux_east"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 82,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1414": {
+   "src": "anim3:484",
+   "layers": [
+    4
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     40695,
+     "Pants_Wedding_south"
+    ],
+    [
+     40696,
+     "Pants_Wedding_east"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 57,
+    "down": 21
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1429": {
+   "src": "anim4:499",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     40767,
+     "Vale_Haunted_South"
+    ],
+    [
+     40768,
+     "Vale_Haunted_East"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 81,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1430": {
+   "src": "anim4:500",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     40775,
+     "Hat_Wedding_Haunted_"
+    ],
+    [
+     40776,
+     "Hat_Wedding_Haunted_"
+    ]
+   ],
+   "extent": {
+    "left": 69,
+    "right": 69,
+    "up": 84,
+    "down": 35
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1435": {
+   "src": "anim4:505",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41131,
+     "Robe_Store_01"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1437": {
+   "src": "anim4:507",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41132,
+     "Robe_Store_02"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1439": {
+   "src": "anim4:509",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41133,
+     "Robe_Store_03"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1443": {
+   "src": "anim4:513",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41134,
+     "Robe_Store_04"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1445": {
+   "src": "anim4:515",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41135,
+     "Robe_Store_05"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 80,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1447": {
+   "src": "anim2:517",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41380,
+     "Male_H_Hair_01"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 79,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1448": {
+   "src": "anim2:518",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41381,
+     "Male_H_Hair_02"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1449": {
+   "src": "anim2:519",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41382,
+     "Male_H_Hair_03"
+    ]
+   ],
+   "extent": {
+    "left": 63,
+    "right": 63,
+    "up": 77,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1450": {
+   "src": "anim2:520",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41383,
+     "Male_H_Hair_04"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 81,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1451": {
+   "src": "anim2:521",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41384,
+     "Male_H_Beard_Hair_01"
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 74,
+    "down": 26
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1452": {
+   "src": "anim2:522",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41385,
+     "Male_H_Beard_Hair_02"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 75,
+    "down": 26
+   },
+   "frames": 1029,
+   "complete": true
+  },
+  "1453": {
+   "src": "anim2:523",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41386,
+     "Male_H_Beard_Hair_03"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 73,
+    "down": 26
+   },
+   "frames": 1035,
+   "complete": true
+  },
+  "1454": {
+   "src": "anim2:524",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41387,
+     "Male_H_Beard_Hair_04"
+    ]
+   ],
+   "extent": {
+    "left": 59,
+    "right": 59,
+    "up": 74,
+    "down": 26
+   },
+   "frames": 1047,
+   "complete": true
+  },
+  "1455": {
+   "src": "anim2:525",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41388,
+     "Female_H_Hair_01"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 80,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1456": {
+   "src": "anim2:526",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41389,
+     "Female_H_Hair_02"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 30
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1457": {
+   "src": "anim2:527",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41390,
+     "Female_H_Hair_03"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 80,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1458": {
+   "src": "anim2:528",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41391,
+     "Female_H_Hair_04"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 80,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1459": {
+   "src": "anim2:529",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41392,
+     "Male_E_Hair_01"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1460": {
+   "src": "anim2:530",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41393,
+     "Male_E_Hair_02"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 80,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1461": {
+   "src": "anim2:531",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41394,
+     "Male_E_Hair_03"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1462": {
+   "src": "anim2:532",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41395,
+     "Male_E_Hair_04"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1463": {
+   "src": "anim2:533",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41396,
+     "Female_E_Hair_01"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1464": {
+   "src": "anim2:534",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41397,
+     "Female_E_Hair_02"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 80,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1465": {
+   "src": "anim2:535",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41398,
+     "Female_E_Hair_03"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1466": {
+   "src": "anim2:536",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41399,
+     "Female_E_Hair_04"
+    ]
+   ],
+   "extent": {
+    "left": 67,
+    "right": 67,
+    "up": 80,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1467": {
+   "src": "anim2:537",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41400,
+     "Male_G_Horn_01"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1468": {
+   "src": "anim2:538",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41401,
+     "Male_G_Horn_02"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1469": {
+   "src": "anim2:539",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41402,
+     "Male_G_Horn_03"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1470": {
+   "src": "anim2:540",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41403,
+     "Male_G_Horn_04"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1471": {
+   "src": "anim2:541",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41404,
+     "Male_G_Beard_Horn_01"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1472": {
+   "src": "anim2:542",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41405,
+     "Male_G_Beard_Horn_02"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1473": {
+   "src": "anim2:543",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41406,
+     "Male_G_Beard_Horn_03"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1474": {
+   "src": "anim2:544",
+   "layers": [
+    16
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41407,
+     "Male_G_Beard_Horn_04"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1475": {
+   "src": "anim2:545",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41408,
+     "Female_G_Horn_01"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1476": {
+   "src": "anim2:546",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41409,
+     "Female_G_Horn_02"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1477": {
+   "src": "anim2:547",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41410,
+     "Female_G_Horn_03"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1478": {
+   "src": "anim2:548",
+   "layers": [
+    11
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41411,
+     "Female_G_Horn_04"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1480": {
+   "src": "anim2:550",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     41415,
+     "Khal_Ankur_Mask_east"
+    ],
+    [
+     41416,
+     "Khal_Ankur_Mask_sout"
+    ]
+   ],
+   "extent": {
+    "left": 77,
+    "right": 77,
+    "up": 91,
+    "down": 43
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1482": {
+   "src": "anim2:552",
+   "layers": [
+    10
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     41417,
+     "Khal Ankur Gargish N"
+    ],
+    [
+     41418,
+     "Khal Ankur Gargish N"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1486": {
+   "src": "anim2:556",
+   "layers": [
+    1
+   ],
+   "n_items": 6,
+   "items": [
+    [
+     41609,
+     "Barbed Whip"
+    ],
+    [
+     41610,
+     "Barbed Whip"
+    ],
+    [
+     41611,
+     "Barbed Whip"
+    ],
+    [
+     41617,
+     "Barbed Whip"
+    ],
+    [
+     41618,
+     "Spiked Whip"
+    ],
+    [
+     41619,
+     "Bladed Whip"
+    ]
+   ],
+   "extent": {
+    "left": 76,
+    "right": 76,
+    "up": 99,
+    "down": 37
+   },
+   "frames": 1049,
+   "complete": true
+  },
+  "1498": {
+   "src": "anim2:562",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     41613,
+     "Holiday_Boots_South"
+    ],
+    [
+     41614,
+     "Holiday_Boots_East"
+    ]
+   ],
+   "extent": {
+    "left": 27,
+    "right": 27,
+    "up": 47,
+    "down": 14
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1500": {
+   "src": "anim2:564",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     41615,
+     "Holiday_Hat_south"
+    ],
+    [
+     41616,
+     "Holiday_Hat_east"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 82,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1502": {
+   "src": "anim2:566",
+   "layers": [
+    3
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     41620,
+     "Holiday_Gargoyle_Tal"
+    ],
+    [
+     41622,
+     "Holiday_Gargoyle_Tal"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1504": {
+   "src": "anim2:568",
+   "layers": [
+    18
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41621,
+     "Holiday_Gargoyle_ear"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 82,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1506": {
+   "src": "anim2:570",
+   "layers": [
+    22
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     41674,
+     "Parrot_Epaulets_Sout"
+    ],
+    [
+     41675,
+     "Parrot_Epaulets_East"
+    ]
+   ],
+   "extent": {
+    "left": 187,
+    "right": 187,
+    "up": 223,
+    "down": 150
+   },
+   "frames": 1155,
+   "complete": false
+  },
+  "1513": {
+   "src": "anim3:589",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41962,
+     "Helm_Pumkin"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 82,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1515": {
+   "src": "anim3:590",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41995,
+     "Weapon_Bottle"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 80,
+    "down": 29
+   },
+   "frames": 1041,
+   "complete": true
+  },
+  "1516": {
+   "src": "anim3:591",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41999,
+     "Neck_Mempo"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 71,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1517": {
+   "src": "anim3:592",
+   "layers": [
+    12
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41996,
+     "Belt_Mace"
+    ]
+   ],
+   "extent": {
+    "left": 44,
+    "right": 44,
+    "up": 59,
+    "down": 22
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1518": {
+   "src": "anim3:593",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42000,
+     "Hood_Assassin"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1519": {
+   "src": "anim3:594",
+   "layers": [
+    12
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41997,
+     "Belt_Sword"
+    ]
+   ],
+   "extent": {
+    "left": 41,
+    "right": 41,
+    "up": 56,
+    "down": 21
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1520": {
+   "src": "anim3:595",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42001,
+     "Hood_Mage"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 79,
+    "down": 31
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1521": {
+   "src": "anim3:596",
+   "layers": [
+    12
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41998,
+     "Belt_Dagger"
+    ]
+   ],
+   "extent": {
+    "left": 39,
+    "right": 39,
+    "up": 56,
+    "down": 20
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1522": {
+   "src": "anim3:597",
+   "layers": [
+    22
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42002,
+     "tabard"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 73,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1523": {
+   "src": "anim3:598",
+   "layers": [
+    20
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42003,
+     "elegant quarter cloa"
+    ]
+   ],
+   "extent": {
+    "left": 56,
+    "right": 56,
+    "up": 73,
+    "down": 27
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1524": {
+   "src": "anim3:599",
+   "layers": [
+    6
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     42027,
+     "Hat_Bake Kitsune_Sou"
+    ],
+    [
+     42028,
+     "Hat_Bake Kitsune_Eas"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 81,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1529": {
+   "src": "anim3:604",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     42569,
+     "Shield_Pirate"
+    ],
+    [
+     42570,
+     "Shield_Pirate"
+    ]
+   ],
+   "extent": {
+    "left": 65,
+    "right": 65,
+    "up": 86,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1543": {
+   "src": "anim3:618",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     42855,
+     "wand"
+    ],
+    [
+     42856,
+     "wand"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 90,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1544": {
+   "src": "anim3:619",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42857,
+     "Lantern_on"
+    ]
+   ],
+   "extent": {
+    "left": 57,
+    "right": 57,
+    "up": 78,
+    "down": 35
+   },
+   "frames": 1048,
+   "complete": false
+  },
+  "1545": {
+   "src": "anim3:620",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42858,
+     "Lantern_off"
+    ]
+   ],
+   "extent": {
+    "left": 306,
+    "right": 306,
+    "up": 273,
+    "down": 207
+   },
+   "frames": 1048,
+   "complete": true
+  },
+  "1550": {
+   "src": "anim3:625",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42866,
+     "Orb"
+    ]
+   ],
+   "extent": {
+    "left": 58,
+    "right": 58,
+    "up": 92,
+    "down": 22
+   },
+   "frames": 1047,
+   "complete": false
+  },
+  "1554": {
+   "src": "anim3:629",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42947,
+     "candycane_staff"
+    ]
+   ],
+   "extent": {
+    "left": 83,
+    "right": 83,
+    "up": 105,
+    "down": 43
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1555": {
+   "src": "anim3:630",
+   "layers": [
+    2
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42948,
+     "candycane_staff"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "1565": {
+   "src": "anim3:640",
+   "layers": [
+    12
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42978,
+     "Demon_Belt"
+    ]
+   ],
+   "extent": {
+    "left": 43,
+    "right": 43,
+    "up": 58,
+    "down": 19
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1571": {
+   "src": "anim3:646",
+   "layers": [
+    2
+   ],
+   "n_items": 2,
+   "items": [
+    [
+     43057,
+     "Shield_Hildebrandt"
+    ],
+    [
+     43058,
+     "Shield_Hildebrandt"
+    ]
+   ],
+   "extent": {
+    "left": 68,
+    "right": 68,
+    "up": 89,
+    "down": 32
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "1801": {
+   "src": "anim4:521",
+   "layers": [
+    6
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42758,
+     "ClothHood"
+    ]
+   ],
+   "extent": {
+    "left": 66,
+    "right": 66,
+    "up": 81,
+    "down": 33
+   },
+   "frames": 1050,
+   "complete": true
+  },
+  "9972": {
+   "src": "anim:9972",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42025,
+     "fellowship_medallion"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "9974": {
+   "src": "anim:9974",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     42026,
+     "fellowship_medallion"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "9976": {
+   "src": "anim:9976",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41802,
+     "octopus_necklace_gar"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  },
+  "9978": {
+   "src": "anim:9978",
+   "layers": [
+    10
+   ],
+   "n_items": 1,
+   "items": [
+    [
+     41801,
+     "octopus_necklace_hum"
+    ]
+   ],
+   "extent": null,
+   "frames": 0,
+   "complete": false
+  }
+ }
+}
