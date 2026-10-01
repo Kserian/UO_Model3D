@@ -23,14 +23,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "body13"))
 from itemframes import canvas as sprite_canvas, load as load_sprites       # noqa: E402
 
-ITEMS = {      # name: sprite id, bones covered, thickness m, cut (bone, keep from t0 along it), uo_bind_item PART
-    "shirt":  dict(anim=434, parts=["pelvis", "spine", "chest", "clavicle", "upper_arm", "neck"], thickness=0.012, cut=None, part="chest"),
-    "plate":  dict(anim=527, parts=["pelvis", "spine", "chest", "clavicle", "neck"], thickness=0.03, cut=None, part="chest"),
+ITEMS = {      # name: sprite id, bones covered, thickness m, cut (bone, keep from t0 along it), zrange (rest-pose height m), uo_bind_item PART
+    # zrange comes from the sprites: lowest/highest row of the item in 04_stand (mean of 5 directions) -> z = -row / (36 cos 28.4557) + 0.07
+    "shirt":  dict(anim=434, parts=["pelvis", "spine", "chest", "clavicle", "upper_arm", "neck"], thickness=0.012, cut=None, cut_far=["upper_arm", 0.4], zrange=[1.03, 9], part="chest"),
+    "plate":  dict(anim=527, parts=["pelvis", "spine", "chest", "clavicle", "neck", "thigh"], thickness=0.03, cut=None, zrange=[0.68, 9], part="chest"),
     "arms":   dict(anim=528, parts=["upper_arm", "forearm", "clavicle"], thickness=0.025, cut=None, part="arms"),
-    "pants":  dict(anim=431, parts=["pelvis", "thigh", "shin"], thickness=0.012, cut=None, part="legs"),
-    "legs":   dict(anim=529, parts=["pelvis", "thigh", "shin"], thickness=0.03, cut=None, part="legs"),
-    "boots":  dict(anim=477, parts=["shin", "foot"], thickness=0.015, cut=["shin", 0.35], part="boots"),
-    "gloves": dict(anim=530, parts=["hand", "forearm"], thickness=0.015, cut=["forearm", 0.55], part="gloves"),
+    "pants":  dict(anim=431, parts=["pelvis", "thigh", "shin"], thickness=0.012, cut=None, zrange=[-9, 1.17], part="legs"),
+    "legs":   dict(anim=529, parts=["pelvis", "thigh", "shin"], thickness=0.03, cut=None, zrange=[-9, 1.14], part="legs"),
+    "boots":  dict(anim=477, parts=["shin", "foot"], thickness=0.015, cut=None, zrange=[-9, 0.56], part="boots"),
+    "gloves": dict(anim=530, parts=["hand", "forearm"], thickness=0.03, cut=["forearm", 0.4], part="gloves"),
     "helm":   dict(anim=563, parts=["head"], thickness=0.02, cut=None, part="helm"),
 }
 DEFAULT_ITEMS = "shirt,plate,pants,boots,gloves,helm"

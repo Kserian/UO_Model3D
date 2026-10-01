@@ -157,19 +157,17 @@ kolejne kroki miały liczby „przed/po”.
   - [x] 1d. Narzędzie wgrywające `pipeline/*.py` do tekstów `.blend` i sprawdzające zgodność.
   - Odbiór: przy `CANVAS = (136,120)` wynik identyczny co do piksela z dzisiejszym; przy 256×256 po przycięciu do starego
     obszaru też identyczny; `EXACT_BODY` nadal daje klatki identyczne z oryginałem; zero przyciętych klatek dla klas z raportu 3.1.
-- [ ] **2. Testy regresyjne i raport QA (4.6). W TOKU.** Zrobione: testy płótna (`test_canvas.py`, `test_tall_item.py`) oraz szkielet testu
-      przedmiotów: `pipeline/test_items.py` + `test_items_pre.py` (replika = powłoka skóry przesunięta o grubość, jak w `body13/itemval.py`;
-      potem prawdziwe `uo_bind_item.py` i `render_uo_layer.py`; porównanie ze sprite'ami z klienta: IoU, nadmiar, braki, paski 1 px, odpryski,
-      przycięcia, liczba kolorów w bloku, nakładka PNG). Działa od końca do końca (`python test_items.py --items shirt --actions 04_stand`).
-      **Brak ustalonego baseline'u**: repliki mają za duży zasięg, więc IoU jest niski i zdominowany przez kształt repliki, nie przez potok.
-      Pierwszy pomiar (koszula, 04_stand, 5 klatek): IoU 0,52, nadmiar 123 px, braki 57 px, paski 38 px, 16 kolorów. Wyłączenie po kolei
-      EXACT_BODY, BODY_GAP, HOLDOUT_MARGIN i obróbki (DESPECKLE, FILL_HOLES, MIN_PIECE) nie zmienia kształtu, więc przyczyną jest replika:
-      grupa `pelvis` obejmuje biodra i górę ud, a sprite 434 kończy się w talii (w profilu sprite ma kształt „n”, replika pierścień).
-      Do zrobienia: (a) zasięg replik dopasować do sprite'ów, np. obciąć wysokością w pozie spoczynkowej wyznaczoną z dolnej krawędzi
-      sprite'a w `04_stand` dir 0 (wiersz → z = (ay − wiersz)/(36·cos 28,4557°) + 0,07), dla płytówki, spodni, butów, rękawic, hełmu osobno;
-      (b) porównać z `body13/itemval.py` (wymaga `numba`; nie uruchomiono, bo użytkownik odrzucił instalację, zapytaj najpierw);
-      (c) ustalić baseline (`--out docs/qa/items_baseline.json`) na 6 akcjach, potem na `--all`; (d) repliki szaty, płaszcza, spódnicy
-      (po `uo_cloth_bake.py`), katany i tarczy; (e) raport HTML. Dopiero z baseline'em robić krok 4 (`EDGE_COVER`).
+- [x] **2. Testy regresyjne i raport QA (4.6). BASELINE USTALONY w sesji 2** (`docs/qa/items_baseline.json`, 6 przedmiotów × 6 akcji × 5 kierunków,
+      płótno 256×256). Repliki (`test_items.py` + `test_items_pre.py`) dopasowane do sprite'ów: obcięcie wysokością `zrange` (z dolnej/górnej krawędzi
+      sprite'a w `04_stand`, z = −wiersz/(36·cos 28,4557°) + 0,07), `cut_far` (krótkie rękawy koszuli, t ≤ 0,4), rękawice grubość 0,03 i cięcie 0,4.
+      Naprawiony błąd testu: replika dziedziczyła wagi ciała (indeksy grup spoza zakresu), co rozciągało rękawice w smugi.
+      **Baseline (IoU / nadmiar px / braki px / z tego paski ≤1 px):** koszula 0,662 / 37 / 56 / 40; płytówka 0,679 / 25 / 98 / 65; spodnie 0,721 / 16 / 90 / 69;
+      buty 0,742 / 19 / 43 / 36; rękawice 0,496 / 29 / 45 / 25; hełm 0,764 / 6 / 20 / 17; średnia 0,677; przycięcia 0; liczba kolorów w bloku ≤ 18.
+      **Wniosek:** 60–75% braków to paski ≤ 1 px przy krawędzi renderu, i nie zależą od grubości repliki (koszula 0,012–0,03 daje 43→37 px). To różnica
+      obrysu ciała względem oryginału (krok 5) i/lub brak `EDGE_COVER` (krok 4). Najsłabsze akcje: 21_die_forward, 25_mounted_stand, rękawice w siedzeniu na koniu (0,23).
+      Uwaga do testów: `--tmp` nie czyści katalogu, stare klatki zostają i fałszują liczbę klatek: przed każdym przebiegiem usuń `<tmp>/<item>`.
+      Zostaje: baseline na `--all` (35 akcji, ok. 10× dłużej), repliki szaty, płaszcza, spódnicy (po `uo_cloth_bake.py`), katany i tarczy, raport HTML,
+      porównanie z `body13/itemval.py` (wymaga `numba`, pytanie otwarte).
 - [ ] **3. Broń w lewej dłoni (4.2).** Presety `crossbow → hand.L`, `weapon2h`, `staff`, `polearm`; kalibracja lewej dłoni
       albo osobnej kości `weapon2h` (jak `shield.L`); plik chwytów na klasę broni. Odbiór: błąd ≤ 1,5–2 px (dziś 5–6 px).
 - [ ] **4. `EDGE_COVER` (4.3).** Domknięcie 1-pikselowych pasków skóry. Odbiór: 0 pikseli skóry przy krawędzi obcisłych przedmiotów.
@@ -199,16 +197,21 @@ kolejne kroki miały liczby „przed/po”.
   `pipeline/body13/mul/` (12 plików) są bajt w bajt takie same jak z klienta, więc nadają się jako wzorzec.
 - Odpowiedź na pytanie użytkownika o ciało: sekcja 5 (MakeHuman, 13 380 wierzchołków, 108 kości, A-pose).
 
-## 8. Następne kroki (sesja 2)
+**Sesja 2 (2026-10-01).**
+- Środowisko postawione od zera (sekcja 4), kopia `model/` w `/home/user/UO_Model3D_backup/` (tymczasowa). `model/` w tej sesji NIE był zmieniany.
+- Praca poszła na gałąź sesji `ccr-d692622b-hcwak7` (zadanie narzucało gałąź), nie na `main`; do scalenia z `main` przez użytkownika.
+- Krok 2: repliki dopasowane do sprite'ów, naprawiony błąd wag, baseline zapisany (patrz sekcja 6). Zmienione pliki: `pipeline/test_items.py`,
+  `pipeline/test_items_pre.py`, nowy `docs/qa/items_baseline.json`.
 
-1. Zrób kopię zapasową `model/` poza repo (sekcja 0), zainstaluj środowisko (sekcja 4): `pip install numpy pillow scipy "bpy==4.2.*"`.
-2. Dokończ krok 2 (sekcja 6): dopasuj zasięg replik do sprite'ów, ustal baseline na 6 akcjach i zapisz go w `docs/qa/items_baseline.json`.
-   Uruchamianie: `cd pipeline && python test_items.py --items shirt,plate,pants,boots,gloves,helm --out ../docs/qa/items_baseline.json --img /tmp/ov.png`.
-   Sprite'y: `pipeline/body13/mul/anim_NNNN.vd` (434, 527, 431, 477, 530, 563 i inne); kolejne wyciągaj `vdtool/mul2vd.py` z klienta
-   (sekcja 2) i dodawaj do `client/extract/vd/`.
-3. Potem krok 5 (poprawa ciała z klatek ekwipunku: rękawice 530, buty 477, hełm 563, spodnie 431, koszula 434; cel nadrzędny z sekcji 1),
-   mierząc skutek w `test_items.py` (przed/po). Krok 4 (`EDGE_COVER`) i krok 3 (broń w lewej dłoni; klient potrzebny do `.vd` kijów 648,
-   berdysza 614, włóczni 641, kuszy, łuku, mapowanie w `client/extract/item_animations.json`) dopiero potem.
+## 8. Następne kroki (sesja 3)
+
+1. Kopia zapasowa `model/` poza repo, środowisko (sekcja 4).
+2. Krok 5 (poprawa ciała, wysoki priorytet): baseline jest (sekcja 6). Najpierw sprawdź, skąd biorą się paski ≤ 1 px (obrys ciała vs sprite w `04_stand`:
+   porównaj sylwetkę ciała z klatkami koszuli 434 / spodni 431 / butów 477 / hełmu 563 i policz, o ile px sprite wychodzi poza ciało), potem rękawice 530
+   i buty 477 jako ograniczenie orientacji dłoni i stóp. Mierz skutek w `test_items.py` (przed/po względem `docs/qa/items_baseline.json`).
+   Przed krokiem 5 zapytaj użytkownika o warstwę korekt per klatka (sekcja 9).
+3. Krok 4 (`EDGE_COVER`) i krok 3 (broń w lewej dłoni; klient potrzebny do `.vd` kijów 648, berdysza 614, włóczni 641, kuszy, łuku,
+   mapowanie w `client/extract/item_animations.json`) dopiero potem.
 4. Na koniec zaktualizuj ten plik, commit i `git push origin main`, i powiedz użytkownikowi, że temat jest zamknięty.
 
 ## 9. Pytania otwarte do użytkownika

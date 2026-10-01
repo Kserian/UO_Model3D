@@ -40,9 +40,25 @@ if spec.get("cut"):                                          # drop the near end
         L = np.linalg.norm(ax); t = ((ca - h) @ (ax / L)) / L
         keep &= ~(np.array([d == (bname, s) for d in dom]) & (t < t0))
 
+if spec.get("zrange"):                                       # height cut in the rest pose (world z), measured from the sprite extent
+    z = (co @ np.array(body.matrix_world)[:3, :3].T + np.array(body.matrix_world)[:3, 3])[:, 2]
+    keep &= (z >= spec["zrange"][0]) & (z <= spec["zrange"][1])
+
+if spec.get("cut_far"):                                      # drop the far end of a limb bone (short sleeves): keep t <= t1
+    bname, t1 = spec["cut_far"]
+    child = {"upper_arm": "forearm", "thigh": "shin"}[bname]
+    M = np.array(rig.matrix_world.inverted() @ body.matrix_world)
+    ca = co @ M[:3, :3].T + M[:3, 3]
+    for s_ in (".L", ".R"):
+        h = np.array(rig.data.bones[bname + s_].head_local); ax = np.array(rig.data.bones[child + s_].head_local) - h
+        L = np.linalg.norm(ax); t = ((ca - h) @ (ax / L)) / L
+        keep &= ~(np.array([d == (bname, s_) for d in dom]) & (t > t1))
+
 bm = bmesh.new(); bm.from_mesh(me); bm.verts.ensure_lookup_table()
 for v in bm.verts:
     v.co += type(v.co)(nrm[v.index] * spec["thickness"])
+for lay in list(bm.verts.layers.deform):                     # the replica must not inherit the body's group indices: uo_bind_item makes its own groups
+    bm.verts.layers.deform.remove(lay)
 bmesh.ops.delete(bm, geom=[v for v in bm.verts if not keep[v.index]], context="VERTS")
 item_me = bpy.data.meshes.new("test_" + os.environ["UO_TEST_ITEM"]); bm.to_mesh(item_me); bm.free()
 item = bpy.data.objects.new(item_me.name, item_me); item.matrix_world = body.matrix_world.copy()
