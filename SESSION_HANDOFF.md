@@ -19,7 +19,9 @@
 - **Dane klienta UO:** tylko do użytku własnego, repo jest prywatne. Cały klient pobieraj do `uo_client/` (w `.gitignore`)
   i **nie commituj** surowych `anim*.mul`, `*.idx`, `tiledata.mul` (limit GitHuba 100 MB na plik). Za to zgodnie z poleceniem
   użytkownika **wyciągnięte potrzebne rzeczy idą do repo** (sekcja 2a), a link do klienta zostaje w tym pliku.
-- **Komunikaty:** użytkownik prosi o mało komunikatów, tylko ważne informacje (wynik, blokada, decyzja do podjęcia).
+- **Komunikaty:** użytkownik prosi o mało i krótkie komunikaty, tylko ważne informacje (wynik, blokada, decyzja do podjęcia).
+- **Sesje:** użytkownik odpala kolejne sesje ręcznie. Gdy temat jest zamknięty (zapisane w `SESSION_HANDOFF.md`, wypchnięte na `main`),
+  powiedz mu to wprost, żeby wiedział, że może zacząć następną. Nie instaluj ani nie uruchamiaj niczego, czego odmówił (patrz sekcja 9).
 - **Podglądy dla użytkownika:** aplikacja otwiera tylko pliki z katalogu repo i katalogu roboczego sesji (scratchpad).
   GIF-y i PNG-i do obejrzenia kładź tam.
 - **Pliki binarne:** `model/UO_Body_0x190.blend` jest binarny, a skrypty są w nim osadzone jako teksty (sekcja 4). Zmianę
@@ -105,6 +107,11 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
 
 ## 5. Ustalenia z kodu i `.blend` (zmierzone w sesji 1)
 
+- **Ciało `UO_Body` (zmierzone):** 13 380 wierzchołków, 13 378 czworokątów (bez trójkątów), UV `UVMap`, bez shape keys, materiał `UO_Skin`,
+  tekstury 1024×1024 (`UO_Body_Texture`, `UO_Body_Albedo_dir0..4`) i atlas oryginałów 4760×3600. Siatka z MakeHuman (CC0), mężczyzna.
+  W pozie spoczynkowej (A-pose): wysokość 1,86 m, szerokość 1,43 m z rękami, głębokość 0,39 m, stopy na z = 0.
+  Szkielet `UO_Rig`: 108 kości = 55 kości skórujących ciało (19 kości UO, skręty, palce, palce stóp) + łańcuchy materiału (24 spódnicy,
+  28 płaszcza) + `shield.L`; 55 grup wag. Akcje: 35, razem 210 klatek UO na kierunek.
 - Kamera `UO_Camera`: ortograficzna, `ortho_scale` = 3,7778 m (= 136 px ÷ 36 px/m), `shift_x/y` = 0, pozycja
   (−0,0139; −8,4477; 5,4698), obrót X 61,544°. Scena: 136×120, `uo_anchor_height` = 0,07 m, `uo_theta_deg` = 28,4557.
   Zaczep (68,86) wynika z położenia kamery, nie z przesunięcia obrazu.
@@ -137,9 +144,19 @@ kolejne kroki miały liczby „przed/po”.
   - [x] 1d. Narzędzie wgrywające `pipeline/*.py` do tekstów `.blend` i sprawdzające zgodność.
   - Odbiór: przy `CANVAS = (136,120)` wynik identyczny co do piksela z dzisiejszym; przy 256×256 po przycięciu do starego
     obszaru też identyczny; `EXACT_BODY` nadal daje klatki identyczne z oryginałem; zero przyciętych klatek dla klas z raportu 3.1.
-- [ ] **2. Testy regresyjne i raport QA (4.6).** Zrobione: testy płótna (`test_canvas.py`, `test_tall_item.py`). Do zrobienia: zestaw replik
-      3D oryginalnych przedmiotów (koszula, spodnie, płytówka, szata, płaszcz, buty, hełm, katana, tarcza) renderowanych pełnym pipeline'em
-      i porównywanych z oryginałami z klienta: IoU przedmiotu, paski skóry, dziury, odpryski, przycięcia, liczba kolorów w bloku; raport HTML.
+- [ ] **2. Testy regresyjne i raport QA (4.6). W TOKU.** Zrobione: testy płótna (`test_canvas.py`, `test_tall_item.py`) oraz szkielet testu
+      przedmiotów: `pipeline/test_items.py` + `test_items_pre.py` (replika = powłoka skóry przesunięta o grubość, jak w `body13/itemval.py`;
+      potem prawdziwe `uo_bind_item.py` i `render_uo_layer.py`; porównanie ze sprite'ami z klienta: IoU, nadmiar, braki, paski 1 px, odpryski,
+      przycięcia, liczba kolorów w bloku, nakładka PNG). Działa od końca do końca (`python test_items.py --items shirt --actions 04_stand`).
+      **Brak ustalonego baseline'u**: repliki mają za duży zasięg, więc IoU jest niski i zdominowany przez kształt repliki, nie przez potok.
+      Pierwszy pomiar (koszula, 04_stand, 5 klatek): IoU 0,52, nadmiar 123 px, braki 57 px, paski 38 px, 16 kolorów. Wyłączenie po kolei
+      EXACT_BODY, BODY_GAP, HOLDOUT_MARGIN i obróbki (DESPECKLE, FILL_HOLES, MIN_PIECE) nie zmienia kształtu, więc przyczyną jest replika:
+      grupa `pelvis` obejmuje biodra i górę ud, a sprite 434 kończy się w talii (w profilu sprite ma kształt „n”, replika pierścień).
+      Do zrobienia: (a) zasięg replik dopasować do sprite'ów, np. obciąć wysokością w pozie spoczynkowej wyznaczoną z dolnej krawędzi
+      sprite'a w `04_stand` dir 0 (wiersz → z = (ay − wiersz)/(36·cos 28,4557°) + 0,07), dla płytówki, spodni, butów, rękawic, hełmu osobno;
+      (b) porównać z `body13/itemval.py` (wymaga `numba`; nie uruchomiono, bo użytkownik odrzucił instalację, zapytaj najpierw);
+      (c) ustalić baseline (`--out docs/qa/items_baseline.json`) na 6 akcjach, potem na `--all`; (d) repliki szaty, płaszcza, spódnicy
+      (po `uo_cloth_bake.py`), katany i tarczy; (e) raport HTML. Dopiero z baseline'em robić krok 4 (`EDGE_COVER`).
 - [ ] **3. Broń w lewej dłoni (4.2).** Presety `crossbow → hand.L`, `weapon2h`, `staff`, `polearm`; kalibracja lewej dłoni
       albo osobnej kości `weapon2h` (jak `shield.L`); plik chwytów na klasę broni. Odbiór: błąd ≤ 1,5–2 px (dziś 5–6 px).
 - [ ] **4. `EDGE_COVER` (4.3).** Domknięcie 1-pikselowych pasków skóry. Odbiór: 0 pikseli skóry przy krawędzi obcisłych przedmiotów.
@@ -163,21 +180,27 @@ kolejne kroki miały liczby „przed/po”.
   `UOC_x`/`UOC_y`, rasteryzer na W×H, `dither_intensity = 0`. 16 przypadków testu płótna i test kija przechodzą (stare płótno: identycznie
   co do piksela; inne: ta sama sylwetka i kolory ±1, poza starym obszarem pusto).
 - `model/UO_Body_0x190.blend`: zmieniony tylko osadzony tekst `render_uo_layer.py` (plik +2 KB); pozostałe dane bez zmian.
-  Kopia przed zmianą: commit `ea55c0b` (i `/home/user/UO_Model3D_backup` w sesji 1). Dodano tylko: `SESSION_HANDOFF.md`, `CLAUDE.md`, `docs/RAPORT_model3D_UO.txt`,
-  wpis `uo_client/` w `.gitignore`.
+  Kopia przed zmianą: commit `ea55c0b` (i `/home/user/UO_Model3D_backup` w sesji 1).
+- Dodane pliki sesji 1: `SESSION_HANDOFF.md`, `CLAUDE.md`, `docs/RAPORT_model3D_UO.txt`, `client/extract/`, wpis `uo_client/` w `.gitignore`.
+- Krok 2 rozpoczęty (patrz sekcja 6): `test_items.py` i `test_items_pre.py` działają, ale baseline nie jest ustalony. Sprite'y w
+  `pipeline/body13/mul/` (12 plików) są bajt w bajt takie same jak z klienta, więc nadają się jako wzorzec.
+- Odpowiedź na pytanie użytkownika o ciało: sekcja 5 (MakeHuman, 13 380 wierzchołków, 108 kości, A-pose).
 
 ## 8. Następne kroki (sesja 2)
 
-1. Zrób kopię zapasową `model/` poza repo (sekcja 0), zainstaluj środowisko (sekcja 4). Klient jest potrzebny dopiero od kroku
-   3 (broń); wyciąg do kroków 1–2 jest już w `client/extract/`.
-2. Krok 3 z sekcji 6 (broń w lewej dłoni, 4.2) albo najpierw krok 2 (repliki przedmiotów, 4.6), bo daje liczby „przed/po”. Potrzebny
-   klient: wyciągaj `.vd` kijów 648, berdysza 614, włóczni 641, kuszy, łuku i innych broni 2H (`vdtool/mul2vd.py`, ID lokalne w pliku,
-   mapowanie w `client/extract/item_animations.json`).
-3. Na koniec zaktualizuj ten plik, commit i push na `main`.
+1. Zrób kopię zapasową `model/` poza repo (sekcja 0), zainstaluj środowisko (sekcja 4): `pip install numpy pillow scipy "bpy==4.2.*"`.
+2. Dokończ krok 2 (sekcja 6): dopasuj zasięg replik do sprite'ów, ustal baseline na 6 akcjach i zapisz go w `docs/qa/items_baseline.json`.
+   Uruchamianie: `cd pipeline && python test_items.py --items shirt,plate,pants,boots,gloves,helm --out ../docs/qa/items_baseline.json --img /tmp/ov.png`.
+   Sprite'y: `pipeline/body13/mul/anim_NNNN.vd` (434, 527, 431, 477, 530, 563 i inne); kolejne wyciągaj `vdtool/mul2vd.py` z klienta
+   (sekcja 2) i dodawaj do `client/extract/vd/`.
+3. Potem krok 4 (`EDGE_COVER`) z liczbami „przed/po” z kroku 2, albo krok 3 (broń w lewej dłoni): klient potrzebny do `.vd` kijów 648,
+   berdysza 614, włóczni 641, kuszy, łuku (mapowanie w `client/extract/item_animations.json`, ID lokalne w pliku).
+4. Na koniec zaktualizuj ten plik, commit i `git push origin main`, i powiedz użytkownikowi, że temat jest zamknięty.
 
 ## 9. Pytania otwarte do użytkownika
 
-- Udostępnienie klienta: link z sekcji 2 jest prywatny (wymaga logowania), trzeba ustawić „Każdy mający link”.
+- Czy wolno zainstalować `numba` i uruchomić stary `body13/itemval.py`, żeby porównać go z `test_items.py`? (Użytkownik odrzucił to w sesji 1
+  bez podania powodu, więc zapytaj, zanim to zrobisz.)
 - Czy `Nelderim_dane_klienta_SpriteMotion.zip` z raportu to ten sam zestaw co klient, który użytkownik udostępnia?
 - Body 401 w dostarczonym `anim.mul` jest prawie kopią męskiego (raport 3.5). Sprawdzić w grze lub UOFiddlerze, jak wygląda naga
   postać kobieca na Nelderim. Ważne przed krokiem 6 (ciało kobiece).
