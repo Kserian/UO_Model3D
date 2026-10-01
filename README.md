@@ -91,7 +91,9 @@ Lewa i prawa strona zgadza się z oryginałem (kończyn nigdy nie zamieniano). W
 bo koń jest w UO osobną animacją.
 
 **Kamera `UO_Camera`** patrzy dokładnie jak kamera gry.
-- Rzut ortograficzny, elewacja 28,45°, 36 px/m, obraz 136×120, punkt zaczepienia w środku piksela (68, 86).
+- Rzut ortograficzny, elewacja 28,45°, 36 px/m, obraz 136×120, punkt zaczepienia w środku piksela (68, 86). Tak są zapisane oryginalne
+  klatki ciała. `render_uo_layer.py` renderuje na większym płótnie (`CANVAS`, domyślnie 256×256 z zaczepem (128, 192), 36 px/m bez zmian),
+  bo 136×120 ucina broń dwuręczną, włócznie i wysokie nakrycia głowy (rozdział 4).
 - Punkt zaczepienia jest 7 cm nad podłogą (`uo_anchor_height`), bo tak wynika ze wszystkich klatek.
 - Kierunek UO ustawia właściwość `uo_direction` (0–4) na `UO_Rig`: 0 przodem, 2 profilem w lewo, 4 tyłem.
   Kierunki 5–7 to lustra 3–1, które robi klient.
@@ -227,6 +229,9 @@ do niego swoje przedmioty, a nie odwrotnie.
 2. Otwórz tekst **`render_uo_layer.py`** i ustaw opcje na początku:
    ```python
    LAYER = "clothing"          # "clothing" = warstwa przedmiotu, "body" = ciało, "all" = podgląd razem
+   CANVAS = (256, 256)         # rozmiar renderu w px (szer., wys.); .vd i tak przycina każdą klatkę do zawartości
+   ANCHOR = (128, 192)         # punkt zaczepienia w płótnie. 256×256 / (128, 192) mieści 444 z 449 animacji ludzi i ekwipunku
+                               # klienta Nelderim (poza nim: latarnia, epolety z papugą). Stary rozmiar: (136, 120) i (68, 86)
    ONLY = ["04_stand"]         # test jednej akcji; [] = wszystkie 35 akcji
    OUTLINE = 0.38              # ciemny kontur 1 px jak w UO (1.0 = bez konturu)
    OUT_DIR = "//uo_render/"    # folder obok pliku .blend
@@ -251,7 +256,7 @@ do niego swoje przedmioty, a nie odwrotnie.
    bez ciała, a to, co ciało zasłania, skrypt liczy z głębokości (z `HOLDOUT_MARGIN = 0` każda klatka renderuje się
    dwa razy: z ciałem i bez).
 4. Wynik w `uo_render/`:
-   - `clothing/frames/NN_akcja/dirK/NN.png`: klatki na płótnie 136×120,
+   - `clothing/frames/NN_akcja/dirK/NN.png`: klatki na płótnie `CANVAS` (domyślnie 256×256),
    - `clothing/meta.json`: kolejność i punkt zaczepienia,
    - **`clothing.vd`**: gotowy plik.
 

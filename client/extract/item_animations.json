@@ -27,129 +27,129 @@
  "stats_by_layer": {
   "OneHanded": {
    "animations": 52,
-   "over_136x120": 50,
-   "max_over_136x120": 41,
+   "over_136x120": 47,
+   "max_over_136x120": 40,
    "over_256x256": 0,
-   "max_over_256x256": -9
+   "max_over_256x256": -10
   },
   "TwoHanded": {
    "animations": 66,
    "over_136x120": 57,
-   "max_over_136x120": 239,
+   "max_over_136x120": 238,
    "over_256x256": 1,
-   "max_over_256x256": 179
+   "max_over_256x256": 178
   },
   "Shoes": {
    "animations": 10,
    "over_136x120": 0,
-   "max_over_136x120": -15,
+   "max_over_136x120": -16,
    "over_256x256": 0,
-   "max_over_256x256": -45
+   "max_over_256x256": -46
   },
   "Pants": {
    "animations": 30,
    "over_136x120": 1,
-   "max_over_136x120": 2,
-   "over_256x256": 0,
-   "max_over_256x256": -29
-  },
-  "Shirt": {
-   "animations": 13,
-   "over_136x120": 1,
-   "max_over_136x120": 2,
-   "over_256x256": 0,
-   "max_over_256x256": -28
-  },
-  "Helm": {
-   "animations": 60,
-   "over_136x120": 26,
-   "max_over_136x120": 20,
-   "over_256x256": 0,
-   "max_over_256x256": -10
-  },
-  "Gloves": {
-   "animations": 10,
-   "over_136x120": 4,
-   "max_over_136x120": 2,
-   "over_256x256": 0,
-   "max_over_256x256": -29
-  },
-  "Neck": {
-   "animations": 11,
-   "over_136x120": 0,
-   "max_over_136x120": -6,
-   "over_256x256": 0,
-   "max_over_256x256": -36
-  },
-  "Hair": {
-   "animations": 37,
-   "over_136x120": 3,
    "max_over_136x120": 1,
    "over_256x256": 0,
    "max_over_256x256": -30
   },
+  "Shirt": {
+   "animations": 13,
+   "over_136x120": 1,
+   "max_over_136x120": 1,
+   "over_256x256": 0,
+   "max_over_256x256": -29
+  },
+  "Helm": {
+   "animations": 60,
+   "over_136x120": 15,
+   "max_over_136x120": 19,
+   "over_256x256": 0,
+   "max_over_256x256": -11
+  },
+  "Gloves": {
+   "animations": 10,
+   "over_136x120": 1,
+   "max_over_136x120": 1,
+   "over_256x256": 0,
+   "max_over_256x256": -30
+  },
+  "Neck": {
+   "animations": 11,
+   "over_136x120": 0,
+   "max_over_136x120": -7,
+   "over_256x256": 0,
+   "max_over_256x256": -37
+  },
+  "Hair": {
+   "animations": 37,
+   "over_136x120": 0,
+   "max_over_136x120": 0,
+   "over_256x256": 0,
+   "max_over_256x256": -31
+  },
   "Waist": {
    "animations": 8,
    "over_136x120": 0,
-   "max_over_136x120": -10,
+   "max_over_136x120": -11,
    "over_256x256": 0,
-   "max_over_256x256": -40
+   "max_over_256x256": -41
   },
   "InnerTorso": {
    "animations": 28,
    "over_136x120": 2,
    "max_over_136x120": 108,
    "over_256x256": 2,
-   "max_over_256x256": 17
+   "max_over_256x256": 16
   },
   "FacialHair": {
    "animations": 11,
    "over_136x120": 0,
-   "max_over_136x120": -6,
+   "max_over_136x120": -7,
    "over_256x256": 0,
-   "max_over_256x256": -36
+   "max_over_256x256": -37
   },
   "MiddleTorso": {
    "animations": 7,
+   "over_136x120": 0,
+   "max_over_136x120": -4,
+   "over_256x256": 0,
+   "max_over_256x256": -34
+  },
+  "Earrings": {
+   "animations": 1,
+   "over_136x120": 0,
+   "max_over_136x120": 0,
+   "over_256x256": 0,
+   "max_over_256x256": -31
+  },
+  "Arms": {
+   "animations": 14,
    "over_136x120": 0,
    "max_over_136x120": -3,
    "over_256x256": 0,
    "max_over_256x256": -33
   },
-  "Earrings": {
-   "animations": 1,
-   "over_136x120": 1,
-   "max_over_136x120": 1,
-   "over_256x256": 0,
-   "max_over_256x256": -30
-  },
-  "Arms": {
-   "animations": 14,
-   "over_136x120": 0,
-   "max_over_136x120": -2,
-   "over_256x256": 0,
-   "max_over_256x256": -32
-  },
   "Cloak": {
    "animations": 5,
    "over_136x120": 1,
-   "max_over_136x120": 5,
+   "max_over_136x120": 4,
    "over_256x256": 0,
-   "max_over_256x256": -25
+   "max_over_256x256": -26
   },
   "OuterTorso": {
    "animations": 26,
-   "over_136x120": 3,
+   "over_136x120": 2,
    "max_over_136x120": 137,
    "over_256x256": 1,
-   "max_over_256x256": 87
+   "max_over_256x256": 86
   },
   "OuterLegs": {
    "animations": 7,
    "over_136x120": 0,
-   "max_over_136x120": -12,
+   "max_over_136x120": -13,
    "over_256x256": 0,
-   "max_over_256x256": -42
+   "max_over_256x256": -43
   }
  },
  "animations": {

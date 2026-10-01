@@ -15,7 +15,7 @@ LAYERS = {1: "OneHanded", 2: "TwoHanded", 3: "Shoes", 4: "Pants", 5: "Shirt", 6:
           18: "Earrings", 19: "Arms", 20: "Cloak", 21: "Backpack", 22: "OuterTorso", 23: "OuterLegs", 24: "InnerLegs"}
 WEARABLE = 0x00400000
 FILES = ("anim2", "anim3", "anim4", "anim5")
-CANVASES = {"136x120": dict(left=68, right=67, up=86, down=33), "256x256": dict(left=128, right=127, up=192, down=63)}
+CANVASES = {"136x120": dict(left=68, right=68, up=86, down=34), "256x256": dict(left=128, right=128, up=192, down=64)}
 
 
 def read_items(path):

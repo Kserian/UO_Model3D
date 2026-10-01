@@ -2,16 +2,17 @@
 
 Only the frame headers are read (centerX, centerY, width, height), so it takes seconds. Per frame, in pixels from the anchor:
     left = centerX, right = width - centerX, up = centerY + height, down = -centerY
-(the anchor is the pixel (centerX, centerY + height) of the stored frame, see README "Format .vd").
+(the anchor is the pixel (centerX, centerY + height) of the stored frame, see README "Format .vd"; right and down count the anchor
+column / row itself, so a canvas W x H with anchor (ax, ay) holds left=ax, right=W-ax, up=ay, down=H-ay).
 The client mirrors directions 1..3 into 5..7, so for those left and right are swapped as well.
 
-    python measure_equipment_extent.py <client dir with anim*.idx + anim*.mul> <out.json> [canvas as L,R,U,D]
+    python measure_equipment_extent.py <client dir with anim*.idx + anim*.mul> <out.json> [canvas as L,R,U,D, e.g. 128,128,192,64]
 Keys of the result are "<file>:<body id>", e.g. "anim:527" or "anim4:521" (anim, anim2 .. anim5 are all measured).
 """
 import json, mmap, os, struct, sys
 
 N_ACT, N_DIR = 35, 5
-CUR = dict(left=68, right=67, up=86, down=33)         # the 136x120 canvas of render_uo_layer.py, anchor (68,86)
+CUR = dict(left=68, right=68, up=86, down=34)         # the 136x120 canvas, anchor (68,86); right / down include the anchor column / row
 
 
 def measure(idx_path, mul_path, tag):

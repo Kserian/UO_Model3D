@@ -76,7 +76,7 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
 | Decyzja | Wartość |
 |---|---|
 | Rozwijać czy budować od nowa | Rozwijać UO_Model3D |
-| Płótno renderu | Parametr `CANVAS`; **256×256 z zaczepieniem (128,192)** = 192 px w górę, 128 na boki, 64 w dół (dziś 136×120 / (68,86)). **Potwierdzone pomiarem** (sesja 1): mieszczą się 444 z 449 animacji ludzi/ekwipunku; z 392 animacji ubieralnych poza płótnem są 4, żadna to zwykła broń czy ubranie: `Lantern_off` (aura do 306 px), epolety z papugą (187 px), `Cloth Ninja Jacket` (+2 px w górę), jedna bez nazwy (anim id 871). Dla tych rób większe `CANVAS` ręcznie. Dziś 136×120: poza płótnem 50/52 broni 1H, 57/66 TwoHanded, 26/60 hełmów (maks. +239 px). Wybór rozmiaru zostawił użytkownik. |
+| Płótno renderu | Parametr `CANVAS`; **256×256 z zaczepieniem (128,192)** = 192 px w górę, 128 na boki, 64 w dół (dziś 136×120 / (68,86)). **Potwierdzone pomiarem** (sesja 1): mieszczą się 444 z 449 animacji ludzi/ekwipunku; z 392 animacji ubieralnych poza płótnem są 4, żadna to zwykła broń czy ubranie: `Lantern_off` (aura do 306 px), epolety z papugą (187 px), `Cloth Ninja Jacket` (+2 px w górę), jedna bez nazwy (anim id 871). Dla tych rób większe `CANVAS` ręcznie. Stare 136×120: poza płótnem 47/52 broni 1H (maks. +40 px), 57/66 TwoHanded (+238), 15/60 hełmów (+19); liczby zgadzają się z raportem. Konwencja: `right` i `down` liczone razem z kolumną/wierszem zaczepu. Wybór rozmiaru zostawił użytkownik. |
 | Praca | Na `main`; backup w `/home/user/UO_Model3D_backup/` (tylko w sesji 1) i w gałęzi `claude/friendly-knuth-44xtfw` |
 | Klatki ciała | Zostają |
 | Anim3/anim4 z klienta | Niepotrzebne |
@@ -96,7 +96,12 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
   `uo_horse_masks.json`, `uo_original_frames.json`.
   Uwaga: README wymienia też `uo_shield_keys.py` jako skrypt w `.blend`, ale takiego tekstu w pliku nie ma
   (jest za to `uo_transfer_corrections.py`, którego README nie wymienia). Do wyjaśnienia.
-- Skrypty z `pipeline/` są źródłem; zmiany trzeba wgrać do tekstów `.blend` (do zrobienia narzędzie, krok 1d).
+- Skrypty z `pipeline/` są źródłem; zmiany wgrywa do `.blend` `pipeline/sync_blend_scripts.py` (`--check` pokazuje różnice, nazwy skryptów
+  w argumentach kopiują je i zapisują plik). Stan po sesji 1: osadzony `render_uo_layer.py` = wersja z repo; `uo_vd_writer.py` różni się
+  tylko komentarzem.
+- **Narzędzia testowe** (bez GUI, `bpy` jako moduł): `pipeline/run_render_headless.py` (render ze zmienionymi ustawieniami, skrypt z pliku,
+  `--pre` dla obiektów testowych), `pipeline/test_canvas.py` (16 przypadków, ok. 2 min), `pipeline/test_tall_item.py` (kij 3,5 m).
+  Wzorzec testów: stara wersja `render_uo_layer.py` z commitu `ea55c0b` plus wyłączony dithering.
 
 ## 5. Ustalenia z kodu i `.blend` (zmierzone w sesji 1)
 
@@ -113,6 +118,9 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
 - `uo_vd_writer.py` przycina klatki do zawartości i bierze zaczep jako parametr: nie wymaga zmian przy zmianie płótna.
 - `pipeline/uo_bind_item.py:48–49`: `RIGID` ma `"crossbow": "hand.R"`, a `"bow": "hand.L"`. Raport mierzy, że kusza i cała
   broń 2H w UO idą za **lewą** dłonią.
+- **Dithering:** Blender domyślnie dodaje do wyjścia 8-bit szum ±1 zależny od pozycji piksela. Przy zmianie płótna zmieniał kolory o 1–2
+  poziomy (i psuł „dokładne” kolory z atlasu). Skrypt ustawia teraz `dither_intensity = 0`. Pozostały szum to zaokrąglenia: na dużych
+  płótnach ok. 3 piksele na 45 klatek różnią się o 1 stopień RGB555 w `.vd`; sylwetki i punkty zaczepienia są identyczne.
 - Światło UO w materiale `UO_Look` to czysty Lambert: `albedo × (0,0798 + 0,9202 · max(N·L, 0))`, L = (0,0012; −0,7572; 0,6532).
 
 ## 6. Plan i status
@@ -120,16 +128,18 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
 Numeracja jak w raporcie (rozdz. 4). Kolejność zmieniona względem raportu: testy regresyjne (4.6) zaraz po `CANVAS`, żeby
 kolejne kroki miały liczby „przed/po”.
 
-- [ ] **1. Parametr `CANVAS` / `ANCHOR` (raport 4.1).** Analiza zrobiona (sekcja 5), kodu jeszcze nie ruszono.
+- [x] **1. Parametr `CANVAS` / `ANCHOR` (raport 4.1). ZROBIONE w sesji 1.** Domyślnie 256×256 / (128, 192).
   - [x] 1a. Pomiar zasięgu wszystkich klatek ekwipunku względem zaczepu → rozmiar płótna potwierdzony (sekcja 3).
-  - [ ] 1b. Parametr w `render_uo_layer.py`: `ortho_scale = W/36`, przesunięcie kamery policzone tak, żeby punkt
+  - [x] 1b. Parametr w `render_uo_layer.py`: `ortho_scale = W/36`, przesunięcie kamery policzone tak, żeby punkt
         (0, 0, 0,07 m) wylądował na `ANCHOR` (sprawdzić rzutowaniem), atlas i maski konia wklejone ze przesunięciem
         `ANCHOR − (68,86)`, rasteryzer na `W`×`H`, `meta.json`.
-  - [ ] 1c. Mapowanie `UOX_u`/`UOX_v` przeliczone dla nowego płótna.
-  - [ ] 1d. Narzędzie wgrywające `pipeline/*.py` do tekstów `.blend` i sprawdzające zgodność.
+  - [x] 1c. Mapowanie `UOX_u`/`UOX_v` przeliczone dla nowego płótna.
+  - [x] 1d. Narzędzie wgrywające `pipeline/*.py` do tekstów `.blend` i sprawdzające zgodność.
   - Odbiór: przy `CANVAS = (136,120)` wynik identyczny co do piksela z dzisiejszym; przy 256×256 po przycięciu do starego
     obszaru też identyczny; `EXACT_BODY` nadal daje klatki identyczne z oryginałem; zero przyciętych klatek dla klas z raportu 3.1.
-- [ ] **2. Testy regresyjne i raport QA (4.6).** Zestaw replik 3D oryginalnych przedmiotów, liczby przed/po.
+- [ ] **2. Testy regresyjne i raport QA (4.6).** Zrobione: testy płótna (`test_canvas.py`, `test_tall_item.py`). Do zrobienia: zestaw replik
+      3D oryginalnych przedmiotów (koszula, spodnie, płytówka, szata, płaszcz, buty, hełm, katana, tarcza) renderowanych pełnym pipeline'em
+      i porównywanych z oryginałami z klienta: IoU przedmiotu, paski skóry, dziury, odpryski, przycięcia, liczba kolorów w bloku; raport HTML.
 - [ ] **3. Broń w lewej dłoni (4.2).** Presety `crossbow → hand.L`, `weapon2h`, `staff`, `polearm`; kalibracja lewej dłoni
       albo osobnej kości `weapon2h` (jak `shield.L`); plik chwytów na klasę broni. Odbiór: błąd ≤ 1,5–2 px (dziś 5–6 px).
 - [ ] **4. `EDGE_COVER` (4.3).** Domknięcie 1-pikselowych pasków skóry. Odbiór: 0 pikseli skóry przy krawędzi obcisłych przedmiotów.
@@ -148,14 +158,21 @@ kolejne kroki miały liczby „przed/po”.
 - Klient (Google Drive, link publiczny) pobrany i wypakowany częściowo; wyciąg w `client/extract/` (sekcja 2a).
 - Krok 1a zrobiony: `pipeline/measure_equipment_extent.py` i `pipeline/extract_tiledata.py`. Wyniki zgadzają się z tabelą
   z raportu (maks. nadmiar 239 px vs 238, hełmy +20 vs +19), więc pomiar i raport się wzajemnie potwierdzają.
-- **Żaden plik modelu (`model/`) ani render nie został zmieniony.** Dodano tylko: `SESSION_HANDOFF.md`, `CLAUDE.md`, `docs/RAPORT_model3D_UO.txt`,
+- Krok 1 (`CANVAS`/`ANCHOR`) zrobiony w `pipeline/render_uo_layer.py`: kamera (ortho_scale = W/36, przesunięcie liczone tak, by punkt
+  (0, 0, 0,07 m) trafił na `ANCHOR`), atlas oryginałów i maski konia wklejane z przesunięciem, mapowanie `UOX_*` przeliczane węzłami
+  `UOC_x`/`UOC_y`, rasteryzer na W×H, `dither_intensity = 0`. 16 przypadków testu płótna i test kija przechodzą (stare płótno: identycznie
+  co do piksela; inne: ta sama sylwetka i kolory ±1, poza starym obszarem pusto).
+- `model/UO_Body_0x190.blend`: zmieniony tylko osadzony tekst `render_uo_layer.py` (plik +2 KB); pozostałe dane bez zmian.
+  Kopia przed zmianą: commit `ea55c0b` (i `/home/user/UO_Model3D_backup` w sesji 1). Dodano tylko: `SESSION_HANDOFF.md`, `CLAUDE.md`, `docs/RAPORT_model3D_UO.txt`,
   wpis `uo_client/` w `.gitignore`.
 
 ## 8. Następne kroki (sesja 2)
 
 1. Zrób kopię zapasową `model/` poza repo (sekcja 0), zainstaluj środowisko (sekcja 4). Klient jest potrzebny dopiero od kroku
    3 (broń); wyciąg do kroków 1–2 jest już w `client/extract/`.
-2. Kroki 1b–1d (patrz sekcja 6), odbiór jak tam opisano. Płótno: 256×256, zaczep (128,192).
+2. Krok 3 z sekcji 6 (broń w lewej dłoni, 4.2) albo najpierw krok 2 (repliki przedmiotów, 4.6), bo daje liczby „przed/po”. Potrzebny
+   klient: wyciągaj `.vd` kijów 648, berdysza 614, włóczni 641, kuszy, łuku i innych broni 2H (`vdtool/mul2vd.py`, ID lokalne w pliku,
+   mapowanie w `client/extract/item_animations.json`).
 3. Na koniec zaktualizuj ten plik, commit i push na `main`.
 
 ## 9. Pytania otwarte do użytkownika

@@ -12,7 +12,7 @@
 
 Odtworzenie (z katalogu repo, klient w `uo_client/NelderimServUO/`):
 ```
-python pipeline/measure_equipment_extent.py uo_client/NelderimServUO client/extract/equipment_extent.json 128,127,192,63
+python pipeline/measure_equipment_extent.py uo_client/NelderimServUO client/extract/equipment_extent.json 128,128,192,64
 python pipeline/extract_tiledata.py uo_client/NelderimServUO/tiledata.mul uo_client/NelderimServUO/Bodyconv.def \
        client/extract/equipment_extent.json client/extract/item_animations.json
 ```

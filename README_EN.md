@@ -93,7 +93,9 @@ Left and right match the original (limbs were never swapped). In the mounted act
 because in UO the horse is a separate animation.
 
 **The `UO_Camera`** sees exactly like the game camera.
-- Orthographic, elevation 28.45°, 36 px/m, 136×120 image, anchor on the centre of pixel (68, 86).
+- Orthographic, elevation 28.45°, 36 px/m, 136×120 image, anchor on the centre of pixel (68, 86). This is how the original body frames
+  are stored. `render_uo_layer.py` renders on a bigger canvas (`CANVAS`, default 256×256 with anchor (128, 192), still 36 px/m),
+  because 136×120 cuts off two-handed weapons, spears and tall headgear (chapter 4).
 - The anchor is 7 cm above the floor (`uo_anchor_height`); all frames agree on this.
 - The UO direction is the property `uo_direction` (0–4) on `UO_Rig`: 0 faces the camera, 2 is a profile facing left,
   4 faces away. Directions 5–7 are mirrors of 3–1, made by the client.
@@ -232,6 +234,9 @@ items into it, not the other way round.
 2. Open the text **`render_uo_layer.py`** and set the options at the top:
    ```python
    LAYER = "clothing"          # "clothing" = item layer, "body" = body, "all" = preview of both
+   CANVAS = (256, 256)         # render size in px (width, height); the .vd crops every frame to its content anyway
+   ANCHOR = (128, 192)         # anchor pixel inside the canvas. 256x256 / (128, 192) holds 444 of the 449 people and equipment
+                               # animations of the Nelderim client (outside: a lantern, a parrot epaulet). Old size: (136, 120), (68, 86)
    ONLY = ["04_stand"]         # test one action; [] = all 35 actions
    OUTLINE = 0.38              # dark 1-px outline like UO art (1.0 = none)
    OUT_DIR = "//uo_render/"    # folder next to the .blend
@@ -256,7 +261,7 @@ items into it, not the other way round.
    without the body, and the script works out from depth what the body hides (with `HOLDOUT_MARGIN = 0` every frame
    is rendered twice: with and without the body).
 4. Output in `uo_render/`:
-   - `clothing/frames/NN_action/dirK/NN.png`: frames on a 136×120 canvas,
+   - `clothing/frames/NN_action/dirK/NN.png`: frames on a `CANVAS` canvas (256×256 by default),
    - `clothing/meta.json`: frame order and anchor,
    - **`clothing.vd`**: the finished file.
 

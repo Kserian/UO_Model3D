@@ -23,7 +23,10 @@ OUT_DIR = "//uo_render/"           # PNG output root (vdtool 'canvas' layout + m
 WRITE_VD = True
 VD_FILE = "//uo_render/%s.vd"      # %s -> LAYER
 STEP = 3                           # scene frames between two UO frames
-ANCHOR = (68, 86)                  # UO anchor pixel of the 136x120 render (world point 0, 0, scene["uo_anchor_height"])
+CANVAS = (256, 256)                # render size in px (width, height); 36 px/m. The .vd stores every frame cropped to its content
+ANCHOR = (128, 192)                # UO anchor pixel inside the canvas (world point 0, 0, scene["uo_anchor_height"]).
+                                   # 256x256 / (128, 192) holds 444 of the 449 people / equipment animations of the Nelderim client
+                                   # (the original body frames are 136x120 with anchor (68, 86); use that pair for the old size)
 CLOTHING = "Clothing"              # collection with the clothing / equipment meshes
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
@@ -48,6 +51,10 @@ BODY_GAP = 0.006                   # m: every frame, parts of the bound items cl
 MIN_PIECE = 8                      # px: detached bits of the item smaller than this are removed (collar or cuff rims cut
                                    # off by the head or a hand read as dirt at UO size); the biggest piece always stays. 0 = off
 
+
+OW, OH, OANCHOR = 136, 120, (68, 86)       # size and anchor of the ORIGINAL UO body frames (atlas, horse masks)
+W, H = CANVAS
+DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original frames sit inside the canvas
 
 sc = bpy.context.scene
 rig = bpy.data.objects["UO_Rig"]
@@ -238,8 +245,71 @@ if not bpy.context.preferences.filepaths.use_scripts_auto_execute:
     print("render_uo_layer: NOTE - 'Auto Run Python Scripts' is off; if the body looks wrong, enable it "
           "(Preferences > Save & Load) and reopen the file")
 sc.camera = bpy.data.objects["UO_Camera"]
-sc.render.resolution_x, sc.render.resolution_y = 136, 120
+sc.render.resolution_x, sc.render.resolution_y = W, H
 sc.render.resolution_percentage = 100
+sc.render.dither_intensity = 0.0    # Blender's 8-bit dither is +-1 noise that depends on the pixel position: it would change
+                                    # with the canvas / anchor and spoil the "exact" colours of EXACT_COLORS
+
+
+def to_canvas(a, fill=0):
+    """array of an original 120x136 frame -> CANVAS size, the anchors aligned (identity for 136x120 / (68, 86))"""
+    out = np.full((H, W) + a.shape[2:], fill, a.dtype)
+    y0, y1, x0, x1 = max(DY, 0), min(DY + OH, H), max(DX, 0), min(DX + OW, W)
+    if y1 > y0 and x1 > x0:
+        out[y0:y1, x0:x1] = a[y0 - DY:y1 - DY, x0 - DX:x1 - DX]
+    return out
+
+
+def anchor_px():
+    """continuous pixel position of the world anchor point in the CANVAS render (pixel i covers [i, i+1))"""
+    bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
+    P = np.array(cam.calc_matrix_camera(dg, x=W, y=H)) @ np.array(cam.matrix_world.inverted()) @ \
+        np.array([0.0, 0.0, sc.get("uo_anchor_height", 0.07), 1.0])
+    return np.array([(P[0] / P[3] + 1) * 0.5 * W, (1 - P[1] / P[3]) * 0.5 * H])
+
+
+def place_camera():
+    """UO_Camera for CANVAS: 36 px/m and the anchor point on ANCHOR (the original frames put it at scene uo_anchor_px =
+    (68.5, 86.0), i.e. in the middle of pixel column 68, on the top edge of row 86). Returns the old settings."""
+    cd = sc.camera.data
+    old = (cd.sensor_fit, cd.ortho_scale, cd.shift_x, cd.shift_y)
+    cd.sensor_fit = "HORIZONTAL"
+    cd.ortho_scale = W / sc.get("uo_px_per_m", 36.0)
+    cd.shift_x = cd.shift_y = 0.0
+    p0 = anchor_px(); cd.shift_x = cd.shift_y = 0.01; p1 = anchor_px()
+    k = (p1 - p0) / 0.01                                           # px per unit of shift (x and y are independent)
+    off = np.array(sc.get("uo_anchor_px", (OANCHOR[0] + 0.5, OANCHOR[1] + 0.0))) - np.array(OANCHOR)
+    want = np.array(ANCHOR, float) + off
+    sh = (want - p0) / k
+    cd.shift_x, cd.shift_y = [0.0 if abs(s * kk) < 1e-3 else float(s) for s, kk in zip(sh, k)]   # the 136x120 frame: exactly the file's camera
+    err = np.abs(anchor_px() - want).max()
+    if err > 1e-3:
+        raise RuntimeError("render_uo_layer: camera does not put the anchor on %s (off by %.4f px)" % (ANCHOR, err))
+    return old
+
+
+def atlas_map(w, h, dx, dy):
+    """The body material (UO_Skin, nodes UOX_*) reads the atlas of original frames with the window coordinates of the 136x120
+    frame. Two Math nodes (UOC_x, UOC_y) turn the window coordinates of a w x h canvas into those of the original frame,
+    which sits at offset (dx, dy) in it. Identity for 136x120 / (68, 86)."""
+    for m in bpy.data.materials:
+        nt = m.node_tree
+        if not nt or "UOX_sep" not in nt.nodes:
+            continue
+        for name, src, dst, dst_in, mul, add in (
+                ("UOC_x", "X", "UOX_u0", 1, w / OW, -dx / OW),
+                ("UOC_y", "Y", "UOX_v0", 0, h / OH, 1 - h / OH + dy / OH)):
+            n = nt.nodes.get(name)
+            if n is None:
+                n = nt.nodes.new("ShaderNodeMath"); n.name = n.label = name; n.operation = "MULTIPLY_ADD"
+                n.location = (nt.nodes[dst].location.x - 200, nt.nodes[dst].location.y + 120)
+                nt.links.new(nt.nodes["UOX_sep"].outputs[src], n.inputs[0])
+                nt.links.new(n.outputs[0], nt.nodes[dst].inputs[dst_in])
+            n.inputs[1].default_value, n.inputs[2].default_value = mul, add
+
+
+cam_state = place_camera()
+atlas_map(W, H, DX, DY)
 sc.render.film_transparent = True
 sc.render.image_settings.file_format = "PNG"
 sc.render.image_settings.color_mode = "RGBA"
@@ -259,11 +329,11 @@ if EXACT_ANY and "uo_original_frames.json" in bpy.data.texts:
 
 
 def original(a, i, d):
-    """original UO body frame (uint8 RGBA 120x136, anchor 68,86) or None"""
+    """original UO body frame (uint8 RGBA, CANVAS size, anchor aligned) or None"""
     v = ORIG.get("frames", {}).get("%d,%d,%d" % (a, i, d)) if ORIG else None
     if v is None:
         return None
-    return np.frombuffer(zlib.decompress(base64.b64decode(v)), np.uint8).reshape(120, 136, 4).copy()
+    return to_canvas(np.frombuffer(zlib.decompress(base64.b64decode(v)), np.uint8).reshape(OH, OW, 4))
 
 
 def set_tile(a, i, d):
@@ -280,8 +350,8 @@ HORSE_MASKS = {}                   # exact horse sprite silhouettes: only there 
 if "uo_horse_masks.json" in bpy.data.texts:
     import base64, zlib
     for k, v in json.loads(bpy.data.texts["uo_horse_masks.json"].as_string())["masks"].items():
-        bits = np.unpackbits(np.frombuffer(zlib.decompress(base64.b64decode(v)), np.uint8))[:120 * 136]
-        HORSE_MASKS[tuple(int(x) for x in k.split(","))] = bits.reshape(120, 136).astype(bool)
+        bits = np.unpackbits(np.frombuffer(zlib.decompress(base64.b64decode(v)), np.uint8))[:OH * OW]
+        HORSE_MASKS[tuple(int(x) for x in k.split(","))] = to_canvas(bits.reshape(OH, OW).astype(bool), False)
 
 
 def set_horse(a, i):
@@ -354,12 +424,12 @@ OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))
 
 def raster(objs, tri_mask=None):
     """pixel coverage and camera depth (m) of the deformed meshes through UO_Camera, pixel-centre rule (like the
-    EXACT render). Returns (bool 120x136, float 120x136 with inf where nothing is). tri_mask: triangles to use."""
+    EXACT render). Returns (bool H x W, float H x W with inf where nothing is). tri_mask: triangles to use."""
     rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get()
     cam = sc.camera.evaluated_get(dg)
-    Pm = np.array(cam.calc_matrix_camera(dg, x=136, y=120)); Vm = np.array(cam.matrix_world.inverted())
-    img = np.zeros((120, 136), bool); depth = np.full((120, 136), np.inf)
+    Pm = np.array(cam.calc_matrix_camera(dg, x=W, y=H)); Vm = np.array(cam.matrix_world.inverted())
+    img = np.zeros((H, W), bool); depth = np.full((H, W), np.inf)
     for ob in objs:
         ev = ob.evaluated_get(dg); me = ev.to_mesh()
         co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
@@ -372,7 +442,7 @@ def raster(objs, tri_mask=None):
         hv = np.c_[co, np.ones(len(co))] @ (Vm @ Mw).T                  # camera space
         h = hv @ Pm.T
         ndc = h[:, :2] / h[:, 3:4]
-        P = np.stack([(ndc[:, 0] + 1) * 0.5 * 136, (1 - ndc[:, 1]) * 0.5 * 120], 1)[tri]
+        P = np.stack([(ndc[:, 0] + 1) * 0.5 * W, (1 - ndc[:, 1]) * 0.5 * H], 1)[tri]
         Z = -hv[:, 2][tri]
         mn = np.floor(P.min(1)).astype(int); mx = np.ceil(P.max(1)).astype(int)
         A, B, C = P[:, 0], P[:, 1], P[:, 2]
@@ -384,7 +454,7 @@ def raster(objs, tri_mask=None):
                 px_ = mn[t, 0] + dx; py_ = mn[t, 1] + dy; cx, cy = px_ + 0.5, py_ + 0.5
                 l0 = ((B[t, 1] - C[t, 1]) * (cx - C[t, 0]) + (C[t, 0] - B[t, 0]) * (cy - C[t, 1])) / den[t]
                 l1 = ((C[t, 1] - A[t, 1]) * (cx - C[t, 0]) + (A[t, 0] - C[t, 0]) * (cy - C[t, 1])) / den[t]
-                k = (l0 >= -1e-4) & (l1 >= -1e-4) & (1 - l0 - l1 >= -1e-4) & (px_ >= 0) & (py_ >= 0) & (px_ < 136) & (py_ < 120)
+                k = (l0 >= -1e-4) & (l1 >= -1e-4) & (1 - l0 - l1 >= -1e-4) & (px_ >= 0) & (py_ >= 0) & (px_ < W) & (py_ < H)
                 img[py_[k], px_[k]] = True
                 z = l0[k] * Z[t[k], 0] + l1[k] * Z[t[k], 1] + (1 - l0[k] - l1[k]) * Z[t[k], 2]
                 np.minimum.at(depth, (py_[k], px_[k]), z)
@@ -408,7 +478,7 @@ def body_occlusion(free, margin):
         if not miss.any():
             break
         pad = np.pad(zi, 1, constant_values=np.inf)
-        nb = np.min([pad[y:y + 120, x:x + 136] for y in range(3) for x in range(3)], axis=0)
+        nb = np.min([pad[y:y + H, x:x + W] for y in range(3) for x in range(3)], axis=0)
         zi = np.where(miss, nb, zi)
     hold = free.copy()
     hold[occ & (zb < zi - margin)] = 0.0
@@ -648,7 +718,7 @@ done_blocks = {(b["action"], b["dir"]): b for b in meta_blocks}
 meta_blocks = [done_blocks.get((a, d), dict(action=a, dir=d, name=names.get(a, "action"), frames=[]))
                for a in range(35) for d in range(5)]
 with open(os.path.join(root, "meta.json"), "w") as fh:
-    json.dump(dict(tool="render_uo_layer", anim_type=2, actions=35, mode="canvas", canvas=[136, 120],
+    json.dump(dict(tool="render_uo_layer", anim_type=2, actions=35, mode="canvas", canvas=[W, H],
                    anchor=list(ANCHOR), blocks=meta_blocks), fh, indent=1)
 if WRITE_VD:
     vd_path = bpy.path.abspath(VD_FILE % LAYER)
@@ -664,4 +734,8 @@ for o in clothes:
     o.hide_render = state["cloth"][o.name]
 rig.animation_data.action, rig["uo_direction"] = state["action"], state["direction"]
 rig.data.pose_position = state["pose"]
+cd = sc.camera.data
+cd.sensor_fit, cd.ortho_scale, cd.shift_x, cd.shift_y = cam_state                   # camera and atlas mapping of the 136x120 file
+atlas_map(OW, OH, 0, 0)
+sc.render.resolution_x, sc.render.resolution_y = OW, OH
 print("done ->", root)
