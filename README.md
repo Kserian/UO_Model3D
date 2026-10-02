@@ -116,6 +116,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | Tekst | Rola |
 |---|---|
 | `render_uo_layer.py` | Render warstwy do klatek i `.vd` (uruchamiasz Alt+P). |
+| `uo_import_item.py` | Wprowadza obcy model (darmowy, `.glb` `.fbx` `.obj` `.dae`…) na ciało: wypieka siatkę bez obcego szkieletu i wag, skaluje i ustawia na wysokości oryginalnego przedmiotu UO danego typu (`KIND`), wrzuca do `Clothing` (przed `uo_fit_item.py`, rozdział 3). |
 | `uo_fit_item.py` | Obraca rękawy zaznaczonego przedmiotu na ręce i wypycha go ze skóry (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
 | `uo_cloth_bake.py` | Symulacja tkaniny dla szat, sukni, spódnic i płaszczy, po `uo_bind_item.py` (rozdział 3). |
@@ -137,6 +138,13 @@ do niego swoje przedmioty, a nie odwrotnie.
 2. **Pozycja spoczynkowa:** zaznacz `UO_Rig` → Object Data Properties (ikona ludzika) → Pose → *Rest Position*.
    Modeluj na ciele w A-pose, a na koniec wróć do *Pose Position*.
 3. **Dodaj przedmiot:** wymodeluj go albo zaimportuj (File → Import / Append) i wrzuć do kolekcji **`Clothing`**.
+   **Model z zewnątrz (np. darmowy):** ustaw w tekście **`uo_import_item.py`** `FILE` (ścieżka do `.glb`, `.fbx`, `.obj`, `.dae`…)
+   i `KIND` (`shirt`, `plate`, `arms`, `pants`, `legs`, `boots`, `gloves`, `helm`, `skirt`, `cloak`) i uruchom (Alt+P). Skrypt
+   wypieka siatkę (bez szkieletu i wag z pliku), wyrzuca z pliku wszystko poza siatką, skaluje i ustawia przedmiot tak, żeby
+   jego wysokość pokryła się z oryginalnym przedmiotem UO tego typu na ciele (zakresy z oryginalnych sprite'ów), i wypisuje
+   `PART` do `uo_bind_item.py`. Siatki w pliku są wylistowane: oczy, ciało modelu i kształty pomocnicze wyłącz przez `SKIP`.
+   Jeśli przedmiot patrzy tyłem, ustaw `TURN = 180`. Potem `uo_fit_item.py` i `uo_bind_item.py` (punkty niżej). Sprawdź licencję
+   modelu. Test na „obcym” pliku: `pipeline/test_import_item.py`.
    Wszystko w tej kolekcji trafia do renderowanej warstwy. `Example_Shirt` usuń albo wyłącz w renderze.
 4. **Ubranie, zbroja, hełm, buty, rękawice** (rzeczy, które się uginają): skrypt **`uo_bind_item.py`**.
    1. Każdy przedmiot, który w grze jest osobny (napierśnik, naramienniki, rękawice, buty, hełm), rób jako osobny
