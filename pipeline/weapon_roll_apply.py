@@ -29,6 +29,8 @@ def main():
     WM = json.load(open(motion))
     for f in sorted(glob.glob(os.path.join(rolldir, "roll_*.json"))):
         R = json.load(open(f)); cls = R["cls"]
+        if len(R["core"]) < 3:                                                    # bows: no weapon with a measurable roll, the class roll fits worse than none
+            print(cls, "skipped: only", len(R["core"]), "weapon(s) with a measurable roll"); continue
         offs = {}
         for a, w in R["weapons"].items():
             if w.get("cls_mismatch") is None:

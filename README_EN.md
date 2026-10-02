@@ -128,7 +128,8 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_cloth_bake.py` | Cloth simulation for robes, dresses, skirts and cloaks, after `uo_bind_item.py` (section 3). |
 | `uo_shield_keys.py` | Replaces the motion of the shield bone `shield.L` in an older file with the latest one (the shield and its binding stay). |
 | `uo_weapon_bones.py` | Adds the weapon bones (left hand: `polearm.L`, `axe2h.L`, `bow.L`; right hand: `weapon1h.R`) and keys their motion from `weapon_motion.json` (already run in the file; to load the motion again). |
-| `uo_place_weapon.py` | Puts the selected weapon (shaft along +Z, tip up) on the grip line of its class, before `uo_bind_item.py`. |
+| `uo_place_weapon.py` | Puts the selected weapon (shaft along +Z, tip up) on the grip line of its class, before `uo_bind_item.py`. Model the head (blade, axe) as a flat plate in the XZ plane, wide side on +X; the script turns the weapon about its shaft like the original weapon `REF_ANIM` (e.g. 624 halberd, 613 executioner's axe, 623 cutlass) and the bone then turns it by the measured roll (`weapon_motion.json`, field `roll`). Bows: roll undetermined. |
+| `weapon_roll_fit.py`, `weapon_roll_lib.py`, `weapon_roll_apply.py`, `weapon_classify.py`, `test_weapon_roll.py` | Measure the roll (turn about the weapon's own axis) of all original weapons of `anim`..`anim5`, classify weapons to bones, write into `weapon_motion.json`, render test of a plate against the sprite. Results: `docs/qa/weapon_roll.md`. |
 | `weapon_motion.json` | Data: grip (point, direction, butt position) and motion of the 4 weapon classes (3 in the left hand, 1H in the right), 210 poses each. |
 | `uo_place_shield.py` | Puts the selected shield on the left forearm as UO holds it and slides it onto the arm (before `uo_bind_item.py`, section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |

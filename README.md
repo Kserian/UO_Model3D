@@ -124,7 +124,8 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_cloth_bake.py` | Symulacja tkaniny dla szat, sukni, spódnic i płaszczy, po `uo_bind_item.py` (rozdział 3). |
 | `uo_shield_keys.py` | Podmienia ruch kości tarczy `shield.L` w starszym pliku na najnowszy (tarcza i jej podpięcie zostają). |
 | `uo_weapon_bones.py` | Dodaje kości broni (lewa dłoń: `polearm.L`, `axe2h.L`, `bow.L`; prawa: `weapon1h.R`) i klucze ich ruchu z `weapon_motion.json` (uruchamiane już w pliku; do ponownego wgrania ruchu). |
-| `uo_place_weapon.py` | Stawia zaznaczoną broń (trzon po osi +Z, czubek w górę) na linii chwytu jej klasy, przed `uo_bind_item.py`. |
+| `uo_place_weapon.py` | Stawia zaznaczoną broń (trzon po osi +Z, czubek w górę) na linii chwytu jej klasy, przed `uo_bind_item.py`. Głowicę (ostrze, topór) modeluj jako płaską płytkę w płaszczyźnie XZ, szeroką stroną na +X; skrypt obraca broń wokół trzonu tak jak w oryginalnej broni `REF_ANIM` (np. 624 halabarda, 613 topór kata, 623 szabla), a kość kręci nią dalej wg zmierzonego rollu (`weapon_motion.json`, pole `roll`). Łuki: roll nieokreślony. |
+| `weapon_roll_fit.py`, `weapon_roll_lib.py`, `weapon_roll_apply.py`, `weapon_classify.py`, `test_weapon_roll.py` | Pomiar rollu (obrotu wokół własnej osi) wszystkich oryginalnych broni z `anim`..`anim5`, klasyfikacja broni do kości, zapis do `weapon_motion.json`, test renderu płytki ze sprite'em. Wyniki: `docs/qa/weapon_roll.md`. |
 | `weapon_motion.json` | Dane: chwyt (punkt, kierunek, położenie dolnego końca) i ruch 4 klas broni (3 w lewej dłoni, 1H w prawej), 210 póz każda. |
 | `uo_place_shield.py` | Stawia zaznaczoną tarczę na lewym przedramieniu jak w UO i dosuwa ją do ręki (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
