@@ -2,9 +2,11 @@
 
     python sync_blend_scripts.py <file.blend> --check            # which embedded texts differ from the files of pipeline/
     python sync_blend_scripts.py <file.blend> render_uo_layer.py  # copy the given scripts into the .blend and save it
-Only the named texts are replaced. Everything else in the .blend stays as it is. Needs: pip install "bpy==4.2.*"
+Only the named texts are replaced. Everything else in the .blend stays as it is. Needs: pip install "bpy==4.2.*" (a file saved by Blender 5.x does not open in 4.2: sync with 4.2 to keep both working), or run it inside Blender 5.x with --background --python.
 """
 import os, sys
+if "--" in sys.argv:                                     # run inside Blender: blender -b --python this.py -- <arguments>
+    sys.argv = sys.argv[:1] + sys.argv[sys.argv.index("--") + 1:]
 
 import bpy
 

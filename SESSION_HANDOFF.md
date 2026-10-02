@@ -108,9 +108,10 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
   import bpy
   bpy.ops.wm.open_mainfile(filepath="model/UO_Body_0x190.blend")
   ```
-- Silnik w pliku to `BLENDER_EEVEE_NEXT`; `render_uo_layer.py` sam przełącza na Cycles z 1 próbką na piksel.
+- Silnik w pliku to EEVEE (w 4.2 `BLENDER_EEVEE_NEXT`, od 5.0 `BLENDER_EEVEE`; plik czytany w 5.x sam to przemianowuje); `render_uo_layer.py` sam przełącza na Cycles z 1 próbką na piksel.
+- **Blender 5.2 (sesja 12):** można go pobrać i uruchamiać bez GUI: `curl -O https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz` (383 MB, Python 3.13 z numpy, **bez scipy/PIL**), a skrypty odpalać `blender -b --factory-startup --python pipeline/run_render_headless.py -- <argumenty jak wyżej>` (analogicznie `run_script_in_blend.py`, `sync_blend_scripts.py`). GUI da się sprawdzić pod `xvfb-run -a blender plik.blend --python skrypt.py` (skrypt zakłada timer `bpy.app.timers`, uruchamia `bpy.ops.text.run_script()` z `temp_override` obszaru TEXT_EDITOR; ESC symuluje `--enable-event-simulate` + `window.event_simulate`). Alternatywa: `pip install "bpy==5.0.1"` (5.2 nie ma w pip). **Plik `.blend` zapisuj `bpy 4.2`** (`pip install "bpy==4.2.*"`): zapisany w 5.x nie otworzy się w 4.2, a 5.2 czyta pliki 4.2.
 - **Teksty osadzone w `.blend`** (to je uruchamia render, nie pliki z `pipeline/`): `render_uo_layer.py`, `uo_bind_item.py`,
-  `uo_cloth_bake.py`, `uo_fit_item.py`, `uo_import_item.py`, `uo_materials.py`, `uo_place_shield.py`, `uo_place_weapon.py`, `uo_weapon_bones.py`, `uo_transfer_corrections.py`, `uo_vd_writer.py`,
+  `uo_cloth_bake.py`, `uo_fit_item.py`, `uo_import_item.py`, `uo_materials.py`, `uo_place_shield.py`, `uo_place_weapon.py`, `uo_weapon_bones.py`, `uo_transfer_corrections.py`, `uo_vd_writer.py`, `uo_job.py`,
   `uo_horse_masks.json`, `uo_original_frames.json`, `weapon_motion.json`.
   Uwaga: README wymienia też `uo_shield_keys.py` jako skrypt w `.blend`, ale takiego tekstu w pliku nie ma
   (jest za to `uo_transfer_corrections.py`, którego README nie wymienia). Do wyjaśnienia.
@@ -306,7 +307,17 @@ kolejne kroki miały liczby „przed/po”.
 - **Konwencja modelowania głowicy:** płytka w płaszczyźnie XZ, szeroka strona (ostrze, bit topora) na +X, cienka wzdłuż Y, trzon wzdłuż +Z. Dla broni asymetrycznej (topór, halabarda) `REF_ANIM` wybiera, po której stronie trzonu ma być bit jak w danym oryginale (offsety różnią się o 0° lub 180°).
 - Czego NIE zrobiono: łuki i kusze (roll nieokreślony: cienki łuk, linia klasy ~1,7 px, zysk poniżej progu); tarcze (kość `shield.L`, osobny temat); farbowanie, cień. Test renderu używa płytki wyuczonej z tych samych sprite'ów, więc mierzy ścieżkę kości i konwencję, nie kształt prawdziwego modelu broni.
 
-## 8. Następne kroki (sesja 12)
+**Sesja 12 (2026-10-02).** Gałąź sesji `claude/zen-ride-0ixpf6` (zadanie narzucało gałąź). Zadanie użytkownika: skrypty do Blendera były pisane pod starszą wersję, w **Blenderze 5.2 okno przestaje odpowiadać**; znaleźć przyczynę i naprawić. Środowisko: pobrany prawdziwy Blender 5.2.2 (sekcja 4), `bpy 5.0.1`, `bpy 4.2` (zapis `.blend`). Kopia `model/` w `/home/user/UO_Model3D_backup/` (tymczasowa).
+- **Test na Blenderze 5.2.2 (headless i GUI pod xvfb), porównanie z 4.2:** wszystkie skrypty uruchamiane w pliku działają i dają ten sam wynik: `render_uo_layer.py` (warstwy `body`/`all`/`clothing`, cały komplet 35 akcji ok. 3,5 min), `uo_bind_item`, `uo_fit_item` (7 rodzajów przedmiotów), `uo_import_item` (glTF), `uo_materials`, `uo_cloth_bake` (spódnica, wynik `.npz` identyczny co do bitu), `uo_weapon_bones` (macierze póz identyczne, różnica 0,0). Render ciała 4.2 vs 5.2: 23 z 115 klatek różni się 1-4 pikselami na krawędzi (Cycles), IoU 0,997-0,999; QA `test_items` koszula IoU 0,729 w 4.2 i 5.0.1/5.2. Czas na klatkę taki sam w 4.2 i 5.2 (także 16 tys. wierzchołków). Nie znalazłem żadnego błędu API, który wieszałby te skrypty.
+- **Przyczyna „braku odpowiedzi” (wniosek, nie pomiar na maszynie użytkownika):** skrypty to pętle na minuty (render 880+ klatek, `uo_cloth_bake.py` 30-60 min) wykonywane w jednym wywołaniu „Run Script”; Blender nie odświeża wtedy okna, a system oznacza je „Nie odpowiada”. Dodatkowo każdy `bpy.ops.render.render()` otwierał okno „Render Result”. Tego nie dało się odtworzyć bez GUI użytkownika (xvfb odpowiada), ale to jedyna zmierzona różnica interaktywnego przebiegu.
+- **Poprawka: `pipeline/uo_job.py`** (nowy tekst w `.blend`): długi skrypt jest generatorem, który oddaje sterowanie po każdej klatce; w oknie Blendera idzie z modalnego operatora `wm.uo_job` (pasek postępu w pasku stanu, **ESC przerywa**, sprzątanie jak przy `STOP`), w trybie tła (`-b`, moduł `bpy`, testy) leci zwykłą pętlą (wynik bajt w bajt jak przed zmianą: `.vd` i PNG identyczne z przebiegiem sprzed zmiany). `render_uo_layer.py` renderuje klatka po klatce i na czas pętli wyłącza okno „Render Result” (`render_display_type = NONE`); po ESC/STOP/błędzie przywraca stan sceny (wcześniej po STOP zostawał holdout ciała, akcja i kamera). `uo_cloth_bake.py`: `simulate`/`fix_pass`/`bake` to generatory (krok = klatka tkaniny), kolider konia sprzątany w `finally`.
+- **Pułapka:** dotknięcie `bpy.app.driver_namespace` w trybie tła powodowało segfault modułu `bpy 4.2` przy zamykaniu (kod 139, `test_items.py` zgłaszał „render failed”). Dlatego stan zadania jest w `driver_namespace` tylko w GUI (`uo_job._job()`).
+- **Prawdziwe niezgodności z 5.x (naprawione, offline'owe skrypty budujące; nie uruchamiane w całości, brak danych wejściowych, helpery sprawdzone na `.blend` w 4.2 i 5.2):** `Action.fcurves` usunięte w 5.0 (akcje mają sloty, warstwy, paski, kanały w `channelbag`) w `add_exact.py`, `patch_final.py`, `body_pose_apply.py` (ten ostatni uruchomiony na prawdziwym pliku w 4.2 i 5.2: identyczny wynik, 23 klucze zmienione) -> nowy `pipeline/bpy_compat.py` (`action_fcurves`, `find_fcurve`, `clear_fcurves`, `new_fcurve`, `eevee_engine`); `build.py` ustawiał `BLENDER_EEVEE_NEXT` (od 5.0 `BLENDER_EEVEE`); `uo_materials.py` czytał `Material.use_nodes` (przestarzałe od 5.0, w 5.x zawsze prawda: ostrzeżenie `DeprecationWarning`). Nie ruszone, bo działają: `use_nodes = True` w skryptach podglądowych/budujących (tylko ostrzeżenie do Blendera 6.0).
+- `run_render_headless.py`, `run_script_in_blend.py`, `sync_blend_scripts.py` rozumieją `blender -b --python plik -- <argumenty>`.
+- `model/UO_Body_0x190.blend` ZMIENIONY (binarny, zapisany `bpy 4.2`, czyta go też 5.2): osadzone teksty `render_uo_layer.py`, `uo_cloth_bake.py`, `uo_materials.py` i nowy `uo_job.py`. Ciało i reszta bez zmian. `uo_vd_writer.py` w pliku różni się od repo tylko komentarzem (6 znaków), bez zmian.
+- Docs: README (PL/EN) wiersze `uo_job.py` i „Przerwanie renderu”, „Blender 4.2 – 5.2”.
+
+## 8. Następne kroki (sesja 13)
 
 **Z sesji 11:** roll broni zrobiony (sekcja 6, krok 3c). Zostaje: (a) łuki/kusze: roll nieokreślony (spróbować modelu łuku jako łuku w płaszczyźnie z cięciwą, albo zostawić), (b) pierwsza prawdziwa broń 3D od użytkownika przez `uo_place_weapon.py` (`REF_ANIM`) -> `uo_bind_item.py` -> `test_real_item.py`, (c) tarcze (`shield.L`) tym samym narzędziem, (d) broń z linią klasy > 2,2 px (ninja, `anim3` drzewcowe) wymaga własnej linii (`weapon_fit.py xline`) zanim roll będzie wiarygodny.
 
@@ -352,6 +363,8 @@ Czego nie robić: korekt per klatka (v12), dalszego strojenia replik `test_items
 3. Krok 4 (`EDGE_COVER`) i krok 3 (broń w lewej dłoni; klient potrzebny do `.vd` kijów 648, berdysza 614, włóczni 641, kuszy, łuku,
    mapowanie w `client/extract/item_animations.json`) dopiero potem.
 4. Na koniec zaktualizuj ten plik, commit i `git push origin main`, i powiedz użytkownikowi, że temat jest zamknięty.
+
+**Z sesji 12:** poprawka „okno nie odpowiada w Blenderze 5.2” opiera się na wniosku z pomiarów (sekcja 7), nie na odtworzonym zawieszeniu. Gdy użytkownik napisze, że nadal się wiesza: zapytać, **który skrypt, w którym momencie** (od razu po Alt+P? po kilku klatkach?), jaki system i czy ma Cycles na GPU w Preferences (nie badane), i poprosić o konsolę systemową (Window > Toggle System Console).
 
 ## 9. Pytania otwarte do użytkownika
 

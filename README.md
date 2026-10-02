@@ -27,7 +27,7 @@ English version: [`README_EN.md`](README_EN.md).
 
 | Plik / folder | Co to jest |
 |---|---|
-| `UO_Body_0x190.blend` | Główny plik (Blender 4.2+): ciało, szkielet, 35 akcji, szablony płaszcza i spódnicy, kamera UO, scena warstw ubrań, bryły konia, skrypty. |
+| `UO_Body_0x190.blend` | Główny plik (Blender 4.2 – 5.2): ciało, szkielet, 35 akcji, szablony płaszcza i spódnicy, kamera UO, scena warstw ubrań, bryły konia, skrypty. |
 | `UO_Body_0x190.glb` | glTF 2.0: siatka + szkielet + animacje + tekstura (Unity, Godot, three.js, Blender). |
 | `UO_Body_0x190.fbx` | FBX: siatka + szkielet + animacje (Maya, 3ds Max, Unreal, Unity). |
 | `UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Tekstura albedo (szara jak skóra w UO, bez światła) i jej warianty dla 5 kierunków UO. |
@@ -129,6 +129,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `weapon_motion.json` | Dane: chwyt (punkt, kierunek, położenie dolnego końca) i ruch 4 klas broni (3 w lewej dłoni, 1H w prawej), 210 póz każda. |
 | `uo_place_shield.py` | Stawia zaznaczoną tarczę na lewym przedramieniu jak w UO i dosuwa ją do ręki (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
+| `uo_job.py` | Uruchamia długie skrypty (render, symulacja tkaniny) krok po kroku z modalnego operatora: okno Blendera nie „wiesza się” (pasek postępu na dole, ESC przerywa). Używany przez `render_uo_layer.py` i `uo_cloth_bake.py` (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
 
 Skrypty są w pliku `.blend`, nie w obiektach. Pracuj więc zawsze w `UO_Body_0x190.blend` (File → Open) i dołączaj
@@ -286,8 +287,9 @@ do niego swoje przedmioty, a nie odwrotnie.
 i wyrenderować `ONLY = ["09_attack_1h_slash", ...]`, potem zmienić ułożenie i wyrenderować pozostałe akcje. Każdy przebieg
 zapisuje `.vd` ze wszystkimi akcjami wyrenderowanymi do tej pory. Żeby zacząć od zera, usuń folder `uo_render/`.
 
-**Przerwanie renderu:** utwórz pusty plik `STOP` w folderze wyjściowym (np. `uo_render/clothing/STOP`) albo naciśnij
-Ctrl+C w konsoli Blendera (Window → Toggle System Console). Gotowe klatki PNG zostają.
+**Przerwanie renderu:** w oknie Blendera naciśnij **ESC** (postęp widać w pasku stanu na dole; okno nie zawiesza się, ale na czas
+renderu blokuje inne akcje). W trybie tła (`blender -b`, moduł `bpy`) utwórz pusty plik `STOP` w folderze wyjściowym
+(np. `uo_render/clothing/STOP`) albo naciśnij Ctrl+C. Gotowe klatki PNG zostają.
 
 **Kilka przedmiotów:** każdy renderuj osobno. W `Clothing` zostaw jeden przedmiot i zmień `VD_FILE`, np.
 `"//uo_render/helm.vd"`.

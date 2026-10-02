@@ -3,6 +3,8 @@
 clothing bound with Surface Deform, new render_uo_layer.py.
 usage: python add_exact.py --src out_v10/UO_Body_0x190.blend --out out_v11 --corr corr_all.pkl"""
 import bpy, sys, os, pickle, json
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from bpy_compat import clear_fcurves, new_fcurve
 import numpy as np
 arg = lambda k: sys.argv[sys.argv.index(k) + 1]
 SRC, OUT, CORR = arg("--src"), arg("--out"), arg("--corr")
@@ -53,9 +55,8 @@ if me.shape_keys is None:
 # every UO action keys the rig property "uo_action_id" (constant), so the shape-key drivers know the current action
 rig["uo_action_id"] = -1
 for a_, act_ in acts.items():
-    for fc in [fc for fc in act_.fcurves if fc.data_path == '["uo_action_id"]']:
-        act_.fcurves.remove(fc)
-    fc = act_.fcurves.new('["uo_action_id"]')
+    clear_fcurves(act_, '["uo_action_id"]')
+    fc = new_fcurve(act_, '["uo_action_id"]')
     kp = fc.keyframe_points.insert(1, float(a_)); kp.interpolation = "CONSTANT"
 me = body.data
 if me.shape_keys is None:

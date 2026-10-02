@@ -8,6 +8,7 @@ pose (action, i). Nothing else in the file changes. Bones without a curve for th
 import sys, argparse, os
 import numpy as np
 import bpy
+from bpy_compat import action_fcurves, find_fcurve
 
 
 def main():
@@ -24,11 +25,11 @@ def main():
             for j, bn in enumerate(bones):
                 new = arr[p, j]
                 if dp == "rotation_quaternion":                       # keep the sign convention of the old key (q and -q are the same rotation)
-                    old = np.array([A.fcurves.find('pose.bones["%s"].%s' % (bn, dp), index=k).evaluate(fr) if A.fcurves.find('pose.bones["%s"].%s' % (bn, dp), index=k) else np.nan for k in range(4)])
+                    old = np.array([find_fcurve(A, 'pose.bones["%s"].%s' % (bn, dp), k).evaluate(fr) if find_fcurve(A, 'pose.bones["%s"].%s' % (bn, dp), k) else np.nan for k in range(4)])
                     if not np.isnan(old).any() and (old * new).sum() < 0:
                         new = -new
                 for k in range(n):
-                    fc = A.fcurves.find('pose.bones["%s"].%s' % (bn, dp), index=k)
+                    fc = find_fcurve(A, 'pose.bones["%s"].%s' % (bn, dp), k)
                     if fc is None:
                         skipped.add((bn, dp)); continue
                     kp = [q for q in fc.keyframe_points if abs(q.co[0] - fr) < 1e-6]
@@ -38,7 +39,7 @@ def main():
                     if abs(q.co[1] - v) > 1e-7:
                         d = v - q.co[1]; q.co[1] = v; q.handle_left[1] += d; q.handle_right[1] += d; nset += 1
     for A in acts.values():
-        for fc in A.fcurves:
+        for fc in action_fcurves(A):
             fc.update()
     print("keyframe values changed: %d; skipped channels: %s" % (nset, sorted(skipped)[:10]))
     bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(a.out or a.blend))

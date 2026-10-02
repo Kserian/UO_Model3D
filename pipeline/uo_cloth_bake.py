@@ -11,7 +11,8 @@
 #    preview back after reopening the file). To go back to the plain bound item, run it with REMOVE = True.
 # Bake again after changing the item, its fit or its binding. All actions take about 30-60 minutes; the progress
 # is printed in the system console (Window > Toggle System Console), one line per action for the simulation and
-# again for the check against the body (FIX_GAP).
+# again for the check against the body (FIX_GAP). Blender's window stays alive meanwhile (uo_job.py): progress in the status
+# bar at the bottom, ESC cancels (the item being baked is then not saved).
 import bpy
 import os
 import numpy as np
@@ -255,7 +256,7 @@ def poses(act, times):
 
 
 def simulate(sim, act):
-    """-> {UO frame: proxy vertex positions (object space)}"""
+    """generator (one step per cloth frame, see uo_job.py); its return value is {UO frame: proxy vertex positions (object space)}"""
     a = int(act["uo_action"]); nf = int(act["uo_frames"])
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
     L = f1 - f0                                                       # cycle length (the last key = the first)
@@ -270,28 +271,31 @@ def simulate(sim, act):
     P = poses(act, times)
     rig.animation_data.action = None
     horse, shapes = horse_collider(a, nf) if 23 <= a <= 29 else (None, None)
-    add_cloth(sim, total)
-    want = {keep0 + 1 + i * STEP: i for i in range(nf)}
-    out = {}
-    chain = [pb.name.startswith(CHAIN) for pb in rig.pose.bones]
-    for s in range(1, total + 1):
-        for pb, m, ch in zip(rig.pose.bones, P[times[s - 1]], chain):
-            if ch and CHAIN_SWING < 1:                                # calmer chains: part of the way to rest
-                loc, q, sca = m.decompose()
-                m = Matrix.LocRotScale(loc, q.slerp(Quaternion(), 1 - CHAIN_SWING), sca)
-            pb.matrix_basis = m
-        if horse is not None:                                         # the horse of this moment (blend of 2 frames)
-            u = (times[s - 1] - f0) / STEP; j0 = int(np.floor(u)); w = u - j0
-            j1 = (j0 + 1) % nf if a in LOOP_ACTIONS else min(j0 + 1, nf - 1); j0 = min(j0, nf - 1)
-            horse.data.vertices.foreach_set("co", ((1 - w) * shapes[j0] + w * shapes[j1]).astype(np.float32).ravel())
-            horse.data.update()
-        sc.frame_set(s)
-        if s in want:
-            dg = bpy.context.evaluated_depsgraph_get()
-            ev = sim.evaluated_get(dg); me = ev.to_mesh()
-            out[want[s]] = local_co(me).astype(np.float32); ev.to_mesh_clear()
-    if horse is not None:
-        me = horse.data; bpy.data.objects.remove(horse); bpy.data.meshes.remove(me)
+    try:
+        add_cloth(sim, total)
+        want = {keep0 + 1 + i * STEP: i for i in range(nf)}
+        out = {}
+        chain = [pb.name.startswith(CHAIN) for pb in rig.pose.bones]
+        for s in range(1, total + 1):
+            for pb, m, ch in zip(rig.pose.bones, P[times[s - 1]], chain):
+                if ch and CHAIN_SWING < 1:                                # calmer chains: part of the way to rest
+                    loc, q, sca = m.decompose()
+                    m = Matrix.LocRotScale(loc, q.slerp(Quaternion(), 1 - CHAIN_SWING), sca)
+                pb.matrix_basis = m
+            if horse is not None:                                         # the horse of this moment (blend of 2 frames)
+                u = (times[s - 1] - f0) / STEP; j0 = int(np.floor(u)); w = u - j0
+                j1 = (j0 + 1) % nf if a in LOOP_ACTIONS else min(j0 + 1, nf - 1); j0 = min(j0, nf - 1)
+                horse.data.vertices.foreach_set("co", ((1 - w) * shapes[j0] + w * shapes[j1]).astype(np.float32).ravel())
+                horse.data.update()
+            sc.frame_set(s)
+            if s in want:
+                dg = bpy.context.evaluated_depsgraph_get()
+                ev = sim.evaluated_get(dg); me = ev.to_mesh()
+                out[want[s]] = local_co(me).astype(np.float32); ev.to_mesh_clear()
+            yield "%s %s: cloth step %d / %d" % (sim.name.replace("_uo_sim", ""), act.name, s, total)
+    finally:
+        if horse is not None:
+            me = horse.data; bpy.data.objects.remove(horse); bpy.data.meshes.remove(me)
     return out
 
 
@@ -384,7 +388,7 @@ def push_out(X, bvh, E, deg):
 
 
 def fix_pass(item, data, done):
-    """push every baked frame of the item out of the real posed body (see FIX_GAP); stored as sparse node offsets"""
+    """generator (one step per frame, see uo_job.py): push every baked frame of the item out of the real posed body (see FIX_GAP); stored as sparse node offsets"""
     base = item.data.shape_keys.key_blocks[0].data if item.data.shape_keys else item.data.vertices
     ico = np.empty(len(item.data.vertices) * 3, np.float32); base.foreach_get("co", ico)
     first, node = welded(ico.reshape(-1, 3).astype(np.float64))
@@ -415,6 +419,7 @@ def fix_pass(item, data, done):
             data["d%d_f%d_i" % (a, i)] = idx.astype(np.int32)
             data["d%d_f%d_v" % (a, i)] = D[idx].astype(np.float16)
             moved = max(moved, len(idx))
+            yield "%s %s: checking frame %d against the body" % (item.name, act.name, i + 1)
         log("uo_cloth_bake: %s %s: checked against the body" % (item.name, act.name))
     log("uo_cloth_bake: %s pushed out of the body (up to %d points per frame)" % (item.name, moved))
 
@@ -504,6 +509,7 @@ def enable_preview():
 
 # ---------------------------------------------------------------- main
 def bake(item):
+    """generator (see uo_job.py): bakes one item, yields after every cloth step"""
     if not any(m.type == "ARMATURE" for m in item.modifiers):
         raise RuntimeError("%s is not bound - run uo_bind_item.py first" % item.name)
     if not bpy.data.filepath:
@@ -539,7 +545,7 @@ def bake(item):
                 a = int(act["uo_action"])
                 if (ACTIONS and act.name not in ACTIONS) or (23 <= a <= 29 and not MOUNTED):
                     continue
-                res = simulate(sim, act)
+                res = yield from simulate(sim, act)
                 for i, co in res.items():
                     data["a%d_f%d" % (a, i)] = co
                 data["frames_%d" % a] = np.array(len(res))
@@ -554,7 +560,7 @@ def bake(item):
                 else:
                     me = ob.data; bpy.data.objects.remove(ob); bpy.data.meshes.remove(me)
         if FIX_GAP > 0 and done:
-            fix_pass(item, data, done)
+            yield from fix_pass(item, data, done)
     finally:
         rig.data.pose_position = state["pose"]; rig.animation_data.action = state["act"]
         rig["uo_direction"] = state["d"]; sc.frame_set(state["frame"])
@@ -584,8 +590,23 @@ if __name__ == "__main__" and REMOVE:
             ob.shape_key_remove(ob.data.shape_keys.key_blocks["uo_cloth"])
         log("uo_cloth_bake: %s back to the bound item" % ob.name)
 elif __name__ == "__main__":
-    if BAKE:
-        for ob in [o for o in bpy.context.selected_objects if o.type == "MESH" and o != body and "_uo_sim" not in o.name]:
-            bake(ob)
-    enable_preview()
-    log("uo_cloth_bake: viewport preview on (play an action of UO_Rig in Pose Position)")
+    items = [o for o in bpy.context.selected_objects if o.type == "MESH" and o != body and "_uo_sim" not in o.name] if BAKE else []
+
+    def job():
+        for ob in items:
+            yield from bake(ob)
+
+    def finish():
+        enable_preview()
+        log("uo_cloth_bake: viewport preview on (play an action of UO_Rig in Pose Position)")
+
+    def abort(why):
+        log("uo_cloth_bake: %s - the item being baked was not saved (finished items were)" % why)
+
+    # one cloth step per modal step: Blender's window stays alive for the 30-60 minutes (progress in the status bar, ESC cancels)
+    if "uo_job.py" in bpy.data.texts:
+        bpy.data.texts["uo_job.py"].as_module().run(job(), "uo_cloth_bake", finish, abort)
+    else:
+        for _ in job():
+            pass
+        finish()

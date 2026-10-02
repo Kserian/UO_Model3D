@@ -12,6 +12,7 @@ from rig import build_armature, apply_pose
 from texbake import bake, pull_push_fill
 from targets import targets
 from vd import ACTIONS_PEOPLE
+from bpy_compat import eevee_engine
 
 OUT = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else "out"
 os.makedirs(OUT, exist_ok=True)
@@ -212,7 +213,7 @@ so = bpy.data.objects.new("UO_Sun", sun); so.rotation_euler = (math.radians(40),
 sc.collection.objects.link(so)
 w = bpy.data.worlds.new("World"); sc.world = w; w.use_nodes = True
 w.node_tree.nodes["Background"].inputs[1].default_value = 0.8
-sc.render.engine = "BLENDER_EEVEE_NEXT"
+sc.render.engine = eevee_engine()
 
 # metadata
 sc["uo_theta_deg"] = math.degrees(theta)

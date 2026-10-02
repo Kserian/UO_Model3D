@@ -28,7 +28,7 @@ Polish version: [`README.md`](README.md).
 
 | File / folder | What it is |
 |---|---|
-| `UO_Body_0x190.blend` | Main file (Blender 4.2+): body, rig, 35 actions, cloak and skirt templates, UO camera, clothing-layer scene, horse proxies, scripts. |
+| `UO_Body_0x190.blend` | Main file (Blender 4.2 – 5.2): body, rig, 35 actions, cloak and skirt templates, UO camera, clothing-layer scene, horse proxies, scripts. |
 | `UO_Body_0x190.glb` | glTF 2.0: mesh + rig + animations + texture (Unity, Godot, three.js, Blender). |
 | `UO_Body_0x190.fbx` | FBX: mesh + rig + animations (Maya, 3ds Max, Unreal, Unity). |
 | `UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Albedo texture (grey like UO skin, lighting removed) and its variants for the 5 UO directions. |
@@ -133,6 +133,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `weapon_motion.json` | Data: grip (point, direction, butt position) and motion of the 4 weapon classes (3 in the left hand, 1H in the right), 210 poses each. |
 | `uo_place_shield.py` | Puts the selected shield on the left forearm as UO holds it and slides it onto the arm (before `uo_bind_item.py`, section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
+| `uo_job.py` | Runs long scripts (render, cloth bake) step by step from a modal operator, so Blender's window does not freeze (progress in the status bar, ESC cancels). Used by `render_uo_layer.py` and `uo_cloth_bake.py` (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
 
 The scripts live in the `.blend` file, not in objects. Always work in `UO_Body_0x190.blend` (File → Open) and bring your
@@ -290,8 +291,9 @@ items into it, not the other way round.
 `ONLY = ["09_attack_1h_slash", ...]`, then change the placement and render the other actions. Every run writes a `.vd`
 with all actions rendered so far. Delete the `uo_render/` folder to start from scratch.
 
-**Cancelling a render:** create an empty file named `STOP` in the output folder (e.g. `uo_render/clothing/STOP`), or press
-Ctrl+C in Blender's console (Window → Toggle System Console). Finished PNG frames are kept.
+**Cancelling a render:** press **ESC** in Blender's window (progress is in the status bar at the bottom; the window does not freeze,
+but other input is blocked while it renders). In background mode (`blender -b`, the `bpy` module) create an empty file named `STOP`
+in the output folder (e.g. `uo_render/clothing/STOP`) or press Ctrl+C. Finished PNG frames are kept.
 
 **Several items:** render each one separately. Keep one item in `Clothing` and change `VD_FILE`, e.g.
 `"//uo_render/helm.vd"`.

@@ -95,7 +95,7 @@ def convert(mat, ng):
     if mat is None:
         return None
     _metallic = 0.0
-    if not mat.use_nodes:
+    if bpy.app.version < (5, 0, 0) and not mat.use_nodes:      # Blender 5: every material has a node tree (use_nodes is deprecated)
         d = tuple(mat.diffuse_color)
         mat.use_nodes = True
         nt = mat.node_tree

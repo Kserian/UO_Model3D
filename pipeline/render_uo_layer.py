@@ -7,8 +7,9 @@
 #   LAYER = "body"     : only the body (clothing hidden).
 #   LAYER = "all"      : body + clothing together (preview; not a UO layer).
 #   EXACT_BODY / EXACT_COLORS: use the original UO frames packed in this file (see README) for a pixel-exact body.
-#   To cancel a running render: create an empty file named STOP in the output folder (e.g. uo_render/clothing/STOP),
-#   or press Ctrl+C in Blender's system console (Window > Toggle System Console). Delete STOP before the next run.
+#   In Blender's window the frames are rendered step by step (uo_job.py), so the window stays alive: progress in the status bar,
+#   ESC cancels. In background mode (blender -b, the bpy module) it is a plain loop; there create an empty file named STOP in the
+#   output folder (e.g. uo_render/clothing/STOP) or press Ctrl+C to cancel. Delete STOP before the next run.
 #   Several runs into the same OUT_DIR add up: e.g. render ONLY = [attacks] with one grip, then ONLY = [others] with
 #   another; each run writes a .vd with ALL actions rendered so far (delete OUT_DIR to start from scratch).
 import bpy, os, json
@@ -672,109 +673,149 @@ if os.path.exists(os.path.join(root, "STOP")):
     os.remove(os.path.join(root, "STOP"))                  # a leftover STOP from a cancelled run
 blocks, meta_blocks = {}, []
 acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
-try:
-    for act in acts:
-        if ONLY and act.name not in ONLY:
-            continue
-        a = int(act["uo_action"])
-        rig.animation_data.action = act
-        for d in range(5):
-            rig["uo_direction"] = d
-            rig.update_tag()
-            fdir = os.path.join(root, "frames", act.name, "dir%d" % d)
-            os.makedirs(fdir, exist_ok=True)
-            frames, meta_frames = [], []
-            for i in range(int(act["uo_frames"])):
-                if os.path.exists(os.path.join(root, "STOP")):      # create an empty file named STOP to cancel
-                    raise KeyboardInterrupt("STOP file found in " + root)
-                set_tile(a, i, d)
-                sc.frame_set(1 + i * STEP)
-                for o in clothes:
-                    if o.name in CLOTH:
-                        cloth_show(o, a, i)
-                if BODY_GAP > 0 and LAYER != "body":
-                    body_fix(a, i)
-                orig = original(a, i, d) if EXACT_ANY else None
-                orig_m = orig[..., 3] > 0 if orig is not None else None
-                if LAYER == "body" and EXACT_BODY and orig is not None:
-                    rgba = orig                                    # the original UO body frame, pixel for pixel
-                elif LAYER == "clothing" and HOLDOUT_MARGIN > 0:
-                    free = render_frame(a, i, d, "hidden")
-                    hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
-                    px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
-                    if FILL_HOLES > 0:
-                        px = fill_small_holes(px, free, FILL_HOLES)
-                    rgba = uo_post(px)
-                    if DESPECKLE > 0:
-                        rgba = despeckle(rgba, DESPECKLE)
-                    if MIN_PIECE > 0:
-                        rgba = drop_small_pieces(rgba, MIN_PIECE)
-                elif LAYER == "clothing":
-                    px = render_frame(a, i, d, "holdout")
-                    if EXACT_BODY and orig is not None:
-                        px = exact_clothing(px, render_frame(a, i, d, "hidden"), orig_m, body_coverage())
-                    rgba = uo_post(px)
-                    if MIN_PIECE > 0:
-                        rgba = drop_small_pieces(rgba, MIN_PIECE)
-                else:
-                    px = render_frame(a, i, d, "visible")
-                    rgba = uo_post(px, keep=orig_m if (EXACT_COLORS and orig_m is not None) else None)
-                h, w = rgba.shape[:2]
-                frames.append(rgba)
-                png = bpy.data.images.new("uo_tmp_out", w, h, alpha=True)
-                png.pixels.foreach_set((rgba[::-1].astype(np.float32) / 255.0).ravel())
-                png.filepath_raw = os.path.join(fdir, "%02d.png" % i); png.file_format = "PNG"; png.save()
-                bpy.data.images.remove(png)
-                meta_frames.append(dict(file="%02d.png" % i))
-            blocks[(a, d)] = frames
-            meta_blocks.append(dict(action=a, dir=d, name=act.name, frames=meta_frames))
-finally:
-    fix_clear()                                         # items back to bound, also after STOP / an error
-if os.path.exists(tmp):
-    os.remove(tmp)
-# actions rendered in EARLIER runs into the same folder are kept: each run can use a different item setup (e.g. another
-# grip for some actions) and the final .vd contains every action whose frames are on disk
-names = {int(a["uo_action"]): a.name for a in acts}
-for act in acts:
-    a = int(act["uo_action"])
-    for d in range(5):
-        if (a, d) in blocks:
-            continue
-        fdir = os.path.join(root, "frames", act.name, "dir%d" % d)
-        files = ["%02d.png" % i for i in range(int(act["uo_frames"]))]
-        if not all(os.path.exists(os.path.join(fdir, f)) for f in files):
-            continue
-        frames = []
-        for f in files:
-            im = bpy.data.images.load(os.path.join(fdir, f)); w, h = im.size
-            px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px); bpy.data.images.remove(im)
-            frames.append(np.clip(px.reshape(h, w, 4)[::-1] * 255 + 0.5, 0, 255).astype(np.uint8))
-        blocks[(a, d)] = frames
-        meta_blocks.append(dict(action=a, dir=d, name=act.name, frames=[dict(file=f) for f in files]))
-print("actions in this .vd:", sorted({a for a, _ in blocks}))
-# vdtool-compatible meta.json (canvas mode) so the PNGs can also be packed with: python vdtool.py pack <folder> out.vd
-done_blocks = {(b["action"], b["dir"]): b for b in meta_blocks}
-meta_blocks = [done_blocks.get((a, d), dict(action=a, dir=d, name=names.get(a, "action"), frames=[]))
-               for a in range(35) for d in range(5)]
-with open(os.path.join(root, "meta.json"), "w") as fh:
-    json.dump(dict(tool="render_uo_layer", anim_type=2, actions=35, mode="canvas", canvas=[W, H],
-                   anchor=list(ANCHOR), blocks=meta_blocks), fh, indent=1)
-if WRITE_VD:
-    vd_path = bpy.path.abspath(VD_FILE % LAYER)
-    writer.write_vd(vd_path, blocks, anim_type=2, anchor=ANCHOR)
-    print("wrote", vd_path)
+todo = [a for a in acts if not ONLY or a.name in ONLY]
+total_frames = sum(int(a["uo_frames"]) * 5 for a in todo)
+view_prefs = bpy.context.preferences.view
+render_display = view_prefs.render_display_type
 
-set_horse(-1, 0)
-for o in clothes:
-    if o.name in CLOTH:
-        cloth_show(o, -1, 0)                                # back to the bound item
-body.is_holdout, body.hide_render = state["holdout"], state["body_hide"]
-for o in clothes:
-    o.hide_render = state["cloth"][o.name]
-rig.animation_data.action, rig["uo_direction"] = state["action"], state["direction"]
-rig.data.pose_position = state["pose"]
-cd = sc.camera.data
-cd.sensor_fit, cd.ortho_scale, cd.shift_x, cd.shift_y = cam_state                   # camera and atlas mapping of the 136x120 file
-atlas_map(OW, OH, 0, 0)
-sc.render.resolution_x, sc.render.resolution_y = OW, OH
-print("done ->", root)
+
+def frame_job():
+    """one UO frame per step; uo_job.py hands control back to Blender between two of them (the window stays alive, ESC cancels)"""
+    view_prefs.render_display_type = "NONE"             # no Render Result window popping up for every frame
+    done_frames = 0
+    try:
+        for act in acts:
+            if ONLY and act.name not in ONLY:
+                continue
+            a = int(act["uo_action"])
+            rig.animation_data.action = act
+            for d in range(5):
+                rig["uo_direction"] = d
+                rig.update_tag()
+                fdir = os.path.join(root, "frames", act.name, "dir%d" % d)
+                os.makedirs(fdir, exist_ok=True)
+                frames, meta_frames = [], []
+                for i in range(int(act["uo_frames"])):
+                    if os.path.exists(os.path.join(root, "STOP")):      # create an empty file named STOP to cancel
+                        raise KeyboardInterrupt("STOP file found in " + root)
+                    set_tile(a, i, d)
+                    sc.frame_set(1 + i * STEP)
+                    for o in clothes:
+                        if o.name in CLOTH:
+                            cloth_show(o, a, i)
+                    if BODY_GAP > 0 and LAYER != "body":
+                        body_fix(a, i)
+                    orig = original(a, i, d) if EXACT_ANY else None
+                    orig_m = orig[..., 3] > 0 if orig is not None else None
+                    if LAYER == "body" and EXACT_BODY and orig is not None:
+                        rgba = orig                                    # the original UO body frame, pixel for pixel
+                    elif LAYER == "clothing" and HOLDOUT_MARGIN > 0:
+                        free = render_frame(a, i, d, "hidden")
+                        hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
+                        px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
+                        if FILL_HOLES > 0:
+                            px = fill_small_holes(px, free, FILL_HOLES)
+                        rgba = uo_post(px)
+                        if DESPECKLE > 0:
+                            rgba = despeckle(rgba, DESPECKLE)
+                        if MIN_PIECE > 0:
+                            rgba = drop_small_pieces(rgba, MIN_PIECE)
+                    elif LAYER == "clothing":
+                        px = render_frame(a, i, d, "holdout")
+                        if EXACT_BODY and orig is not None:
+                            px = exact_clothing(px, render_frame(a, i, d, "hidden"), orig_m, body_coverage())
+                        rgba = uo_post(px)
+                        if MIN_PIECE > 0:
+                            rgba = drop_small_pieces(rgba, MIN_PIECE)
+                    else:
+                        px = render_frame(a, i, d, "visible")
+                        rgba = uo_post(px, keep=orig_m if (EXACT_COLORS and orig_m is not None) else None)
+                    h, w = rgba.shape[:2]
+                    frames.append(rgba)
+                    png = bpy.data.images.new("uo_tmp_out", w, h, alpha=True)
+                    png.pixels.foreach_set((rgba[::-1].astype(np.float32) / 255.0).ravel())
+                    png.filepath_raw = os.path.join(fdir, "%02d.png" % i); png.file_format = "PNG"; png.save()
+                    bpy.data.images.remove(png)
+                    meta_frames.append(dict(file="%02d.png" % i))
+                    done_frames += 1
+                    yield "%d / %d frames (%s, direction %d)" % (done_frames, total_frames, act.name, d)
+                blocks[(a, d)] = frames
+                meta_blocks.append(dict(action=a, dir=d, name=act.name, frames=meta_frames))
+    finally:
+        fix_clear()                                     # items back to bound, also after STOP / an error / ESC
+
+
+def restore_all():
+    view_prefs.render_display_type = render_display
+    set_horse(-1, 0)
+    for o in clothes:
+        if o.name in CLOTH:
+            cloth_show(o, -1, 0)                        # back to the bound item
+    body.is_holdout, body.hide_render = state["holdout"], state["body_hide"]
+    for o in clothes:
+        o.hide_render = state["cloth"][o.name]
+    rig.animation_data.action, rig["uo_direction"] = state["action"], state["direction"]
+    rig.data.pose_position = state["pose"]
+    cd = sc.camera.data
+    cd.sensor_fit, cd.ortho_scale, cd.shift_x, cd.shift_y = cam_state               # camera and atlas mapping of the 136x120 file
+    atlas_map(OW, OH, 0, 0)
+    sc.render.resolution_x, sc.render.resolution_y = OW, OH
+
+
+def finish():
+    global meta_blocks
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    # actions rendered in EARLIER runs into the same folder are kept: each run can use a different item setup (e.g. another
+    # grip for some actions) and the final .vd contains every action whose frames are on disk
+    names = {int(a["uo_action"]): a.name for a in acts}
+    for act in acts:
+        a = int(act["uo_action"])
+        for d in range(5):
+            if (a, d) in blocks:
+                continue
+            fdir = os.path.join(root, "frames", act.name, "dir%d" % d)
+            files = ["%02d.png" % i for i in range(int(act["uo_frames"]))]
+            if not all(os.path.exists(os.path.join(fdir, f)) for f in files):
+                continue
+            frames = []
+            for f in files:
+                im = bpy.data.images.load(os.path.join(fdir, f)); w, h = im.size
+                px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px); bpy.data.images.remove(im)
+                frames.append(np.clip(px.reshape(h, w, 4)[::-1] * 255 + 0.5, 0, 255).astype(np.uint8))
+            blocks[(a, d)] = frames
+            meta_blocks.append(dict(action=a, dir=d, name=act.name, frames=[dict(file=f) for f in files]))
+    print("actions in this .vd:", sorted({a for a, _ in blocks}))
+    # vdtool-compatible meta.json (canvas mode) so the PNGs can also be packed with: python vdtool.py pack <folder> out.vd
+    done_blocks = {(b["action"], b["dir"]): b for b in meta_blocks}
+    meta_blocks = [done_blocks.get((a, d), dict(action=a, dir=d, name=names.get(a, "action"), frames=[]))
+                   for a in range(35) for d in range(5)]
+    with open(os.path.join(root, "meta.json"), "w") as fh:
+        json.dump(dict(tool="render_uo_layer", anim_type=2, actions=35, mode="canvas", canvas=[W, H],
+                       anchor=list(ANCHOR), blocks=meta_blocks), fh, indent=1)
+    if WRITE_VD:
+        vd_path = bpy.path.abspath(VD_FILE % LAYER)
+        writer.write_vd(vd_path, blocks, anim_type=2, anchor=ANCHOR)
+        print("wrote", vd_path)
+
+    restore_all()
+    print("done ->", root)
+
+
+def abort(why):
+    restore_all()
+    print("render_uo_layer: %s - nothing written to the .vd (the frames already rendered stay in %s)" % (why, root))
+
+
+# Blender's window: a long loop inside "Run Script" freezes it ("Not Responding"), so in the interface the frames are rendered
+# step by step from a modal operator (uo_job.py: progress in the status bar, ESC cancels). Without the text: a plain loop.
+if "uo_job.py" in bpy.data.texts:
+    bpy.data.texts["uo_job.py"].as_module().run(frame_job(), "render_uo_layer", finish, abort)
+else:
+    try:
+        for _ in frame_job():
+            pass
+    except BaseException:
+        abort("error")
+        raise
+    finish()

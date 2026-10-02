@@ -8,6 +8,7 @@ from body import JI, NJ, CANVAS_W, CANVAS_H, ANCHOR_X, ANCHOR_Y
 from fit import params_to_shape, pose_from_params
 from rig import bone_defs, apply_pose
 from vd import ACTIONS_PEOPLE
+from bpy_compat import clear_fcurves
 
 SRC = sys.argv[sys.argv.index("--src") + 1]
 OUT = sys.argv[sys.argv.index("--out") + 1]
@@ -153,8 +154,7 @@ for k, (a, i) in enumerate(ref["samples"]):
 for a in range(35):
     name = f"{a:02d}_{ACTIONS_PEOPLE[a]}"
     act = bpy.data.actions[name]
-    for fc in list(act.fcurves):
-        act.fcurves.remove(fc)
+    clear_fcurves(act)
     arm.animation_data.action = act
     F = anim[a]["poses"]["trans"].shape[0]
     cyc = a in (0, 1, 2, 3, 23, 24)

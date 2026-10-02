@@ -6,9 +6,11 @@
 
 The script text comes from the given file (default: render_uo_layer.py next to this one), not from the text embedded in the
 .blend, so a change in pipeline/ can be tested without touching the .blend. Output goes to <out_dir>/<LAYER>/ and <out_dir>/<LAYER>.vd.
-The .blend is only read, never saved. Needs: pip install numpy "bpy==4.2.*"
+The .blend is only read, never saved. Needs: pip install numpy "bpy==4.2.*" (or "bpy==5.0.1"; Blender 5.2 also works: blender -b --python run_render_headless.py -- <args>).
 """
 import os, re, sys
+if "--" in sys.argv:                                     # run inside Blender: blender -b --python this.py -- <arguments>
+    sys.argv = sys.argv[:1] + sys.argv[sys.argv.index("--") + 1:]
 
 import bpy
 
