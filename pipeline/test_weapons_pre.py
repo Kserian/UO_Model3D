@@ -1,12 +1,12 @@
 """Pre-script of test_weapons.py (run inside Blender by run_render_headless.py --pre): a thin straight shaft in Rest Position along a line given in the
-local frame of hand.L (spec in the env var UO_TW_SPEC = json {p, u, s0, s1, radius, part}), bound with uo_bind_item.py to the bone of `part`."""
+local frame of the hand bone `parent` (hand.L by default; spec in the env var UO_TW_SPEC = json {p, u, s0, s1, radius, part}), bound with uo_bind_item.py to the bone of `part`."""
 import bpy, json, os, re, math
 import numpy as np
 from mathutils import Vector, Matrix
 
 spec = json.loads(os.environ["UO_TW_SPEC"])
 rig = bpy.data.objects["UO_Rig"]
-H = rig.matrix_world @ rig.data.bones["hand.L"].matrix_local            # hand.L frame at rest -> world
+H = rig.matrix_world @ rig.data.bones[spec.get("parent", "hand.L")].matrix_local   # hand frame at rest -> world
 p, u = np.array(spec["p"]), np.array(spec["u"])
 a, b = H @ Vector(p + u * spec["s0"]), H @ Vector(p + u * spec["s1"])
 n, r = 12, spec["radius"]

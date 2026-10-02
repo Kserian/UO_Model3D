@@ -125,9 +125,9 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
 | `uo_cloth_bake.py` | Cloth simulation for robes, dresses, skirts and cloaks, after `uo_bind_item.py` (section 3). |
 | `uo_shield_keys.py` | Replaces the motion of the shield bone `shield.L` in an older file with the latest one (the shield and its binding stay). |
-| `uo_weapon_bones.py` | Adds the left-hand weapon bones (`polearm.L`, `axe2h.L`, `bow.L`) and keys their motion from `weapon_motion.json` (already run in the file; to load the motion again). |
+| `uo_weapon_bones.py` | Adds the weapon bones (left hand: `polearm.L`, `axe2h.L`, `bow.L`; right hand: `weapon1h.R`) and keys their motion from `weapon_motion.json` (already run in the file; to load the motion again). |
 | `uo_place_weapon.py` | Puts the selected weapon (shaft along +Z, tip up) on the grip line of its class, before `uo_bind_item.py`. |
-| `weapon_motion.json` | Data: grip (point, direction, butt position) and motion of the 3 left-hand weapon classes, 210 poses each. |
+| `weapon_motion.json` | Data: grip (point, direction, butt position) and motion of the 4 weapon classes (3 in the left hand, 1H in the right), 210 poses each. |
 | `uo_place_shield.py` | Puts the selected shield on the left forearm as UO holds it and slides it onto the arm (before `uo_bind_item.py`, section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
@@ -183,7 +183,8 @@ items into it, not the other way round.
       | `"skirt"` | skirt, kilt | the `skirt_*` chains (template `UO_Template_Skirt`) |
       | `"cloak"` | cloak, cape | the `cloak_*` chains + a yoke over the shoulders (template `UO_Template_Cloak`) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
-      | `"weapon"` / `"weapon.L"` | 1H weapon | rigid on `hand.R` / `hand.L` (UO holds 1H weapons in the right hand) |
+      | `"weapon1h"` | sword, mace, hammer, 1H axe, kryss, pickaxe | bone `weapon1h.R` on the right hand, motion fitted to 13 original weapons (0.7-1.3 px instead of 1.4-2.1 px); run `uo_place_weapon.py` with `PART = "weapon1h"` first |
+      | `"weapon"` / `"weapon.L"` | uncalibrated weapon | rigid on `hand.R` / `hand.L` |
       | `"polearm"` (`"staff"`, `"weapon2h"`) | staff, spear, javelin, pitchfork, halberd, bardiche, crook | bone `polearm.L` on the left hand, motion fitted to the original weapons (0.6-1.1 px instead of 5-6 px); run `uo_place_weapon.py` first |
       | `"axe2h"` | two-handed axe, hatchet / hammer in the left hand | bone `axe2h.L` (same, 1.2-1.7 px error) |
       | `"shield"` | shield | rigid on `shield.L` (shield bone on the forearm, moves like the UO shield) |

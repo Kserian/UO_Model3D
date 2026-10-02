@@ -121,9 +121,9 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
 | `uo_cloth_bake.py` | Symulacja tkaniny dla szat, sukni, spódnic i płaszczy, po `uo_bind_item.py` (rozdział 3). |
 | `uo_shield_keys.py` | Podmienia ruch kości tarczy `shield.L` w starszym pliku na najnowszy (tarcza i jej podpięcie zostają). |
-| `uo_weapon_bones.py` | Dodaje kości broni lewej dłoni (`polearm.L`, `axe2h.L`, `bow.L`) i klucze ich ruchu z `weapon_motion.json` (uruchamiane już w pliku; do ponownego wgrania ruchu). |
+| `uo_weapon_bones.py` | Dodaje kości broni (lewa dłoń: `polearm.L`, `axe2h.L`, `bow.L`; prawa: `weapon1h.R`) i klucze ich ruchu z `weapon_motion.json` (uruchamiane już w pliku; do ponownego wgrania ruchu). |
 | `uo_place_weapon.py` | Stawia zaznaczoną broń (trzon po osi +Z, czubek w górę) na linii chwytu jej klasy, przed `uo_bind_item.py`. |
-| `weapon_motion.json` | Dane: chwyt (punkt, kierunek, położenie dolnego końca) i ruch 3 klas broni w lewej dłoni, 210 póz każda. |
+| `weapon_motion.json` | Dane: chwyt (punkt, kierunek, położenie dolnego końca) i ruch 4 klas broni (3 w lewej dłoni, 1H w prawej), 210 póz każda. |
 | `uo_place_shield.py` | Stawia zaznaczoną tarczę na lewym przedramieniu jak w UO i dosuwa ją do ręki (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
@@ -179,7 +179,8 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"skirt"` | spódnica, kilt | łańcuchy `skirt_*` (szablon `UO_Template_Skirt`) |
       | `"cloak"` | płaszcz, peleryna | łańcuchy `cloak_*` + karczek na barkach (szablon `UO_Template_Cloak`) |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |
-      | `"weapon"` / `"weapon.L"` | broń jednoręczna | sztywno na `hand.R` / `hand.L` (UO trzyma broń 1H w prawej dłoni) |
+      | `"weapon1h"` | miecz, maczuga, młot, topór 1H, kryss, kilof | kość `weapon1h.R` na prawej dłoni, ruch dopasowany do 13 oryginalnych broni (0,7–1,3 px zamiast 1,4–2,1 px); najpierw `uo_place_weapon.py` z `PART = "weapon1h"` |
+      | `"weapon"` / `"weapon.L"` | broń bez kalibracji | sztywno na `hand.R` / `hand.L` |
       | `"polearm"` (`"staff"`, `"weapon2h"`) | kij, włócznia, oszczep, widły, halabarda, berdysz, laska, kostur | kość `polearm.L` na lewej dłoni, ruch dopasowany do oryginalnych broni (0,6–1,1 px zamiast 5–6 px); najpierw `uo_place_weapon.py` |
       | `"axe2h"` | topór dwuręczny, siekiera i młot w lewej dłoni | kość `axe2h.L` (jak wyżej, błąd 1,2–1,7 px) |
       | `"shield"` | tarcza | sztywno na `shield.L` (kość tarczy na przedramieniu, ruch jak tarcza z UO) |

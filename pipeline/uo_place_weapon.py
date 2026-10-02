@@ -1,7 +1,7 @@
-# Put the SELECTED weapon on the shaft line of its class the way UO holds it in the left hand, ready for uo_bind_item.py.
+# Put the SELECTED weapon on the shaft line of its class the way UO holds it (2H weapons, staffs, bows: left hand; 1H weapons: right hand), ready for uo_bind_item.py.
 # 1. Model the weapon upright: shaft along +Z, head / tip UP (+Z), butt at the lowest point, object origin anywhere (apply scale first).
-# 2. Select it, set PART below (polearm = staff, spear, halberd, bardiche, crook; axe2h = 2H axes; bow = bow, crossbow), run this (Alt+P).
-# 3. Then uo_bind_item.py with the same PART (the weapon follows the bone polearm.L / axe2h.L / bow.L, calibrated on the original weapons).
+# 2. Select it, set PART below (polearm = staff, spear, halberd, bardiche, crook; axe2h = 2H axes; bow = bow, crossbow; weapon1h = sword, mace, hammer, 1H axe, dagger, kryss, club), run this (Alt+P).
+# 3. Then uo_bind_item.py with the same PART (the weapon follows the bone polearm.L / axe2h.L / bow.L / weapon1h.R, calibrated on the original weapons).
 # The shaft goes along the class line (WEAPON_MOTION in weapon_motion.json: point PIVOT, direction DIR in hand.L space, head towards +DIR) with the butt at
 # the class's usual butt position (`butt`, m along the line; bows: their middle sits at 0). The roll about the shaft is not calibrated: the weapon keeps the
 # turn it gets from the shortest rotation +Z -> DIR; turn it about the shaft by hand if its head must face another way.
@@ -10,12 +10,12 @@ import bpy, json
 import numpy as np
 from mathutils import Vector, Matrix
 
-PART = "polearm"      # "polearm", "axe2h" or "bow"
-BONE = {"polearm": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L"}[PART]
+PART = "polearm"      # "polearm", "axe2h", "bow" or "weapon1h"
+BONE = {"polearm": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "weapon1h": "weapon1h.R"}[PART]
 
 WM = json.loads(bpy.data.texts["weapon_motion.json"].as_string())[BONE]
 rig = bpy.data.objects["UO_Rig"]
-H = rig.matrix_world @ rig.data.bones[WM["parent"]].matrix_local              # hand.L at rest -> world
+H = rig.matrix_world @ rig.data.bones[WM["parent"]].matrix_local              # the hand bone (hand.L, hand.R) at rest -> world
 piv = H @ Vector(WM["pivot"]); d = (H.to_3x3() @ Vector(WM["dir"])).normalized()
 for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
     co = np.array([ob.matrix_world @ v.co for v in ob.data.vertices])

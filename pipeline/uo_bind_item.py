@@ -44,10 +44,11 @@ PARTS = {
 # weights below the template's top; None = template weights only)
 CLOTH = {"skirt": ("UO_Template_Skirt", None), "cloak": ("UO_Template_Cloak", None), "robe": ("UO_Template_Skirt", 0.35)}
 # rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
-# weapons (1H: right hand), shields (left forearm), quivers (back). UO holds 2H weapons, staffs, bows and crossbows in the LEFT hand and moves
-# them differently from the hand: they ride on the weapon bones polearm.L / axe2h.L / bow.L (uo_weapon_bones.py, calibrated on the original
-# weapons: model the shaft along the class line, see that script). "weapon.L" = rigid in hand.L (no calibration).
-RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "shield": "shield.L", "quiver": "chest",
+# weapons, shields (left forearm), quivers (back). UO holds 2H weapons, staffs, bows and crossbows in the LEFT hand and 1H weapons in the right,
+# and moves them differently from the hand: they ride on the weapon bones polearm.L / axe2h.L / bow.L / weapon1h.R (uo_weapon_bones.py,
+# calibrated on the original weapons: model the shaft along the class line, see that script). "weapon" = rigid in hand.R and "weapon.L" = rigid
+# in hand.L (no calibration).
+RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "weapon1h": "weapon1h.R", "shield": "shield.L", "quiver": "chest",
          "polearm": "polearm.L", "staff": "polearm.L", "weapon2h": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "crossbow": "bow.L"}
 PARENT = {"hand": "forearm", "forearm": "upper_arm", "upper_arm": "clavicle", "foot": "shin", "shin": "thigh",
           "thigh": "pelvis", "head": "neck"}
@@ -289,7 +290,7 @@ try:
         if PART in RIGID:
             bone = RIGID[PART]
             if bone not in rig.data.bones:                           # older file without the shield / weapon bones
-                bone = {"shield.L": "forearm.L", "polearm.L": "hand.L", "axe2h.L": "hand.L", "bow.L": "hand.L"}.get(bone, bone)
+                bone = {"shield.L": "forearm.L", "polearm.L": "hand.L", "axe2h.L": "hand.L", "bow.L": "hand.L", "weapon1h.R": "hand.R"}.get(bone, bone)
             bind_rigid(ob, bone)
         else:
             bind(ob, PARTS[PART][0])

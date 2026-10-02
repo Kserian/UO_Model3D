@@ -2,8 +2,8 @@
 
     python test_weapons.py --anim 648 --mode polearm|rigid --vd VDDIR [--rigid RIGID.json] [--actions 04_stand,12_attack_2h_bash,...] [--tmp DIR] [--out qa.json]
 
-mode polearm (or axe2h, bow): the shaft lies on the class line of weapon_motion.json (extent of that weapon) and is bound to the weapon bone (calibrated motion).
-mode rigid: the shaft lies on the rigid line fitted for this weapon (weapon_fit.py rigid --out) and is bound to hand.L (what was possible before).
+mode polearm (or axe2h, bow, weapon1h; the last one is in the right hand): the shaft lies on the class line of weapon_motion.json (extent of that weapon) and is bound to the weapon bone (calibrated motion).
+mode rigid: the shaft lies on the rigid line fitted for this weapon (weapon_fit.py rigid --out) and is bound to the hand it was fitted in (what was possible before).
 Per frame: IoU and the symmetric chamfer distance (px) of the rendered shaft pixels and the sprite pixels (capped at 15 px).
 """
 import argparse, json, os, subprocess, sys, tempfile
@@ -15,8 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "vdtool"))
 import vdtool                                                       # noqa: E402
 
-BONE = dict(polearm="polearm.L", axe2h="axe2h.L", bow="bow.L")
-CLASS_BONE = {"polearm": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L"}
+CLASS_BONE = {"polearm": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "weapon1h": "weapon1h.R"}
 DEFAULT_ACTIONS = "04_stand,03_run_armed,08_combat_idle_2h,12_attack_2h_bash,13_attack_2h_slash,14_attack_2h_pierce,21_die_forward,30_block"
 
 
@@ -30,10 +29,10 @@ def main():
     tmp = os.path.abspath(a.tmp or tempfile.mkdtemp(prefix="test_weapons_"))
     if a.mode == "rigid":
         R = json.load(open(a.rigid))["rigid"]; p, u = np.array(R["p0"]), np.array(R["u"])
-        spec = dict(p=p.tolist(), u=u.tolist(), s0=0.0, s1=R["length"], part="weapon.L")
+        spec = dict(p=p.tolist(), u=u.tolist(), s0=0.0, s1=R["length"], part="weapon" if R.get("bone") == "hand.R" else "weapon.L", parent=R.get("bone", "hand.L"))
     else:
         C = json.load(open(a.motion))[CLASS_BONE[a.mode]]; ex = C["anims"][str(a.anim)]
-        spec = dict(p=C["pivot"], u=C["dir"], s0=ex[0], s1=ex[1], part=a.mode)
+        spec = dict(p=C["pivot"], u=C["dir"], s0=ex[0], s1=ex[1], part=a.mode, parent=C["parent"])
     spec["radius"] = a.radius
     env = dict(os.environ, UO_TW_SPEC=json.dumps(spec), UO_TW_SCRIPTS=HERE)
     out = os.path.join(tmp, "%d_%s" % (a.anim, a.mode))
