@@ -256,6 +256,8 @@ if not bpy.context.preferences.filepaths.use_scripts_auto_execute:
 sc.camera = bpy.data.objects["UO_Camera"]
 sc.render.resolution_x, sc.render.resolution_y = W, H
 sc.render.resolution_percentage = 100
+sc.cycles.device = "CPU"            # 1 sample on a 256x256 frame: a GPU only adds device start-up / kernel loading to every one of the
+                                    # thousands of render calls (slow, and the window looks frozen); the CPU is faster here
 sc.render.dither_intensity = 0.0    # Blender's 8-bit dither is +-1 noise that depends on the pixel position: it would change
                                     # with the canvas / anchor and spoil the "exact" colours of EXACT_COLORS
 
