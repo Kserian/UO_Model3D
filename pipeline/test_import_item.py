@@ -42,6 +42,7 @@ item = bpy.context.view_layer.objects.active
 got = np.array([item.matrix_world @ v.co for v in item.data.vertices]); ref = np.load(os.environ["FOREIGN_REF"])
 print("RESULT bbox ref  min", ref.min(0).round(3), "max", ref.max(0).round(3))
 print("RESULT bbox got  min", got.min(0).round(3), "max", got.max(0).round(3))
+run("uo_materials.py")
 run("uo_fit_item.py")
 run("uo_bind_item.py", PART=os.environ["FOREIGN_PART"])
 bpy.ops.wm.save_as_mainfile(filepath=os.environ["FOREIGN_OUT"])
@@ -65,7 +66,7 @@ if __name__ == "__main__":
                FOREIGN_PART=ti.ITEMS[a.item]["part"], UO_IMPORT_SKIP=a.skip, FOREIGN_OUT=os.path.join(tmp, "imported.blend"))
     for stage in (sa, sb):
         r = subprocess.run([sys.executable, os.path.join(HERE, "run_script_in_blend.py"), blend, stage], capture_output=True, text=True, env=env)
-        print("\n".join(l for l in r.stdout.splitlines() if l.startswith(("RESULT", "uo_import_item", "uo_fit", "uo_bind", "stage", "   "))))
+        print("\n".join(l for l in r.stdout.splitlines() if l.startswith(("RESULT", "uo_import_item", "uo_materials", "uo_fit", "uo_bind", "stage", "   "))))
         if r.returncode:
             sys.exit("%s failed:\n%s\n%s" % (stage, r.stdout[-2500:], r.stderr[-2500:]))
     if a.render:

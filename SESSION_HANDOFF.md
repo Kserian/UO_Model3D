@@ -107,7 +107,7 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
   ```
 - Silnik w pliku to `BLENDER_EEVEE_NEXT`; `render_uo_layer.py` sam przełącza na Cycles z 1 próbką na piksel.
 - **Teksty osadzone w `.blend`** (to je uruchamia render, nie pliki z `pipeline/`): `render_uo_layer.py`, `uo_bind_item.py`,
-  `uo_cloth_bake.py`, `uo_fit_item.py`, `uo_place_shield.py`, `uo_place_weapon.py`, `uo_weapon_bones.py`, `uo_transfer_corrections.py`, `uo_vd_writer.py`,
+  `uo_cloth_bake.py`, `uo_fit_item.py`, `uo_import_item.py`, `uo_materials.py`, `uo_place_shield.py`, `uo_place_weapon.py`, `uo_weapon_bones.py`, `uo_transfer_corrections.py`, `uo_vd_writer.py`,
   `uo_horse_masks.json`, `uo_original_frames.json`, `weapon_motion.json`.
   Uwaga: README wymienia też `uo_shield_keys.py` jako skrypt w `.blend`, ale takiego tekstu w pliku nie ma
   (jest za to `uo_transfer_corrections.py`, którego README nie wymienia). Do wyjaśnienia.
@@ -176,7 +176,7 @@ kolejne kroki miały liczby „przed/po”.
       Sam `EDGE_COVER` po tej naprawie daje już tylko +0,015-0,025 (symulacja offline), a zysk leży głównie przy talii/dole (nieprecyzyjne cięcia repliki), nie na bokach, więc **odłożony**; wracaj do niego tylko, jeśli paski ≤ 1 px nadal będą widoczne na prawdziwych przedmiotach.
 - [ ] 5. **(WYSOKI PRIORYTET po baseline'ie, realizuje cel nadrzędny)** Analiza klatek ekwipunku pod kątem lepszego ciała: rękawice 530 / buty 477 / hełm 563 jako dodatkowe ograniczenie
       orientacji dłoni, stóp i głowy przy dopasowaniu póz. Pomysł z sesji 1, jeszcze nie sprawdzony.
-- [ ] 6. Materiały (4.5), ciało kobiece/elfy (4.4), ścieżka A „przemalowanie z kotwiczeniem 3D” (4.7), spięcie z nelderim-asset-pipeline (4.8).
+- [~] 6. Materiały (4.5): **zrobione dla obcych modeli w sesji 10** (`uo_materials.py`, kolor/alpha do `UO_Look`); zostaje paleta/kolory UO, kolory farbowane (hue),  ciało kobiece/elfy (4.4), ścieżka A „przemalowanie z kotwiczeniem 3D” (4.7), spięcie z nelderim-asset-pipeline (4.8).
 - [ ] 7. Dopiero potem: tworzenie ubrań, zbroi, broni, butów, tarcz (rozdz. 3 README).
 
 ## 7. Dziennik sesji
@@ -278,13 +278,19 @@ kolejne kroki miały liczby „przed/po”.
 - `model/UO_Body_0x190.blend` ZMIENIONY (binarny): nowa kość `weapon1h.R` z kluczami + osadzone teksty `uo_bind_item.py`, `uo_place_weapon.py`, `weapon_motion.json`. Ciało i reszta bez zmian (max różnica wierzchołków 0). Procedura wgrania: `sync_blend_scripts.py` dla trzech tekstów, potem `uo_weapon_bones.py` w pliku i zapis.
 - Metoda: `weapon_pose_export.py` -> `mul2vd.py` (z `anim.idx/.mul`) -> `weapon_fit.py rigid` / `class` (13 broni: ok. 8 min) -> `weapon_motion_add.py`. Wyciągnięte `.vd` leżą tylko w scratchpadzie sesji (do odtworzenia poleceniem `mul2vd.py` z sekcji 2a).
 
-## 8. Następne kroki (sesja 10)
+**Sesja 10 (2026-10-02).** Gałąź sesji `ccr-4904604f-24kepl` (zadanie narzucało gałąź), po testach przewinięta na `main`. Środowisko od zera (`pip install numpy pillow scipy "bpy==4.2.*"`), kopia `model/` w `/home/user/UO_Model3D_backup/` (tymczasowa). Włosów Curuaty nadal nie ma w repo (`assets/` nie istnieje), więc zrobiony punkt 4 (materiały).
+- **`pipeline/uo_materials.py`** (nowy, wgrany do `.blend`): każdy slot materiału przedmiotu (zwykle po `uo_import_item.py`) idzie przez grupę `UO_Look`; kolor bierze z tego, co zasila `Base Color` Principled (tekstura, kolor, atrybut koloru) albo `Color` Diffuse/Emission albo z `diffuse_color` materiału bez węzłów; `Alpha` zamienia w przezroczystość (mix z Transparent; piksel jest w sprite'cie, gdy alpha >= 0,5); wyrzuca metal, połysk, mapy normalnych, emisję. Opcje: `SATURATION` (0 = szary przedmiot do farbowania w grze), `BRIGHTNESS`, `CLAMP` (albedo 0,02-0,98), `ALPHA`. Idempotentny.
+- **Test `pipeline/test_materials.py`** (kula przed piersią, Cycles, `04_stand`, 5 kierunków): „przed” = obcy materiał PBR (metal 1,0, roughness 0,15, tekstura) vs ten sam albedo w `UO_Look`: **średnia różnica kanału 55,5/255**; „po” (po `uo_materials.py`): **maks. różnica 1/255** (zaokrąglenia), tekstura szachownicy zachowana (129 kolorów vs 84), wycięcie alpha działa (pole 0,87; przez wycięcie widać wnętrze tylnej połowy kuli). Uwaga: generowane obrazy w teście muszą mieć `Non-Color` ustawione PRZED wpisaniem pikseli (zmiana po wpisaniu czyści obraz).
+- `test_import_item.py`: łańcuch ma teraz krok `uo_materials.py` (replika po eksporcie glTF traci grupę `UO_Look`, więc wychodzi jednolity biały: artefakt testu, nie skryptu). `model/UO_Body_0x190.blend` ZMIENIONY (binarny): tylko nowy osadzony tekst `uo_materials.py` (ciało, szkielet, reszta bez zmian). Dokumentacja: README.md, README_EN.md.
+- Czego `uo_materials.py` NIE robi: nie redukuje palety (to robi `uo_vd_writer.py`, 256 kolorów na blok), nie wypieka map normalnych w geometrię, nie rozpoznaje materiałów w grupach węzłów obcego modelu poza pierwszym shaderem, nie sprawdza prawdziwego modelu (żadnego darmowego w repo nie ma).
+
+## 8. Następne kroki (sesja 11)
 
 **Priorytety dla następnej instancji (ustalone z użytkownikiem w sesji 7, w tej kolejności):**
 1. **Włosy z Sketchfab (CC BY 4.0, autor Curuata, https://sketchfab.com/3d-models/hair-cc7e804cc15340db92d9464b32f71a2c, 4200 wierzchołków, referencja: fanowska fryzura Genshin/Ayato).** Pobranie wymaga loginu Sketchfab, więc **użytkownik sam pobiera glTF i wrzuca do repo** (np. `assets/hair_curuata/`); nie obchodź logowania. Po pojawieniu się pliku: `uo_import_item.py` (do `EXTENTS` trzeba dodać `hair`, `hat`; patrz punkt 2) -> `uo_bind_item.py PART="hair"` -> render -> porównanie z oryginalnymi włosami UO (sprite'ów włosów nie ma w `pipeline/body13/mul/`, trzeba je wyciągnąć z klienta). Zapisz atrybucję autora w repo (plik `assets/.../LICENSE_ATTRIBUTION.md`).
 2. ~~Analiza A~~ **zrobiona w sesji 8** (patrz dziennik, `docs/qa/layer_analysis.md`). Zostaje z niej: sprawdzić `MIN_GAP`/grubość dla warstw luźnych (szata, płaszcz, spódnica po `uo_cloth_bake.py`), bo `test_items` ich nie obejmuje; sprite'y włosów (`Hair`, 37 animacji) są teraz do porównań w `client/extract/layer_analysis.json` (z, pokrycie głowy), a same klatki wyciągniesz `vdtool/mul2vd.py`.
 3. ~~Analiza B (broń 1H w prawej dłoni)~~ **zrobiona w sesji 9** (kość `weapon1h.R`, średnio 1,74 -> 0,94 px). Zostaje: roll broni wokół osi (patrz 0c), oraz 464/467 (w `anim2`, nie sprawdzone) i 640/642 (`vdtool` nie czyta wyciągniętych `.vd`).
-4. **Materiały (krok 6):** zamiana tekstur/PBR obcego modelu na „UO look” (kolory w palecie, 18 kolorów w bloku), bo to wyjdzie na wierzch przy pierwszym prawdziwym modelu.
+4. ~~Materiały~~ **zrobione w sesji 10** (`uo_materials.py`). Zostaje: sprawdzenie na prawdziwym modelu (włosy Curuaty: `uo_import_item.py` -> `uo_materials.py` -> `uo_bind_item.py`), farbowanie (szarości + hue) i ocena liczby kolorów w bloku.
 5. Później/opcjonalnie: analiza C (statystyka zasłaniania per typ przedmiotu, uogólnienie `TORSO_HIDE_MARGIN`), pose-space deformation jako część modelu, `EDGE_COVER`.
 Czego nie robić: korekt per klatka (v12), dalszego strojenia replik `test_items`, dalszego dopasowywania sylwetki ciała (granica ok. 0,90).
 

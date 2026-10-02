@@ -116,6 +116,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | Tekst | Rola |
 |---|---|
 | `render_uo_layer.py` | Render warstwy do klatek i `.vd` (uruchamiasz Alt+P). |
+| `uo_materials.py` | Materiały obcego modelu (PBR, tekstury) → „UO look”: podpina kolor (tekstura, kolor, atrybut koloru) pod węzeł `UO_Look`, zachowuje przezroczystość (alpha ≥ 0,5 = piksel w sprite'cie), wyrzuca połysk, metal, mapy normalnych; `SATURATION = 0` daje szary przedmiot do farbowania w grze. Uruchom po `uo_import_item.py`. |
 | `uo_import_item.py` | Wprowadza obcy model (darmowy, `.glb` `.fbx` `.obj` `.dae`…) na ciało: wypieka siatkę bez obcego szkieletu i wag, skaluje i ustawia na wysokości oryginalnego przedmiotu UO danego typu (`KIND`), wrzuca do `Clothing` (przed `uo_fit_item.py`, rozdział 3). |
 | `uo_fit_item.py` | Obraca rękawy zaznaczonego przedmiotu na ręce i wypycha go ze skóry (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
@@ -143,8 +144,9 @@ do niego swoje przedmioty, a nie odwrotnie.
    wypieka siatkę (bez szkieletu i wag z pliku), wyrzuca z pliku wszystko poza siatką, skaluje i ustawia przedmiot tak, żeby
    jego wysokość pokryła się z oryginalnym przedmiotem UO tego typu na ciele (zakresy z oryginalnych sprite'ów), i wypisuje
    `PART` do `uo_bind_item.py`. Siatki w pliku są wylistowane: oczy, ciało modelu i kształty pomocnicze wyłącz przez `SKIP`.
-   Jeśli przedmiot patrzy tyłem, ustaw `TURN = 180`. Potem `uo_fit_item.py` i `uo_bind_item.py` (punkty niżej). Sprawdź licencję
-   modelu. Test na „obcym” pliku: `pipeline/test_import_item.py`.
+   Jeśli przedmiot patrzy tyłem, ustaw `TURN = 180`. Potem **`uo_materials.py`** (materiały obcego modelu w „UO look”; bez tego błyszczący metal
+   z modelu wyjdzie w renderze o ok. 55/255 inny niż światło UO), `uo_fit_item.py` i `uo_bind_item.py` (punkty niżej). Sprawdź licencję
+   modelu. Testy: `pipeline/test_import_item.py` (obcy plik), `pipeline/test_materials.py` (materiały).
    Wszystko w tej kolekcji trafia do renderowanej warstwy. `Example_Shirt` usuń albo wyłącz w renderze.
 4. **Ubranie, zbroja, hełm, buty, rękawice** (rzeczy, które się uginają): skrypt **`uo_bind_item.py`**.
    1. Każdy przedmiot, który w grze jest osobny (napierśnik, naramienniki, rękawice, buty, hełm), rób jako osobny

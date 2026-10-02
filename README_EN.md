@@ -120,6 +120,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | Text | Purpose |
 |---|---|
 | `render_uo_layer.py` | Renders a layer to frames and `.vd` (run with Alt+P). |
+| `uo_materials.py` | Puts the materials of a foreign model (PBR, textures) into the UO look: wires the colour (texture, colour, colour attribute) into the `UO_Look` node, keeps transparency (alpha >= 0.5 = pixel in the sprite), drops gloss, metal and normal maps; `SATURATION = 0` gives a grey item for in-game dyeing. Run it after `uo_import_item.py`. |
 | `uo_import_item.py` | Brings a foreign (e.g. free) model (`.glb` `.fbx` `.obj` `.dae`…) onto the body: bakes the mesh without the file's skeleton and weights, scales it and puts it at the height of the original UO item of that kind (`KIND`), in `Clothing` (before `uo_fit_item.py`, section 3). |
 | `uo_fit_item.py` | Turns the selected item's sleeves onto the arms and pushes it out of the skin (before `uo_bind_item.py`, section 3). |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
@@ -147,8 +148,8 @@ items into it, not the other way round.
    (Alt+P). It bakes the mesh (without the file's skeleton and weights), throws away everything but the mesh, scales and
    places the item so that its height matches the original UO item of that kind on the body (ranges from the original
    sprites), and prints the `PART` for `uo_bind_item.py`. The meshes in the file are listed: leave out eyes, the model's body
-   and helper shapes with `SKIP`. If the item faces backwards set `TURN = 180`. Then `uo_fit_item.py` and `uo_bind_item.py`
-   (below). Check the model's licence. Test on a "foreign" file: `pipeline/test_import_item.py`.
+   and helper shapes with `SKIP`. If the item faces backwards set `TURN = 180`. Then **`uo_materials.py`** (the foreign materials into the UO look; without it the model's shiny metal renders about 55/255 off the UO light), `uo_fit_item.py` and `uo_bind_item.py`
+   (below). Check the model's licence. Tests: `pipeline/test_import_item.py` (foreign file), `pipeline/test_materials.py` (materials).
    Everything in this collection goes into the rendered layer. Delete `Example_Shirt` or disable it in renders.
 4. **Clothing, armour, helmet, boots, gloves** (things that bend): the script **`uo_bind_item.py`**.
    1. Make every piece that is a separate item in the game (breastplate, pauldrons, gloves, boots, helmet) a separate
