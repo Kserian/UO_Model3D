@@ -42,6 +42,11 @@ OCCLUDERS = ["head", "upper_arm", "forearm", "hand", "thigh", "shin", "foot"]   
 OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs item: thighs, shins, pelvis) never hide it: the item
                                    # wraps them, so their skin in front of the item shell is the item's own edge, not an occluder
                                    # (it cut 1-px strips off the sides of trousers). False = every OCCLUDERS part may hide it
+TORSO_HIDE_MARGIN = 0.12           # m: the torso (pelvis, spine, chest, neck, clavicle) hides an item only where the item is at least this
+                                   # much behind it: a cloak hangs behind the body, so the chest must hide it; shells worn over the
+                                   # torso (up to ~3 cm thick) are never hidden. 0 = the torso never hides anything.
+                                   # Only when a cloak (cloth chains "cloak_*") is worn: UO draws other items over the torso even where
+                                   # they are behind it (a sleeve of an arm behind the chest), and hiding them cost 0.02-0.07 IoU
 DESPECKLE = 28                    # clothing: single dark pixels inside the item darker than their neighbours by more
                                    # than this (0-255) take the colour around them - deep sculpt details / rivets that
                                    # turn into black dots at UO size. 0 = off
@@ -448,6 +453,8 @@ def worn_parts(share=0.04):
 WORN = worn_parts() if (LAYER == "clothing" and OWN_PARTS_NEVER_HIDE) else set()
 OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP keeps the items away from
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
+CLOAK_WORN = any(g.name.startswith("cloak_") for o in clothes if not o.hide_render for g in o.vertex_groups)
+TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if (TORSO_HIDE_MARGIN > 0 and CLOAK_WORN and LAYER == "clothing") else None
 print("render_uo_layer: items wrap %s; body parts that may hide them: %s" % (sorted(WORN), sorted(set(OCCLUDERS) - WORN)))
 
 
@@ -511,6 +518,9 @@ def body_occlusion(free, margin):
         zi = np.where(miss, nb, zi)
     hold = free.copy()
     hold[occ & (zb < zi - margin)] = 0.0
+    if TORSO_TRIS is not None:                           # items behind the torso (cloak): clearly behind = hidden
+        occt, zt = raster([body], TORSO_TRIS)
+        hold[occt & (zt < zi - TORSO_HIDE_MARGIN)] = 0.0
     return hold, cov
 
 

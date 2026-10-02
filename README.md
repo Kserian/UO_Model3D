@@ -251,6 +251,8 @@ do niego swoje przedmioty, a nie odwrotnie.
                                # tułów nigdy (przedmioty leżą na nim)
    OWN_PARTS_NEVER_HIDE = True # części ciała, do których przedmiot jest oskórowany (spodnie: uda, golenie), nigdy go nie
                                # zasłaniają: przedmiot je okrywa, a ich skóra przed powłoką obcinała paski po bokach
+   TORSO_HIDE_MARGIN = 0.12    # tylko gdy noszony jest płaszcz: tułów zasłania przedmiot, gdy ten jest za nim o > 12 cm
+                               # (płaszcz wisi za plecami, a z przodu widać tylko jego boki)
    DESPECKLE = 28              # pojedyncze ciemne kropki w środku przedmiotu (głębokie detale, nity) dostają kolor
                                # otoczenia (0 = wył.)
    FILL_HOLES = 4              # dziurki do 4 px otoczone przedmiotem są wypełniane (0 = wył.)

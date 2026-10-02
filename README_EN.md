@@ -256,6 +256,8 @@ items into it, not the other way round.
                                # (items are worn over it)
    OWN_PARTS_NEVER_HIDE = True # body parts the item is skinned to (trousers: thighs, shins) never hide it: the item wraps
                                # them, and their skin in front of the shell cut 1-px strips off the sides
+   TORSO_HIDE_MARGIN = 0.12    # only when a cloak is worn: the torso hides the item where it is > 12 cm behind it
+                               # (a cloak hangs behind the back; from the front only its sides show)
    DESPECKLE = 28              # single dark dots inside the item (deep details, rivets) take the colour around
                                # them (0 = off)
    FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled (0 = off)

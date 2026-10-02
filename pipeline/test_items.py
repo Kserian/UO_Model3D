@@ -32,6 +32,9 @@ ITEMS = {      # name: sprite id, bones covered, thickness m, cut (bone, keep fr
     "legs":   dict(anim=529, parts=["pelvis", "thigh", "shin"], thickness=0.03, cut=None, zrange=[-9, 1.14], part="legs"),
     "boots":  dict(anim=477, parts=["shin", "foot"], thickness=0.015, cut=None, zrange=[-9, 0.56], part="boots"),
     "gloves": dict(anim=530, parts=["hand", "forearm"], thickness=0.03, cut=["forearm", 0.4], part="gloves"),
+    # loose items: the template of the body file (chains of the cloth, fitted to the original frames) stands for the item; no cloth bake
+    "skirt":  dict(anim=449, template="UO_Template_Skirt", part="skirt"),
+    "cloak":  dict(anim=468, template="UO_Template_Cloak", part="cloak"),
     "helm":   dict(anim=563, parts=["head"], thickness=0.02, cut=None, part="helm"),
 }
 DEFAULT_ITEMS = "shirt,plate,pants,boots,gloves,helm"
