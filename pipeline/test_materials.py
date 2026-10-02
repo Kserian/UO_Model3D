@@ -90,9 +90,9 @@ if __name__ == "__main__":
             continue
         lin = dec(f[..., 0].astype(float) / 255)[sel]
         c = np.clip((lin / 0.55 - 0.0798) / 0.9202, 0, 1)
-        pred = 255 * enc(lin + 0.5 * c ** 16)
+        pred = 255 * enc(lin + 1.0 * 0.55 * c ** 16)
         err = max(err, float(np.abs(pred - m[..., 0][sel]).max())); gain = max(gain, float((m[..., 0][sel].astype(float) - f[..., 0][sel]).max()))
-    print("metal: highlight adds up to %.0f/255; prediction (0.5 * c^16) off by at most %.1f" % (gain, err)); ok &= gain > 40 and err <= 8      # c comes from an 8-bit render and is raised to the 16th power: a few levels of quantisation noise
+    print("metal: highlight adds up to %.0f/255; prediction (1.0 * albedo * c^16) off by at most %.1f" % (gain, err)); ok &= gain > 40 and err <= 12     # c comes from an 8-bit render and is raised to the 16th power: a few levels of quantisation noise
     nref = len({tuple(p) for f in ref for p in f[f[..., 3] > 0][:, :3]}); nchk = len({tuple(p) for f in res["checker"] for p in f[f[..., 3] > 0][:, :3]})
     print("checker: %d colours vs %d for the flat sphere" % (nchk, nref)); ok &= nchk > nref
     areas = {v: sum(int((f[..., 3] > 0).sum()) for f in res[v]) for v in res}

@@ -8,7 +8,7 @@
 #   - the colour: whatever feeds "Base Color" of the Principled BSDF (a texture, a colour attribute, a plain colour), or "Color" of a Diffuse / Emission node,
 #     or the viewport colour of a material without nodes;
 #   - the cut-out: whatever feeds "Alpha" (hair cards, lace, chains on a transparent texture) becomes transparency (a pixel is in the sprite when alpha >= 0.5);
-#   - metal: a material with Metallic >= METAL_AT (or METAL = True) gets the highlight  SPEC_STRENGTH * max(N.L, 0) ^ SPEC_POWER  added to the UO light;
+#   - metal: a material with Metallic >= METAL_AT (or METAL = True) gets the highlight  SPEC_STRENGTH * albedo * max(N.L, 0) ^ SPEC_POWER  added to the UO light;
 # and drops the rest (roughness, normal / bump maps, emission, subsurface, coat, environment reflections): UO draws no such things. Normal maps are not baked into the
 # geometry; a model that relies on them for its shape will look flatter than on its own.
 # Run from Blender's Text Editor (Alt+P) after uo_import_item.py (the imported object is selected), or on the selected mesh objects of the scene. With nothing
@@ -22,9 +22,10 @@ CLAMP = True          # albedo kept between 0.02 and 0.98 (sprites have neither 
 ALPHA = True          # keep transparency from the model's Alpha input (False = opaque)
 METAL = None          # None = metal where the model's Metallic >= METAL_AT, True = every material is metal (plate), False = none (cloth, leather)
 METAL_AT = 0.5
-SPEC_STRENGTH = 0.5   # highlight added to the (linear) colour at N.L = 1; fitted on the sprites of plate 527 (0.62) and helm 563 (0.41) against replicas of their shape:
-SPEC_POWER = 16       # exponent of the lobe (13 and 20 in the same fits). A rough fit - the replica's normals are those of skin, not of armour - refine it
-                      # with a real metal item against its sprite (test_real_item.py) before trusting the last digit.
+SPEC_STRENGTH = 1.0   # highlight = SPEC_STRENGTH * albedo * max(N.L, 0) ^ SPEC_POWER, added to the UO light (linear light; the metal tints its own highlight).
+SPEC_POWER = 16       # Measured on the metal-named wearable animations of the client (light_items.py, 41 animations, body normals as the proxy): mail / ring / chain
+                      # SPEC_STRENGTH 0.7, power 11; the brightest quartile (plate, helms) 2.0, power 19; cloth and leather: Lambert only (0.3, no better than none).
+                      # 1.0 / 16 is in between; use 2.0 / 19 for shiny plate, 0.7 / 11 for mail. Docs: docs/qa/light_shadow.md
 REPORT = True
 
 _metallic = 0.0
@@ -63,8 +64,8 @@ def find_colour_source(nt):
     return col, default, asock, aval
 
 
-def add_highlight(nt, ng, shader, where):
-    """shader + Emission(SPEC_STRENGTH * max(N.L, 0) ^ SPEC_POWER), L = the UO light of the node group (world space)"""
+def add_highlight(nt, ng, shader, where, albedo, default):
+    """shader + Emission(albedo * SPEC_STRENGTH * max(N.L, 0) ^ SPEC_POWER), L = the UO light of the node group (world space)"""
     ldir = next(n for n in ng.nodes if n.type == "COMBXYZ")                   # "UO light direction (world)"
     geo = nt.nodes.new("ShaderNodeNewGeometry"); geo.location = (where[0] - 600, where[1] - 420)
     lv = nt.nodes.new("ShaderNodeCombineXYZ"); lv.location = (where[0] - 600, where[1] - 600)
@@ -73,7 +74,11 @@ def add_highlight(nt, ng, shader, where):
     dot = nt.nodes.new("ShaderNodeVectorMath"); dot.operation = "DOT_PRODUCT"; dot.location = (where[0] - 400, where[1] - 480)
     mxn = nt.nodes.new("ShaderNodeMath"); mxn.operation = "MAXIMUM"; mxn.inputs[1].default_value = 0.0; mxn.location = (where[0] - 250, where[1] - 480)
     pw = nt.nodes.new("ShaderNodeMath"); pw.operation = "POWER"; pw.inputs[1].default_value = SPEC_POWER; pw.location = (where[0] - 120, where[1] - 480)
-    em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Color"].default_value = (1, 1, 1, 1)
+    em = nt.nodes.new("ShaderNodeEmission")
+    if albedo is not None:
+        nt.links.new(albedo, em.inputs["Color"])
+    else:
+        em.inputs["Color"].default_value = default
     em.location = (where[0] + 40, where[1] - 400)
     ml = nt.nodes.new("ShaderNodeMath"); ml.operation = "MULTIPLY"; ml.inputs[1].default_value = SPEC_STRENGTH; ml.location = (where[0] + 40, where[1] - 520)
     nt.links.new(geo.outputs["Normal"], dot.inputs[0]); nt.links.new(lv.outputs["Vector"], dot.inputs[1])
@@ -134,7 +139,7 @@ def convert(mat, ng):
         nt.links.new(cur, grp.inputs["Albedo"])
     shader = grp.outputs["Shader"]
     if METAL or (METAL is None and metallic >= METAL_AT):             # before the cut-out, so that nothing glows where the item is transparent
-        shader = add_highlight(nt, ng, shader, where)
+        shader = add_highlight(nt, ng, shader, where, cur, grp.inputs["Albedo"].default_value)
         how += " + metal highlight"
     if ALPHA and (asock is not None or aval < 1.0):
         tr = nt.nodes.new("ShaderNodeBsdfTransparent"); tr.location = (where[0], where[1] - 160)
