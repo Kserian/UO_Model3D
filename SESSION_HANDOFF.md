@@ -251,7 +251,13 @@ kolejne kroki miały liczby „przed/po”.
 - `model/UO_Body_0x190.blend` ZMIENIONY (binarny): tylko osadzony tekst `render_uo_layer.py` (sync). Kopia: `/home/user/UO_Model3D_backup/` (tymczasowa) i commit `a99e81f`.
 - Uwaga do metryki: replika w `test_items` ma niedokładne cięcia (talia, dół, dekolt), więc część „braków" to artefakt repliki, nie renderu.
 
-## 8. Następne kroki (sesja 7)
+**Sesja 7 (2026-10-02).** Gałąź sesji `ccr-524e0ea0-tftgjx` (zadanie narzucało gałąź). Środowisko od zera (sekcja 4), `model/` NIE zmieniany. Tylko pomiar, bez zmian w kodzie.
+- Punkt 0d(a), płytówka (0,690): nakładka `test_items --img` pokazuje, że braki leżą przy kołnierzu/ramionach (góra sprite'a) i na dole (rąbek), a nie przy obrysie ciała. Replika (skóra ciała +0,03 m) nie ma kołnierza, naramienników ani rozszerzonego dołu. Zmierzone: grubość repliki 0,03 jest optimum (0,045 -> IoU 0,686; 0,06 -> 0,661; nadmiar rośnie 37 -> 55 -> 81 px, braki spadają 85 -> 75 -> 68 px). **Wniosek: 0,69 to granica repliki, nie błąd renderu ani ciała; dalsze strojenie `test_items` dla płytówki nie ma sensu.** Reguła `OWN_PARTS_NEVER_HIDE` jest tu neutralna, nie szkodliwa.
+- Brak w repo prawdziwego, ręcznie zrobionego przedmiotu (poza `model/example_clothing/Example_Shirt_layer.vd`), więc punkt 0d(a) w wersji „prawdziwy przedmiot” nadal czeka na przedmiot od użytkownika.
+
+## 8. Następne kroki (sesja 8)
+
+0e. (Sesja 7) Zostaje do wyboru: (a) rozszerzenie baseline'u `test_items` o inne ścieżki potoku (szata 469, płaszcz 468, spódnica 449 po `uo_cloth_bake.py`, katana 627, tarcza 582; sprite'y są w `pipeline/body13/mul/`), bo dziś testowane są tylko przedmioty „skóra + grubość”; (b) krok 7 (tworzenie przedmiotów), jeśli użytkownik poda pierwszy przedmiot; (c) krok 6 (materiały / ciało kobiece, wymaga odpowiedzi na pytanie o body 401 w sekcji 9). `test_items` dla ubrań typu skóra jest wyczerpany (średnia 0,717, patrz dziennik sesji 6 i 7).
 
 0d. (Sesja 6) Zostaje: (a) prawdziwy przedmiot zamiast repliki (np. sprawdzić koszulę/spodnie/płytówkę zrobioną ręcznie) dla oceny reguły `OWN_PARTS_NEVER_HIDE`; płytówka nie zyskała (0,690), sprawdź czemu (okluder uda/ramion przy grubszej powłoce);
     (b) dokładniejsze cięcia repliki w `test_items.py` (zrange z sprite'a po akcjach), żeby metryka nie mieszała błędu repliki z błędem renderu; (c) krok 6 (materiały) albo krok 7 (tworzenie przedmiotów), skoro ciało i render są blisko granicy.
