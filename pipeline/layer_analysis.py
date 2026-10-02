@@ -1,9 +1,9 @@
 """Analysis A: what every wearable layer of the original client looks like next to the body, from the `stand` frames (no Cycles).
 
-    python layer_analysis.py <client dir with anim*.idx/.mul + tiledata data> <parts.npz> <out.json> [--files anim,anim3,anim5]
+    python layer_analysis.py <client dir with anim*.idx/.mul + tiledata data> <parts.npz> <out.json> [--files anim,anim2,anim3,anim4,anim5]
 
 parts.npz comes from `body_part_raster.py ../model/UO_Body_0x190.blend parts.npz --actions 4` (part labels of the 3D body in the stand pose,
-canvas 145x133, anchor (75,92)). For every animation of `client/extract/item_animations.json` that has a layer < 25 (and frames in the listed files)
+canvas 145x133, anchor (75,92)). For every animation of `client/extract/item_animations.json` that has a layer < 25 (and frames in the listed files; default: all of anim, anim2, anim3, anim4, anim5 - the wearable animations in them are the game's originals)
 the 5 directions of action 4 (stand), frame 0, are put on a 256x256 canvas (anchor 128,192) next to the original body 400 and measured:
 
  * z range of the item in the rest pose (m, ground = 0): rows -> z = 0.07 - row / (36 cos 28.4557 deg), mean of the 5 directions (the formula of
@@ -84,7 +84,7 @@ def stand_mask(fl, tag, body, d):
 
 def main():
     args = sys.argv[1:]
-    files = ["anim", "anim3", "anim5"]
+    files = ["anim", "anim2", "anim3", "anim4", "anim5"]
     if "--files" in args:
         i = args.index("--files")
         files = args[i + 1].split(",")

@@ -32,9 +32,9 @@ EXTENTS = {"shirt": (0.999, 1.656, "chest"), "plate": (0.651, 1.643, "chest"), "
            "legs": (-0.107, 1.138, "legs"), "boots": (-0.069, 0.563, "boots"), "gloves": (0.797, 1.245, "gloves"), "helm": (1.504, 1.903, "helm"),
            "skirt": (0.026, 1.258, "skirt"), "cloak": (0.095, 1.675, "cloak"),
            # medians over the original animations of the layer (docs/qa/layer_analysis.md, pipeline/layer_analysis.py); robe = anim 469.
-           # hair / beard / hat: the TOP is reliable (hair 1.88-1.93 m for 80 % of the 21 hairstyles), the bottom depends on the style (hair 1.36-1.64):
+           # hair / beard / hat: the TOP is reliable (hair 1.88-1.93 m for 80 % of the 37 hairstyles), the bottom depends on the style (hair 1.34-1.64):
            # for a long hairstyle give SCALE yourself instead of letting the height decide
-           "hair": (1.54, 1.89, "hair"), "beard": (1.51, 1.73, "beard"), "hat": (1.52, 1.92, "hat"), "neck": (1.47, 1.64, "neck"),
+           "hair": (1.52, 1.89, "hair"), "beard": (1.52, 1.72, "beard"), "hat": (1.52, 1.92, "hat"), "neck": (1.48, 1.64, "neck"),
            "robe": (0.026, 1.719, "robe")}
 
 body = bpy.data.objects["UO_Body"]

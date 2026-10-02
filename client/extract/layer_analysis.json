@@ -9,7 +9,9 @@
  ],
  "files": [
   "anim",
+  "anim2",
   "anim3",
+  "anim4",
   "anim5"
  ],
  "animations": {
@@ -728,6 +730,190 @@
     }
    }
   },
+  "423": {
+   "src": "anim4:412",
+   "items": [
+    "Leather Ninja Pants",
+    "Leather Ninja Pants"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.095,
+   "zhi": 1.226,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.418,
+    "upper_arm": 0.044,
+    "forearm": 0.1,
+    "hand": 0.126,
+    "thigh": 0.967,
+    "shin": 0.828,
+    "foot": 0.02
+   },
+   "out": {
+    "torso": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 14,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "shin": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "foot": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "424": {
+   "src": "anim4:413",
+   "items": [
+    "Leather Ninja Mitts",
+    "Leather Ninja Mitts"
+   ],
+   "layers": [
+    "Gloves"
+   ],
+   "zlo": 0.822,
+   "zhi": 1.119,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.014,
+    "upper_arm": 0.0,
+    "forearm": 0.269,
+    "hand": 0.766,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "425": {
+   "src": "anim4:410",
+   "items": [
+    "Leather Ninja Hood",
+    "Leather Ninja Hood"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.466,
+   "zhi": 1.877,
+   "cover": {
+    "head": 0.827,
+    "neck": 0.837,
+    "torso": 0.046,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "426": {
+   "src": "anim4:411",
+   "items": [
+    "Leather Ninja Jacket",
+    "Leather Ninja Jacket"
+   ],
+   "layers": [
+    "InnerTorso"
+   ],
+   "zlo": 0.904,
+   "zhi": 1.637,
+   "cover": {
+    "head": 0.032,
+    "neck": 0.735,
+    "torso": 0.802,
+    "upper_arm": 0.925,
+    "forearm": 0.641,
+    "hand": 0.018,
+    "thigh": 0.002,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
   "430": {
    "src": "anim:430",
    "items": [
@@ -966,6 +1152,160 @@
     }
    }
   },
+  "442": {
+   "src": "anim4:414",
+   "items": [
+    "Mail Hatsuburi",
+    "Mail Hatsuburi"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.346,
+   "zhi": 1.871,
+   "cover": {
+    "head": 0.662,
+    "neck": 0.953,
+    "torso": 0.228,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "443": {
+   "src": "anim4:415",
+   "items": [
+    "Plate Hatsuburi",
+    "Plate Hatsuburi"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.473,
+   "zhi": 1.865,
+   "cover": {
+    "head": 0.637,
+    "neck": 0.848,
+    "torso": 0.04,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {}
+  },
+  "444": {
+   "src": "anim4:416",
+   "items": [
+    "Leather Jingasa",
+    "Leather Jingasa"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.662,
+   "zhi": 1.884,
+   "cover": {
+    "head": 0.63,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 7,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    }
+   }
+  },
+  "445": {
+   "src": "anim4:417",
+   "items": [
+    "Plate Jingasa",
+    "Plate Jingasa"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.669,
+   "zhi": 1.884,
+   "cover": {
+    "head": 0.632,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 31,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 4.0
+    }
+   }
+  },
+  "446": {
+   "src": "anim4:418",
+   "items": [
+    "Plate Jingasa",
+    "Plate Jingasa"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.669,
+   "zhi": 1.884,
+   "cover": {
+    "head": 0.634,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 31,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 4.0
+    }
+   }
+  },
   "447": {
    "src": "anim:447",
    "items": [
@@ -1187,6 +1527,86 @@
     }
    }
   },
+  "450": {
+   "src": "anim4:419",
+   "items": [
+    "Plate Jingasa",
+    "Plate Jingasa"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.694,
+   "zhi": 1.89,
+   "cover": {
+    "head": 0.519,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "451": {
+   "src": "anim4:420",
+   "items": [
+    "Plate Kabuto",
+    "Plate Kabuto"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.523,
+   "zhi": 1.972,
+   "cover": {
+    "head": 0.751,
+    "neck": 0.588,
+    "torso": 0.025,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 22,
+     "p50": 1.41,
+     "p90": 3.61,
+     "max": 5.0
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.41,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
   "455": {
    "src": "anim:455",
    "items": [
@@ -1239,6 +1659,324 @@
      "p50": 1.41,
      "p90": 2.07,
      "max": 2.24
+    }
+   }
+  },
+  "457": {
+   "src": "anim4:422",
+   "items": [
+    "Leather Do",
+    "Leather Do"
+   ],
+   "layers": [
+    "InnerTorso"
+   ],
+   "zlo": 0.664,
+   "zhi": 1.612,
+   "cover": {
+    "head": 0.003,
+    "neck": 0.119,
+    "torso": 0.771,
+    "upper_arm": 0.171,
+    "forearm": 0.12,
+    "hand": 0.441,
+    "thigh": 0.395,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.94,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 4,
+     "p50": 1.41,
+     "p90": 2.0,
+     "max": 4.0
+    },
+    "hand": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "thigh": {
+     "n": 14,
+     "p50": 1.71,
+     "p90": 3.0,
+     "max": 4.0
+    }
+   }
+  },
+  "458": {
+   "src": "anim4:423",
+   "items": [
+    "Studded Do",
+    "Studded Do"
+   ],
+   "layers": [
+    "InnerTorso"
+   ],
+   "zlo": 0.664,
+   "zhi": 1.612,
+   "cover": {
+    "head": 0.003,
+    "neck": 0.119,
+    "torso": 0.77,
+    "upper_arm": 0.173,
+    "forearm": 0.118,
+    "hand": 0.437,
+    "thigh": 0.395,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 4,
+     "p50": 1.41,
+     "p90": 2.0,
+     "max": 4.0
+    },
+    "hand": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "thigh": {
+     "n": 14,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 4.0
+    }
+   }
+  },
+  "459": {
+   "src": "anim4:424",
+   "items": [
+    "Plate Do",
+    "Plate Do"
+   ],
+   "layers": [
+    "InnerTorso"
+   ],
+   "zlo": 0.664,
+   "zhi": 1.612,
+   "cover": {
+    "head": 0.003,
+    "neck": 0.119,
+    "torso": 0.771,
+    "upper_arm": 0.171,
+    "forearm": 0.122,
+    "hand": 0.441,
+    "thigh": 0.395,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 4,
+     "p50": 1.41,
+     "p90": 2.0,
+     "max": 4.0
+    },
+    "hand": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "thigh": {
+     "n": 14,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 4.0
+    }
+   }
+  },
+  "462": {
+   "src": "anim4:427",
+   "items": [
+    "Plate Kabuto",
+    "Plate Kabuto"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.523,
+   "zhi": 1.972,
+   "cover": {
+    "head": 0.751,
+    "neck": 0.588,
+    "torso": 0.025,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 22,
+     "p50": 1.41,
+     "p90": 3.61,
+     "max": 5.0
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.41,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "463": {
+   "src": "anim4:428",
+   "items": [
+    "Plate Kabuto",
+    "Plate Kabuto"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.523,
+   "zhi": 1.884,
+   "cover": {
+    "head": 0.748,
+    "neck": 0.588,
+    "torso": 0.025,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 14,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.41,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "464": {
+   "src": "anim4:429",
+   "items": [
+    "Wakizashi",
+    "Wakizashi"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.885,
+   "zhi": 1.125,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.009,
+    "upper_arm": 0.0,
+    "forearm": 0.025,
+    "hand": 0.217,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 2,
+     "p50": 2.91,
+     "p90": 5.94,
+     "max": 6.71
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 2.0,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.8,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 6,
+     "p50": 7.11,
+     "p90": 12.97,
+     "max": 15.62
+    },
+    "thigh": {
+     "n": 0,
+     "p50": 1.41,
+     "p90": 1.41,
+     "max": 1.41
     }
    }
   },
@@ -1343,6 +2081,61 @@
      "p50": 1.0,
      "p90": 1.0,
      "max": 1.41
+    }
+   }
+  },
+  "467": {
+   "src": "anim4:430",
+   "items": [
+    "Bokuto",
+    "Bokuto"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.866,
+   "zhi": 1.321,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.005,
+    "upper_arm": 0.002,
+    "forearm": 0.025,
+    "hand": 0.188,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 3,
+     "p50": 4.12,
+     "p90": 6.85,
+     "max": 8.6
+    },
+    "upper_arm": {
+     "n": 1,
+     "p50": 2.0,
+     "p90": 3.43,
+     "max": 3.61
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 2.0,
+     "p90": 21.69,
+     "max": 22.09
+    },
+    "hand": {
+     "n": 12,
+     "p50": 11.66,
+     "p90": 21.48,
+     "max": 26.63
+    },
+    "thigh": {
+     "n": 0,
+     "p50": 1.71,
+     "p90": 1.94,
+     "max": 2.0
     }
    }
   },
@@ -1506,6 +2299,177 @@
     }
    }
   },
+  "470": {
+   "src": "anim4:431",
+   "items": [
+    "Daisho",
+    "Daisho"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.721,
+   "zhi": 1.454,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.026,
+    "upper_arm": 0.003,
+    "forearm": 0.06,
+    "hand": 0.318,
+    "thigh": 0.006,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 7.0,
+     "p90": 20.1,
+     "max": 25.71
+    },
+    "torso": {
+     "n": 6,
+     "p50": 5.0,
+     "p90": 6.0,
+     "max": 24.0
+    },
+    "upper_arm": {
+     "n": 3,
+     "p50": 4.24,
+     "p90": 7.15,
+     "max": 7.62
+    },
+    "forearm": {
+     "n": 4,
+     "p50": 2.0,
+     "p90": 19.8,
+     "max": 21.21
+    },
+    "hand": {
+     "n": 12,
+     "p50": 5.5,
+     "p90": 17.77,
+     "max": 25.0
+    },
+    "thigh": {
+     "n": 1,
+     "p50": 2.0,
+     "p90": 2.6,
+     "max": 3.0
+    }
+   }
+  },
+  "473": {
+   "src": "anim4:434",
+   "items": [
+    "Samurai Armor Arms",
+    "Samurai Armor Arms"
+   ],
+   "layers": [
+    "Arms"
+   ],
+   "zlo": 0.885,
+   "zhi": 1.662,
+   "cover": {
+    "head": 0.03,
+    "neck": 0.759,
+    "torso": 0.188,
+    "upper_arm": 0.805,
+    "forearm": 0.659,
+    "hand": 0.021,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 1.41
+    },
+    "upper_arm": {
+     "n": 13,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "474": {
+   "src": "anim4:435",
+   "items": [
+    "Samurai Armor Arms",
+    "Samurai Armor Arms"
+   ],
+   "layers": [
+    "Arms"
+   ],
+   "zlo": 0.885,
+   "zhi": 1.669,
+   "cover": {
+    "head": 0.03,
+    "neck": 0.768,
+    "torso": 0.175,
+    "upper_arm": 0.785,
+    "forearm": 0.647,
+    "hand": 0.021,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.6,
+     "max": 2.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.25,
+     "max": 1.41
+    },
+    "upper_arm": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
   "476": {
    "src": "anim:476",
    "items": [
@@ -1592,6 +2556,61 @@
     }
    }
   },
+  "478": {
+   "src": "anim4:436",
+   "items": [
+    "Samurai Armor Arms",
+    "Samurai Armor Arms"
+   ],
+   "layers": [
+    "Arms"
+   ],
+   "zlo": 0.891,
+   "zhi": 1.681,
+   "cover": {
+    "head": 0.03,
+    "neck": 0.768,
+    "torso": 0.175,
+    "upper_arm": 0.783,
+    "forearm": 0.627,
+    "hand": 0.016,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.74,
+     "max": 2.24
+    },
+    "upper_arm": {
+     "n": 20,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.24
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
   "479": {
    "src": "anim:479",
    "items": [
@@ -1666,6 +2685,171 @@
     }
    }
   },
+  "487": {
+   "src": "anim4:516",
+   "items": [
+    "Leather Suneate",
+    "Leather Suneate"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.095,
+   "zhi": 1.233,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.415,
+    "upper_arm": 0.054,
+    "forearm": 0.113,
+    "hand": 0.141,
+    "thigh": 0.963,
+    "shin": 0.952,
+    "foot": 0.028
+   },
+   "out": {
+    "torso": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 9,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "shin": {
+     "n": 11,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "foot": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "488": {
+   "src": "anim4:518",
+   "items": [
+    "Studded Suneate",
+    "Studded Suneate"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.064,
+   "zhi": 1.201,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.373,
+    "upper_arm": 0.037,
+    "forearm": 0.103,
+    "hand": 0.126,
+    "thigh": 0.969,
+    "shin": 0.983,
+    "foot": 0.097
+   },
+   "out": {
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 9,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "shin": {
+     "n": 13,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "foot": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "489": {
+   "src": "anim4:519",
+   "items": [
+    "Plate Suneate",
+    "Plate Suneate"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.064,
+   "zhi": 1.201,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.372,
+    "upper_arm": 0.037,
+    "forearm": 0.103,
+    "hand": 0.126,
+    "thigh": 0.969,
+    "shin": 0.983,
+    "foot": 0.097
+   },
+   "out": {
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 9,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "shin": {
+     "n": 13,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "foot": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
   "490": {
    "src": "anim:490",
    "items": [
@@ -1706,6 +2890,67 @@
      "p50": 1.0,
      "p90": 1.0,
      "max": 1.0
+    }
+   }
+  },
+  "491": {
+   "src": "anim4:520",
+   "items": [
+    "Leather Haidate",
+    "Leather Haidate"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.474,
+   "zhi": 1.195,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.382,
+    "upper_arm": 0.032,
+    "forearm": 0.129,
+    "hand": 0.26,
+    "thigh": 0.726,
+    "shin": 0.017,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.65,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "thigh": {
+     "n": 42,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "shin": {
+     "n": 2,
+     "p50": 1.41,
+     "p90": 2.24,
+     "max": 3.0
     }
    }
   },
@@ -2073,6 +3318,520 @@
     }
    }
   },
+  "506": {
+   "src": "anim4:437",
+   "items": [
+    "Plate Haidate",
+    "Plate Haidate"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.474,
+   "zhi": 1.195,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.376,
+    "upper_arm": 0.032,
+    "forearm": 0.129,
+    "hand": 0.265,
+    "thigh": 0.725,
+    "shin": 0.017,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.65,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "thigh": {
+     "n": 42,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "shin": {
+     "n": 2,
+     "p50": 1.41,
+     "p90": 2.24,
+     "max": 3.0
+    }
+   }
+  },
+  "512": {
+   "src": "anim4:438",
+   "items": [
+    "Studded Haidate",
+    "Studded Haidate"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.474,
+   "zhi": 1.195,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.382,
+    "upper_arm": 0.032,
+    "forearm": 0.129,
+    "hand": 0.265,
+    "thigh": 0.725,
+    "shin": 0.017,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.65,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "thigh": {
+     "n": 42,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "shin": {
+     "n": 2,
+     "p50": 1.41,
+     "p90": 2.24,
+     "max": 3.0
+    }
+   }
+  },
+  "513": {
+   "src": "anim4:439",
+   "items": [
+    "Leather Ninja Hood",
+    "Leather Ninja Hood"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.466,
+   "zhi": 1.877,
+   "cover": {
+    "head": 0.831,
+    "neck": 0.837,
+    "torso": 0.046,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "514": {
+   "src": "anim4:440",
+   "items": [
+    "Leather Ninja Belt",
+    "Leather Ninja Belt",
+    "First Aid Belt"
+   ],
+   "layers": [
+    "Waist"
+   ],
+   "zlo": 1.005,
+   "zhi": 1.245,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.21,
+    "upper_arm": 0.043,
+    "forearm": 0.042,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "516": {
+   "src": "anim4:441",
+   "items": [
+    "Kasa",
+    "Kasa"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.599,
+   "zhi": 1.915,
+   "cover": {
+    "head": 0.876,
+    "neck": 0.049,
+    "torso": 0.002,
+    "upper_arm": 0.004,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 50,
+     "p50": 2.0,
+     "p90": 4.0,
+     "max": 5.1
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 2.25,
+     "max": 2.83
+    },
+    "torso": {
+     "n": 1,
+     "p50": 2.12,
+     "p90": 3.18,
+     "max": 3.61
+    },
+    "upper_arm": {
+     "n": 4,
+     "p50": 2.91,
+     "p90": 4.0,
+     "max": 5.0
+    }
+   }
+  },
+  "517": {
+   "src": "anim4:442",
+   "items": [
+    "Kamishimo ",
+    "Kamishimo "
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": 0.026,
+   "zhi": 1.694,
+   "cover": {
+    "head": 0.076,
+    "neck": 0.879,
+    "torso": 0.982,
+    "upper_arm": 0.96,
+    "forearm": 0.798,
+    "hand": 0.36,
+    "thigh": 1.0,
+    "shin": 1.0,
+    "foot": 0.408
+   },
+   "out": {
+    "head": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.24
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 18,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.24
+    },
+    "upper_arm": {
+     "n": 36,
+     "p50": 1.0,
+     "p90": 2.71,
+     "max": 4.47
+    },
+    "forearm": {
+     "n": 14,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "thigh": {
+     "n": 42,
+     "p50": 1.0,
+     "p90": 2.83,
+     "max": 5.0
+    },
+    "shin": {
+     "n": 48,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 5.0
+    },
+    "foot": {
+     "n": 11,
+     "p50": 1.0,
+     "p90": 2.9,
+     "max": 4.47
+    }
+   }
+  },
+  "518": {
+   "src": "anim4:443",
+   "items": [
+    "Hakama",
+    "Hakama"
+   ],
+   "layers": [
+    "OuterLegs"
+   ],
+   "zlo": 0.121,
+   "zhi": 1.226,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.402,
+    "upper_arm": 0.049,
+    "forearm": 0.206,
+    "hand": 0.215,
+    "thigh": 1.0,
+    "shin": 0.929,
+    "foot": 0.058
+   },
+   "out": {
+    "torso": {
+     "n": 10,
+     "p50": 1.0,
+     "p90": 1.04,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 33,
+     "p50": 1.0,
+     "p90": 2.12,
+     "max": 4.12
+    },
+    "shin": {
+     "n": 38,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 5.0
+    },
+    "foot": {
+     "n": 4,
+     "p50": 1.41,
+     "p90": 3.16,
+     "max": 4.47
+    }
+   }
+  },
+  "519": {
+   "src": "anim4:444",
+   "items": [
+    "No-Dachi",
+    "No-Dachi"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.771,
+   "zhi": 1.479,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.005,
+    "upper_arm": 0.0,
+    "forearm": 0.02,
+    "hand": 0.188,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 3,
+     "p50": 25.22,
+     "p90": 30.61,
+     "max": 31.14
+    },
+    "torso": {
+     "n": 6,
+     "p50": 5.0,
+     "p90": 18.1,
+     "max": 24.0
+    },
+    "upper_arm": {
+     "n": 1,
+     "p50": 3.0,
+     "p90": 10.78,
+     "max": 11.4
+    },
+    "forearm": {
+     "n": 4,
+     "p50": 18.61,
+     "p90": 24.43,
+     "max": 26.31
+    },
+    "hand": {
+     "n": 9,
+     "p50": 6.08,
+     "p90": 18.14,
+     "max": 22.8
+    },
+    "thigh": {
+     "n": 2,
+     "p50": 1.41,
+     "p90": 9.22,
+     "max": 10.44
+    }
+   }
+  },
+  "520": {
+   "src": "anim4:445",
+   "items": [
+    "Tessen",
+    "Tessen"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.474,
+   "zhi": 1.195,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.065,
+    "upper_arm": 0.0,
+    "forearm": 0.055,
+    "hand": 0.407,
+    "thigh": 0.183,
+    "shin": 0.014,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 9,
+     "p50": 4.0,
+     "p90": 7.0,
+     "max": 9.0
+    },
+    "upper_arm": {
+     "n": 2,
+     "p50": 8.0,
+     "p90": 9.04,
+     "max": 10.05
+    },
+    "forearm": {
+     "n": 24,
+     "p50": 4.47,
+     "p90": 7.21,
+     "max": 9.9
+    },
+    "hand": {
+     "n": 62,
+     "p50": 5.66,
+     "p90": 9.49,
+     "max": 11.05
+    },
+    "thigh": {
+     "n": 47,
+     "p50": 4.0,
+     "p90": 7.69,
+     "max": 10.63
+    },
+    "shin": {
+     "n": 3,
+     "p50": 6.0,
+     "p90": 7.4,
+     "max": 8.94
+    }
+   }
+  },
   "521": {
    "src": "anim:521",
    "items": [
@@ -2222,6 +3981,67 @@
      "p50": 1.0,
      "p90": 1.0,
      "max": 1.0
+    }
+   }
+  },
+  "526": {
+   "src": "anim4:446",
+   "items": [
+    "Lajatang",
+    "Lajatang"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.582,
+   "zhi": 1.403,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.009,
+    "upper_arm": 0.018,
+    "forearm": 0.011,
+    "hand": 0.215,
+    "thigh": 0.003,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 9,
+     "p50": 7.0,
+     "p90": 10.02,
+     "max": 12.37
+    },
+    "upper_arm": {
+     "n": 5,
+     "p50": 2.0,
+     "p90": 12.0,
+     "max": 14.0
+    },
+    "forearm": {
+     "n": 3,
+     "p50": 2.0,
+     "p90": 16.72,
+     "max": 18.11
+    },
+    "hand": {
+     "n": 23,
+     "p50": 12.62,
+     "p90": 18.03,
+     "max": 21.4
+    },
+    "thigh": {
+     "n": 4,
+     "p50": 2.0,
+     "p90": 9.02,
+     "max": 10.44
+    },
+    "shin": {
+     "n": 2,
+     "p50": 8.42,
+     "p90": 11.61,
+     "max": 11.7
     }
    }
   },
@@ -2457,6 +4277,275 @@
     }
    }
   },
+  "532": {
+   "src": "anim4:447",
+   "items": [
+    "Fukiya",
+    "Fukiya"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.771,
+   "zhi": 1.094,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.003,
+    "upper_arm": 0.0,
+    "forearm": 0.007,
+    "hand": 0.21,
+    "thigh": 0.005,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 5,
+     "p50": 4.0,
+     "p90": 7.04,
+     "max": 8.06
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "hand": {
+     "n": 4,
+     "p50": 3.3,
+     "p90": 8.7,
+     "max": 9.9
+    },
+    "thigh": {
+     "n": 4,
+     "p50": 2.0,
+     "p90": 8.25,
+     "max": 9.22
+    }
+   }
+  },
+  "533": {
+   "src": "anim4:448",
+   "items": [
+    "Tekagi",
+    "Tekagi"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.519,
+   "zhi": 1.081,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.005,
+    "upper_arm": 0.002,
+    "forearm": 0.107,
+    "hand": 0.4,
+    "thigh": 0.033,
+    "shin": 0.002,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 3,
+     "p50": 2.0,
+     "p90": 4.5,
+     "max": 5.83
+    },
+    "hand": {
+     "n": 10,
+     "p50": 2.24,
+     "p90": 7.86,
+     "max": 12.0
+    },
+    "thigh": {
+     "n": 11,
+     "p50": 3.0,
+     "p90": 5.03,
+     "max": 6.71
+    },
+    "shin": {
+     "n": 1,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 3.0
+    }
+   }
+  },
+  "535": {
+   "src": "anim4:450",
+   "items": [
+    "Kama",
+    "Kama"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.721,
+   "zhi": 1.41,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.035,
+    "upper_arm": 0.013,
+    "forearm": 0.046,
+    "hand": 0.228,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 7,
+     "p50": 6.5,
+     "p90": 11.3,
+     "max": 13.0
+    },
+    "upper_arm": {
+     "n": 5,
+     "p50": 7.28,
+     "p90": 11.39,
+     "max": 12.65
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "hand": {
+     "n": 14,
+     "p50": 5.0,
+     "p90": 9.39,
+     "max": 13.45
+    },
+    "thigh": {
+     "n": 0,
+     "p50": 2.0,
+     "p90": 8.9,
+     "max": 10.63
+    },
+    "shin": {
+     "n": 0,
+     "p50": 6.0,
+     "p90": 6.0,
+     "max": 6.0
+    }
+   }
+  },
+  "536": {
+   "src": "anim4:451",
+   "items": [
+    "Nunchaku",
+    "Nunchaku"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.74,
+   "zhi": 1.03,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.016,
+    "upper_arm": 0.0,
+    "forearm": 0.024,
+    "hand": 0.302,
+    "thigh": 0.003,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 3.37,
+     "max": 4.12
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "hand": {
+     "n": 8,
+     "p50": 2.0,
+     "p90": 3.61,
+     "max": 5.83
+    },
+    "thigh": {
+     "n": 5,
+     "p50": 2.0,
+     "p90": 4.12,
+     "max": 5.1
+    }
+   }
+  },
+  "537": {
+   "src": "anim4:452",
+   "items": [
+    "Sai",
+    "Sai"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.74,
+   "zhi": 1.397,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.034,
+    "upper_arm": 0.003,
+    "forearm": 0.036,
+    "hand": 0.375,
+    "thigh": 0.009,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 4,
+     "p50": 3.5,
+     "p90": 7.0,
+     "max": 8.0
+    },
+    "upper_arm": {
+     "n": 2,
+     "p50": 6.08,
+     "p90": 8.94,
+     "max": 9.43
+    },
+    "forearm": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 2.62,
+     "max": 3.0
+    },
+    "hand": {
+     "n": 13,
+     "p50": 3.16,
+     "p90": 8.85,
+     "max": 13.42
+    },
+    "thigh": {
+     "n": 1,
+     "p50": 2.5,
+     "p90": 4.19,
+     "max": 5.39
+    }
+   }
+  },
   "538": {
    "src": "anim:538",
    "items": [
@@ -2521,6 +4610,54 @@
      "p50": 1.0,
      "p90": 1.41,
      "max": 3.0
+    }
+   }
+  },
+  "539": {
+   "src": "anim4:453",
+   "items": [
+    "stare rekawice"
+   ],
+   "layers": [
+    "Gloves"
+   ],
+   "zlo": 0.784,
+   "zhi": 1.043,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.006,
+    "upper_arm": 0.0,
+    "forearm": 0.009,
+    "hand": 0.238,
+    "thigh": 0.015,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 6,
+     "p50": 3.0,
+     "p90": 8.9,
+     "max": 10.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 2.0,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 4,
+     "p50": 2.24,
+     "p90": 7.0,
+     "max": 9.06
+    },
+    "thigh": {
+     "n": 2,
+     "p50": 3.71,
+     "p90": 8.34,
+     "max": 9.22
     }
    }
   },
@@ -3031,6 +5168,140 @@
     }
    }
   },
+  "552": {
+   "src": "anim4:456",
+   "items": [
+    "Tattsuke-Hakama",
+    "Tattsuke-Hakama"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.095,
+   "zhi": 1.233,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.425,
+    "upper_arm": 0.044,
+    "forearm": 0.114,
+    "hand": 0.126,
+    "thigh": 0.992,
+    "shin": 0.93,
+    "foot": 0.034
+   },
+   "out": {
+    "torso": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 1.29,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 20,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "shin": {
+     "n": 12,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "foot": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "553": {
+   "src": "anim4:457",
+   "items": [
+    "Hakama-Shita",
+    "Hakama-Shita"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": 0.683,
+   "zhi": 1.643,
+   "cover": {
+    "head": 0.022,
+    "neck": 0.677,
+    "torso": 0.982,
+    "upper_arm": 0.994,
+    "forearm": 0.785,
+    "hand": 0.199,
+    "thigh": 0.429,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "forearm": {
+     "n": 13,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
   "554": {
    "src": "anim:554",
    "items": [
@@ -3230,6 +5501,152 @@
      "p50": 1.0,
      "p90": 1.0,
      "max": 1.0
+    }
+   }
+  },
+  "558": {
+   "src": "anim4:458",
+   "items": [
+    "Male Kimono",
+    "Male Kimono"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": 0.057,
+   "zhi": 1.637,
+   "cover": {
+    "head": 0.03,
+    "neck": 0.73,
+    "torso": 0.987,
+    "upper_arm": 0.978,
+    "forearm": 0.834,
+    "hand": 0.413,
+    "thigh": 0.994,
+    "shin": 0.982,
+    "foot": 0.194
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 14,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.83
+    },
+    "upper_arm": {
+     "n": 9,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "forearm": {
+     "n": 13,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 1.65,
+     "max": 2.24
+    },
+    "thigh": {
+     "n": 52,
+     "p50": 1.41,
+     "p90": 2.83,
+     "max": 4.0
+    },
+    "shin": {
+     "n": 58,
+     "p50": 1.41,
+     "p90": 3.0,
+     "max": 4.12
+    },
+    "foot": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.31,
+     "max": 4.12
+    }
+   }
+  },
+  "559": {
+   "src": "anim4:459",
+   "items": [
+    "Female Kimono",
+    "Female Kimono"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": 0.057,
+   "zhi": 1.631,
+   "cover": {
+    "head": 0.035,
+    "neck": 0.67,
+    "torso": 0.975,
+    "upper_arm": 0.928,
+    "forearm": 0.73,
+    "hand": 0.201,
+    "thigh": 0.981,
+    "shin": 0.961,
+    "foot": 0.194
+   },
+   "out": {
+    "torso": {
+     "n": 12,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "upper_arm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.24,
+     "max": 3.0
+    },
+    "forearm": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 15,
+     "p50": 1.0,
+     "p90": 2.47,
+     "max": 3.16
+    },
+    "shin": {
+     "n": 25,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 4.12
+    },
+    "foot": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.92,
+     "max": 4.12
     }
    }
   },
@@ -3545,6 +5962,300 @@
      "p50": 1.71,
      "p90": 3.0,
      "max": 3.0
+    }
+   }
+  },
+  "567": {
+   "src": "anim4:460",
+   "items": [
+    "Obi ",
+    "Obi "
+   ],
+   "layers": [
+    "Waist"
+   ],
+   "zlo": 0.999,
+   "zhi": 1.188,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.186,
+    "upper_arm": 0.029,
+    "forearm": 0.042,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "568": {
+   "src": "anim4:461",
+   "items": [
+    "Jin-Baori",
+    "Jin-Baori"
+   ],
+   "layers": [
+    "MiddleTorso"
+   ],
+   "zlo": 0.715,
+   "zhi": 1.612,
+   "cover": {
+    "head": 0.014,
+    "neck": 0.609,
+    "torso": 0.743,
+    "upper_arm": 0.096,
+    "forearm": 0.192,
+    "hand": 0.39,
+    "thigh": 0.302,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 11,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.16
+    },
+    "upper_arm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 1.41
+    },
+    "forearm": {
+     "n": 7,
+     "p50": 1.0,
+     "p90": 2.14,
+     "max": 3.0
+    },
+    "hand": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 1.9,
+     "max": 3.0
+    },
+    "thigh": {
+     "n": 13,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 3.0
+    }
+   }
+  },
+  "569": {
+   "src": "anim4:462",
+   "items": [
+    "Samurai Sandal/Tabi",
+    "Samurai Sandal/Tabi"
+   ],
+   "layers": [
+    "Shoes"
+   ],
+   "zlo": -0.094,
+   "zhi": 0.234,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.12,
+    "foot": 0.956
+   },
+   "out": {
+    "shin": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "foot": {
+     "n": 17,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    }
+   }
+  },
+  "571": {
+   "src": "anim4:464",
+   "items": [
+    "Cloth Ninja Jacket",
+    "Cloth Ninja Jacket"
+   ],
+   "layers": [
+    "InnerTorso"
+   ],
+   "zlo": 0.904,
+   "zhi": 1.637,
+   "cover": {
+    "head": 0.032,
+    "neck": 0.735,
+    "torso": 0.802,
+    "upper_arm": 0.927,
+    "forearm": 0.642,
+    "hand": 0.018,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "572": {
+   "src": "anim4:465",
+   "items": [
+    "Ninja Tall Tabi",
+    "Ninja Tall Tabi"
+   ],
+   "layers": [
+    "Shoes"
+   ],
+   "zlo": -0.05,
+   "zhi": 0.455,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.001,
+    "shin": 0.549,
+    "foot": 0.845
+   },
+   "out": {
+    "shin": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "foot": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "575": {
+   "src": "anim4:466",
+   "items": [
+    "Yumi",
+    "Yumi"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.083,
+   "zhi": 2.218,
+   "cover": {
+    "head": 0.042,
+    "neck": 0.086,
+    "torso": 0.036,
+    "upper_arm": 0.04,
+    "forearm": 0.036,
+    "hand": 0.07,
+    "thigh": 0.054,
+    "shin": 0.082,
+    "foot": 0.017
+   },
+   "out": {
+    "head": {
+     "n": 25,
+     "p50": 8.0,
+     "p90": 13.45,
+     "max": 17.2
+    },
+    "torso": {
+     "n": 4,
+     "p50": 6.0,
+     "p90": 7.0,
+     "max": 7.0
+    },
+    "upper_arm": {
+     "n": 8,
+     "p50": 6.0,
+     "p90": 8.97,
+     "max": 10.0
+    },
+    "forearm": {
+     "n": 3,
+     "p50": 2.0,
+     "p90": 4.0,
+     "max": 5.0
+    },
+    "hand": {
+     "n": 3,
+     "p50": 2.24,
+     "p90": 4.07,
+     "max": 5.0
+    },
+    "thigh": {
+     "n": 10,
+     "p50": 3.0,
+     "p90": 4.74,
+     "max": 5.0
+    },
+    "shin": {
+     "n": 12,
+     "p50": 2.0,
+     "p90": 4.0,
+     "max": 5.39
+    },
+    "foot": {
+     "n": 1,
+     "p50": 2.0,
+     "p90": 2.41,
+     "max": 2.83
     }
    }
   },
@@ -3962,6 +6673,67 @@
      "p50": 5.83,
      "p90": 11.7,
      "max": 15.52
+    }
+   }
+  },
+  "583": {
+   "src": "anim4:467",
+   "items": [
+    "Tetsubo",
+    "Tetsubo"
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.771,
+   "zhi": 1.214,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.012,
+    "upper_arm": 0.013,
+    "forearm": 0.038,
+    "hand": 0.328,
+    "thigh": 0.001,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 3.71,
+     "max": 4.12
+    },
+    "upper_arm": {
+     "n": 7,
+     "p50": 2.0,
+     "p90": 4.0,
+     "max": 5.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "hand": {
+     "n": 40,
+     "p50": 9.22,
+     "p90": 18.68,
+     "max": 22.47
+    },
+    "thigh": {
+     "n": 5,
+     "p50": 4.0,
+     "p90": 6.88,
+     "max": 8.0
+    },
+    "shin": {
+     "n": 1,
+     "p50": 6.0,
+     "p90": 7.4,
+     "max": 8.0
     }
    }
   },
@@ -6391,6 +9163,374 @@
     }
    }
   },
+  "679": {
+   "src": "anim4:674",
+   "items": [
+    "dragon sleeves",
+    "dragon sleeves"
+   ],
+   "layers": [
+    "Arms"
+   ],
+   "zlo": 0.917,
+   "zhi": 1.606,
+   "cover": {
+    "head": 0.003,
+    "neck": 0.0,
+    "torso": 0.036,
+    "upper_arm": 0.706,
+    "forearm": 0.536,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.8,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.5,
+     "p90": 1.9,
+     "max": 2.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "680": {
+   "src": "anim4:675",
+   "items": [
+    "dragon breastplate",
+    "dragon breastplate"
+   ],
+   "layers": [
+    "InnerTorso"
+   ],
+   "zlo": 1.056,
+   "zhi": 1.643,
+   "cover": {
+    "head": 0.032,
+    "neck": 0.568,
+    "torso": 0.676,
+    "upper_arm": 0.21,
+    "forearm": 0.013,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "681": {
+   "src": "anim4:676",
+   "items": [
+    "dragon gloves",
+    "dragon gloves"
+   ],
+   "layers": [
+    "Gloves"
+   ],
+   "zlo": 0.809,
+   "zhi": 1.271,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.008,
+    "upper_arm": 0.011,
+    "forearm": 0.574,
+    "hand": 0.551,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "upper_arm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.17,
+     "max": 1.41
+    },
+    "forearm": {
+     "n": 7,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "hand": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.25,
+     "max": 1.41
+    }
+   }
+  },
+  "682": {
+   "src": "anim4:677",
+   "items": [
+    "dragon helm",
+    "dragon helm"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.542,
+   "zhi": 1.978,
+   "cover": {
+    "head": 0.894,
+    "neck": 0.267,
+    "torso": 0.001,
+    "upper_arm": 0.007,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 62,
+     "p50": 3.08,
+     "p90": 5.67,
+     "max": 7.07
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.71,
+     "p90": 3.06,
+     "max": 3.61
+    },
+    "upper_arm": {
+     "n": 6,
+     "p50": 3.16,
+     "p90": 6.0,
+     "max": 6.32
+    }
+   }
+  },
+  "683": {
+   "src": "anim4:678",
+   "items": [
+    "dragon leggings",
+    "dragon leggings"
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 0.146,
+   "zhi": 1.176,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.294,
+    "upper_arm": 0.02,
+    "forearm": 0.107,
+    "hand": 0.174,
+    "thigh": 0.957,
+    "shin": 0.737,
+    "foot": 0.003
+   },
+   "out": {
+    "torso": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.21,
+     "p90": 1.37,
+     "max": 1.41
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 12,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "shin": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "684": {
+   "src": "anim4:679",
+   "items": [
+    "amazon armor",
+    "amazon armor"
+   ],
+   "layers": [
+    "Shirt"
+   ],
+   "zlo": 0.936,
+   "zhi": 1.568,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.02,
+    "upper_arm": 0.597,
+    "forearm": 0.384,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 0,
+     "p50": 1.5,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.5,
+     "p90": 1.9,
+     "max": 2.0
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.21,
+     "p90": 1.37,
+     "max": 1.41
+    }
+   }
+  },
+  "685": {
+   "src": "anim4:680",
+   "items": [
+    "amazon armor",
+    "amazon armor"
+   ],
+   "layers": [
+    "Shirt"
+   ],
+   "zlo": 1.138,
+   "zhi": 1.631,
+   "cover": {
+    "head": 0.038,
+    "neck": 0.626,
+    "torso": 0.536,
+    "upper_arm": 0.19,
+    "forearm": 0.002,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 1.77,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "686": {
+   "src": "anim4:682",
+   "items": [
+    "amazon armor",
+    "amazon armor"
+   ],
+   "layers": [
+    "Shirt"
+   ],
+   "zlo": 1.561,
+   "zhi": 1.94,
+   "cover": {
+    "head": 0.827,
+    "neck": 0.126,
+    "torso": 0.001,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 45,
+     "p50": 3.0,
+     "p90": 5.06,
+     "max": 6.71
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.41,
+     "p90": 2.47,
+     "max": 2.83
+    },
+    "torso": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 4,
+     "p50": 3.38,
+     "p90": 5.07,
+     "max": 6.08
+    }
+   }
+  },
   "700": {
    "src": "anim:700",
    "items": [
@@ -6709,6 +9849,848 @@
     }
    }
   },
+  "866": {
+   "src": "anim4:672",
+   "items": [
+    "winged helmet",
+    "winged helmet"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.479,
+   "zhi": 1.928,
+   "cover": {
+    "head": 0.881,
+    "neck": 0.455,
+    "torso": 0.031,
+    "upper_arm": 0.002,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 20,
+     "p50": 1.0,
+     "p90": 2.83,
+     "max": 3.61
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.5,
+     "max": 2.0
+    }
+   }
+  },
+  "869": {
+   "src": "anim4:653",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.517,
+   "zhi": 1.934,
+   "cover": {
+    "head": 0.805,
+    "neck": 0.477,
+    "torso": 0.008,
+    "upper_arm": 0.002,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "870": {
+   "src": "anim4:654",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "Neck"
+   ],
+   "zlo": 1.485,
+   "zhi": 1.606,
+   "cover": {
+    "head": 0.025,
+    "neck": 0.56,
+    "torso": 0.016,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {}
+  },
+  "871": {
+   "src": "anim4:655",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "InnerTorso"
+   ],
+   "zlo": 0.866,
+   "zhi": 2.105,
+   "cover": {
+    "head": 0.008,
+    "neck": 0.133,
+    "torso": 0.227,
+    "upper_arm": 0.416,
+    "forearm": 0.281,
+    "hand": 0.364,
+    "thigh": 0.026,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 171,
+     "p50": 13.42,
+     "p90": 27.59,
+     "max": 39.56
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.41,
+     "p90": 3.45,
+     "max": 5.0
+    },
+    "torso": {
+     "n": 161,
+     "p50": 18.0,
+     "p90": 32.99,
+     "max": 42.15
+    },
+    "upper_arm": {
+     "n": 367,
+     "p50": 16.28,
+     "p90": 34.53,
+     "max": 49.65
+    },
+    "forearm": {
+     "n": 176,
+     "p50": 11.05,
+     "p90": 28.85,
+     "max": 38.33
+    },
+    "hand": {
+     "n": 19,
+     "p50": 5.66,
+     "p90": 11.02,
+     "max": 15.23
+    },
+    "thigh": {
+     "n": 26,
+     "p50": 5.39,
+     "p90": 12.14,
+     "max": 18.03
+    }
+   }
+  },
+  "872": {
+   "src": "anim4:656",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "Arms"
+   ],
+   "zlo": 0.019,
+   "zhi": 1.675,
+   "cover": {
+    "head": 0.059,
+    "neck": 0.898,
+    "torso": 0.532,
+    "upper_arm": 0.355,
+    "forearm": 0.289,
+    "hand": 0.488,
+    "thigh": 0.453,
+    "shin": 0.569,
+    "foot": 0.415
+   },
+   "out": {
+    "head": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 1.41
+    },
+    "neck": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 1.77,
+     "max": 2.24
+    },
+    "torso": {
+     "n": 25,
+     "p50": 1.41,
+     "p90": 5.0,
+     "max": 8.0
+    },
+    "upper_arm": {
+     "n": 13,
+     "p50": 1.41,
+     "p90": 3.43,
+     "max": 5.0
+    },
+    "forearm": {
+     "n": 21,
+     "p50": 2.0,
+     "p90": 4.74,
+     "max": 7.0
+    },
+    "hand": {
+     "n": 21,
+     "p50": 2.12,
+     "p90": 5.47,
+     "max": 8.06
+    },
+    "thigh": {
+     "n": 84,
+     "p50": 3.0,
+     "p90": 7.0,
+     "max": 9.49
+    },
+    "shin": {
+     "n": 147,
+     "p50": 4.0,
+     "p90": 7.0,
+     "max": 9.49
+    },
+    "foot": {
+     "n": 30,
+     "p50": 2.24,
+     "p90": 5.0,
+     "max": 8.0
+    }
+   }
+  },
+  "873": {
+   "src": "anim4:657",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "Gloves"
+   ],
+   "zlo": -0.006,
+   "zhi": 1.7,
+   "cover": {
+    "head": 0.138,
+    "neck": 0.966,
+    "torso": 0.6,
+    "upper_arm": 0.438,
+    "forearm": 0.355,
+    "hand": 0.526,
+    "thigh": 0.516,
+    "shin": 0.626,
+    "foot": 0.441
+   },
+   "out": {
+    "head": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.83
+    },
+    "neck": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.24
+    },
+    "torso": {
+     "n": 28,
+     "p50": 2.0,
+     "p90": 5.0,
+     "max": 8.0
+    },
+    "upper_arm": {
+     "n": 18,
+     "p50": 1.41,
+     "p90": 3.92,
+     "max": 5.1
+    },
+    "forearm": {
+     "n": 25,
+     "p50": 2.0,
+     "p90": 5.0,
+     "max": 7.0
+    },
+    "hand": {
+     "n": 24,
+     "p50": 2.24,
+     "p90": 5.8,
+     "max": 9.43
+    },
+    "thigh": {
+     "n": 89,
+     "p50": 3.0,
+     "p90": 7.0,
+     "max": 9.49
+    },
+    "shin": {
+     "n": 158,
+     "p50": 4.0,
+     "p90": 7.28,
+     "max": 9.85
+    },
+    "foot": {
+     "n": 37,
+     "p50": 2.24,
+     "p90": 5.1,
+     "max": 8.94
+    }
+   }
+  },
+  "874": {
+   "src": "anim4:658",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "Pants"
+   ],
+   "zlo": 1.643,
+   "zhi": 1.991,
+   "cover": {
+    "head": 0.708,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 88,
+     "p50": 2.83,
+     "p90": 4.24,
+     "max": 5.83
+    },
+    "torso": {
+     "n": 0,
+     "p50": 2.53,
+     "p90": 3.37,
+     "max": 3.61
+    },
+    "upper_arm": {
+     "n": 1,
+     "p50": 2.0,
+     "p90": 3.55,
+     "max": 4.12
+    }
+   }
+  },
+  "875": {
+   "src": "anim4:659",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "Shoes"
+   ],
+   "zlo": -0.056,
+   "zhi": 0.203,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.057,
+    "foot": 0.915
+   },
+   "out": {
+    "shin": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "foot": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "876": {
+   "src": "anim4:660",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "Cloak"
+   ],
+   "zlo": 1.062,
+   "zhi": 1.745,
+   "cover": {
+    "head": 0.063,
+    "neck": 0.483,
+    "torso": 0.327,
+    "upper_arm": 0.124,
+    "forearm": 0.073,
+    "hand": 0.036,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 12,
+     "p50": 2.0,
+     "p90": 4.9,
+     "max": 7.0
+    },
+    "neck": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 2.98,
+     "max": 5.0
+    },
+    "torso": {
+     "n": 20,
+     "p50": 3.0,
+     "p90": 5.66,
+     "max": 7.21
+    },
+    "upper_arm": {
+     "n": 15,
+     "p50": 2.0,
+     "p90": 4.12,
+     "max": 5.1
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "877": {
+   "src": "anim4:661",
+   "items": [
+    "Spell weaving book"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.885,
+   "zhi": 1.207,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.043,
+    "upper_arm": 0.012,
+    "forearm": 0.123,
+    "hand": 0.457,
+    "thigh": 0.001,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.24
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "forearm": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 1.53,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "thigh": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.21,
+     "max": 1.41
+    }
+   }
+  },
+  "878": {
+   "src": "anim4:662",
+   "items": [
+    "book of ninjitsu"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.873,
+   "zhi": 1.252,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.05,
+    "upper_arm": 0.024,
+    "forearm": 0.127,
+    "hand": 0.423,
+    "thigh": 0.007,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 2,
+     "p50": 1.21,
+     "p90": 2.24,
+     "max": 2.24
+    },
+    "forearm": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.29,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 2.24,
+     "max": 3.0
+    },
+    "thigh": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.12,
+     "max": 1.41
+    }
+   }
+  },
+  "879": {
+   "src": "anim4:663",
+   "items": [
+    "book of bushido"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.847,
+   "zhi": 1.182,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.039,
+    "upper_arm": 0.009,
+    "forearm": 0.113,
+    "hand": 0.481,
+    "thigh": 0.007,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.91,
+     "max": 2.24
+    },
+    "forearm": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 1.77,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 2.65,
+     "max": 3.61
+    },
+    "thigh": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.88,
+     "max": 2.0
+    }
+   }
+  },
+  "880": {
+   "src": "anim4:664",
+   "items": [
+    "spellbook"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.841,
+   "zhi": 1.271,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.059,
+    "upper_arm": 0.024,
+    "forearm": 0.137,
+    "hand": 0.468,
+    "thigh": 0.01,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 11,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 4.12
+    },
+    "upper_arm": {
+     "n": 2,
+     "p50": 1.71,
+     "p90": 2.88,
+     "max": 3.16
+    },
+    "forearm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "hand": {
+     "n": 6,
+     "p50": 1.21,
+     "p90": 3.0,
+     "max": 3.61
+    },
+    "thigh": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    }
+   }
+  },
+  "882": {
+   "src": "anim4:666",
+   "items": [
+    "necromancer book"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.841,
+   "zhi": 1.277,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.062,
+    "upper_arm": 0.024,
+    "forearm": 0.14,
+    "hand": 0.444,
+    "thigh": 0.011,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 10,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "upper_arm": {
+     "n": 3,
+     "p50": 2.0,
+     "p90": 3.08,
+     "max": 3.16
+    },
+    "forearm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.83
+    },
+    "hand": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.85,
+     "max": 3.61
+    },
+    "thigh": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.0
+    }
+   }
+  },
+  "883": {
+   "src": "anim4:667",
+   "items": [
+    "book of arms"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.841,
+   "zhi": 1.283,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.062,
+    "upper_arm": 0.026,
+    "forearm": 0.144,
+    "hand": 0.402,
+    "thigh": 0.014,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 11,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "upper_arm": {
+     "n": 3,
+     "p50": 2.0,
+     "p90": 3.16,
+     "max": 4.0
+    },
+    "forearm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.85,
+     "max": 3.61
+    },
+    "thigh": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    }
+   }
+  },
+  "884": {
+   "src": "anim4:668",
+   "items": [
+    "paladin spellbook"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.841,
+   "zhi": 1.271,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.062,
+    "upper_arm": 0.024,
+    "forearm": 0.133,
+    "hand": 0.444,
+    "thigh": 0.011,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 10,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "upper_arm": {
+     "n": 3,
+     "p50": 2.0,
+     "p90": 3.1,
+     "max": 3.16
+    },
+    "forearm": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.83
+    },
+    "hand": {
+     "n": 6,
+     "p50": 1.21,
+     "p90": 3.0,
+     "max": 3.61
+    },
+    "thigh": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.94,
+     "max": 2.0
+    }
+   }
+  },
   "886": {
    "src": "anim5:635",
    "items": [
@@ -6732,6 +10714,133 @@
     "foot": 0.0
    },
    "out": {}
+  },
+  "887": {
+   "src": "anim4:669",
+   "items": [
+    "",
+    ""
+   ],
+   "layers": [
+    "Cloak"
+   ],
+   "zlo": 1.037,
+   "zhi": 1.707,
+   "cover": {
+    "head": 0.012,
+    "neck": 0.221,
+    "torso": 0.188,
+    "upper_arm": 0.021,
+    "forearm": 0.044,
+    "hand": 0.073,
+    "thigh": 0.004,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 4,
+     "p50": 3.08,
+     "p90": 5.98,
+     "max": 7.28
+    },
+    "neck": {
+     "n": 1,
+     "p50": 2.24,
+     "p90": 4.44,
+     "max": 5.0
+    },
+    "torso": {
+     "n": 14,
+     "p50": 2.0,
+     "p90": 6.18,
+     "max": 8.49
+    },
+    "upper_arm": {
+     "n": 12,
+     "p50": 2.53,
+     "p90": 5.0,
+     "max": 7.07
+    },
+    "forearm": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 2.24,
+     "max": 2.83
+    },
+    "hand": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.6,
+     "max": 2.0
+    },
+    "thigh": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "888": {
+   "src": "anim4:670",
+   "items": [
+    ""
+   ],
+   "layers": [
+    "TwoHanded"
+   ],
+   "zlo": 0.493,
+   "zhi": 1.466,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.173,
+    "upper_arm": 0.144,
+    "forearm": 0.53,
+    "hand": 0.339,
+    "thigh": 0.373,
+    "shin": 0.019,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 25,
+     "p50": 4.0,
+     "p90": 9.0,
+     "max": 12.0
+    },
+    "upper_arm": {
+     "n": 20,
+     "p50": 4.0,
+     "p90": 9.22,
+     "max": 12.17
+    },
+    "forearm": {
+     "n": 76,
+     "p50": 4.12,
+     "p90": 13.0,
+     "max": 18.38
+    },
+    "hand": {
+     "n": 37,
+     "p50": 5.0,
+     "p90": 10.09,
+     "max": 12.04
+    },
+    "thigh": {
+     "n": 52,
+     "p50": 4.0,
+     "p90": 11.0,
+     "max": 14.56
+    },
+    "shin": {
+     "n": 10,
+     "p50": 9.67,
+     "p90": 12.89,
+     "max": 14.32
+    }
+   }
   },
   "889": {
    "src": "anim5:652",
@@ -13409,6 +17518,1592 @@
     }
    }
   },
+  "1429": {
+   "src": "anim4:499",
+   "items": [
+    "Vale_Haunted_South",
+    "Vale_Haunted_East"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.132,
+   "zhi": 1.921,
+   "cover": {
+    "head": 0.846,
+    "neck": 0.833,
+    "torso": 0.328,
+    "upper_arm": 0.206,
+    "forearm": 0.07,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 41,
+     "p50": 1.41,
+     "p90": 3.0,
+     "max": 6.0
+    },
+    "neck": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 2.98,
+     "max": 5.0
+    },
+    "torso": {
+     "n": 22,
+     "p50": 3.0,
+     "p90": 5.66,
+     "max": 6.32
+    },
+    "upper_arm": {
+     "n": 16,
+     "p50": 2.24,
+     "p90": 5.36,
+     "max": 7.07
+    },
+    "forearm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "1430": {
+   "src": "anim4:500",
+   "items": [
+    "Hat_Wedding_Haunted_",
+    "Hat_Wedding_Haunted_"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.688,
+   "zhi": 2.042,
+   "cover": {
+    "head": 0.549,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 63,
+     "p50": 2.83,
+     "p90": 5.0,
+     "max": 6.08
+    }
+   }
+  },
+  "1435": {
+   "src": "anim4:505",
+   "items": [
+    "Robe_Store_01"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": -0.025,
+   "zhi": 1.871,
+   "cover": {
+    "head": 0.818,
+    "neck": 0.897,
+    "torso": 0.951,
+    "upper_arm": 0.908,
+    "forearm": 0.721,
+    "hand": 0.248,
+    "thigh": 0.965,
+    "shin": 1.0,
+    "foot": 0.707
+   },
+   "out": {
+    "head": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 1.53,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "forearm": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.1,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.35,
+     "max": 3.61
+    },
+    "shin": {
+     "n": 52,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 6.0
+    },
+    "foot": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.24,
+     "max": 4.12
+    }
+   }
+  },
+  "1437": {
+   "src": "anim4:507",
+   "items": [
+    "Robe_Store_02"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": -0.025,
+   "zhi": 1.871,
+   "cover": {
+    "head": 0.818,
+    "neck": 0.897,
+    "torso": 0.951,
+    "upper_arm": 0.908,
+    "forearm": 0.721,
+    "hand": 0.248,
+    "thigh": 0.965,
+    "shin": 1.0,
+    "foot": 0.707
+   },
+   "out": {
+    "head": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 1.53,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "forearm": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.1,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.35,
+     "max": 3.61
+    },
+    "shin": {
+     "n": 52,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 6.0
+    },
+    "foot": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.24,
+     "max": 4.12
+    }
+   }
+  },
+  "1439": {
+   "src": "anim4:509",
+   "items": [
+    "Robe_Store_03"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": -0.025,
+   "zhi": 1.871,
+   "cover": {
+    "head": 0.818,
+    "neck": 0.897,
+    "torso": 0.951,
+    "upper_arm": 0.908,
+    "forearm": 0.721,
+    "hand": 0.248,
+    "thigh": 0.965,
+    "shin": 1.0,
+    "foot": 0.707
+   },
+   "out": {
+    "head": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 1.53,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "forearm": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.1,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.35,
+     "max": 3.61
+    },
+    "shin": {
+     "n": 52,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 6.0
+    },
+    "foot": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.24,
+     "max": 4.12
+    }
+   }
+  },
+  "1443": {
+   "src": "anim4:513",
+   "items": [
+    "Robe_Store_04"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": -0.025,
+   "zhi": 1.871,
+   "cover": {
+    "head": 0.818,
+    "neck": 0.897,
+    "torso": 0.951,
+    "upper_arm": 0.908,
+    "forearm": 0.721,
+    "hand": 0.248,
+    "thigh": 0.965,
+    "shin": 1.0,
+    "foot": 0.707
+   },
+   "out": {
+    "head": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 1.53,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "forearm": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.1,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.35,
+     "max": 3.61
+    },
+    "shin": {
+     "n": 52,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 6.0
+    },
+    "foot": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.24,
+     "max": 4.12
+    }
+   }
+  },
+  "1445": {
+   "src": "anim4:515",
+   "items": [
+    "Robe_Store_05"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": -0.025,
+   "zhi": 1.871,
+   "cover": {
+    "head": 0.818,
+    "neck": 0.897,
+    "torso": 0.951,
+    "upper_arm": 0.908,
+    "forearm": 0.721,
+    "hand": 0.248,
+    "thigh": 0.965,
+    "shin": 1.0,
+    "foot": 0.707
+   },
+   "out": {
+    "head": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 5,
+     "p50": 1.0,
+     "p90": 1.53,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "forearm": {
+     "n": 8,
+     "p50": 1.0,
+     "p90": 1.1,
+     "max": 2.0
+    },
+    "hand": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "thigh": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.35,
+     "max": 3.61
+    },
+    "shin": {
+     "n": 52,
+     "p50": 1.0,
+     "p90": 3.0,
+     "max": 6.0
+    },
+    "foot": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.24,
+     "max": 4.12
+    }
+   }
+  },
+  "1447": {
+   "src": "anim2:517",
+   "items": [
+    "Male_H_Hair_01"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.523,
+   "zhi": 1.896,
+   "cover": {
+    "head": 0.821,
+    "neck": 0.407,
+    "torso": 0.01,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 20,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 1,
+     "p50": 1.71,
+     "p90": 2.53,
+     "max": 2.83
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.8,
+     "max": 2.0
+    }
+   }
+  },
+  "1448": {
+   "src": "anim2:518",
+   "items": [
+    "Male_H_Hair_02"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.618,
+   "zhi": 1.896,
+   "cover": {
+    "head": 0.664,
+    "neck": 0.009,
+    "torso": 0.002,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 11,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.0
+    }
+   }
+  },
+  "1449": {
+   "src": "anim2:519",
+   "items": [
+    "Male_H_Hair_03"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.637,
+   "zhi": 1.814,
+   "cover": {
+    "head": 0.299,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.0
+    }
+   }
+  },
+  "1450": {
+   "src": "anim2:520",
+   "items": [
+    "Male_H_Hair_04"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.7,
+   "zhi": 1.915,
+   "cover": {
+    "head": 0.449,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 12,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.24
+    }
+   }
+  },
+  "1451": {
+   "src": "anim2:521",
+   "items": [
+    "Male_H_Beard_Hair_01"
+   ],
+   "layers": [
+    "FacialHair"
+   ],
+   "zlo": 1.46,
+   "zhi": 1.707,
+   "cover": {
+    "head": 0.228,
+    "neck": 0.263,
+    "torso": 0.036,
+    "upper_arm": 0.002,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "torso": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "1452": {
+   "src": "anim2:522",
+   "items": [
+    "Male_H_Beard_Hair_02"
+   ],
+   "layers": [
+    "FacialHair"
+   ],
+   "zlo": 1.606,
+   "zhi": 1.694,
+   "cover": {
+    "head": 0.101,
+    "neck": 0.04,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "1453": {
+   "src": "anim2:523",
+   "items": [
+    "Male_H_Beard_Hair_03"
+   ],
+   "layers": [
+    "FacialHair"
+   ],
+   "zlo": 1.504,
+   "zhi": 1.675,
+   "cover": {
+    "head": 0.174,
+    "neck": 0.225,
+    "torso": 0.014,
+    "upper_arm": 0.002,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "1454": {
+   "src": "anim2:524",
+   "items": [
+    "Male_H_Beard_Hair_04"
+   ],
+   "layers": [
+    "FacialHair"
+   ],
+   "zlo": 1.549,
+   "zhi": 1.694,
+   "cover": {
+    "head": 0.162,
+    "neck": 0.111,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "1455": {
+   "src": "anim2:525",
+   "items": [
+    "Female_H_Hair_01"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.151,
+   "zhi": 1.921,
+   "cover": {
+    "head": 0.579,
+    "neck": 0.214,
+    "torso": 0.109,
+    "upper_arm": 0.017,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 16,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.21,
+     "p90": 2.12,
+     "max": 2.24
+    },
+    "torso": {
+     "n": 6,
+     "p50": 1.71,
+     "p90": 2.83,
+     "max": 3.61
+    },
+    "upper_arm": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 2.05,
+     "max": 2.24
+    }
+   }
+  },
+  "1456": {
+   "src": "anim2:526",
+   "items": [
+    "Female_H_Hair_02"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.454,
+   "zhi": 1.865,
+   "cover": {
+    "head": 0.679,
+    "neck": 0.781,
+    "torso": 0.066,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 1.7,
+     "max": 2.0
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.21,
+     "max": 1.41
+    },
+    "torso": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.29,
+     "max": 1.41
+    }
+   }
+  },
+  "1457": {
+   "src": "anim2:527",
+   "items": [
+    "Female_H_Hair_03"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.599,
+   "zhi": 1.928,
+   "cover": {
+    "head": 0.569,
+    "neck": 0.046,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 27,
+     "p50": 2.0,
+     "p90": 3.0,
+     "max": 3.61
+    },
+    "neck": {
+     "n": 0,
+     "p50": 2.0,
+     "p90": 2.66,
+     "max": 2.83
+    },
+    "torso": {
+     "n": 0,
+     "p50": 2.0,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 2.0,
+     "p90": 2.0,
+     "max": 2.0
+    }
+   }
+  },
+  "1458": {
+   "src": "anim2:528",
+   "items": [
+    "Female_H_Hair_04"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.637,
+   "zhi": 1.909,
+   "cover": {
+    "head": 0.566,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 26,
+     "p50": 2.0,
+     "p90": 2.83,
+     "max": 3.16
+    }
+   }
+  },
+  "1459": {
+   "src": "anim2:529",
+   "items": [
+    "Male_E_Hair_01"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.612,
+   "zhi": 1.871,
+   "cover": {
+    "head": 0.557,
+    "neck": 0.07,
+    "torso": 0.002,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.9,
+     "max": 2.0
+    }
+   }
+  },
+  "1460": {
+   "src": "anim2:530",
+   "items": [
+    "Male_E_Hair_02"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.612,
+   "zhi": 1.928,
+   "cover": {
+    "head": 0.601,
+    "neck": 0.07,
+    "torso": 0.002,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 19,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "torso": {
+     "n": 0,
+     "p50": 1.41,
+     "p90": 1.41,
+     "max": 1.41
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "1461": {
+   "src": "anim2:531",
+   "items": [
+    "Male_E_Hair_03"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.454,
+   "zhi": 1.884,
+   "cover": {
+    "head": 0.597,
+    "neck": 0.376,
+    "torso": 0.07,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.0
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 2.07,
+     "max": 2.24
+    },
+    "torso": {
+     "n": 3,
+     "p50": 1.21,
+     "p90": 2.12,
+     "max": 2.24
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "1462": {
+   "src": "anim2:532",
+   "items": [
+    "Male_E_Hair_04"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.422,
+   "zhi": 1.884,
+   "cover": {
+    "head": 0.586,
+    "neck": 0.588,
+    "torso": 0.133,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.82,
+     "max": 2.0
+    },
+    "neck": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.12,
+     "max": 1.41
+    },
+    "torso": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.37,
+     "max": 1.41
+    }
+   }
+  },
+  "1463": {
+   "src": "anim2:533",
+   "items": [
+    "Female_E_Hair_01"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.384,
+   "zhi": 1.884,
+   "cover": {
+    "head": 0.799,
+    "neck": 0.773,
+    "torso": 0.158,
+    "upper_arm": 0.008,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 9,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 2.24
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 2.02,
+     "max": 2.24
+    },
+    "torso": {
+     "n": 4,
+     "p50": 1.0,
+     "p90": 1.47,
+     "max": 2.24
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    }
+   }
+  },
+  "1464": {
+   "src": "anim2:534",
+   "items": [
+    "Female_E_Hair_02"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.346,
+   "zhi": 1.915,
+   "cover": {
+    "head": 0.833,
+    "neck": 0.807,
+    "torso": 0.164,
+    "upper_arm": 0.009,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 24,
+     "p50": 1.41,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 2.71,
+     "max": 3.61
+    },
+    "torso": {
+     "n": 6,
+     "p50": 1.71,
+     "p90": 2.83,
+     "max": 3.61
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.7,
+     "max": 2.0
+    }
+   }
+  },
+  "1465": {
+   "src": "anim2:535",
+   "items": [
+    "Female_E_Hair_03"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.334,
+   "zhi": 1.884,
+   "cover": {
+    "head": 0.592,
+    "neck": 0.419,
+    "torso": 0.127,
+    "upper_arm": 0.019,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 13,
+     "p50": 1.0,
+     "p90": 2.0,
+     "max": 3.0
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 2.71,
+     "max": 3.61
+    },
+    "torso": {
+     "n": 5,
+     "p50": 1.41,
+     "p90": 2.83,
+     "max": 3.16
+    },
+    "upper_arm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.65,
+     "max": 2.0
+    }
+   }
+  },
+  "1466": {
+   "src": "anim2:536",
+   "items": [
+    "Female_E_Hair_04"
+   ],
+   "layers": [
+    "Hair"
+   ],
+   "zlo": 1.397,
+   "zhi": 1.921,
+   "cover": {
+    "head": 0.664,
+    "neck": 0.982,
+    "torso": 0.174,
+    "upper_arm": 0.01,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 19,
+     "p50": 1.41,
+     "p90": 3.0,
+     "max": 4.0
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.94,
+     "max": 2.24
+    },
+    "torso": {
+     "n": 4,
+     "p50": 1.41,
+     "p90": 2.83,
+     "max": 3.61
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.8,
+     "max": 2.0
+    }
+   }
+  },
+  "1480": {
+   "src": "anim2:550",
+   "items": [
+    "Khal_Ankur_Mask_east",
+    "Khal_Ankur_Mask_sout"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.46,
+   "zhi": 2.187,
+   "cover": {
+    "head": 0.704,
+    "neck": 0.509,
+    "torso": 0.055,
+    "upper_arm": 0.004,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 106,
+     "p50": 4.12,
+     "p90": 9.22,
+     "max": 15.03
+    },
+    "neck": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 2.59,
+     "max": 3.61
+    },
+    "torso": {
+     "n": 2,
+     "p50": 2.91,
+     "p90": 5.0,
+     "max": 5.66
+    },
+    "upper_arm": {
+     "n": 2,
+     "p50": 4.0,
+     "p90": 5.31,
+     "max": 5.83
+    }
+   }
+  },
+  "1486": {
+   "src": "anim2:556",
+   "items": [
+    "Barbed Whip",
+    "Barbed Whip",
+    "Barbed Whip"
+   ],
+   "layers": [
+    "OneHanded"
+   ],
+   "zlo": 0.664,
+   "zhi": 1.056,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.032,
+    "upper_arm": 0.0,
+    "forearm": 0.076,
+    "hand": 0.519,
+    "thigh": 0.014,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "torso": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 3.29,
+     "max": 4.12
+    },
+    "forearm": {
+     "n": 1,
+     "p50": 1.0,
+     "p90": 1.17,
+     "max": 1.41
+    },
+    "hand": {
+     "n": 22,
+     "p50": 2.24,
+     "p90": 5.6,
+     "max": 9.22
+    },
+    "thigh": {
+     "n": 15,
+     "p50": 3.08,
+     "p90": 7.87,
+     "max": 10.0
+    },
+    "shin": {
+     "n": 1,
+     "p50": 5.0,
+     "p90": 6.0,
+     "max": 6.0
+    }
+   }
+  },
+  "1498": {
+   "src": "anim2:562",
+   "items": [
+    "Holiday_Boots_South",
+    "Holiday_Boots_East"
+   ],
+   "layers": [
+    "Shoes"
+   ],
+   "zlo": -0.082,
+   "zhi": 0.424,
+   "cover": {
+    "head": 0.0,
+    "neck": 0.0,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.001,
+    "shin": 0.559,
+    "foot": 0.888
+   },
+   "out": {
+    "shin": {
+     "n": 6,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    },
+    "foot": {
+     "n": 12,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.41
+    }
+   }
+  },
+  "1500": {
+   "src": "anim2:564",
+   "items": [
+    "Holiday_Hat_south",
+    "Holiday_Hat_east"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.618,
+   "zhi": 1.953,
+   "cover": {
+    "head": 0.675,
+    "neck": 0.014,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 31,
+     "p50": 1.41,
+     "p90": 3.0,
+     "max": 4.24
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 3.0,
+     "p90": 3.0,
+     "max": 3.0
+    }
+   }
+  },
+  "1504": {
+   "src": "anim2:568",
+   "items": [
+    "Holiday_Gargoyle_ear"
+   ],
+   "layers": [
+    "Earrings"
+   ],
+   "zlo": 1.618,
+   "zhi": 1.953,
+   "cover": {
+    "head": 0.675,
+    "neck": 0.014,
+    "torso": 0.0,
+    "upper_arm": 0.0,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 31,
+     "p50": 1.41,
+     "p90": 3.0,
+     "max": 4.24
+    },
+    "neck": {
+     "n": 0,
+     "p50": 1.0,
+     "p90": 1.0,
+     "max": 1.0
+    },
+    "upper_arm": {
+     "n": 0,
+     "p50": 3.0,
+     "p90": 3.0,
+     "max": 3.0
+    }
+   }
+  },
+  "1506": {
+   "src": "anim2:570",
+   "items": [
+    "Parrot_Epaulets_Sout",
+    "Parrot_Epaulets_East"
+   ],
+   "layers": [
+    "OuterTorso"
+   ],
+   "zlo": -0.676,
+   "zhi": 3.583,
+   "cover": {
+    "head": 1.0,
+    "neck": 1.0,
+    "torso": 1.0,
+    "upper_arm": 0.992,
+    "forearm": 1.0,
+    "hand": 1.0,
+    "thigh": 0.868,
+    "shin": 0.796,
+    "foot": 0.624
+   },
+   "out": {
+    "head": {
+     "n": 3339,
+     "p50": 32.25,
+     "p90": 53.74,
+     "max": 72.03
+    },
+    "neck": {
+     "n": 3,
+     "p50": 1.0,
+     "p90": 2.98,
+     "max": 5.0
+    },
+    "torso": {
+     "n": 261,
+     "p50": 17.0,
+     "p90": 38.63,
+     "max": 45.89
+    },
+    "upper_arm": {
+     "n": 1452,
+     "p50": 26.0,
+     "p90": 45.62,
+     "max": 57.28
+    },
+    "forearm": {
+     "n": 1175,
+     "p50": 22.67,
+     "p90": 43.0,
+     "max": 55.23
+    },
+    "hand": {
+     "n": 356,
+     "p50": 16.08,
+     "p90": 37.0,
+     "max": 45.62
+    },
+    "thigh": {
+     "n": 138,
+     "p50": 5.39,
+     "p90": 14.0,
+     "max": 24.19
+    },
+    "shin": {
+     "n": 457,
+     "p50": 15.0,
+     "p90": 29.01,
+     "max": 41.3
+    },
+    "foot": {
+     "n": 1189,
+     "p50": 25.08,
+     "p90": 40.5,
+     "max": 50.0
+    }
+   }
+  },
   "1513": {
    "src": "anim3:589",
    "items": [
@@ -14400,6 +20095,54 @@
      "p50": 3.0,
      "p90": 7.0,
      "max": 11.0
+    }
+   }
+  },
+  "1801": {
+   "src": "anim4:521",
+   "items": [
+    "ClothHood"
+   ],
+   "layers": [
+    "Helm"
+   ],
+   "zlo": 1.384,
+   "zhi": 1.928,
+   "cover": {
+    "head": 0.978,
+    "neck": 1.0,
+    "torso": 0.266,
+    "upper_arm": 0.096,
+    "forearm": 0.0,
+    "hand": 0.0,
+    "thigh": 0.0,
+    "shin": 0.0,
+    "foot": 0.0
+   },
+   "out": {
+    "head": {
+     "n": 54,
+     "p50": 1.41,
+     "p90": 4.0,
+     "max": 6.32
+    },
+    "neck": {
+     "n": 2,
+     "p50": 1.0,
+     "p90": 1.41,
+     "max": 2.0
+    },
+    "torso": {
+     "n": 9,
+     "p50": 1.41,
+     "p90": 2.59,
+     "max": 4.12
+    },
+    "upper_arm": {
+     "n": 7,
+     "p50": 1.0,
+     "p90": 2.09,
+     "max": 3.61
     }
    }
   }

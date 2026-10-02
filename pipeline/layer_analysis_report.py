@@ -10,7 +10,7 @@ for k, r in d.items():
     for l in r["layers"]:
         by.setdefault(l, []).append(r)
 L = ["# Warstwy ubieralne z klienta: zasięg i odstęp od ciała (poza `stand`, 5 kierunków)", "",
-     "Źródło: `pipeline/layer_analysis.py` (anim, anim3, anim5 = oryginalne animacje; %d animacji). 1 px = %.2f cm. Szczegóły: `client/extract/layer_analysis.json`." % (len(d), PX_CM), "",
+     "Źródło: `pipeline/layer_analysis.py` (anim, anim2, anim3, anim4, anim5; %d animacji). 1 px = %.2f cm. Szczegóły: `client/extract/layer_analysis.json`." % (len(d), PX_CM), "",
      "## Zasięg wysokości w pozie spoczynkowej (m, podłoga = 0)", "",
      "| warstwa | animacji | dół: min / mediana / max | góra: min / mediana / max | przykłady |", "|---|---|---|---|---|"]
 for l, rs in sorted(by.items()):
