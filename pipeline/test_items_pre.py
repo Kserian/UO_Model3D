@@ -11,6 +11,8 @@ import bmesh
 import numpy as np
 
 spec = json.load(open(os.environ["UO_TEST_SPEC"]))[os.environ["UO_TEST_ITEM"]]
+if "UO_TEST_THICK" in os.environ:                                 # experiment: another thickness of the replica
+    spec = dict(spec, thickness=float(os.environ["UO_TEST_THICK"]))
 scripts = os.environ["UO_TEST_SCRIPTS"]
 body, rig = bpy.data.objects["UO_Body"], bpy.data.objects["UO_Rig"]
 me = body.data
@@ -92,6 +94,6 @@ def run(script, **over):
 
 
 if os.environ.get("UO_TEST_FIT") == "1":
-    run("uo_fit_item.py")
+    run("uo_fit_item.py", KIND=os.environ["UO_TEST_ITEM"], **({"MIN_GAP": float(os.environ["UO_TEST_MIN_GAP"])} if "UO_TEST_MIN_GAP" in os.environ else {}))
 run("uo_bind_item.py", PART=spec["part"])
 print("test_items_pre: %s -> %d vertices, %d faces, PART=%s" % (item.name, len(item_me.vertices), len(item_me.polygons), spec["part"]))

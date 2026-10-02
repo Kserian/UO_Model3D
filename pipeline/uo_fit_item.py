@@ -19,7 +19,13 @@ from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 from mathutils.kdtree import KDTree
 
-MIN_GAP = 0.015       # m, no part of the item closer to the skin than this (0 = only out of the body)
+KIND = ""             # kind of item (as in uo_import_item.py): shirt, pants, boots, gloves, plate, legs, arms, helm, ... ("" = not given)
+MIN_GAP = -1.0        # m, no part of the item closer to the skin than this (0 = only out of the body); < 0 = from KIND (GAP_BY_KIND, else 0.015)
+# MIN_GAP by KIND, measured on thin body-hugging replicas against the original sprites (test_items.py --fit, IoU at 0.015 / 0.03 / 0.045):
+# close-fitting cloth and leather is best at 0.015 (shirt .746/.727/.681, pants .801/.793/.747, boots .771/.755/.693, gloves .579/.576/.526); thick armour,
+# helmets and sleeves at 0.03 (plate .702/.725/.706, helm .770/.783/.658, arms .615/.619/.598, legs .667/.673/.651). The sprites agree: shirts, trousers, boots
+# stand 1 px (2.8 cm) off the silhouette of the body, plate / helmets / robes 2-4 px (docs/qa/layer_analysis.md).
+GAP_BY_KIND = {"shirt": 0.015, "pants": 0.015, "boots": 0.015, "gloves": 0.015, "plate": 0.03, "legs": 0.03, "arms": 0.03, "helm": 0.03}
 MAX_GAP = 0.0         # m, > 0: pull parts standing off more than this towards the skin (0 = off)
 RADIUS = 0.04         # m, smallest area a push spreads over
 SPREAD = 3.0          # a push of d spreads over at least SPREAD * d (bigger = broader, gentler swelling)
@@ -32,6 +38,9 @@ MIN_GAIN = 3.0        # turn only if it fits the arms clearly better (so running
 SLIM = 1.0            # < 1 makes the item narrower below the chest (e.g. 0.85 = 15 % narrower at the hips and below),
                       # towards the body's middle; sleeves and the chest are left as they are. Run once per change:
                       # every run slims again
+
+if MIN_GAP < 0:
+    MIN_GAP = GAP_BY_KIND.get(KIND, 0.015)
 
 body = bpy.data.objects["UO_Body"]
 rig = bpy.data.objects["UO_Rig"]

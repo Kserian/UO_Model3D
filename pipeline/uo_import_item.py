@@ -5,7 +5,7 @@
 # 2. joins the meshes into one object (JOIN) and puts it in the collection "Clothing", selected,
 # 3. scales it (uniformly) and moves it so that its height lands where the ORIGINAL UO item of the same KIND stands on the body: the lowest
 #    and highest point of the original sprites in the rest pose (EXTENTS, measured from anim 431, 434, 449, 468, 477, 527, 528, 529, 530,
-#    563). Sideways and front-back it is centred on the body at that height. Tell it SCALE = a number to scale yourself instead.
+#    563; hair, beard, hat, neck: medians of the whole layer). Sideways and front-back it is centred on the body at that height. Tell it SCALE = a number to scale yourself instead.
 # Then: check that the FRONT of the item looks at the camera of the front view (Numpad 1) - if it is the other way round, set TURN = 180 and
 # run again - run uo_fit_item.py, and uo_bind_item.py with the PART of the table below. Work in Rest Position (UO_Rig > Pose > Rest Position).
 # Run from Blender's Text Editor (Alt+P) in UO_Body_0x190.blend, or headless: UO_IMPORT_FILE=... UO_IMPORT_KIND=... (see pipeline/test_import_item.py).
@@ -18,7 +18,7 @@ import numpy as np
 from mathutils import Matrix
 
 FILE = ""             # path of the model to import ("" = take the SELECTED mesh objects instead, e.g. something you appended yourself)
-KIND = "shirt"        # shirt, plate, arms, pants, legs, boots, gloves, helm, skirt, cloak ("" = do not scale or move; only clean + join)
+KIND = "shirt"        # shirt, plate, arms, pants, legs, boots, gloves, helm, skirt, cloak, robe, neck, hair, beard, hat ("" = do not scale or move; only clean + join)
 SCALE = 0.0           # > 0: uniform scale you give (the item is then only moved), 0 = from the height of KIND
 TURN = 0              # deg around the vertical axis (180 when the item came in back to front)
 JOIN = True           # one object out of all the meshes of the file (False: they stay separate objects, each scaled alike)
@@ -30,7 +30,12 @@ PERCENT = 0.5         # the height is measured between the PERCENT and 100 - PER
 # (the ground is z = 0), and the PART of uo_bind_item.py that belongs to the KIND
 EXTENTS = {"shirt": (0.999, 1.656, "chest"), "plate": (0.651, 1.643, "chest"), "arms": (0.929, 1.694, "arms"), "pants": (0.057, 1.170, "legs"),
            "legs": (-0.107, 1.138, "legs"), "boots": (-0.069, 0.563, "boots"), "gloves": (0.797, 1.245, "gloves"), "helm": (1.504, 1.903, "helm"),
-           "skirt": (0.026, 1.258, "skirt"), "cloak": (0.095, 1.675, "cloak")}
+           "skirt": (0.026, 1.258, "skirt"), "cloak": (0.095, 1.675, "cloak"),
+           # medians over the original animations of the layer (docs/qa/layer_analysis.md, pipeline/layer_analysis.py); robe = anim 469.
+           # hair / beard / hat: the TOP is reliable (hair 1.88-1.93 m for 80 % of the 21 hairstyles), the bottom depends on the style (hair 1.36-1.64):
+           # for a long hairstyle give SCALE yourself instead of letting the height decide
+           "hair": (1.54, 1.89, "hair"), "beard": (1.51, 1.73, "beard"), "hat": (1.52, 1.92, "hat"), "neck": (1.47, 1.64, "neck"),
+           "robe": (0.026, 1.719, "robe")}
 
 body = bpy.data.objects["UO_Body"]
 UO_NAMES = {"UO_Body", "UO_Rig", "UO_Camera", "UO_Sun"}

@@ -8,6 +8,7 @@
 | `defs/Body.def`, `defs/Bodyconv.def`, `defs/Equipconv.def`, `defs/mobtypes.txt` | Konwersje ciał i ekwipunku klienta | kopia z klienta (stan z 2026-09-24 / 2026-09-18) |
 | `defs/Bodyconv.def.bak-vd2anim2` | Starsza wersja `Bodyconv.def` (2026-09-09) | kopia z klienta |
 | `equipment_extent.json` | Zasięg klatek każdej animacji ludzi / ekwipunku (`anim`, `anim2`..`anim5`, ID lokalne w pliku) względem zaczepu: `left`, `right`, `up`, `down` w px, z uwzględnieniem lustra kierunków 5–7 | `pipeline/measure_equipment_extent.py` |
+| `layer_analysis.json` | Analiza A: zasięg wysokości, pokrycie części ciała i wystawanie poza sylwetkę ciała dla 272 oryginalnych animacji ubieralnych (`stand`) | `pipeline/layer_analysis.py` (tabele: `docs/qa/layer_analysis.md`, `pipeline/layer_analysis_report.py`) |
 | `item_animations.json` | Przedmioty ubieralne z `tiledata.mul` (animacja, warstwa, nazwa) połączone przez `Bodyconv.def` z plikiem animacji i zasięgiem; statystyki per warstwa | `pipeline/extract_tiledata.py` |
 
 Odtworzenie (z katalogu repo, klient w `uo_client/NelderimServUO/`):
