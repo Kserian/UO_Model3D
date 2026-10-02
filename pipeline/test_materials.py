@@ -29,8 +29,8 @@ if V == "ref":
     g.inputs["Albedo"].default_value = col; nt.links.new(g.outputs["Shader"], o.inputs["Surface"])
 else:
     b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
-    b.inputs["Metallic"].default_value = 1.0; b.inputs["Roughness"].default_value = 0.15
-    if V in ("flat", "raw"):
+    b.inputs["Metallic"].default_value = 1.0 if V in ("raw", "metal") else 0.0; b.inputs["Roughness"].default_value = 0.15
+    if V in ("flat", "raw", "metal"):
         img = bpy.data.images.new("t", 8, 8, alpha=True); img.colorspace_settings.name = "Non-Color"; px = np.tile(np.array(col, np.float32), 64); img.pixels.foreach_set(px)
     elif V == "checker":
         img = bpy.data.images.new("t", 64, 64, alpha=True); img.colorspace_settings.name = "Non-Color"; a = np.zeros((64, 64, 4), np.float32); a[..., 3] = 1
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--tmp"); a = ap.parse_args()
     tmp = os.path.abspath(a.tmp) if a.tmp else tempfile.mkdtemp(prefix="test_mat_")
     os.makedirs(tmp, exist_ok=True)
-    res = {v: render(v, tmp) for v in ("ref", "raw", "flat", "checker", "alpha")}
+    res = {v: render(v, tmp) for v in ("ref", "raw", "flat", "metal", "checker", "alpha")}
     ok = True
     for v, fr in res.items():
         print("%-8s frames %d, opaque px %d, colours %d" % (v, len(fr), sum(int((f[..., 3] > 0).sum()) for f in fr), len({tuple(p) for f in fr for p in f[f[..., 3] > 0][:, :3]})))
@@ -79,6 +79,20 @@ if __name__ == "__main__":
     dr = np.mean([np.abs(f.astype(int) - g.astype(int))[f[..., 3] > 0].mean() for f, g in zip(ref, res["raw"])])
     print("before (raw foreign PBR material vs UO look): mean channel difference %.1f of 255" % dr)
     print("flat vs ref: max channel difference %d (0 = identical)" % d); ok &= d <= 1
+    # metal: the highlight SPEC_STRENGTH * c^SPEC_POWER (linear) on top of the matte render, c = N.L recovered from the matte render of the same sphere
+    from scipy import ndimage
+    dec = lambda v: np.where(v <= 0.04045, v / 12.92, ((v + 0.055) / 1.055) ** 2.4)
+    enc = lambda l: np.where(l <= 0.0031308, l * 12.92, 1.055 * np.power(np.maximum(l, 0), 1 / 2.4) - 0.055)
+    err, gain = 0, 0
+    for f, m in zip(res["flat"], res["metal"]):
+        sel = ndimage.binary_erosion(f[..., 3] > 0, iterations=2)
+        if not sel.any():
+            continue
+        lin = dec(f[..., 0].astype(float) / 255)[sel]
+        c = np.clip((lin / 0.55 - 0.0798) / 0.9202, 0, 1)
+        pred = 255 * enc(lin + 0.5 * c ** 16)
+        err = max(err, float(np.abs(pred - m[..., 0][sel]).max())); gain = max(gain, float((m[..., 0][sel].astype(float) - f[..., 0][sel]).max()))
+    print("metal: highlight adds up to %.0f/255; prediction (0.5 * c^16) off by at most %.1f" % (gain, err)); ok &= gain > 40 and err <= 8      # c comes from an 8-bit render and is raised to the 16th power: a few levels of quantisation noise
     nref = len({tuple(p) for f in ref for p in f[f[..., 3] > 0][:, :3]}); nchk = len({tuple(p) for f in res["checker"] for p in f[f[..., 3] > 0][:, :3]})
     print("checker: %d colours vs %d for the flat sphere" % (nchk, nref)); ok &= nchk > nref
     areas = {v: sum(int((f[..., 3] > 0).sum()) for f in res[v]) for v in res}

@@ -1,0 +1,6 @@
+pants srgb   lambert only: A=0.405 rms 0.0542 | +spec A=0.405 ks=0.000 n=583 rms 0.0542
+pants linear lambert only: A=0.100 rms 0.0205 | +spec A=0.100 ks=0.000 n=2000 rms 0.0205
+plate srgb   lambert only: A=0.527 rms 0.1459 | +spec A=0.484 ks=0.396 n=17 rms 0.1318
+plate linear lambert only: A=0.225 rms 0.1812 | +spec A=0.137 ks=0.616 n=13 rms 0.1473
+helm  srgb   lambert only: A=0.545 rms 0.1439 | +spec A=0.484 ks=0.307 n=22 rms 0.1274
+helm  linear lambert only: A=0.251 rms 0.1357 | +spec A=0.160 ks=0.412 n=20 rms 0.0995
