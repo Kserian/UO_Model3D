@@ -1,0 +1,22 @@
+{
+ "note": "Example_Shirt (real item bound in the .blend) vs sprite 434; test_real_item.py --anim 434, 256x256, 6 actions x 5 directions",
+ "anim": 434,
+ "result": {
+  "frames": 160,
+  "iou": 0.6,
+  "outside": 60.3,
+  "missing": 61.7,
+  "strip": 38.4,
+  "pieces": 1.06,
+  "clipped": 0,
+  "colors_max": 18,
+  "by_action": {
+   "0": 0.62,
+   "4": 0.65,
+   "9": 0.61,
+   "16": 0.62,
+   "21": 0.52,
+   "25": 0.59
+  }
+ }
+}
