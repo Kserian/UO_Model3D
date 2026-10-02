@@ -95,7 +95,7 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
 | Praca | Na `main`; backup w `/home/user/UO_Model3D_backup/` (tylko w sesji 1) i w gałęzi `claude/friendly-knuth-44xtfw` |
 | Klatki ciała | Zostają |
 | Anim3/anim4 z klienta | Niepotrzebne |
-| Warstwa korekt kształtu per klatka (v12) | **NIE** (sesja 2, decyzja użytkownika). Ciało ma być poprawiane samo, w modelu 3D, tak by nowe przedmioty dobrze pasowały i wyglądały w grze. |
+| Warstwa korekt kształtu per klatka (v12) | **NIE** (sesja 2, potwierdzone w sesji 7: „korekt nie przywracamy póki co”). Ciało ma być poprawiane samo, w modelu 3D, tak by nowe przedmioty dobrze pasowały i wyglądały w grze. Powody (sesja 7): każdy przedmiot dostaje własne klucze kształtu na klatkę (cięższy, wolniejszy), korekta bierze „najbliższy punkt skóry” (zawodne dla obcych siatek i luźnych ubrań), korekty są policzone dla ciała męskiego (kobiece/elfy = od nowa), przedmiot traci przenośność do innych silników. Tańsza alternatywa do ewentualnego sprawdzenia: kilkanaście wspólnych kształtów korygujących sterowanych kątami stawów (pose-space deformation) jako część modelu, z walidacją na klatkach spoza próby. Zysku nie obiecano. |
 
 ## 4. Środowisko i uruchamianie
 
@@ -263,6 +263,14 @@ kolejne kroki miały liczby „przed/po”.
 - **Czego import NIE robi (do zrobienia przy pierwszym prawdziwym modelu):** nie ocenia, czy przód patrzy w -Y (jest `TURN`), nie dopasowuje poz/ramion (to `uo_fit_item.py`, `MATCH_ARMS`), nie zamienia materiałów/tekstur PBR obcego modelu na „UO look” (krok 6 „Materiały”: w teście tylko jeden materiał, `colors 2`), skaluje tylko po wysokości (model o innych proporcjach niż UO będzie za szeroki/wąski), i nie wie, czy to ubranie dla ciała innego niż męskie.
 
 ## 8. Następne kroki (sesja 8)
+
+**Priorytety dla następnej instancji (ustalone z użytkownikiem w sesji 7, w tej kolejności):**
+1. **Włosy z Sketchfab (CC BY 4.0, autor Curuata, https://sketchfab.com/3d-models/hair-cc7e804cc15340db92d9464b32f71a2c, 4200 wierzchołków, referencja: fanowska fryzura Genshin/Ayato).** Pobranie wymaga loginu Sketchfab, więc **użytkownik sam pobiera glTF i wrzuca do repo** (np. `assets/hair_curuata/`); nie obchodź logowania. Po pojawieniu się pliku: `uo_import_item.py` (do `EXTENTS` trzeba dodać `hair`, `hat`; patrz punkt 2) -> `uo_bind_item.py PART="hair"` -> render -> porównanie z oryginalnymi włosami UO (sprite'ów włosów nie ma w `pipeline/body13/mul/`, trzeba je wyciągnąć z klienta). Zapisz atrybucję autora w repo (plik `assets/.../LICENSE_ATTRIBUTION.md`).
+2. **Analiza A: klatki wszystkich ubieralnych animacji z klienta** (`client/extract/item_animations.json` mapuje 392 animacje z klatkami na warstwy; klient pobierz wg sekcji 2: link publiczny, `gdown`, `unrar`; do `uo_client/`, poza gitem). Wynik: tabela dla każdej warstwy (włosy, czapki, szata, pas, naszyjnik, plecak, rękawice itd.): zakres wysokości w pozie spoczynkowej, odstęp od ciała (px / cm) na część ciała, grubość. Użyj do (a) rozszerzenia `EXTENTS` w `uo_import_item.py`, (b) sensownych domyślnych `MIN_GAP` w `uo_fit_item.py` per typ (dziś 15 mm to wartość z głowy). Nie spodziewaj się poprawy sylwetki ciała z tej analizy (sesja 6).
+3. **Analiza B: kalibracja broni jednoręcznej w prawej dłoni** (jak krok 3 dla lewej, narzędzia `weapon_pose_export.py` / `weapon_fit.py`; dziś miecze, maczugi, topory 1H sztywno w `hand.R` z błędem 1,6-2,2 px; cel < 1 px). Osobna kość na klasę broni, jak `polearm.L`.
+4. **Materiały (krok 6):** zamiana tekstur/PBR obcego modelu na „UO look” (kolory w palecie, 18 kolorów w bloku), bo to wyjdzie na wierzch przy pierwszym prawdziwym modelu.
+5. Później/opcjonalnie: analiza C (statystyka zasłaniania per typ przedmiotu, uogólnienie `TORSO_HIDE_MARGIN`), pose-space deformation jako część modelu, `EDGE_COVER`.
+Czego nie robić: korekt per klatka (v12), dalszego strojenia replik `test_items`, dalszego dopasowywania sylwetki ciała (granica ok. 0,90).
 
 0f. (Sesja 7) **Pierwszy prawdziwy darmowy model** (użytkownik poda plik lub źródło): `uo_import_item.py` -> `uo_fit_item.py` -> `uo_bind_item.py` -> `test_real_item.py --anim <sprite referencyjny>`. Błędy tego łańcucha na prawdziwym modelu są teraz najważniejsze. Potem materiały (krok 6): zamiana tekstur obcego modelu na „UO look”, bo to druga rzecz, która wyjdzie na wierzch.
 
