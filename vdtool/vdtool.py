@@ -72,6 +72,9 @@ def read_vd(path):
             offs = struct.unpack_from(f"<{fc}i", d, start + 4)
             frames = []
             for fo in offs:
+                if fo <= 0:                                             # a few client frames (e.g. weapons 622, 640, 642) have offset 0 = no sprite
+                    frames.append(dict(cx=0, cy=0, w=0, h=0, idx=np.full((1, 1), -1, np.int16)))
+                    continue
                 p = start + fo
                 cx, cy, w, h = struct.unpack_from("<hhHH", d, p)
                 p += 8
