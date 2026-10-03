@@ -43,11 +43,6 @@ OCCLUDERS = ["head", "upper_arm", "forearm", "hand", "thigh", "shin", "foot"]   
 OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs item: thighs, shins, pelvis) never hide it: the item
                                    # wraps them, so their skin in front of the item shell is the item's own edge, not an occluder
                                    # (it cut 1-px strips off the sides of trousers). False = every OCCLUDERS part may hide it
-TORSO_HIDE_MARGIN = 0.12           # m: the torso (pelvis, spine, chest, neck, clavicle) hides an item only where the item is at least this
-                                   # much behind it: a cloak hangs behind the body, so the chest must hide it; shells worn over the
-                                   # torso (up to ~3 cm thick) are never hidden. 0 = the torso never hides anything.
-                                   # Only when a cloak (cloth chains "cloak_*") is worn: UO draws other items over the torso even where
-                                   # they are behind it (a sleeve of an arm behind the chest), and hiding them cost 0.02-0.07 IoU
 DESPECKLE = 28                    # clothing: single dark pixels inside the item darker than their neighbours by more
                                    # than this (0-255) take the colour around them - deep sculpt details / rivets that
                                    # turn into black dots at UO size. 0 = off
@@ -55,8 +50,7 @@ FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded 
                                    # poking through or a gap in the item mesh, not a real occluder. 0 = off
 BODY_GAP = 0.006                   # m: every frame, parts of the bound items closer than this to the arms, hands, legs or
                                    # head of the posed body are pushed out (smoothly) before rendering - otherwise a forearm
-                                   # poking through a sleeve in motion cuts a hole in the item. Cloth-baked frames have their
-                                   # own fix (uo_cloth_bake FIX_GAP). 0 = off
+                                   # poking through a sleeve in motion cuts a hole in the item. 0 = off
 MIN_PIECE = 8                      # px: detached bits of the item smaller than this are removed (collar or cuff rims cut
                                    # off by the head or a hand read as dirt at UO size); the biggest piece always stays. 0 = off
 
@@ -69,54 +63,6 @@ sc = bpy.context.scene
 rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
 clothes = [o for o in bpy.data.collections[CLOTHING].all_objects if o.type == "MESH"] if CLOTHING in bpy.data.collections else []
-
-# items baked by uo_cloth_bake.py: their cloth simulation replaces the bound pose in the actions it covers
-CLOTH = {}
-for o in clothes:
-    if o.get("uo_cloth"):
-        p = bpy.path.abspath(o["uo_cloth"])
-        base = o.data.shape_keys.key_blocks[0].data if o.data.shape_keys else o.data.vertices
-        co = np.empty(len(o.data.vertices) * 3, np.float32); base.foreach_get("co", co)
-        sig = np.array([len(o.data.vertices), float(np.abs(co.astype(np.float64)).sum())])
-        d = np.load(p) if os.path.exists(p) else None
-        if d is not None and "item_sig" in d.files and np.allclose(d["item_sig"], sig, rtol=1e-5):
-            CLOTH[o.name] = {k: d[k] for k in d.files}
-            print("render_uo_layer: %s uses its cloth bake %s" % (o.name, p))
-        elif d is not None:
-            print("render_uo_layer: %s changed after its cloth bake - rendered as bound (bake it again)" % o.name)
-        else:
-            print("render_uo_layer: cloth bake of %s not found (%s) - rendered as bound" % (o.name, p))
-
-
-def cloth_show(o, a, i):
-    """baked cloth shape of UO action a, frame i on item o (shape key 'uo_cloth', Armature off); else the bound item"""
-    c = CLOTH.get(o.name)
-    arm = [m for m in o.modifiers if m.type == "ARMATURE"]
-    key = o.data.shape_keys.key_blocks.get("uo_cloth") if o.data.shape_keys else None
-    if c is None or ("a%d_f%d" % (a, i)) not in c:
-        for m in arm:
-            m.show_viewport = m.show_render = True
-        if key:
-            key.value = 0.0
-        return
-    co = c["a%d_f%d" % (a, i)].astype(np.float64); tris, fi = c["tris"], c["fi"]
-    A, B, C = co[tris[:, 0]], co[tris[:, 1]], co[tris[:, 2]]
-    e1 = B - A; e1 /= np.maximum(np.linalg.norm(e1, axis=1, keepdims=True), 1e-12)
-    n = np.cross(B - A, C - A); n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
-    fr = np.stack([e1, np.cross(n, e1), n], 1)[fi]
-    pos = (co[tris[fi]] * c["bc"][..., None]).sum(1) + np.einsum("nk,nkj->nj", c["off"], fr)
-    if "fix_node" in c and ("d%d_f%d_i" % (a, i)) in c:              # pushed out of the real body after the simulation
-        Dn = np.zeros((int(c["fix_node"].max()) + 1, 3)); Dn[c["d%d_f%d_i" % (a, i)]] = c["d%d_f%d_v" % (a, i)]
-        pos += Dn[c["fix_node"]]
-    if key is None:
-        if o.data.shape_keys is None:
-            o.shape_key_add(name="Basis", from_mix=False)
-        key = o.shape_key_add(name="uo_cloth", from_mix=False)
-    key.data.foreach_set("co", pos.astype(np.float32).ravel()); key.value = 1.0
-    for m in arm:
-        m.show_viewport = m.show_render = False
-    o.data.update()
-
 
 # BODY_GAP: bound items pushed out of the posed limbs / head, per UO frame (shape key "uo_fix", Armature off)
 FIX_MESH, FIX_CACHE, FIX_ON, FIX_ADDED = {}, {}, {}, set()
@@ -196,7 +142,7 @@ def evaluated_co(ob, dg):
 
 def body_fix(a, i):
     """BODY_GAP for UO frame i of action a: the pose does not depend on the direction, so each frame is solved once"""
-    items = [o for o in clothes if not o.hide_render and not (o.name in CLOTH and ("a%d_f%d" % (a, i)) in CLOTH[o.name])]
+    items = [o for o in clothes if not o.hide_render]
     for o in items:
         fix_off(o)
     if not items:
@@ -417,9 +363,7 @@ def render_px():
 def body_part_mask(parts):
     """body triangles (loop_triangles order) whose dominant bone is one of `parts` (names without .L / .R)"""
     me = body.data
-    sub = {"upper_arm_twist": "upper_arm", "forearm_twist": "forearm", "toe": "foot"}   # v13 extra bones
     names = [g.name.split(".")[0] for g in body.vertex_groups]
-    names = ["hand" if n.startswith("finger") else sub.get(n, n) for n in names]
     W = np.zeros((len(me.vertices), len(names)))
     for v in me.vertices:
         for g in v.groups:
@@ -434,13 +378,11 @@ def worn_parts(share=0.04):
     """body parts (names without .L / .R) the visible items are skinned to: an item wraps them, so they never hide it.
     A part counts when it carries at least `share` of an item's total skin weight. Rigid items (one bone: weapons, shields,
     quivers) wrap nothing, except on the head (hair, hats), which they sit on."""
-    sub = {"upper_arm_twist": "upper_arm", "forearm_twist": "forearm", "toe": "foot"}
     out = set()
     for o in clothes:
         if o.hide_render or not o.vertex_groups:
             continue
         names = [g.name.split(".")[0] for g in o.vertex_groups]
-        names = ["hand" if n.startswith("finger") else sub.get(n, n) for n in names]
         tot = {}
         for v in o.data.vertices:
             for g in v.groups:
@@ -456,8 +398,6 @@ def worn_parts(share=0.04):
 WORN = worn_parts() if (LAYER == "clothing" and OWN_PARTS_NEVER_HIDE) else set()
 OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP keeps the items away from
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
-CLOAK_WORN = any(g.name.startswith("cloak_") for o in clothes if not o.hide_render for g in o.vertex_groups)
-TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if (TORSO_HIDE_MARGIN > 0 and CLOAK_WORN and LAYER == "clothing") else None
 print("render_uo_layer: items wrap %s; body parts that may hide them: %s" % (sorted(WORN), sorted(set(OCCLUDERS) - WORN)))
 
 
@@ -521,9 +461,6 @@ def body_occlusion(free, margin):
         zi = np.where(miss, nb, zi)
     hold = free.copy()
     hold[occ & (zb < zi - margin)] = 0.0
-    if TORSO_TRIS is not None:                           # items behind the torso (cloak): clearly behind = hidden
-        occt, zt = raster([body], TORSO_TRIS)
-        hold[occt & (zt < zi - TORSO_HIDE_MARGIN)] = 0.0
     return hold, cov
 
 
@@ -702,9 +639,6 @@ def frame_job():
                         raise KeyboardInterrupt("STOP file found in " + root)
                     set_tile(a, i, d)
                     sc.frame_set(1 + i * STEP)
-                    for o in clothes:
-                        if o.name in CLOTH:
-                            cloth_show(o, a, i)
                     if BODY_GAP > 0 and LAYER != "body":
                         body_fix(a, i)
                     orig = original(a, i, d) if EXACT_ANY else None
@@ -750,9 +684,6 @@ def frame_job():
 def restore_all():
     view_prefs.render_display_type = render_display
     set_horse(-1, 0)
-    for o in clothes:
-        if o.name in CLOTH:
-            cloth_show(o, -1, 0)                        # back to the bound item
     body.is_holdout, body.hide_render = state["holdout"], state["body_hide"]
     for o in clothes:
         o.hide_render = state["cloth"][o.name]

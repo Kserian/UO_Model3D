@@ -2,8 +2,8 @@
 
 A naked male body (body 0x190 / 400) rebuilt in 3D from the UO client animation file `anim1_0x0190.vd`:
 35 actions × 5 directions, 210 frames per direction, 1050 images in total. A realistic body (MakeHuman, CC0) in the
-UO character's proportions, a 55-bone rig with fingers and cloth bone chains, and all 35 animations fitted to the
-original frames. It is meant for designing new clothing, armour, hair, cloak and weapon layers: the `.blend` renders
+UO character's proportions, a 19-bone UO rig (no fingers, no cloth chains), and all 35 animations fitted to the
+original frames. It is meant for designing new clothing, armour, hair and weapon layers: the `.blend` renders
 new UO frames and writes them straight into a `.vd` file.
 
 Polish version: [`README.md`](README.md).
@@ -28,19 +28,19 @@ Polish version: [`README.md`](README.md).
 
 | File / folder | What it is |
 |---|---|
-| `UO_Body_0x190.blend` | Main file (Blender 4.2 – 5.2): body, rig, 35 actions, cloak and skirt templates, UO camera, clothing-layer scene, horse proxies, scripts. |
+| `UO_Body_0x190.blend` | Main file (Blender 4.2 – 5.2): body, rig, 35 actions, UO camera, clothing-layer scene, horse proxies, scripts. |
 | `UO_Body_0x190.glb` | glTF 2.0: mesh + rig + animations + texture (Unity, Godot, three.js, Blender). |
 | `UO_Body_0x190.fbx` | FBX: mesh + rig + animations (Maya, 3ds Max, Unreal, Unity). |
 | `UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Albedo texture (grey like UO skin, lighting removed) and its variants for the 5 UO directions. |
 | `compare/*.gif` | Top: original sprite; bottom: the model rendered through the UO camera (5 directions). |
 | `example_clothing/` | Example layer (a shirt) in `Example_Shirt_layer.vd`, with a preview over the original body. |
 | `vdtool/vdtool.py` | Tool to unpack and repack `.vd` files (section 6). |
-| `pipeline/` | Scripts and data used to rebuild the model (section 10). |
+| `pipeline/` | Pipeline scripts: render, item fitting, tests, measurements (section 10). |
 | `pipeline/body400.vd`, `pipeline/horse200.vd` | Original client files: body 0x190 (`anim1_0x0190.vd`) and horse 0xC8. |
 | `client/body_0x190_frames/`, `client/horse_0xC8_frames/` | Original body (1050) and horse (300) frames as PNG + `meta.json` (`vdtool extract`). |
 
 **Original frames.** The `.blend` contains the original UO client body frames (for the exact modes,
-section 2). It is for your own use only; do not share it publicly. A stripped copy (`strip_originals.py`) does not contain them.
+section 2). It is for your own use only; do not share it publicly.
 To add them from your own client: copy `anim1_0x0190.vd` to `pipeline/body400.vd`, then run
 `python build_originals.py` and `python pack_originals.py --blend ../model/UO_Body_0x190.blend` in `pipeline/`.
 
@@ -53,23 +53,18 @@ To add them from your own client: copy `anim1_0x0190.vd` to `pipeline/body400.vd
 - There are no shape corrections (shape keys): the bones alone set the silhouette in every frame, so an item simply
   follows the bones.
 
-**Rig `UO_Rig`** (55 body bones + cloth chains, `.L`/`.R` suffixes):
-- 19 UO bones: `pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`,
-  `pelvis → thigh → shin → foot`. `pelvis` is the root and carries the character's translation. Clavicles raise the shoulder.
-- `upper_arm_twist`, `forearm_twist` (arm twist), 15 finger bones per hand (`finger1-1` … `finger5-3`, `finger1` is the
-  thumb), `toe`. Bone collections: *Fingers*, *Twist*, *Toes*, *Cloth*.
+**Rig `UO_Rig`** (19 UO bones, `.L`/`.R` suffixes; only bones that move the character):
+- `pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`, `pelvis → thigh → shin → foot`.
+  `pelvis` is the root and carries the character's translation. Clavicles raise the shoulder; they do not deform the mesh (Deform off).
+- There are no finger, twist, toe, cloth-chain, weapon or shield bones (removed in session 14; the weights of fingers and toes went to the hand and foot).
+  The hand is rigid (open). Before the simplification (commit `b86c314`) the rig had 112 bones.
 - Weights come from MakeHuman (smooth joints, no candy-wrapper elbows or shoulders).
 - **Girth per frame:** the X/Z scale of `upper_arm`, `forearm`, `hand`, `thigh`, `shin`, `foot`, `head` (Y = 1) makes a
   limb slightly thicker or thinner where the original needs it. The next bone of the chain does not inherit it
   (Inherit Scale = None), so limb lengths do not change. Items bound to these bones get thicker with the skin.
-- **Fingers:** in every frame the hand is clenched like on the original (finger and thumb curl fitted to the frames).
-- **Cloth chains:** `skirt_K_S` (8 chains × 3 bones around the pelvis) and `cloak_K_S` (7 × 4, down the back from the
-  shoulders). Their motion is fitted to the original skirt (anim 449) and cloak (anim 468) frames from `anim.mul`,
-  mounted actions included.
 
 **Fitted to the frames.** The pose of each of the 210 frames is fitted to all 5 directions of the original at once
-(1050 images), with no shape corrections. The right hand's rotation is also fitted to the original katana frames
-(anim 627), so a weapon sits in the hand like in the game (the blade within 0.8 px on average).
+(1050 images), with no shape corrections. Weapons, shields and hair are rigid on the hand, forearm and head bones.
 
 **Animations.** Each UO action is a Blender action `NN_name` (with a fake user). 1 UO frame = 3 scene frames (24 fps),
 with smooth interpolation. Walk and run loop. Action properties: `uo_action` (number) and `uo_frames` (frame count).
@@ -127,16 +122,11 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_densify_item.py` | Densifies the mesh of the selected item (subdivision without changing the shape, optional `SMOOTH`), so a low-poly item bends smoothly at elbows, knees and hips instead of folding along a few long edges; the target edge length depends on the slot (`EDGE_BY_KIND`, gloves 2 cm, the rest 3-5 cm). Before `uo_fit_item.py`. |
 | `uo_prepare_item.py` | One step for a slot (`KIND`): `uo_densify_item.py` -> `uo_fit_item.py` -> `uo_bind_item.py` with that slot's settings (table `SLOTS`). Results and reasons: `docs/qa/slot_geometry.md`. |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
-| `uo_cloth_bake.py` | Cloth simulation for robes, dresses, skirts and cloaks, after `uo_bind_item.py` (section 3). |
-| `uo_shield_keys.py` | Replaces the motion of the shield bone `shield.L` in an older file with the latest one (the shield and its binding stay). |
-| `uo_weapon_bones.py` | Adds the weapon bones (left hand: `polearm.L`, `axe2h.L`, `bow.L`; right hand: `weapon1h.R`) and keys their motion from `weapon_motion.json` (already run in the file; to load the motion again). |
-| `uo_place_weapon.py` | Puts the selected weapon (shaft along +Z, tip up) on the grip line of its class, before `uo_bind_item.py`. Model the head (blade, axe) as a flat plate in the XZ plane, wide side on +X; the script turns the weapon about its shaft like the original weapon `REF_ANIM` (e.g. 624 halberd, 613 executioner's axe, 623 cutlass) and the bone then turns it by the measured roll (`weapon_motion.json`, field `roll`). Bows: roll undetermined. |
-| `weapon_roll_fit.py`, `weapon_roll_lib.py`, `weapon_roll_apply.py`, `weapon_classify.py`, `test_weapon_roll.py` | Measure the roll (turn about the weapon's own axis) of all original weapons of `anim`..`anim5`, classify weapons to bones, write into `weapon_motion.json`, render test of a plate against the sprite. Results: `docs/qa/weapon_roll.md`. |
-| `weapon_motion.json` | Data: grip (point, direction, butt position) and motion of the 4 weapon classes (3 in the left hand, 1H in the right), 210 poses each. |
-| `uo_place_shield.py` | Puts the selected shield on the left forearm as UO holds it and slides it onto the arm (before `uo_bind_item.py`, section 3). |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
-| `uo_job.py` | Runs long scripts (render, cloth bake) step by step from a modal operator, so Blender's window does not freeze (progress in the status bar, ESC cancels). Used by `render_uo_layer.py` and `uo_cloth_bake.py` (don't run it directly). |
+| `uo_job.py` | Runs long scripts (render) step by step from a modal operator, so Blender's window does not freeze (progress in the status bar, ESC cancels). Used by `render_uo_layer.py` and `uo_cloth_bake.py` (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
+
+Tool scripts outside the file (`pipeline/`): `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py` (one-off rig simplification).
 
 The scripts live in the `.blend` file, not in objects. Always work in `UO_Body_0x190.blend` (File → Open) and bring your
 items into it, not the other way round.
@@ -149,7 +139,7 @@ items into it, not the other way round.
    body in the A-pose, then switch back to *Pose Position*.
 3. **Add the item:** model it or import it (File → Import / Append) and put it into the **`Clothing`** collection.
    **A model from outside (e.g. a free one):** in the text **`uo_import_item.py`** set `FILE` (path to a `.glb`, `.fbx`, `.obj`,
-   `.dae`…) and `KIND` (`shirt`, `plate`, `arms`, `pants`, `legs`, `boots`, `gloves`, `helm`, `skirt`, `cloak`) and run it
+   `.dae`…) and `KIND` (`shirt`, `plate`, `arms`, `pants`, `legs`, `boots`, `gloves`, `helm`, `neck`, `hair`, `beard`, `hat`) and run it
    (Alt+P). It bakes the mesh (without the file's skeleton and weights), throws away everything but the mesh, scales and
    places the item so that its height matches the original UO item of that kind on the body (ranges from the original
    sprites), and prints the `PART` for `uo_bind_item.py`. The meshes in the file are listed: leave out eyes, the model's body
@@ -175,7 +165,7 @@ items into it, not the other way round.
 
       | `PART` | Item | What it follows |
       |---|---|---|
-      | `"chest"` | breastplate, vest, tunic | skin under it; pauldron on the shoulder 80% on the collarbone, sleeve further down the arm follows the arm (smooth transition), bottom 70% on the pelvis |
+      | `"chest"` | breastplate, vest, tunic | skin under it; thigh near the hip 70% on the pelvis, sleeves on the arms |
       | `"torso"` | something on the torso only | pelvis, spine, chest, neck |
       | `"shoulders"` | pauldrons | chest, upper_arm |
       | `"arms"` | sleeves, arm armour | upper_arm, forearm |
@@ -185,24 +175,16 @@ items into it, not the other way round.
       | `"helm"` | helmet, hood, mask | head |
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | full suit in one object | skin under it, every bone |
-      | `"robe"` | robe, dress | top like the skin, from the waist down the skirt chains (35 cm smooth transition); sleeves always follow the arms |
-      | `"skirt"` | skirt, kilt | the `skirt_*` chains (template `UO_Template_Skirt`) |
-      | `"cloak"` | cloak, cape | the `cloak_*` chains + a yoke over the shoulders (template `UO_Template_Cloak`) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
-      | `"weapon1h"` | sword, mace, hammer, 1H axe, kryss, pickaxe | bone `weapon1h.R` on the right hand, motion fitted to 13 original weapons (0.7-1.3 px instead of 1.4-2.1 px); run `uo_place_weapon.py` with `PART = "weapon1h"` first |
-      | `"weapon"` / `"weapon.L"` | uncalibrated weapon | rigid on `hand.R` / `hand.L` |
-      | `"polearm"` (`"staff"`, `"weapon2h"`) | staff, spear, javelin, pitchfork, halberd, bardiche, crook | bone `polearm.L` on the left hand, motion fitted to the original weapons (0.6-1.1 px instead of 5-6 px); run `uo_place_weapon.py` first |
-      | `"axe2h"` | two-handed axe, hatchet / hammer in the left hand | bone `axe2h.L` (same, 1.2-1.7 px error) |
-      | `"shield"` | shield | rigid on `shield.L` (shield bone on the forearm, moves like the UO shield) |
-      | `"bow"` / `"crossbow"` | bow / crossbow | bone `bow.L` on the left hand (1.6-2.1 px error instead of 3 px) |
+      | `"weapon1h"` | sword, mace, hammer, 1H axe | rigid on `hand.R` |
+      | `"weapon"` / `"weapon.L"` | weapon | rigid on `hand.R` / `hand.L` |
+      | `"polearm"` (`"staff"`, `"weapon2h"`, `"axe2h"`) | staff, spear, halberd, two-handed axe | rigid on `hand.L` (in UO two-handed weapons are in the left hand) |
+      | `"shield"` | shield | rigid on `forearm.L` |
+      | `"bow"` / `"crossbow"` | bow / crossbow | rigid on `hand.L` |
       | `"quiver"` | quiver | rigid on `chest` |
 
-      Gloves (`"gloves"`) also follow the fingers, sleeves (`"arms"`) the twist bones, boots (`"boots"`) the toes.
-      The cloth templates (collection *Templates*, hidden in renders) can be copied as a base for your own cloak or
-      skirt: reshape them in Rest Position, then run `uo_bind_item.py` with `PART = "cloak"` / `"skirt"`.
-
-      For `"chest"` the shoulder is set in that type's line: `"upper_arm": (0.2, 0.15, 0.45)` = 20% on the arm at the
-      joint, 100% from 45% of the arm's length (the sleeve), smooth in between. `"thigh": (0.3, 0.1, 0.4)` likewise for the thighs.
+      For `"chest"` the line of that type sets how much of a bone's weight stays on it: `"thigh": (0.3, 0.1, 0.4)` = 30% on the thigh
+      at the hip (the rest on the pelvis), 100% from 40% of the thigh length, smooth in between.
 
    4. The script parents the item to `UO_Rig`, adds the *Armature* modifier and sets the weights, so the item moves
       with the skin under it. Run it again after every change to the item's shape (old weights are replaced).
@@ -211,33 +193,10 @@ items into it, not the other way round.
       does not cover.
    6. Skin poking a few mm through the item (in the 3D view) does not cut holes in the frames: when rendering, the body
       hides the item only where it is more than `HOLDOUT_MARGIN` (1 cm, section 4) in front of it.
-   7. **Cloth** (optional: robe, dress, skirt, cloak). Select the bound item, save the file and run
-      **`uo_cloth_bake.py`**. The lower part of the item (what `uo_bind_item.py` put on the cloth chains) becomes
-      Blender cloth: it falls, swings and collides with the body. Shoulders, chest and sleeves stay pinned to the
-      skeleton.
-      - `GOAL` (0.5): how strongly the cloth is pulled towards the shape of the chains fitted to the original UO
-        frames (0 = pure cloth, 1 = no cloth). `MATERIAL`: `silk`, `cotton`, `wool` or `leather`.
-      - Every action is simulated on its own. The cloth first settles for `PREROLL` frames in the first pose.
-        Actions the game loops (walk, run, stand) run `LOOP_CYCLES` times and the last cycle is kept, so the loop
-        has no jump. In the mounted actions the horse of each frame (collection `Horse_Proxy`) is an obstacle too.
-      - `CHAIN_SWING` (0.5): how much of the UO chains' swing the cloth follows; lower = calmer in fast actions
-        (war walk, run).
-      - After the simulation every frame is checked against the real body: parts inside the skin or closer
-        than `FIX_GAP` (4 mm) are pushed out smoothly, so the skin never shows through the cloth.
-      - The result goes to `uo_cloth/<item>.npz` next to the `.blend`. `render_uo_layer.py` uses it automatically,
-        and after the bake playing an action in the 3D viewport shows the cloth too (after reopening the file run
-        the script with `BAKE = False` to get that preview back).
-      - Layers of the item (a coat over a tunic) collide with each other (`SELF_COLLISION`), so the inner one never
-        shows through the outer one.
-      - All actions take 30-60 minutes (less: lower `SIM_VERTS`, `QUALITY` or only some `ACTIONS`). Run it
-        again after changing the item (shape, fit, weights); an outdated bake is skipped. `REMOVE = True` goes back
-        to the plain bound item.
 5. **Weapon, shield, hair** (rigid things): `uo_bind_item.py` with `PART = "weapon"`, `"shield"`, `"hair"` etc. (table
-   above). Place a sword in Rest Position with the grip inside the clenched right hand and the blade on the thumb side:
-   that is how weapons sit on the original UO frames. Stand a shield upright with its face towards the front view
-   (Numpad 1), select it and run **`uo_place_shield.py`**: it goes onto the outside of the left forearm (like the UO
-   heater shield) and slides onto the arm, `GAP` = 1 cm; then `PART = "shield"`. Render a shield with
-   `BODY_GAP = 0` so it does not bend.
+   above): the item rides rigidly on the hand, forearm or head bone. Place a sword in Rest Position with the grip inside the right hand and
+   the blade on the thumb side: that is how weapons sit on the original UO frames (the calibrated weapon bones are gone, so in motion a weapon
+   may differ from the original by a few pixels). Render a shield with `BODY_GAP = 0` so it does not bend.
 6. **Material:** Add → Group → **`UO_Look`**, and plug your colour or texture into its *Albedo* input. Make anything that
    should take a hue in-game in greyscale.
 7. **Check the motion:** Dope Sheet → Action Editor → pick the `NN_name` actions and play (Space). Game-camera view:
@@ -245,8 +204,8 @@ items into it, not the other way round.
 8. **Tips:**
    - Make clothing about 1–2 cm above the skin.
    - Check attacks, spells and deaths in particular.
-   - Bind skirts, robes and cloaks with the `"skirt"`, `"robe"`, `"cloak"` presets (they follow the cloth chains);
-     `uo_cloth_bake.py` then gives the cloth natural motion (step 4.7).
+   - Skirts, robes and cloaks no longer have presets or a cloth simulation (removed with the cloth chains): bind them as `"legs"` / `"all"`;
+     they move like the skin under them.
 
 ## 4. Rendering frames and the `.vd` file
 
@@ -271,8 +230,6 @@ items into it, not the other way round.
                                # (items are worn over it)
    OWN_PARTS_NEVER_HIDE = True # body parts the item is skinned to (trousers: thighs, shins) never hide it: the item wraps
                                # them, and their skin in front of the shell cut 1-px strips off the sides
-   TORSO_HIDE_MARGIN = 0.12    # only when a cloak is worn: the torso hides the item where it is > 12 cm behind it
-                               # (a cloak hangs behind the back; from the front only its sides show)
    DESPECKLE = 28              # single dark dots inside the item (deep details, rivets) take the colour around
                                # them (0 = off)
    FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled (0 = off)
@@ -361,123 +318,35 @@ people). Each item has its own animation ID.
 
 - **Exact mode (`EXACT_BODY = True`):** the rendered body layer is identical to the original (all 1050 frames, checked
   with `vdtool verify`).
-- **Pure 3D model (`EXACT_BODY = False`):** mean silhouette IoU **0.879** over 1050 frames, **with no shape
-  corrections** (bones only). By direction: 0.876–0.893. Colours on overlapping pixels are exact with `EXACT_COLORS`.
-
-| # | action | IoU | # | action | IoU | # | action | IoU |
-|---|---|---|---|---|---|---|---|---|
-| 0 | walk_unarmed | 0.905 | 12 | attack_2h_bash | 0.882 | 24 | mounted_run | 0.858 |
-| 1 | walk_armed | 0.901 | 13 | attack_2h_slash | 0.887 | 25 | mounted_stand | 0.853 |
-| 2 | run_unarmed | 0.896 | 14 | attack_2h_pierce | 0.872 | 26 | mounted_attack_1h | 0.853 |
-| 3 | run_armed | 0.896 | 15 | combat_advance | 0.881 | 27 | mounted_attack_bow | 0.865 |
-| 4 | stand | 0.912 | 16 | spell_directed | 0.879 | 28 | mounted_attack_crossbow | 0.852 |
-| 5 | fidget_1 | 0.909 | 17 | spell_area | 0.851 | 29 | mounted_attack_2h | 0.830 |
-| 6 | fidget_2 | 0.896 | 18 | attack_bow | 0.868 | 30 | block | 0.884 |
-| 7 | combat_idle_1h | 0.882 | 19 | attack_crossbow | 0.887 | 31 | punch | 0.884 |
-| 8 | combat_idle_2h | 0.878 | 20 | get_hit | 0.896 | 32 | bow | 0.892 |
-| 9 | attack_1h_slash | 0.860 | 21 | die_forward | 0.855 | 33 | salute | 0.902 |
-| 10 | attack_1h_pierce | 0.879 | 22 | die_backward | 0.857 | 34 | eat | 0.893 |
-| 11 | attack_1h_bash | 0.882 | 23 | mounted_walk | 0.859 |  |  |  |
+- **Pure 3D model (`EXACT_BODY = False`):** mean silhouette IoU **0.888** over 1050 frames (`body_part_qa.py`), **with no shape
+  corrections** (bones only). IoU per action: `docs/qa/body_parts_after_slim_rig.json`. Colours on overlapping pixels are exact with `EXACT_COLORS`.
 
 The differences are almost only 1-pixel bands along the edges (the original was drawn from a different 3D model).
 There are no large errors such as an arm in a different place than on the original, so the cut-outs in items hit the
 arm. For comparison: the previous model scored 0.880 without its 1254 corrections and 0.979 with them (but items had
 to copy those corrections).
 
-**UO items.** A test on real items from `anim.mul` (shirt, trousers, boots, gloves, helmet, plate armour): body-hugging
-items rendered on this model reproduce the original frames (cut-outs for the arms included) as well as the previous
-model with its corrections. **Cloth:** skirt IoU 0.83 (mounted 0.62), cloak 0.73 (mounted 0.67) against the original skirt and cloak frames.
-**Weapons:** the blade in the hand is 0.8 px from the UO katana blade on average.
+**UO items.** A test of replicas of items from `anim.mul` (`test_items.py`: shirt, plate, trousers, boots, gloves, helmet) on the current rig:
+mean IoU with the original frames **0.710** (shirt 0.712, plate 0.686, trousers 0.796, boots 0.768, gloves 0.519, helmet 0.781; `docs/qa/items_after_slim_rig.json`).
+Before the fingers were removed the gloves had 0.557; there are no skirt, cloak or weapon tests any more.
 
 ## 9. How the model was built
 
-**The current body (MakeHuman).**
-1. **Shape:** the MakeHuman mesh (CC0, male, muscle 0.6) moved onto the UO skeleton: every limb onto its bone (length and
-   girth), the torso with a height map (width and depth at 7 levels), neck and head separately, blended with the
-   MakeHuman weights. Girths fitted to the original frames with a penalty on unnatural shapes.
-2. **Rig:** the 19 UO bones unchanged + arm twist, 15 finger bones per hand, toes; MakeHuman weights.
-3. **Poses:** every frame fitted to all 5 directions at once (own fast rasteriser + LBS like Blender's), alternating with
-   the shape; limb girth (bone X/Z scale) and the clench of the hands are fitted per frame too.
-4. **Hand and weapon:** the sword grip calibrated on the original katana frames (anim 627), then the hand's rotation in
-   every frame so that the blade covers the original. The shield: bone `shield.L` (child of `forearm.L`),
-   its turn and shift fitted in every frame to the original shield (anim 582) in all 5 directions at once (IoU with
-   the original 0.48 -> 0.76 on average); its face away from the body and its top up (two penalties in the fit),
-   and it may move off the forearm where the model's arm moves differently from the UO shield.
-5. **Mounted:** the rider is seen only where it is in front of the horse and must not enter the horse volume.
-6. **Cloth:** the skirt and cloak bone chains fitted frame by frame to the original skirt (449) and cloak (468) frames,
-   hidden by the body, without entering the legs or the horse.
-7. **Texture:** colours from the original frames projected onto the MakeHuman UVs, the UO light removed (albedo),
-   separately for the 5 directions.
+The body is a MakeHuman mesh (CC0, male) moved onto the UO skeleton; the UO camera (orthographic, elevation 28.45°, 36 px/m, anchor in the pixel centre,
+floor 7 cm below it) and 210 poses × 5 directions were fitted to the 1050 original frames (own rasteriser + skinning like Blender's), then the mesh shape
+was fitted to the outlines of all frames, and the shoulders and arms were narrowed slightly at the user's request. The UO light (one light near the
+camera, Lambert) was derived from the frames and removed from the colour, giving the albedo. The original frames are packed in the `.blend` as an atlas for the exact modes.
+In session 14 the rig was reduced to 19 bones (see section 2). Measurements and decisions: `docs/RAPORT_model3D_UO.txt`, `docs/AUDYT_2026-10-03.md`, `docs/qa/`.
 
-**The first version of the model** (UO proportions and camera found from the frames; the current body builds on them):
-1. **Decoding the `.vd`:** RGB555 palette, RLE frames, anchor point.
-2. **The UO camera from the frames alone:** a joint fit of body proportions and camera to the silhouettes of all
-   5 directions gave an orthographic projection, elevation 28.45°, 36 px/m, the anchor on the pixel centre and the
-   floor 7 cm below it.
-3. **Shape:** a parametric body turned into a quad mesh. Vertices fitted to the silhouettes of all frames (symmetry,
-   smoothness), plus a 6.5 mm inflation that compensates the fitting bias.
-4. **Rig:** bones at the fitted joints, bone-heat weights, clavicles.
-5. **Poses (gradient-based, JAX):** every frame fitted on the skinned mesh (LBS like Blender's) in all 5 directions at
-   once. Loss terms:
-   - vertices inside the silhouette,
-   - every edge pixel reached,
-   - anatomical limits (swing and twist separately, hinge elbows and knees),
-   - temporal smoothness,
-   - a penalty for going below the floor.
-   Fitting starts from the frame closest to a known pose, so limbs are never swapped.
-6. **Escaping local minima:** a multi-start search (torso twist and lean, variants of arms, legs and body orientation).
-   Candidates are always chosen by the true IoU of the rasterised mesh, then A→B→A jitter is smoothed out.
-7. **Horse:** a visual hull from the 5 views of the horse frames, without the rider's volume, clipped by the exact
-   horse outline.
-8. **Per-frame corrections:** vertex offsets fitted with the renderer's own rule (a pixel counts when its centre is
-   inside a triangle). Then every wrong pixel was attached to the triangle responsible, and a per-direction correction
-   was added. Everything is stored as driven shape keys.
-9. **Texture and UO look:** the UO light was estimated from the frames and divided out of the colour, giving the albedo.
-   The UO post-process (black under edges, 0/1 alpha, 0.38 outline) was measured on the original.
-10. **Exact modes:** the original frames are packed as an atlas; the material projects them from the UO camera, and the
-    render script uses their outline for the body and for hiding clothing.
-11. **Verification:** the Blender rig reproduces the fitted mesh to < 0.1 mm, and the rasteriser agrees with Cycles to
-    within 1 pixel.
+## 10. Rebuilding and tools
 
-## 10. Rebuilding the model (pipeline)
+The scripts that built the body (versions 1-13: pose, shape and correction fitting, cloth, weapons, shield) were removed from the repository together with their intermediate data:
+they are in git history up to commit `b86c314` (`git show b86c314:pipeline/body13/build_v13.py`). The current `.blend` is the source of truth; changes are made on it
+(e.g. `pipeline/rig_simplify.py`) and described in the commit. Input data that remain: the original client files `pipeline/body400.vd`, `pipeline/horse200.vd`,
+the frames in `client/`, item sprites `pipeline/body13/mul/` (from `anim.mul`), the client extract `client/extract/`.
 
-**The current body** (folder `pipeline/body13/`, run from that folder; requirements: `numpy scipy numba pillow "bpy==4.2.*"`).
-The saved results (`*.json`, `*.npz`) let you repeat any step. The MakeHuman data (CC0) is in `mh/`, the UO item frames
-from `anim.mul` (skirt, cloak, katana, shield, shirt, trousers, boots, armour, helmet) in `mul/`.
-
-| Stage | Scripts | Result |
-|---|---|---|
-| Data from the first version | `prep_views.py`, `dump_poses.py`, `dump_horse.py`, `dump_v12.py` | `views_*.npz`, `rig_poses.npz`, `horse.npz` |
-| Shape | `shape13.py`, `fit_shape2.py` | `shape_r2.json` |
-| 55-bone rig | `skel13.py` | (in memory, `build_v13.py`) |
-| Poses | `run_poses13.py`, `views_from_poses13.py`, `run_mounted13.py` (+ `horse_sdf.py`) | `poses13_*.json` |
-| Weapon and hand | `weaponfit.py`, `handfit.py`, `shieldfit.py` | `grip_katana2.json`, `poses13_r5.json`, `shield_heater.json` |
-| Cloth | `cloth13.py`, `clothfit.py`, `run_cloth.py`, `run_cloth_mounted.py` | `cloth_449all.json`, `cloth_468all.json` |
-| Texture | `bake13.py` | albedo for 5 directions |
-| Building the file | `build_v13.py`, then `../export.py` | `.blend`, `.glb`, `.fbx` |
-| Measurements and previews | `eval13.py`, `itemval.py`, `gen_items.py`, `make_gif.py` | IoU, random outfits, GIFs |
-
-**The first version of the model** (scripts in `pipeline/`):
-
-The scripts are in `pipeline/` and run from that folder. Requirements: Python 3.11,
-`pip install numpy pillow scipy scikit-image jax optax "bpy==4.2.*"`. The client files are already in `pipeline/`: the
-body `body400.vd` and the horse (0xC8) `horse200.vd`. The `*.pkl` files are saved results, so steps can be resumed.
-
-| Stage | Scripts | Result |
-|---|---|---|
-| Proportions and camera | `run_shape.py` | `shape_fit.pkl` |
-| Mesh, rig, scene | `build.py` (`basemesh.py`, `sdfmesh.py`, `rig.py`, `texbake.py`) | `.blend` |
-| Shape from the frames | `refine_mesh.py`, `inflate_test.py` | `refine_mesh.pkl`, `refine_infl.pkl` |
-| Lighting and texture | `delight_bake.py`, `perdir_bake.py` | albedo, `uo_light.pkl` |
-| Poses on the mesh | `posefit_seq.py`, `posefit_search.py`, `posefit_polish.py`, `jitter_fix.py`, `reeval.py` | `final_poses_v10.pkl` |
-| Horse | `horse_hull.py`, `add_horse_proxy.py` | horse volumes and outlines |
-| Building a version | `patch_final.py` → `uo_layers_setup.py` → `add_horse_proxy.py` → `export.py` | `.blend`, `.glb`, `.fbx` |
-| Shape corrections | `corr_fit.py` (stage 1), `corr_fit34.py` (pixels + directions), `add_exact.py` | shape keys in the `.blend` |
-| Exact modes | `build_originals.py`, `add_exact.py`, `pack_originals.py`, `strip_originals.py` | final version |
-| Measurements | `render_body_vd.py --pure`, `compare2.py`, `err_parts.py`, `gross.py`, `zoom.py` | IoU, GIFs |
-
-Key settings: `UO_DELTA=refine_mesh.pkl` when fitting poses and `refine_infl.pkl` when evaluating and building;
-`UO_CLAV=1` enables the clavicles.
+To restore the original frames in the `.blend`: `python build_originals.py`, then `python pack_originals.py --blend ../model/UO_Body_0x190.blend` (in `pipeline/`).
+Measurements: `body_part_raster.py` + `body_part_qa.py` (body silhouette), `test_items.py` (items), `test_canvas.py` (canvas), `layer_analysis.py`, `light_*.py`, `slot_dynamics.py`.
 
 ## 11. Limitations and common problems
 
@@ -487,7 +356,6 @@ Key settings: `UO_DELTA=refine_mesh.pkl` when fitting poses and `refine_infl.pkl
 - The pure 3D model differs from the original mostly by 1-pixel bands along the edges (about 12% of the silhouette
   pixels). The exact modes (`EXACT_BODY`) remove this from renders: the body is always the original, the model only
   decides what is in front of it and what is behind.
-- On horseback the lower part of a skirt or cloak may go into the horse: the horse hides it when rendering (like in UO).
 - The horse is an approximate occluder, not a model for editing.
 
 **Common problems**
@@ -515,9 +383,8 @@ SPACE      : metres, Z up, character faces -Y, floor z = 0, UO anchor point = wo
 CAMERA     : "UO_Camera", orthographic, elevation 28.45 deg, 36 px/m, 136x120 px, anchor on pixel (68, 86), +0.5 px in x.
 DIRECTIONS : UO_Rig["uo_direction"] = d (0..4) rotates the rig by -45 deg * d; 0 = facing camera, 2 = profile facing
              left, 4 = facing away; 5..7 are mirrors of 3..1 made by the client.
-RIG        : 55 bones: pelvis (root) spine chest neck head; clavicle/upper_arm/forearm/hand .L/.R; thigh/shin/foot .L/.R;
-             upper_arm_twist/forearm_twist .L/.R; finger1-1..finger5-3 .L/.R (finger1 = thumb, local X = curl axis,
-             Z to the palm); toe.L/R. Cloth chains skirt_K_S (8x3, parent pelvis), cloak_K_S (7x4, parent chest).
+RIG        : 19 bones: pelvis (root) spine chest neck head; clavicle/upper_arm/forearm/hand .L/.R; thigh/shin/foot .L/.R
+             (clavicles do not deform). No finger, twist, toe, cloth-chain, weapon or shield bones (removed in session 14).
              Quaternion rotations, MakeHuman weights. Per-frame girth = pose-bone scale (x, 1, z) on upper_arm,
              forearm, hand, thigh, shin, foot, head; forearm/hand/shin/foot have Inherit Scale = None.
 ACTIONS    : 35 Blender actions "NN_name", props uo_action (0..34) and uo_frames; UO frame i -> scene frame 1 + 3*i.
@@ -525,10 +392,8 @@ ACTIONS    : 35 Blender actions "NN_name", props uo_action (0..34) and uo_frames
 BODY       : UO_Body = MakeHuman mesh (13380 verts, UVs), no shape keys. Items: text "uo_bind_item.py" (PART preset ->
              allowed bones): nearest skin point restricted to body triangles whose dominant bone is allowed; MAP "under":
              skin hit along the item vertex normal (else nearest); weights = body weights there (allowed bones only,
-             renormalised); SMOOTH passes of neighbour averaging over the item. Finger/twist/toe groups count as hand/
-             arm/foot. RIGID presets (hair, beard, hat, weapon, shield, bow, crossbow, quiver): 100 % on one bone.
-             CLOTH presets (skirt, cloak, robe): weights of the nearest point of UO_Template_Skirt / UO_Template_Cloak
-             (robe: blended with the skin weights over 0.15 m below the template top).
+             renormalised); SMOOTH passes of neighbour averaging over the item. RIGID presets (hair, beard, hat, weapon, shield, bow,
+             crossbow, quiver): 100 % on one bone (hand.R / hand.L / forearm.L / head / chest).
 HOLDOUT    : clothing layer = Cycles render without the body; own z-buffer raster of body and items; the body hides a
              pixel where depth_body < depth_item - HOLDOUT_MARGIN (0.01 m), using only body triangles whose dominant bone is
              in OCCLUDERS (no torso); transparent patches <= FILL_HOLES px fully
@@ -538,23 +403,22 @@ BODY GAP   : per UO frame (once for all 5 directions) the posed bound items (wel
              the posed OCCLUDERS triangles (BVH nearest, 12 rounds, displacement smoothed over the item edges) and shown
              through shape key 'uo_fix' with the Armature modifier off; removed again after the run (also on STOP).
 BIND FOLD  : uo_bind_item PARTS[...][1] = share of a limb bone's weight kept; the rest moves to the parent bone
-             (hand>forearm>upper_arm>clavicle, foot>shin>thigh>pelvis, head>neck); a tuple (share, t0, t1) ramps the share along the bone; "chest" =
-             upper_arm (0.2, 0.15, 0.45), thigh (0.3, 0.1, 0.4).
+             (hand>forearm>upper_arm>chest, foot>shin>thigh>pelvis, head>neck); a tuple (share, t0, t1) ramps the share along the bone; "chest" =
+             thigh (0.3, 0.1, 0.4).
 MOUNTED    : horse = body 0xC8; rider->horse action pairing 23->0, 24->1, 25..29->2. Objects Horse_a{action}_f{frame}
              (holdout proxies, parented to UO_Rig) + text "uo_horse_masks.json" (key "action,frame,dir" ->
              base64(zlib(packbits(120x136 bool)))). Hiding happens only inside the horse silhouette.
 EXACT      : image "UO_Original_Atlas" (1050 original frames, 35 cols x 30 rows of 136x120) + text
              "uo_original_frames.json" (tiles; base64(zlib(RGBA)) per "action,frame,dir"); scene props uo_tile_col,
-             uo_tile_row, uo_exact drive the projection. Present in this repository's .blend; strip_originals.py removes them.
+             uo_tile_row, uo_exact drive the projection. Present in this repository's .blend.
 MATERIAL   : scene["uo_look"]: 1 = albedo * (0.08 + 0.92 * max(0, N.L)), light fixed to the camera; 0 = plain PBR.
 RENDERING  : text "render_uo_layer.py": LAYER ("clothing" | "body" | "all"), ONLY, OUTLINE = 0.38, WRITE_VD, OUT_DIR,
              VD_FILE, HORSE_HOLDOUT, EXACT_BODY, EXACT_COLORS. Cycles, 1 sample, box filter 0.01. Post-process:
              premultiply over black, alpha threshold 0.5 -> 0/1, 1-px boundary outline * 0.38. Runs into the same
              OUT_DIR accumulate; a file named STOP in the output folder cancels.
              Output: frames/NN_action/dirK/NN.png + meta.json (vdtool layout) + <LAYER>.vd (anim_type 2, anchor 68,86).
-QUALITY    : exact mode: identical to the original body; pure model (bones only): mean silhouette IoU 0.879.
+QUALITY    : exact mode: identical to the original body; pure model (bones only): mean silhouette IoU 0.888.
 RULES      : never swap left/right limbs relative to the original frames; new layers must keep the same 35 actions,
              5 directions and frame counts as the body; do not redistribute UO client files or this repository's .blend.
-REBUILD    : Tools/UOModel3D/pipeline (section 10); the client .vd must be copied in as body400.vd, the horse as
-             horse200.vd.
+REBUILD    : the .blend is the source of truth; build scripts are in git history (commit b86c314), see section 10.
 ```

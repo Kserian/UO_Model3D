@@ -1,8 +1,8 @@
-# Runs a long script (render_uo_layer.py, uo_cloth_bake.py) step by step, so that Blender's window stays alive.
+# Runs a long script (render_uo_layer.py) step by step, so that Blender's window stays alive.
 #
 # A script that loops for minutes inside "Run Script" never gives control back to Blender: the window is not redrawn, the system
 # marks it "Not Responding" (Blender 5.x on Windows shows this much sooner than 4.2) and it looks like a crash. Here the script
-# is a generator that yields after every unit of work (a frame, a cloth step); run() feeds it from a modal operator:
+# is a generator that yields after every unit of work (a frame); run() feeds it from a modal operator:
 #   * between two steps Blender redraws; the progress is in the status bar (bottom of the window) and on the mouse cursor;
 #   * ESC cancels (the script's own clean-up runs, like with a STOP file); the other input is blocked while it works;
 #   * in background mode (blender -b, the bpy module, the tests) the generator simply runs to the end, exceptions included.

@@ -4,25 +4,23 @@
 #                  bends smoothly at elbows / knees / hips and no face is bigger than the gap to the skin. Rigid slots (hair, beard, hat) are not densified:
 #                  they do not bend.
 #   distance       uo_fit_item.py GAP_BY_KIND: how far from the skin (tight cloth 1.5 cm, armour / helmets / sleeves 3 cm).
-#   skinning       uo_bind_item.py PART: which bones the item follows (and CLOTH / RIGID presets: robe, skirt, cloak ride on the cloth chains, hair on the head).
+#   skinning       uo_bind_item.py PART: which bones the item follows (and RIGID presets: hair on the head).
 # The settings are measured where noted in the scripts (docs/qa/slot_geometry.md); weights stay "as the skin under the item" (SMOOTH 4, STIFF 1): the originals
 # do not tell another policy from it (docs/qa/bind_sweep.json: SMOOTH 0..12 and STIFF 0.5..4 change the IoU with the sprites by +-0.002 at most).
-# Loose slots (skirt, cloak, robe) additionally need uo_cloth_bake.py for the swing of the cloth (see its header).
 import os
 import re
 import bpy
 
-KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, skirt, cloak, robe, neck, hair, beard, hat
+KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat
 DENSIFY = True        # False: keep the mesh as it is
 FIT = True            # False: skip uo_fit_item.py (the item already sits right)
 
 # KIND -> (PART of uo_bind_item.py, densify?, class). class: "tight" (cloth / leather close to the skin), "hard" (armour, thick: keeps its distance, 3 cm),
-# "loose" (hangs on the cloth chains), "rigid" (one bone). Same parts as EXTENTS of uo_import_item.py.
+# "rigid" (one bone). Same parts as EXTENTS of uo_import_item.py.
 SLOTS = {
     "shirt":  ("chest", True, "tight"), "pants": ("legs", True, "tight"), "boots": ("boots", True, "tight"), "gloves": ("gloves", True, "tight"),
     "plate":  ("chest", True, "hard"),  "arms":  ("arms", True, "hard"),  "legs":  ("legs", True, "hard"),   "helm":   ("helm", True, "hard"),
     "neck":   ("neck", True, "hard"),
-    "skirt":  ("skirt", True, "loose"), "cloak": ("cloak", True, "loose"), "robe":  ("robe", True, "loose"),
     "hair":   ("hair", False, "rigid"), "beard": ("beard", False, "rigid"), "hat":   ("hat", False, "rigid"),
 }
 

@@ -3,8 +3,8 @@
     python body_part_raster.py ../model/UO_Body_0x190.blend OUT.npz [--offset dx,dy] [--actions 0,1,2]
 
 Writes `lab` (N, 133, 145) int8 in the canvas of the ORIGINAL body frames (145x133, anchor (75,92), 36 px/m): part index per pixel,
--1 = empty or hidden by the horse (mounted actions); `key` (N, 3) = (action, dir, frame); `parts` = part names. Parts: dominant bone group of a triangle's vertices, merged
-(fingers -> hand, twist bones -> limb, toe -> foot), left / right kept apart. `body_part_qa.py` compares it with the original frames.
+-1 = empty or hidden by the horse (mounted actions); `key` (N, 3) = (action, dir, frame); `parts` = part names. Parts: dominant bone group of a triangle's vertices,
+left / right kept apart. `body_part_qa.py` compares it with the original frames.
 Needs: pip install numpy "bpy==4.2.*".
 """
 import sys, os
@@ -16,11 +16,7 @@ STEP = 3                               # scene frames between two UO frames
 
 
 def part_of(name):
-    base, _, side = name.partition(".")
-    if base.startswith("finger"):
-        base = "hand"
-    base = {"upper_arm_twist": "upper_arm", "forearm_twist": "forearm", "toe": "foot"}.get(base, base)
-    return base + ("." + side if side else "")
+    return name
 
 
 def raster(ob, dg, Pm, Vm, tlab, off=(0.0, 0.0)):

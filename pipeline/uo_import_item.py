@@ -18,7 +18,7 @@ import numpy as np
 from mathutils import Matrix
 
 FILE = ""             # path of the model to import ("" = take the SELECTED mesh objects instead, e.g. something you appended yourself)
-KIND = "shirt"        # shirt, plate, arms, pants, legs, boots, gloves, helm, skirt, cloak, robe, neck, hair, beard, hat ("" = do not scale or move; only clean + join)
+KIND = "shirt"        # shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat ("" = do not scale or move; only clean + join)
 SCALE = 0.0           # > 0: uniform scale you give (the item is then only moved), 0 = from the height of KIND
 TURN = 0              # deg around the vertical axis (180 when the item came in back to front)
 JOIN = True           # one object out of all the meshes of the file (False: they stay separate objects, each scaled alike)
@@ -30,12 +30,10 @@ PERCENT = 0.5         # the height is measured between the PERCENT and 100 - PER
 # (the ground is z = 0), and the PART of uo_bind_item.py that belongs to the KIND
 EXTENTS = {"shirt": (0.999, 1.656, "chest"), "plate": (0.651, 1.643, "chest"), "arms": (0.929, 1.694, "arms"), "pants": (0.057, 1.170, "legs"),
            "legs": (-0.107, 1.138, "legs"), "boots": (-0.069, 0.563, "boots"), "gloves": (0.797, 1.245, "gloves"), "helm": (1.504, 1.903, "helm"),
-           "skirt": (0.026, 1.258, "skirt"), "cloak": (0.095, 1.675, "cloak"),
-           # medians over the original animations of the layer (docs/qa/layer_analysis.md, pipeline/layer_analysis.py); robe = anim 469.
+           # medians over the original animations of the layer (docs/qa/layer_analysis.md, pipeline/layer_analysis.py).
            # hair / beard / hat: the TOP is reliable (hair 1.88-1.93 m for 80 % of the 37 hairstyles), the bottom depends on the style (hair 1.34-1.64):
            # for a long hairstyle give SCALE yourself instead of letting the height decide
-           "hair": (1.52, 1.89, "hair"), "beard": (1.52, 1.72, "beard"), "hat": (1.52, 1.92, "hat"), "neck": (1.48, 1.64, "neck"),
-           "robe": (0.026, 1.719, "robe")}
+           "hair": (1.52, 1.89, "hair"), "beard": (1.52, 1.72, "beard"), "hat": (1.52, 1.92, "hat"), "neck": (1.48, 1.64, "neck")}
 
 body = bpy.data.objects["UO_Body"]
 UO_NAMES = {"UO_Body", "UO_Rig", "UO_Camera", "UO_Sun"}

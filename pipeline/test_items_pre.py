@@ -18,13 +18,9 @@ body, rig = bpy.data.objects["UO_Body"], bpy.data.objects["UO_Rig"]
 me = body.data
 assert np.allclose(body.scale, 1.0), "UO_Body is scaled"
 
-SUB = {"upper_arm_twist": "upper_arm", "forearm_twist": "forearm", "toe": "foot"}
-
-
 def base_of(n):
     s = n[-2:] if n.endswith((".L", ".R")) else ""
-    b = n[:-2] if s else n
-    return ("hand" if b.startswith("finger") else SUB.get(b, b)), s
+    return (n[:-2] if s else n), s
 
 
 groups = [base_of(g.name) for g in body.vertex_groups]
@@ -57,19 +53,13 @@ if spec.get("cut_far"):                                      # drop the far end 
         keep &= ~(np.array([d == (bname, s_) for d in dom]) & (t > t1))
 
 bm = bmesh.new(); bm.from_mesh(me); bm.verts.ensure_lookup_table()
-if spec.get("template"):                                     # loose items: the cloth template of the body file stands for the item (skirt, cloak)
-    tpl = bpy.data.objects[spec["template"]]
-    bm.free(); bm = bmesh.new(); bm.from_mesh(tpl.data); bm.verts.ensure_lookup_table()
-    keep = np.ones(len(bm.verts), bool)
-    nrm = np.zeros((len(bm.verts), 3))
-    spec = dict(spec, thickness=spec.get("thickness", 0.0))
 for v in bm.verts:
     v.co += type(v.co)(nrm[v.index] * spec["thickness"])
 for lay in list(bm.verts.layers.deform):                     # the replica must not inherit the body's group indices: uo_bind_item makes its own groups
     bm.verts.layers.deform.remove(lay)
 bmesh.ops.delete(bm, geom=[v for v in bm.verts if not keep[v.index]], context="VERTS")
 item_me = bpy.data.meshes.new("test_" + os.environ["UO_TEST_ITEM"]); bm.to_mesh(item_me); bm.free()
-item = bpy.data.objects.new(item_me.name, item_me); item.matrix_world = (bpy.data.objects[spec["template"]].matrix_world if spec.get("template") else body.matrix_world).copy()
+item = bpy.data.objects.new(item_me.name, item_me); item.matrix_world = body.matrix_world.copy()
 
 clo = bpy.data.collections["Clothing"]
 shirt = bpy.data.objects.get("Example_Shirt")
