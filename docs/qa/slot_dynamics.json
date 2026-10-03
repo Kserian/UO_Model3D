@@ -1,0 +1,698 @@
+{
+ "pants": {
+  "walk/run": {
+   "cover": 0.85,
+   "off": 4.2,
+   "off_cv": 0.454,
+   "swing": 2.974,
+   "area_cv": 0.087,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.847,
+   "off": 2.44,
+   "off_cv": 0.375,
+   "swing": 1.104,
+   "area_cv": 0.037,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.843,
+   "off": 5.231,
+   "off_cv": 0.472,
+   "swing": 2.45,
+   "area_cv": 0.063,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.851,
+   "off": 3.3,
+   "off_cv": 0.367,
+   "swing": 1.254,
+   "area_cv": 0.043,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.851,
+   "off": 4.417,
+   "off_cv": 0.675,
+   "swing": 5.039,
+   "area_cv": 0.174,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.827,
+   "off": 4.49,
+   "off_cv": 0.394,
+   "swing": 2.453,
+   "area_cv": 0.036,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.851,
+   "off": 2.813,
+   "off_cv": 0.352,
+   "swing": 0.779,
+   "area_cv": 0.035,
+   "n": 15
+  }
+ },
+ "shirt": {
+  "walk/run": {
+   "cover": 0.929,
+   "off": 2.016,
+   "off_cv": 0.349,
+   "swing": 0.821,
+   "area_cv": 0.039,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.931,
+   "off": 2.08,
+   "off_cv": 0.343,
+   "swing": 0.695,
+   "area_cv": 0.065,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.926,
+   "off": 1.698,
+   "off_cv": 0.851,
+   "swing": 0.572,
+   "area_cv": 0.109,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.928,
+   "off": 1.8,
+   "off_cv": 0.965,
+   "swing": 0.331,
+   "area_cv": 0.083,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.925,
+   "off": 1.75,
+   "off_cv": 1.134,
+   "swing": 0.165,
+   "area_cv": 0.139,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.926,
+   "off": 1.877,
+   "off_cv": 0.557,
+   "swing": 0.671,
+   "area_cv": 0.046,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.931,
+   "off": 1.12,
+   "off_cv": 0.557,
+   "swing": 0.28,
+   "area_cv": 0.044,
+   "n": 15
+  }
+ },
+ "skirt": {
+  "walk/run": {
+   "cover": 0.544,
+   "off": 263.88,
+   "off_cv": 0.207,
+   "swing": 1.662,
+   "area_cv": 0.091,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.655,
+   "off": 128.74,
+   "off_cv": 0.089,
+   "swing": 1.348,
+   "area_cv": 0.012,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.54,
+   "off": 252.136,
+   "off_cv": 0.16,
+   "swing": 2.504,
+   "area_cv": 0.066,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.591,
+   "off": 203.629,
+   "off_cv": 0.19,
+   "swing": 2.526,
+   "area_cv": 0.057,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.575,
+   "off": 195.983,
+   "off_cv": 0.274,
+   "swing": 3.96,
+   "area_cv": 0.108,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.782,
+   "off": 37.866,
+   "off_cv": 0.218,
+   "swing": 2.949,
+   "area_cv": 0.039,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.624,
+   "off": 161.88,
+   "off_cv": 0.095,
+   "swing": 1.098,
+   "area_cv": 0.021,
+   "n": 15
+  }
+ },
+ "cloak": {
+  "walk/run": {
+   "cover": 0.36,
+   "off": 378.972,
+   "off_cv": 0.169,
+   "swing": 1.598,
+   "area_cv": 0.116,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.439,
+   "off": 288.26,
+   "off_cv": 0.152,
+   "swing": 2.196,
+   "area_cv": 0.114,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.296,
+   "off": 520.639,
+   "off_cv": 0.204,
+   "swing": 4.846,
+   "area_cv": 0.182,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.3,
+   "off": 546.914,
+   "off_cv": 0.186,
+   "swing": 1.684,
+   "area_cv": 0.122,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.254,
+   "off": 687.667,
+   "off_cv": 0.357,
+   "swing": 5.228,
+   "area_cv": 0.298,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.291,
+   "off": 466.568,
+   "off_cv": 0.12,
+   "swing": 1.348,
+   "area_cv": 0.063,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.404,
+   "off": 318.213,
+   "off_cv": 0.128,
+   "swing": 1.646,
+   "area_cv": 0.068,
+   "n": 15
+  }
+ },
+ "boots": {
+  "walk/run": {
+   "cover": 0.735,
+   "off": 12.392,
+   "off_cv": 0.353,
+   "swing": 2.241,
+   "area_cv": 0.098,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.729,
+   "off": 11.86,
+   "off_cv": 0.167,
+   "swing": 0.936,
+   "area_cv": 0.019,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.74,
+   "off": 14.006,
+   "off_cv": 0.199,
+   "swing": 1.735,
+   "area_cv": 0.054,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.736,
+   "off": 11.657,
+   "off_cv": 0.193,
+   "swing": 1.302,
+   "area_cv": 0.042,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.759,
+   "off": 9.833,
+   "off_cv": 0.504,
+   "swing": 5.163,
+   "area_cv": 0.187,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.736,
+   "off": 8.219,
+   "off_cv": 0.203,
+   "swing": 2.189,
+   "area_cv": 0.042,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.74,
+   "off": 10.64,
+   "off_cv": 0.189,
+   "swing": 1.292,
+   "area_cv": 0.046,
+   "n": 15
+  }
+ },
+ "plate": {
+  "walk/run": {
+   "cover": 0.866,
+   "off": 16.116,
+   "off_cv": 0.366,
+   "swing": 2.887,
+   "area_cv": 0.024,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.862,
+   "off": 17.22,
+   "off_cv": 0.206,
+   "swing": 1.827,
+   "area_cv": 0.044,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.84,
+   "off": 21.841,
+   "off_cv": 0.272,
+   "swing": 2.363,
+   "area_cv": 0.084,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.836,
+   "off": 22.371,
+   "off_cv": 0.241,
+   "swing": 1.881,
+   "area_cv": 0.071,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.841,
+   "off": 17.567,
+   "off_cv": 0.442,
+   "swing": 3.415,
+   "area_cv": 0.143,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.833,
+   "off": 19.418,
+   "off_cv": 0.249,
+   "swing": 2.209,
+   "area_cv": 0.043,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.851,
+   "off": 17.707,
+   "off_cv": 0.201,
+   "swing": 1.779,
+   "area_cv": 0.032,
+   "n": 15
+  }
+ },
+ "arms": {
+  "walk/run": {
+   "cover": 0.742,
+   "off": 31.632,
+   "off_cv": 0.089,
+   "swing": 0.968,
+   "area_cv": 0.059,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.745,
+   "off": 32.66,
+   "off_cv": 0.163,
+   "swing": 1.229,
+   "area_cv": 0.05,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.74,
+   "off": 30.568,
+   "off_cv": 0.325,
+   "swing": 2.224,
+   "area_cv": 0.094,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.737,
+   "off": 30.5,
+   "off_cv": 0.222,
+   "swing": 2.356,
+   "area_cv": 0.117,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.755,
+   "off": 26.75,
+   "off_cv": 0.239,
+   "swing": 3.961,
+   "area_cv": 0.091,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.738,
+   "off": 30.978,
+   "off_cv": 0.164,
+   "swing": 1.478,
+   "area_cv": 0.056,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.736,
+   "off": 33.373,
+   "off_cv": 0.147,
+   "swing": 2.083,
+   "area_cv": 0.033,
+   "n": 15
+  }
+ },
+ "legs": {
+  "walk/run": {
+   "cover": 0.799,
+   "off": 22.28,
+   "off_cv": 0.258,
+   "swing": 1.91,
+   "area_cv": 0.08,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.801,
+   "off": 21.26,
+   "off_cv": 0.175,
+   "swing": 0.878,
+   "area_cv": 0.032,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.785,
+   "off": 28.264,
+   "off_cv": 0.169,
+   "swing": 1.746,
+   "area_cv": 0.058,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.801,
+   "off": 23.786,
+   "off_cv": 0.173,
+   "swing": 1.843,
+   "area_cv": 0.037,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.801,
+   "off": 22.383,
+   "off_cv": 0.327,
+   "swing": 4.669,
+   "area_cv": 0.163,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.786,
+   "off": 23.367,
+   "off_cv": 0.157,
+   "swing": 1.456,
+   "area_cv": 0.036,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.807,
+   "off": 20.147,
+   "off_cv": 0.176,
+   "swing": 1.055,
+   "area_cv": 0.035,
+   "n": 15
+  }
+ },
+ "gloves": {
+  "walk/run": {
+   "cover": 0.741,
+   "off": 6.288,
+   "off_cv": 0.479,
+   "swing": 3.287,
+   "area_cv": 0.113,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.736,
+   "off": 6.88,
+   "off_cv": 0.334,
+   "swing": 2.382,
+   "area_cv": 0.077,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.715,
+   "off": 8.751,
+   "off_cv": 0.406,
+   "swing": 5.617,
+   "area_cv": 0.193,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.752,
+   "off": 7.843,
+   "off_cv": 0.554,
+   "swing": 4.173,
+   "area_cv": 0.166,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.721,
+   "off": 8.683,
+   "off_cv": 0.339,
+   "swing": 7.1,
+   "area_cv": 0.12,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.73,
+   "off": 7.985,
+   "off_cv": 0.354,
+   "swing": 3.458,
+   "area_cv": 0.086,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.78,
+   "off": 3.733,
+   "off_cv": 0.427,
+   "swing": 1.785,
+   "area_cv": 0.112,
+   "n": 15
+  }
+ },
+ "helm": {
+  "walk/run": {
+   "cover": 0.796,
+   "off": 3.364,
+   "off_cv": 0.406,
+   "swing": 1.163,
+   "area_cv": 0.018,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.8,
+   "off": 3.16,
+   "off_cv": 0.494,
+   "swing": 1.005,
+   "area_cv": 0.041,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.803,
+   "off": 3.439,
+   "off_cv": 0.688,
+   "swing": 1.544,
+   "area_cv": 0.042,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.822,
+   "off": 2.814,
+   "off_cv": 0.763,
+   "swing": 0.877,
+   "area_cv": 0.046,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.819,
+   "off": 2.717,
+   "off_cv": 0.774,
+   "swing": 2.85,
+   "area_cv": 0.123,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.809,
+   "off": 3.159,
+   "off_cv": 0.52,
+   "swing": 0.918,
+   "area_cv": 0.022,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.828,
+   "off": 2.013,
+   "off_cv": 0.511,
+   "swing": 0.813,
+   "area_cv": 0.057,
+   "n": 15
+  }
+ },
+ "shield": {
+  "walk/run": {
+   "cover": 0.338,
+   "off": 268.476,
+   "off_cv": 0.106,
+   "swing": 2.474,
+   "area_cv": 0.062,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.319,
+   "off": 282.82,
+   "off_cv": 0.113,
+   "swing": 2.33,
+   "area_cv": 0.126,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.308,
+   "off": 280.002,
+   "off_cv": 0.234,
+   "swing": 5.654,
+   "area_cv": 0.207,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.332,
+   "off": 276.186,
+   "off_cv": 0.321,
+   "swing": 5.691,
+   "area_cv": 0.286,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.304,
+   "off": 268.5,
+   "off_cv": 0.308,
+   "swing": 4.83,
+   "area_cv": 0.245,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.354,
+   "off": 255.965,
+   "off_cv": 0.201,
+   "swing": 3.029,
+   "area_cv": 0.151,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.333,
+   "off": 240.987,
+   "off_cv": 0.095,
+   "swing": 1.051,
+   "area_cv": 0.066,
+   "n": 15
+  }
+ },
+ "katana": {
+  "walk/run": {
+   "cover": 0.433,
+   "off": 19.94,
+   "off_cv": 0.64,
+   "swing": 2.065,
+   "area_cv": 0.237,
+   "n": 25
+  },
+  "stand": {
+   "cover": 0.49,
+   "off": 17.38,
+   "off_cv": 0.446,
+   "swing": 1.308,
+   "area_cv": 0.178,
+   "n": 10
+  },
+  "fight": {
+   "cover": 0.367,
+   "off": 25.29,
+   "off_cv": 0.507,
+   "swing": 9.243,
+   "area_cv": 0.278,
+   "n": 55
+  },
+  "spell": {
+   "cover": 0.448,
+   "off": 20.514,
+   "off_cv": 0.602,
+   "swing": 9.373,
+   "area_cv": 0.267,
+   "n": 10
+  },
+  "die": {
+   "cover": 0.38,
+   "off": 24.417,
+   "off_cv": 0.487,
+   "swing": 8.692,
+   "area_cv": 0.249,
+   "n": 10
+  },
+  "mounted": {
+   "cover": 0.352,
+   "off": 23.04,
+   "off_cv": 0.415,
+   "swing": 4.253,
+   "area_cv": 0.235,
+   "n": 30
+  },
+  "other": {
+   "cover": 0.381,
+   "off": 23.431,
+   "off_cv": 0.432,
+   "swing": 2.374,
+   "area_cv": 0.204,
+   "n": 15
+  }
+ }
+}

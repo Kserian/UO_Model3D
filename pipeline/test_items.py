@@ -48,6 +48,7 @@ def render(blend, out, item, actions, canvas, anchor, fit, spec_path, extra=()):
     r = subprocess.run(cmd, capture_output=True, text=True, env=env)
     if r.returncode:
         sys.exit("render of %s failed:\n%s\n%s" % (item, r.stdout[-2000:], r.stderr[-2000:]))
+    open(os.path.join(out, "log.txt"), "w").write(r.stdout)
     return os.path.join(out, "clothing", "frames")
 
 

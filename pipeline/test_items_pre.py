@@ -93,7 +93,24 @@ def run(script, **over):
     exec(compile(text, script, "exec"), {"__name__": "__main__"})
 
 
-if os.environ.get("UO_TEST_FIT") == "1":
+if os.environ.get("UO_TEST_DECIMATE"):                          # experiment: a coarse (low-poly) version of the replica, like a foreign model
+    md = item.modifiers.new("coarse", "DECIMATE"); md.ratio = float(os.environ["UO_TEST_DECIMATE"])
+    bpy.context.view_layer.update()
+    coarse = bpy.data.meshes.new_from_object(item.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    item.modifiers.remove(md); item.data = coarse; item_me = coarse
+if os.environ.get("UO_TEST_DENSIFY"):                           # experiment: uo_densify_item.py "TARGET_EDGE,SMOOTH"
+    te, sm = (float(x) for x in os.environ["UO_TEST_DENSIFY"].split(","))
+    run("uo_densify_item.py", TARGET_EDGE=te, SMOOTH=sm)
+    item_me = item.data
+if os.environ.get("UO_TEST_PREPARE") == "1":                    # the whole slot chain: densify -> fit -> bind
+    os.environ["UO_SCRIPTS"] = scripts
+    run("uo_prepare_item.py", KIND=os.environ["UO_TEST_ITEM"])
+elif os.environ.get("UO_TEST_FIT") == "1":
     run("uo_fit_item.py", KIND=os.environ["UO_TEST_ITEM"], **({"MIN_GAP": float(os.environ["UO_TEST_MIN_GAP"])} if "UO_TEST_MIN_GAP" in os.environ else {}))
-run("uo_bind_item.py", PART=spec["part"])
+over = {}
+for kv in filter(None, os.environ.get("UO_TEST_BIND", "").split(",")):       # experiment: "SMOOTH=8,STIFF=2"
+    k, v = kv.split("="); over[k] = float(v) if k == "STIFF" else int(v)
+if os.environ.get("UO_TEST_PREPARE") != "1":
+    run("uo_bind_item.py", PART=spec["part"], **over)
+item_me = item.data
 print("test_items_pre: %s -> %d vertices, %d faces, PART=%s" % (item.name, len(item_me.vertices), len(item_me.polygons), spec["part"]))

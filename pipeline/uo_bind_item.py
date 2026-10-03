@@ -16,6 +16,8 @@ from mathutils.geometry import barycentric_transform
 PART = "all"          # kind of item, see PARTS below (e.g. "chest" for a breastplate, "gloves" for gloves)
 MAP = "under"         # "under": follow the skin right under each vertex (along its normal); "nearest": nearest skin
 SMOOTH = 4            # smoothing passes of weights and corrections over the item (0 = off)
+STIFF = 1.0           # > 1 sharpens the weights (w^STIFF, renormalised): the item bends in a narrower band at the joints, its parts stay more rigid
+                      # (plates); < 1 spreads the bend wider (soft cloth); 1 = as the skin under it
 MAX_DIST = 0.15       # m, farthest skin an item vertex may follow along its normal
 CORR_KEEP = 0.0       # 0..1: share of the skin corrections kept where FOLLOW moved weight to a parent bone
 # PART: (bones the item may follow - None = all, FOLLOW = share of a limb bone's weight that stays on it; the rest goes
@@ -179,6 +181,8 @@ def bind(ob, allowed):
     lost = s[:, 0] <= 1e-6                                           # no weight of the part here: nearest bone of the part
     if lost.any():
         wv[lost, W[idx[lost, 0]].argmax(1)] = 1.0
+    if STIFF != 1.0:
+        wv = wv ** STIFF; wv /= np.maximum(wv.sum(1, keepdims=True), 1e-9)
     moved = np.zeros(n)
     bones = list(bones)
     for base in ("hand", "forearm", "upper_arm", "foot", "shin", "thigh", "head"):   # distal first, so chains fold
