@@ -2,7 +2,7 @@
 
 A naked male body (body 0x190 / 400) rebuilt in 3D from the UO client animation file `anim1_0x0190.vd`:
 35 actions × 5 directions, 210 frames per direction, 1050 images in total. A realistic body (MakeHuman, CC0) in the
-UO character's proportions, a 49-bone rig (19 UO bones plus the fingers), and all 35 animations fitted to the
+UO character's proportions, a 54-bone rig (19 UO bones plus the fingers and weapon bones), and all 35 animations fitted to the
 original frames. It is meant for designing new clothing, armour, hair and weapon layers: the `.blend` renders
 new UO frames and writes them straight into a `.vd` file.
 
@@ -50,12 +50,14 @@ To add them from your own client: copy `anim1_0x0190.vd` to `pipeline/body400.vd
 - There are no shape corrections (shape keys): the bones alone set the silhouette in every frame, so an item simply
   follows the bones.
 
-**Rig `UO_Rig`** (49 bones: 19 UO bones + 30 finger bones, `.L`/`.R` suffixes; only bones that move the character):
+**Rig `UO_Rig`** (54 bones: 19 UO bones, 30 fingers and 5 weapon and shield bones, `.L`/`.R` suffixes; only bones that move the character):
 - `pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`, `pelvis → thigh → shin → foot`.
   `pelvis` is the root and carries the character's translation. Clavicles raise the shoulder; they do not deform the mesh (Deform off).
 - `finger1-1` … `finger5-3` (15 bones per hand, `finger1` is the thumb, bone X = curl axis). In every frame the hand is clenched like on the original
   (finger and thumb curl fitted to the UO frames). Gloves (`"gloves"`) follow the fingers.
-- There are no twist, toe, cloth-chain, weapon or shield bones (removed in session 14; the weights of the toes went to the foot).
+- Item-motion bones: `polearm.L`, `axe2h.L`, `bow.L` (children of `hand.L`), `weapon1h.R` (child of `hand.R`), `shield.L` (child of `forearm.L`), keyed in the 35 actions
+  (restored at the user's request; they depend only on the hand and forearm, so the fingers do not change them).
+- There are no twist, toe or cloth-chain bones (removed in session 14; the weights of the toes went to the foot).
   Before the simplification (commit `b86c314`) the rig had 112 bones.
 - Weights come from MakeHuman (smooth joints, no candy-wrapper elbows or shoulders).
 - **Girth per frame:** the X/Z scale of `upper_arm`, `forearm`, `hand`, `thigh`, `shin`, `foot`, `head` (Y = 1) makes a
@@ -120,11 +122,17 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_densify_item.py` | Densifies the mesh of the selected item (subdivision without changing the shape, optional `SMOOTH`), so a low-poly item bends smoothly at elbows, knees and hips instead of folding along a few long edges; the target edge length depends on the slot (`EDGE_BY_KIND`, gloves 2 cm, the rest 3-5 cm). Before `uo_fit_item.py`. |
 | `uo_prepare_item.py` | One step for a slot (`KIND`): `uo_densify_item.py` -> `uo_fit_item.py` -> `uo_bind_item.py` with that slot's settings (table `SLOTS`). Results and reasons: `docs/qa/slot_geometry.md`. |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
+| `uo_weapon_bones.py` | Adds the weapon bones (left hand: `polearm.L`, `axe2h.L`, `bow.L`; right hand: `weapon1h.R`) and keys their motion from `weapon_motion.json` (already run in the file; to load the motion again). |
+| `uo_place_weapon.py` | Puts the selected weapon (shaft along +Z, tip up) on the grip line of its class, before `uo_bind_item.py`. Model the head (blade, axe) as a flat plate in the XZ plane, wide side on +X; the script turns the weapon about its shaft like the original weapon `REF_ANIM` (e.g. 624 halberd, 613 executioner's axe, 623 cutlass) and the bone then turns it by the measured roll (`weapon_motion.json`, field `roll`). Bows: roll undetermined. |
+| `weapon_motion.json` | Data: grip (point, direction, butt position) and motion of the 4 weapon classes (3 in the left hand, 1H in the right), 210 poses each. |
+| `uo_place_shield.py` | Puts the selected shield on the left forearm as UO holds it and slides it onto the arm (before `uo_bind_item.py`, section 3). |
+| `uo_shield_keys.py` | Replaces the motion of the shield bone `shield.L` in an older file with the latest one (the shield and its binding stay). |
+| `weapon_roll_fit.py`, `weapon_roll_lib.py`, `weapon_roll_apply.py`, `weapon_classify.py`, `test_weapon_roll.py` | Measure the roll (turn about the weapon's own axis) of all original weapons of `anim`..`anim5`, classify weapons to bones, write into `weapon_motion.json`, render test of a plate against the sprite. Results: `docs/qa/weapon_roll.md`. |
 | `uo_vd_writer.py` | `.vd` writer used by the renderer (don't run it directly). |
 | `uo_job.py` | Runs long scripts (render) step by step from a modal operator, so Blender's window does not freeze (progress in the status bar, ESC cancels). Used by `render_uo_layer.py` and `uo_cloth_bake.py` (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
 
-Tool scripts outside the file (`pipeline/`): `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py` and `rig_restore_fingers.py` (one-off rig changes).
+Tool scripts outside the file (`pipeline/`): `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py`, `rig_restore_fingers.py`, `rig_restore_weapons.py` (one-off rig changes), `weapon_*.py` and `test_weapons.py` / `test_weapon_roll.py` (weapon calibration and tests; they need sprites from the client, only the katana 627 is in the repo).
 
 The scripts live in the `.blend` file, not in objects. Always work in `UO_Body_0x190.blend` (File → Open) and bring your
 items into it, not the other way round.
@@ -174,11 +182,12 @@ items into it, not the other way round.
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | full suit in one object | skin under it, every bone |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
-      | `"weapon1h"` | sword, mace, hammer, 1H axe | rigid on `hand.R` |
-      | `"weapon"` / `"weapon.L"` | weapon | rigid on `hand.R` / `hand.L` |
-      | `"polearm"` (`"staff"`, `"weapon2h"`, `"axe2h"`) | staff, spear, halberd, two-handed axe | rigid on `hand.L` (in UO two-handed weapons are in the left hand) |
-      | `"shield"` | shield | rigid on `forearm.L` |
-      | `"bow"` / `"crossbow"` | bow / crossbow | rigid on `hand.L` |
+      | `"weapon1h"` | sword, mace, hammer, 1H axe, kryss, pickaxe | bone `weapon1h.R` on the right hand, motion fitted to 13 original weapons (0.7-1.3 px instead of 1.4-2.1 px); run `uo_place_weapon.py` with `PART = "weapon1h"` first |
+      | `"weapon"` / `"weapon.L"` | uncalibrated weapon | rigid on `hand.R` / `hand.L` |
+      | `"polearm"` (`"staff"`, `"weapon2h"`) | staff, spear, javelin, pitchfork, halberd, bardiche, crook | bone `polearm.L` on the left hand, motion fitted to the original weapons (0.6-1.1 px instead of 5-6 px); run `uo_place_weapon.py` first |
+      | `"axe2h"` | two-handed axe, hatchet / hammer in the left hand | bone `axe2h.L` (same, 1.2-1.7 px error) |
+      | `"shield"` | shield | rigid on `shield.L` (shield bone on the forearm, moves like the UO shield) |
+      | `"bow"` / `"crossbow"` | bow / crossbow | bone `bow.L` on the left hand (1.6-2.1 px error instead of 3 px) |
       | `"quiver"` | quiver | rigid on `chest` |
 
       For `"chest"` the line of that type sets how much of a bone's weight stays on it: `"thigh": (0.3, 0.1, 0.4)` = 30% on the thigh
@@ -192,9 +201,11 @@ items into it, not the other way round.
    6. Skin poking a few mm through the item (in the 3D view) does not cut holes in the frames: when rendering, the body
       hides the item only where it is more than `HOLDOUT_MARGIN` (1 cm, section 4) in front of it.
 5. **Weapon, shield, hair** (rigid things): `uo_bind_item.py` with `PART = "weapon"`, `"shield"`, `"hair"` etc. (table
-   above): the item rides rigidly on the hand, forearm or head bone. Place a sword in Rest Position with the grip inside the right hand and
-   the blade on the thumb side: that is how weapons sit on the original UO frames (the calibrated weapon bones are gone, so in motion a weapon
-   may differ from the original by a few pixels). Render a shield with `BODY_GAP = 0` so it does not bend.
+   above). Place a sword in Rest Position with the grip inside the clenched right hand and the blade on the thumb side:
+   that is how weapons sit on the original UO frames. Stand a shield upright with its face towards the front view
+   (Numpad 1), select it and run **`uo_place_shield.py`**: it goes onto the outside of the left forearm (like the UO
+   heater shield) and slides onto the arm, `GAP` = 1 cm; then `PART = "shield"`. Render a shield with
+   `BODY_GAP = 0` so it does not bend.
 6. **Material:** Add → Group → **`UO_Look`**, and plug your colour or texture into its *Albedo* input. Make anything that
    should take a hue in-game in greyscale.
 7. **Check the motion:** Dope Sheet → Action Editor → pick the `NN_name` actions and play (Space). Game-camera view:
@@ -382,8 +393,8 @@ SPACE      : metres, Z up, character faces -Y, floor z = 0, UO anchor point = wo
 CAMERA     : "UO_Camera", orthographic, elevation 28.45 deg, 36 px/m, 136x120 px, anchor on pixel (68, 86), +0.5 px in x.
 DIRECTIONS : UO_Rig["uo_direction"] = d (0..4) rotates the rig by -45 deg * d; 0 = facing camera, 2 = profile facing
              left, 4 = facing away; 5..7 are mirrors of 3..1 made by the client.
-RIG        : 49 bones: pelvis (root) spine chest neck head; clavicle/upper_arm/forearm/hand .L/.R; thigh/shin/foot .L/.R
-             (clavicles do not deform); finger1-1..finger5-3 .L/.R (finger1 = thumb, local X = curl axis). No twist, toe, cloth-chain, weapon or shield bones.
+RIG        : 54 bones: pelvis (root) spine chest neck head; clavicle/upper_arm/forearm/hand .L/.R; thigh/shin/foot .L/.R
+             (clavicles do not deform); finger1-1..finger5-3 .L/.R (finger1 = thumb, local X = curl axis). Item bones polearm.L axe2h.L bow.L (hand.L), weapon1h.R (hand.R), shield.L (forearm.L). No twist, toe or cloth-chain bones.
              Quaternion rotations, MakeHuman weights. Per-frame girth = pose-bone scale (x, 1, z) on upper_arm,
              forearm, hand, thigh, shin, foot, head; forearm/hand/shin/foot have Inherit Scale = None.
 ACTIONS    : 35 Blender actions "NN_name", props uo_action (0..34) and uo_frames; UO frame i -> scene frame 1 + 3*i.

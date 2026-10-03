@@ -1,0 +1,105 @@
+{
+ "note": "symmetric chamfer (px, mean over 1044-1050 frames) between the stick and the original sprite, hand.L; before = one rigid stick in hand.L (own fit), after = class line + fitted motion per pose (weapon_fit.py class)",
+ "weapons": {
+  "648": {
+   "name": "quarter staff",
+   "class": "polearm.L",
+   "before_rigid_hand.L": 5.13,
+   "after_calibrated": 0.6
+  },
+  "614": {
+   "name": "bardiche",
+   "class": "polearm.L",
+   "before_rigid_hand.L": 5.21,
+   "after_calibrated": 1.07
+  },
+  "641": {
+   "name": "long spear",
+   "class": "polearm.L",
+   "before_rigid_hand.L": 6.0,
+   "after_calibrated": 0.69
+  },
+  "624": {
+   "name": "halberd",
+   "class": "polearm.L",
+   "before_rigid_hand.L": 5.58,
+   "after_calibrated": 0.95
+  },
+  "617": {
+   "name": "black staff",
+   "class": "polearm.L",
+   "before_rigid_hand.L": 5.97,
+   "after_calibrated": 0.68
+  },
+  "628": {
+   "name": "gnarled staff",
+   "class": "polearm.L",
+   "before_rigid_hand.L": 5.77,
+   "after_calibrated": 0.67
+  },
+  "611": {
+   "name": "large battle axe",
+   "class": "axe2h.L",
+   "before_rigid_hand.L": 3.69,
+   "after_calibrated": 1.67
+  },
+  "612": {
+   "name": "two handed axe",
+   "class": "axe2h.L",
+   "before_rigid_hand.L": 3.63,
+   "after_calibrated": 1.36
+  },
+  "613": {
+   "name": "executioner's axe",
+   "class": "axe2h.L",
+   "before_rigid_hand.L": 3.92,
+   "after_calibrated": 1.17
+  },
+  "634": {
+   "name": "double axe",
+   "class": "axe2h.L",
+   "before_rigid_hand.L": 3.74,
+   "after_calibrated": 1.57
+  },
+  "653": {
+   "name": "axe",
+   "class": "axe2h.L",
+   "before_rigid_hand.L": 3.53,
+   "after_calibrated": 1.29
+  },
+  "649": {
+   "name": "bow",
+   "class": "bow.L",
+   "before_rigid_hand.L": 3.14,
+   "after_calibrated": 1.73
+  },
+  "651": {
+   "name": "crossbow",
+   "class": "bow.L",
+   "before_rigid_hand.L": 2.91,
+   "after_calibrated": 1.6
+  },
+  "616": {
+   "name": "heavy crossbow",
+   "class": "bow.L",
+   "before_rigid_hand.L": 3.19,
+   "after_calibrated": 2.13
+  }
+ },
+ "holdout_polearm": "class fitted on 648,614,641 only: held-out 624 0.97, 617 0.78, 628 0.79 px",
+ "end_to_end_render": {
+  "note": "thin shaft (r 3 cm) through uo_bind_item + render_uo_layer, 256x256, 8 actions x 5 dirs, test_weapons.py; chamfer of render vs sprite",
+  "quarter staff 648": {
+   "rigid_hand.L": 6.02,
+   "polearm.L": 0.77
+  },
+  "bardiche 614 polearm.L": 1.08,
+  "large battle axe 611 axe2h.L": 1.83,
+  "bow 649 bow.L": 1.89
+ },
+ "wrong_hand_check": {
+  "one_handed_in_hand.R": "katana 627, broadsword 618, club 620, cutlass 623, hammer pick 625, mace 631, maul 633, pickaxe 635, scimitar 637, viking sword 643, war axe 644, war fork 645, short spear 639, wand 982, fishing pole 972: 1.6-2.2 px in hand.R, 8.5-10 px in hand.L",
+  "left_hand_not_in_classes_yet": "hatchet 615 3.3, war hammer 646 3.6, javelin 626 5.9, pitchfork 636 5.6, shepherds crook 621 4.7 (hand.L rigid); 616 heavy crossbow fitted in class bow"
+ },
+ "holdout_other_weapons": "not used in the fit, class motion applied: javelin 626 0.67, pitchfork 636 0.89, shepherds crook 621 0.95 (polearm.L; rigid 4.7-5.9); hatchet 615 0.98, war hammer 646 0.90 (axe2h.L; rigid 3.3-3.7)"
+}

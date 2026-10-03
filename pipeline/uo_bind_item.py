@@ -5,7 +5,8 @@
 #    that skin point and smoothed over the item (SMOOTH). "chest" moves most of the upper-arm weight to the
 #    collarbones, so the shoulders of a breastplate stay on the shoulders while the arms move under it.
 # Run it again after you change the item's shape (old weights and "uo_" corrections are replaced). Your own shape
-# keys (names not starting with "uo_") are kept. The rig has the 19 UO bones plus the finger bones; a finger counts as the hand in PARTS ("gloves" follows the fingers too).
+# keys (names not starting with "uo_") are kept. The rig has the 19 UO bones, the finger bones (a finger counts as the hand in PARTS: "gloves" follows them) and the
+# item-motion bones of weapons and the shield (RIGID).
 import bpy
 import numpy as np
 from mathutils import Vector
@@ -37,10 +38,12 @@ PARTS = {
     "neck":      (["neck", "chest", "head"], {}),                              # gorget, collar
 }
 # rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
-# weapons (1H in the right hand; 2H weapons, staffs, bows and crossbows in the LEFT hand, as in UO), shields (left forearm), quivers (chest).
-# There are no calibrated weapon / shield bones any more: the item rides on the hand like a rigid body.
-RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon1h": "hand.R", "weapon.L": "hand.L", "polearm": "hand.L", "staff": "hand.L",
-         "weapon2h": "hand.L", "axe2h": "hand.L", "bow": "hand.L", "crossbow": "hand.L", "shield": "forearm.L", "quiver": "chest"}
+# weapons, shields (left forearm), quivers (back). UO holds 2H weapons, staffs, bows and crossbows in the LEFT hand and 1H weapons in the right,
+# and moves them differently from the hand: they ride on the weapon bones polearm.L / axe2h.L / bow.L / weapon1h.R (uo_weapon_bones.py,
+# calibrated on the original weapons: model the shaft along the class line, see uo_place_weapon.py) and the shield on shield.L (uo_place_shield.py).
+# "weapon" = rigid in hand.R and "weapon.L" = rigid in hand.L (no calibration).
+RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "weapon1h": "weapon1h.R", "shield": "shield.L", "quiver": "chest",
+         "polearm": "polearm.L", "staff": "polearm.L", "weapon2h": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "crossbow": "bow.L"}
 PARENT = {"hand": "forearm", "forearm": "upper_arm", "upper_arm": "chest", "foot": "shin", "shin": "thigh",
           "thigh": "pelvis", "head": "neck"}
 
@@ -235,7 +238,10 @@ bpy.context.view_layer.update()
 try:
     for ob in [o for o in bpy.context.selected_objects if o.type == "MESH" and o != body]:
         if PART in RIGID:
-            bind_rigid(ob, RIGID[PART])
+            bone = RIGID[PART]
+            if bone not in rig.data.bones:                           # a file without the shield / weapon bones
+                bone = {"shield.L": "forearm.L", "polearm.L": "hand.L", "axe2h.L": "hand.L", "bow.L": "hand.L", "weapon1h.R": "hand.R"}.get(bone, bone)
+            bind_rigid(ob, bone)
         else:
             bind(ob, PARTS[PART][0])
 finally:

@@ -2,7 +2,7 @@
 
 Nagi mężczyzna (body 0x190 / 400) odtworzony w 3D z pliku animacji klienta UO `anim1_0x0190.vd`:
 35 akcji × 5 kierunków, 210 klatek na kierunek, razem 1050 obrazków. Realistyczne ciało (MakeHuman, CC0) w proporcjach
-postaci UO, szkielet 19 kości UO plus palce rąk (49 kości), wszystkie 35 animacji dopasowane do oryginalnych klatek.
+postaci UO, szkielet 19 kości UO plus palce rąk i kości broni (54 kości), wszystkie 35 animacji dopasowane do oryginalnych klatek.
 Służy do projektowania nowych warstw ubrań, zbroi, włosów i broni: plik `.blend` renderuje nowe klatki UO
 i od razu zapisuje je do `.vd`.
 
@@ -49,12 +49,14 @@ z własnego klienta: skopiuj `anim1_0x0190.vd` jako `pipeline/body400.vd`, a w `
 - Nie ma korekt kształtu (shape keys): sylwetkę w każdej klatce ustawiają same kości, więc przedmiot po prostu idzie
   za kośćmi.
 
-**Szkielet `UO_Rig`** (49 kości: 19 kości UO + 30 kości palców, sufiksy `.L`/`.R`; kości wyłącznie od ruchu postaci):
+**Szkielet `UO_Rig`** (54 kości: 19 kości UO, 30 palców i 5 kości broni i tarczy, sufiksy `.L`/`.R`; kości wyłącznie od ruchu postaci):
 - `pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`, `pelvis → thigh → shin → foot`.
   `pelvis` jest korzeniem i niesie przesunięcie postaci. Obojczyki unoszą bark; nie deformują siatki (Deform wyłączony).
 - `finger1-1` … `finger5-3` (15 kości na dłoń, `finger1` to kciuk, oś X kości = oś zgięcia). W każdej klatce dłoń jest zaciśnięta tak jak na oryginale
   (zgięcie palców i kciuka dopasowane do klatek UO). Rękawice (`"gloves"`) idą za palcami.
-- Nie ma kości skrętu, palców stóp, łańcuchów materiału ani kości broni i tarczy (usunięte w sesji 14; wagi palców stóp przeszły na stopę).
+- Kości ruchu przedmiotów: `polearm.L`, `axe2h.L`, `bow.L` (dzieci `hand.L`), `weapon1h.R` (dziecko `hand.R`), `shield.L` (dziecko `forearm.L`), z kluczami
+  w 35 akcjach (przywrócone na prośbę użytkownika; zależą tylko od dłoni i przedramienia, więc palce ich nie zmieniają).
+- Nie ma kości skrętu, palców stóp ani łańcuchów materiału (usunięte w sesji 14; wagi palców stóp przeszły na stopę).
   Przed uproszczeniem (commit `b86c314`) szkielet miał 112 kości.
 - Wagi pochodzą z MakeHuman (gładkie stawy, bez „cukierków” w łokciach i barkach).
 - **Grubość w klatce:** skala X/Z kości `upper_arm`, `forearm`, `hand`, `thigh`, `shin`, `foot`, `head` (Y = 1) lekko
@@ -117,11 +119,17 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_densify_item.py` | Zagęszcza siatkę zaznaczonego przedmiotu (podział bez zmiany kształtu, opcjonalnie `SMOOTH`), żeby low-poly przedmiot zginał się gładko w łokciach, kolanach i biodrach, a nie łamał wzdłuż kilku długich krawędzi; docelowa długość krawędzi zależy od slotu (`EDGE_BY_KIND`, rękawice 2 cm, reszta 3–5 cm). Przed `uo_fit_item.py`. |
 | `uo_prepare_item.py` | Jeden krok dla slotu (`KIND`): `uo_densify_item.py` → `uo_fit_item.py` → `uo_bind_item.py` z ustawieniami tego slotu (tabela `SLOTS`). Wyniki i uzasadnienie: `docs/qa/slot_geometry.md`. |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
+| `uo_weapon_bones.py` | Dodaje kości broni (lewa dłoń: `polearm.L`, `axe2h.L`, `bow.L`; prawa: `weapon1h.R`) i klucze ich ruchu z `weapon_motion.json` (uruchamiane już w pliku; do ponownego wgrania ruchu). |
+| `uo_place_weapon.py` | Stawia zaznaczoną broń (trzon po osi +Z, czubek w górę) na linii chwytu jej klasy, przed `uo_bind_item.py`. Głowicę (ostrze, topór) modeluj jako płaską płytkę w płaszczyźnie XZ, szeroką stroną na +X; skrypt obraca broń wokół trzonu tak jak w oryginalnej broni `REF_ANIM` (np. 624 halabarda, 613 topór kata, 623 szabla), a kość kręci nią dalej wg zmierzonego rollu (`weapon_motion.json`, pole `roll`). Łuki: roll nieokreślony. |
+| `weapon_motion.json` | Dane: chwyt (punkt, kierunek, położenie dolnego końca) i ruch 4 klas broni (3 w lewej dłoni, 1H w prawej), 210 póz każda. |
+| `uo_place_shield.py` | Stawia zaznaczoną tarczę na lewym przedramieniu jak w UO i dosuwa ją do ręki (przed `uo_bind_item.py`, rozdział 3). |
+| `uo_shield_keys.py` | Podmienia ruch kości tarczy `shield.L` w starszym pliku na najnowszy (tarcza i jej podpięcie zostają). |
+| `weapon_roll_fit.py`, `weapon_roll_lib.py`, `weapon_roll_apply.py`, `weapon_classify.py`, `test_weapon_roll.py` | Pomiar rollu (obrotu wokół własnej osi) wszystkich oryginalnych broni z `anim`..`anim5`, klasyfikacja broni do kości, zapis do `weapon_motion.json`, test renderu płytki ze sprite'em. Wyniki: `docs/qa/weapon_roll.md`. |
 | `uo_vd_writer.py` | Zapis `.vd`, używany przez render (nie uruchamiaj go ręcznie). |
 | `uo_job.py` | Uruchamia długie skrypty (render) krok po kroku z modalnego operatora: okno Blendera nie „wiesza się” (pasek postępu na dole, ESC przerywa). Używany przez `render_uo_layer.py` (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
 
-Skrypty narzędziowe poza plikiem (`pipeline/`): `sync_blend_scripts.py` (wgranie skryptów do `.blend`), `run_render_headless.py` (render bez GUI), `test_*.py` (testy), `body_part_raster.py` / `body_part_qa.py` (sylwetka ciała vs oryginał), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analizy klatek z klienta), `build_originals.py` / `pack_originals.py` (oryginalne klatki do `.blend`), `export.py` (glb/fbx), `rig_simplify.py` i `rig_restore_fingers.py` (jednorazowe zmiany szkieletu).
+Skrypty narzędziowe poza plikiem (`pipeline/`): `sync_blend_scripts.py` (wgranie skryptów do `.blend`), `run_render_headless.py` (render bez GUI), `test_*.py` (testy), `body_part_raster.py` / `body_part_qa.py` (sylwetka ciała vs oryginał), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analizy klatek z klienta), `build_originals.py` / `pack_originals.py` (oryginalne klatki do `.blend`), `export.py` (glb/fbx), `rig_simplify.py`, `rig_restore_fingers.py`, `rig_restore_weapons.py` (jednorazowe zmiany szkieletu), `weapon_*.py` i `test_weapons.py` / `test_weapon_roll.py` (kalibracja i testy broni; potrzebują sprite'ów z klienta, tylko katana 627 jest w repo).
 
 Skrypty są w pliku `.blend`, nie w obiektach. Pracuj więc zawsze w `UO_Body_0x190.blend` (File → Open) i dołączaj
 do niego swoje przedmioty, a nie odwrotnie.
@@ -172,11 +180,12 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
       | `"all"` | cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |
-      | `"weapon1h"` | miecz, maczuga, młot, topór 1H | sztywno na `hand.R` |
-      | `"weapon"` / `"weapon.L"` | broń | sztywno na `hand.R` / `hand.L` |
-      | `"polearm"` (`"staff"`, `"weapon2h"`, `"axe2h"`) | kij, włócznia, halabarda, topór dwuręczny | sztywno na `hand.L` (w UO broń 2H jest w lewej dłoni) |
-      | `"shield"` | tarcza | sztywno na `forearm.L` |
-      | `"bow"` / `"crossbow"` | łuk / kusza | sztywno na `hand.L` |
+      | `"weapon1h"` | miecz, maczuga, młot, topór 1H, kryss, kilof | kość `weapon1h.R` na prawej dłoni, ruch dopasowany do 13 oryginalnych broni (0,7–1,3 px zamiast 1,4–2,1 px); najpierw `uo_place_weapon.py` z `PART = "weapon1h"` |
+      | `"weapon"` / `"weapon.L"` | broń bez kalibracji | sztywno na `hand.R` / `hand.L` |
+      | `"polearm"` (`"staff"`, `"weapon2h"`) | kij, włócznia, oszczep, widły, halabarda, berdysz, laska, kostur | kość `polearm.L` na lewej dłoni, ruch dopasowany do oryginalnych broni (0,6–1,1 px zamiast 5–6 px); najpierw `uo_place_weapon.py` |
+      | `"axe2h"` | topór dwuręczny, siekiera i młot w lewej dłoni | kość `axe2h.L` (jak wyżej, błąd 1,2–1,7 px) |
+      | `"shield"` | tarcza | sztywno na `shield.L` (kość tarczy na przedramieniu, ruch jak tarcza z UO) |
+      | `"bow"` / `"crossbow"` | łuk / kusza | kość `bow.L` na lewej dłoni (błąd 1,6–2,1 px zamiast 3 px) |
       | `"quiver"` | kołczan | sztywno na `chest` |
 
       Dla `"chest"` w linii tego typu ustawiasz, ile wagi kości zostaje na niej: `"thigh": (0.3, 0.1, 0.4)` = przy biodrze 30% za udem
@@ -190,9 +199,11 @@ do niego swoje przedmioty, a nie odwrotnie.
    6. Skóra przebijająca przedmiot o kilka mm (w podglądzie 3D) nie robi dziur w klatkach: przy renderze ciało zasłania
       przedmiot dopiero wtedy, gdy jest przed nim o więcej niż `HOLDOUT_MARGIN` (1 cm, rozdział 4).
 5. **Broń, tarcza, włosy** (rzeczy sztywne): `uo_bind_item.py` z `PART = "weapon"`, `"shield"`, `"hair"` itd.
-   (tabela wyżej): przedmiot jedzie sztywno za kością dłoni, przedramienia albo głowy. Miecz ustaw w pozycji spoczynkowej tak, żeby
-   rękojeść była w prawej dłoni, a klinga wychodziła po stronie kciuka: tak leży broń na oryginalnych klatkach UO (kalibrowanych kości
-   broni już nie ma, więc w ruchu broń może odchodzić od oryginału o kilka pikseli). W renderze tarczy ustaw `BODY_GAP = 0`, żeby się nie wyginała.
+   (tabela wyżej). Miecz ustaw w pozycji spoczynkowej tak, żeby rękojeść była w zaciśniętej prawej dłoni, a klinga
+   wychodziła po stronie kciuka: tak leży broń na oryginalnych klatkach UO. Tarczę postaw pionowo, licem do widoku z
+   przodu (Numpad 1), zaznacz i uruchom **`uo_place_shield.py`**: sama stanie na zewnętrznej stronie lewego
+   przedramienia (jak tarcza heater z UO) i dosunie się do ręki na `GAP` = 1 cm; potem `PART = "shield"`. W
+   renderze tarczy ustaw `BODY_GAP = 0`, żeby się nie wyginała.
 6. **Materiał:** Add → Group → **`UO_Look`**, kolor lub teksturę podepnij na wejście *Albedo*. Rzeczy, które w grze mają
    przyjmować kolor (hue), rób w odcieniach szarości.
 7. **Sprawdź ruch:** Dope Sheet → Action Editor → wybieraj akcje `NN_nazwa` i odtwarzaj (Spacja). Widok z kamery gry:
