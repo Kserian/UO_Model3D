@@ -24,8 +24,9 @@ MIN_GAP = -1.0        # m, no part of the item closer to the skin than this (0 =
 # MIN_GAP by KIND, measured on thin body-hugging replicas against the original sprites (test_items.py --fit, IoU at 0.015 / 0.03 / 0.045):
 # close-fitting cloth and leather is best at 0.015 (shirt .746/.727/.681, pants .801/.793/.747, boots .771/.755/.693, gloves .579/.576/.526); thick armour,
 # helmets and sleeves at 0.03 (plate .702/.725/.706, helm .770/.783/.658, arms .615/.619/.598, legs .667/.673/.651). The sprites agree: shirts, trousers, boots
-# stand 1 px (2.8 cm) off the silhouette of the body, plate / helmets / robes 2-4 px (docs/qa/layer_analysis.md).
-GAP_BY_KIND = {"shirt": 0.015, "pants": 0.015, "boots": 0.015, "gloves": 0.015, "plate": 0.03, "legs": 0.03, "arms": 0.03, "helm": 0.03}
+# stand 1 px (2.8 cm) off the silhouette of the body, plate / helmets / robes 2-4 px (docs/qa/layer_analysis.md). "neck" (gorget, a hard slot in uo_prepare_item.py) is 0.03 by
+# its class, not measured.
+GAP_BY_KIND = {"shirt": 0.015, "pants": 0.015, "boots": 0.015, "gloves": 0.015, "plate": 0.03, "legs": 0.03, "arms": 0.03, "helm": 0.03, "neck": 0.03}
 MAX_GAP = 0.0         # m, > 0: pull parts standing off more than this towards the skin (0 = off)
 RADIUS = 0.04         # m, smallest area a push spreads over
 SPREAD = 3.0          # a push of d spreads over at least SPREAD * d (bigger = broader, gentler swelling)

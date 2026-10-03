@@ -1,87 +1,87 @@
-pixels 495100 texels 5853 median samples/texel 41.0
-current UO_Look (fixed L, amb .0798) srgb   rms 0.1221
-free L + ambient                   srgb   rms 0.1074  params [ 0.9012 -1.5585  0.4265]
+pixels 497739 texels 5861 median samples/texel 41.0
+current UO_Look (fixed L, amb .0798) srgb   rms 0.1231
+free L + ambient                   srgb   rms 0.1075  params [ 0.8997 -1.5557  0.4374]
 current UO_Look (fixed L, amb .0798) linear rms 0.1048
-free L + ambient                   linear rms 0.1047  params [ 0.9063 -1.5573  0.0458]
+free L + ambient                   linear rms 0.1047  params [ 0.9023 -1.5547  0.0618]
 ---- normalised: share of the variance (after the per-texel albedo) that the light explains
-srgb albedo only rms 0.1249 | current light rms 0.1221 | explained 4.4%
-linear albedo only rms 0.1229 | current light rms 0.1048 | explained 27.2%
+srgb albedo only rms 0.1245 | current light rms 0.1231 | explained 2.2%
+linear albedo only rms 0.1224 | current light rms 0.1048 | explained 26.7%
 ---- per direction (linear domain): best L, ambient, rms
-dir 0 L [ 0.049 -0.787  0.615] amb 0.113 rms 0.0972
-dir 1 L [-0.045 -0.751  0.659] amb 0.112 rms 0.0933
-dir 2 L [-0.017 -0.774  0.633] amb 0.077 rms 0.0974
-dir 3 L [ 0.023 -0.767  0.641] amb 0.099 rms 0.0983
-dir 4 L [ 0.077 -0.778  0.623] amb 0.043 rms 0.1058
+dir 0 L [ 0.062 -0.784  0.617] amb 0.139 rms 0.0975
+dir 1 L [-0.038 -0.752  0.658] amb 0.127 rms 0.0934
+dir 2 L [-0.02  -0.771  0.636] amb 0.094 rms 0.0971
+dir 3 L [ 0.023 -0.764  0.645] amb 0.108 rms 0.0980
+dir 4 L [ 0.086 -0.773  0.629] amb 0.062 rms 0.1057
 base (current light) rms 0.1048
 ---- shadows: ratio original/predicted (median) by self-shadow flag, c bin
-  lit (ray to light free)        n 478638  median ratio 1.016
-  shadowed by the body itself    n  16462  median ratio 0.496
+  lit (ray to light free)        n 480665  median ratio 1.017
+  shadowed by the body itself    n  17074  median ratio 0.509
 ---- ambient occlusion (8 rays, 0.4 m; only every 3rd frame), ratio by openness
-  openness 0.00-0.50  n   5306  median ratio 1.007
-  openness 0.50-0.75  n  32866  median ratio 1.005
-  openness 0.75-0.90  n  32692  median ratio 0.987
-  openness 0.90-1.00  n 424236  median ratio 1.008
+  openness 0.00-0.50  n   5371  median ratio 1.000
+  openness 0.50-0.75  n  33268  median ratio 1.000
+  openness 0.75-0.90  n  32515  median ratio 0.985
+  openness 0.90-1.00  n 426585  median ratio 1.010
 ---- ratio by cosine n.L (current light)
-  c 0.0-0.2 n  12748  ratio median 1.631 p10 0.572 p90 4.554
-  c 0.2-0.4 n  33985  ratio median 0.986 p10 0.402 p90 2.022
-  c 0.4-0.6 n  88777  ratio median 0.913 p10 0.407 p90 1.562
-  c 0.6-0.8 n 168761  ratio median 0.975 p10 0.464 p90 1.429
-  c 0.8-0.9 n  97236  ratio median 1.030 p10 0.536 p90 1.396
-  c 0.9-1.0 n  93593  ratio median 1.062 p10 0.605 p90 1.398
+  c 0.0-0.2 n  12999  ratio median 1.649 p10 0.571 p90 4.684
+  c 0.2-0.4 n  34659  ratio median 0.996 p10 0.410 p90 2.047
+  c 0.4-0.6 n  90258  ratio median 0.918 p10 0.410 p90 1.568
+  c 0.6-0.8 n 170332  ratio median 0.977 p10 0.467 p90 1.432
+  c 0.8-0.9 n  96811  ratio median 1.029 p10 0.538 p90 1.394
+  c 0.9-1.0 n  92680  ratio median 1.058 p10 0.602 p90 1.390
 ---- model variants (rms, linear domain, albedo per texel profiled out)
   Lambert + ambient (current)            0.1048
-  no ambient (ambient 0)                 0.1051
-  Lambert^0.5                           0.1095
+  no ambient (ambient 0)                 0.1052
+  Lambert^0.5                           0.1093
   Lambert^1.0                           0.1048
-  Lambert^2.0                           0.1084
-  wrap lighting w=0.2                    0.1059
-  wrap lighting w=0.5                    0.1083
-  + hemisphere (up lighter) k=0.2        0.1057
-  + hemisphere (up lighter) k=0.5        0.1092
-  AO darkening k=0.3 (AO frames only)   0.1029  vs base on same pixels 0.1024
-  AO darkening k=0.6 (AO frames only)   0.1052  vs base on same pixels 0.1024
-  AO darkening k=1.0 (AO frames only)   0.1129  vs base on same pixels 0.1024
+  Lambert^2.0                           0.1089
+  wrap lighting w=0.2                    0.1058
+  wrap lighting w=0.5                    0.1080
+  + hemisphere (up lighter) k=0.2        0.1058
+  + hemisphere (up lighter) k=0.5        0.1093
+  AO darkening k=0.3 (AO frames only)   0.1018  vs base on same pixels 0.1012
+  AO darkening k=0.6 (AO frames only)   0.1040  vs base on same pixels 0.1012
+  AO darkening k=1.0 (AO frames only)   0.1116  vs base on same pixels 0.1012
   + self-shadow darkening k=0.3          0.1029
-  + self-shadow darkening k=0.6          0.1023
+  + self-shadow darkening k=0.6          0.1025
 ---- by body part: median ratio, rms
-  chest        n  70309 ratio median 0.979  rel.rms 0.491
-  clavicle.L   n   7124 ratio median 1.010  rel.rms 0.415
-  clavicle.R   n   3507 ratio median 1.003  rel.rms 0.441
-  foot.L       n  13330 ratio median 1.013  rel.rms 0.481
-  foot.R       n  11267 ratio median 1.021  rel.rms 0.556
-  forearm.L    n  23640 ratio median 1.015  rel.rms 0.575
-  forearm.R    n  13641 ratio median 1.026  rel.rms 0.625
-  hand.L       n   7173 ratio median 1.022  rel.rms 0.982
-  hand.R       n   6233 ratio median 1.057  rel.rms 1.152
-  head         n  44590 ratio median 1.012  rel.rms 0.611
-  neck         n   9772 ratio median 1.031  rel.rms 0.747
-  pelvis       n  23633 ratio median 1.002  rel.rms 0.540
-  shin.L       n  36818 ratio median 1.014  rel.rms 0.388
-  shin.R       n  28681 ratio median 1.013  rel.rms 0.404
-  spine        n  39078 ratio median 0.978  rel.rms 0.481
-  thigh.L      n  57183 ratio median 1.020  rel.rms 0.602
-  thigh.R      n  32389 ratio median 1.008  rel.rms 0.540
-  upper_arm.L  n  43307 ratio median 1.012  rel.rms 0.672
-  upper_arm.R  n  23425 ratio median 1.009  rel.rms 0.733
+  chest        n  70744 ratio median 0.979  rel.rms 0.508
+  clavicle.L   n   6835 ratio median 1.006  rel.rms 0.444
+  clavicle.R   n   3275 ratio median 1.001  rel.rms 0.436
+  foot.L       n  13414 ratio median 1.012  rel.rms 0.467
+  foot.R       n  11326 ratio median 1.021  rel.rms 0.539
+  forearm.L    n  23628 ratio median 1.019  rel.rms 0.587
+  forearm.R    n  13795 ratio median 1.030  rel.rms 0.633
+  hand.L       n   8624 ratio median 1.022  rel.rms 1.083
+  hand.R       n   6760 ratio median 1.063  rel.rms 1.195
+  head         n  44840 ratio median 1.012  rel.rms 0.611
+  neck         n   9918 ratio median 1.032  rel.rms 0.730
+  pelvis       n  23646 ratio median 1.002  rel.rms 0.542
+  shin.L       n  37035 ratio median 1.014  rel.rms 0.387
+  shin.R       n  28831 ratio median 1.013  rel.rms 0.404
+  spine        n  39375 ratio median 0.978  rel.rms 0.492
+  thigh.L      n  57102 ratio median 1.020  rel.rms 0.599
+  thigh.R      n  32292 ratio median 1.009  rel.rms 0.543
+  upper_arm.L  n  42904 ratio median 1.017  rel.rms 0.689
+  upper_arm.R  n  23395 ratio median 1.015  rel.rms 0.713
 ---- self-shadow strength: S = amb + (1-amb)*c*(1 if lit else s)
-  s=0.0  rms 0.1032
-  s=0.2  rms 0.1024
-  s=0.4  rms 0.1022
-  s=0.5  rms 0.1024
-  s=0.6  rms 0.1026
+  s=0.0  rms 0.1036
+  s=0.2  rms 0.1027
+  s=0.4  rms 0.1024
+  s=0.5  rms 0.1025
+  s=0.6  rms 0.1027
   s=0.8  rms 0.1035
   s=1.0  rms 0.1048
-shadowed pixels by part: {'chest': 1757, 'foot.R': 799, 'pelvis': 1143, 'shin.L': 917, 'shin.R': 1825, 'spine': 2178, 'thigh.L': 2495, 'thigh.R': 2760}
-share of pixels much darker than predicted (ratio<0.6): 0.161 ; of those flagged self-shadowed: 0.123 (base rate 0.033)
-pixels very dark (ratio<0.45) n 43439: lit-flag share 0.826
-   action  0 shadowed 0.022  ratio_median_in_shadow 0.56
-   action  1 shadowed 0.027  ratio_median_in_shadow 0.52;   action  2 shadowed 0.034  ratio_median_in_shadow 0.46;   action  3 shadowed 0.034  ratio_median_in_shadow 0.52
-   action  5 shadowed 0.020  ratio_median_in_shadow 0.54;   action  6 shadowed 0.023  ratio_median_in_shadow 0.41
-   action  7 shadowed 0.039  ratio_median_in_shadow 0.49;   action  8 shadowed 0.036  ratio_median_in_shadow 0.39;   action  9 shadowed 0.044  ratio_median_in_shadow 0.45
-   action 10 shadowed 0.038  ratio_median_in_shadow 0.49;   action 11 shadowed 0.047  ratio_median_in_shadow 0.52;   action 12 shadowed 0.034  ratio_median_in_shadow 0.50
-   action 13 shadowed 0.036  ratio_median_in_shadow 0.43;   action 14 shadowed 0.040  ratio_median_in_shadow 0.54;   action 15 shadowed 0.034  ratio_median_in_shadow 0.38
-   action 16 shadowed 0.040  ratio_median_in_shadow 0.52;   action 17 shadowed 0.018  ratio_median_in_shadow 0.62;   action 18 shadowed 0.032  ratio_median_in_shadow 0.47
-   action 19 shadowed 0.035  ratio_median_in_shadow 0.48;   action 20 shadowed 0.037  ratio_median_in_shadow 0.44;   action 21 shadowed 0.033  ratio_median_in_shadow 0.50
-   action 22 shadowed 0.022  ratio_median_in_shadow 0.59;   action 30 shadowed 0.045  ratio_median_in_shadow 0.47
-   action 31 shadowed 0.044  ratio_median_in_shadow 0.52;   action 32 shadowed 0.046  ratio_median_in_shadow 0.40;   action 33 shadowed 0.027  ratio_median_in_shadow 0.59
-   action 34 shadowed 0.021  ratio_median_in_shadow 0.58;
+shadowed pixels by part: {'chest': 1797, 'foot.R': 802, 'pelvis': 1123, 'shin.L': 922, 'shin.R': 1853, 'spine': 2288, 'thigh.L': 2738, 'thigh.R': 2926}
+share of pixels much darker than predicted (ratio<0.6): 0.16 ; of those flagged self-shadowed: 0.124 (base rate 0.034)
+pixels very dark (ratio<0.45) n 43320: lit-flag share 0.825
+   action  0 shadowed 0.024  ratio_median_in_shadow 0.59
+   action  1 shadowed 0.028  ratio_median_in_shadow 0.56;   action  2 shadowed 0.036  ratio_median_in_shadow 0.49;   action  3 shadowed 0.035  ratio_median_in_shadow 0.53
+   action  4 shadowed 0.020  ratio_median_in_shadow 0.61;   action  5 shadowed 0.022  ratio_median_in_shadow 0.57;   action  6 shadowed 0.026  ratio_median_in_shadow 0.45
+   action  7 shadowed 0.040  ratio_median_in_shadow 0.51;   action  8 shadowed 0.037  ratio_median_in_shadow 0.41;   action  9 shadowed 0.046  ratio_median_in_shadow 0.46
+   action 10 shadowed 0.040  ratio_median_in_shadow 0.52;   action 11 shadowed 0.048  ratio_median_in_shadow 0.52;   action 12 shadowed 0.035  ratio_median_in_shadow 0.51
+   action 13 shadowed 0.037  ratio_median_in_shadow 0.43;   action 14 shadowed 0.040  ratio_median_in_shadow 0.53;   action 15 shadowed 0.033  ratio_median_in_shadow 0.38
+   action 16 shadowed 0.042  ratio_median_in_shadow 0.52;   action 17 shadowed 0.019  ratio_median_in_shadow 0.60;   action 18 shadowed 0.032  ratio_median_in_shadow 0.48
+   action 19 shadowed 0.035  ratio_median_in_shadow 0.49;   action 20 shadowed 0.039  ratio_median_in_shadow 0.47;   action 21 shadowed 0.033  ratio_median_in_shadow 0.51
+   action 22 shadowed 0.023  ratio_median_in_shadow 0.60;   action 30 shadowed 0.045  ratio_median_in_shadow 0.47
+   action 31 shadowed 0.046  ratio_median_in_shadow 0.52;   action 32 shadowed 0.047  ratio_median_in_shadow 0.40;   action 33 shadowed 0.030  ratio_median_in_shadow 0.63
+   action 34 shadowed 0.024  ratio_median_in_shadow 0.60;

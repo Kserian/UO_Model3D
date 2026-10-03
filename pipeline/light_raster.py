@@ -9,7 +9,7 @@ actions 23-29 are left out: the horse proxy hides parts of the body) it stores, 
   lit     1 = the ray from P (+ 3 mm along N) towards the UO light leaves the body without hitting it, 0 = the body shadows itself there
   ao      share of 8 hemisphere rays of 0.4 m that leave the body (255 = open); only every --ao-every-th frame, 255 elsewhere
   L       the UO light of the file (node group UO_Look, world space)
-`analysis_light.py` joins this with the original frames.  Needs: pip install numpy "bpy==4.2.*".
+`light_data.py` joins this with the original frames.  Needs: pip install numpy "bpy==4.2.*".
 """
 import sys, os
 import numpy as np

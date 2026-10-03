@@ -67,7 +67,7 @@ def compare(ref_root, new_root, canvas):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--blend", default=os.path.join(HERE, "..", "model", "UO_Body_0x190.blend"))
-    ap.add_argument("--ref", help="reference script (default: render_uo_layer.py of commit ea55c0b from git)")
+    ap.add_argument("--ref", help="reference script (default: pipeline/test_data/ref_render_uo_layer_ea55c0b.py.txt, the script of commit ea55c0b)")
     ap.add_argument("--tmp", default=None)
     ap.add_argument("--quick", action="store_true", help="only 04_stand")
     a = ap.parse_args()
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     blend = os.path.abspath(a.blend)
     ref = a.ref or os.path.join(tmp, "ref_render_uo_layer.py")
     if not a.ref:                      # the old script plus the one line that turns the position-dependent 8-bit dither off
-        old = subprocess.check_output(["git", "show", "ea55c0b:pipeline/render_uo_layer.py"], cwd=HERE).decode()
+        old = open(os.path.join(HERE, "test_data", "ref_render_uo_layer_ea55c0b.py.txt"), encoding="utf-8").read()
         assert "sc.render.resolution_percentage = 100\n" in old
         open(ref, "w").write(old.replace("sc.render.resolution_percentage = 100\n", "sc.render.resolution_percentage = 100\nsc.render.dither_intensity = 0.0\n", 1))
     fail = 0

@@ -1,6 +1,6 @@
 """Light and shadow of the ORIGINAL UO body frames against the 3D body (880 frames of actions 0-22, 30-34, all 5 directions, 495 k pixels).
 
-    python light_raster.py ../model/UO_Body_0x190.blend lr/part_N.npz --actions ...   (4 runs, see SESSION_HANDOFF.md session 10)
+    python light_raster.py ../model/UO_Body_0x190.blend lr/part_N.npz --actions ...   (4 parallel runs, e.g. --actions 0,1,2,3,4,5,6,7 | 8..15 | 16..22 | 30..34)
     python -c "import light_data,numpy as np,glob; np.savez('light_table.npz', **light_data.load(sorted(glob.glob('lr/part_*.npz'))))"
     python light_fit.py light_table.npz
 

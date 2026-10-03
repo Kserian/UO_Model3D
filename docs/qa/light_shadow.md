@@ -34,3 +34,6 @@ Model: `światło(piksel) = albedo[teksel UV] * S(piksel)`, albedo na teksel (96
 - Dla przedmiotów normalna ciała jest zastępnikiem normalnej przedmiotu: dobra dla koszul, spodni, butów, zbroi przylegających; zła dla luźnych (szata, płaszcz, włosy, broń, tarcza: R² ujemne). Dlatego liczby przedmiotów to mediany po setkach animacji, nie pomiar jednej.
 - Flaga cienia liczona na ciele, nie na przedmiocie; pokrywa się z cieniem przedmiotu tylko tam, gdzie przedmiot przylega.
 - Podział „metal / tkanina” po słowach w nazwie (plate, chain, mail, helm, bascinet, gorget, gauntlet...) jest przybliżony.
+
+
+**Odświeżone 2026-10-03 (szkielet 19 kości, po kształcie i barkach):** `light_fit.txt` przeliczony od nowa (497 739 pikseli). Wnioski bez zmian: światło liniowe Lambert, kierunek wolny (0,90; -1,55; 0,06) vs nasz, rms 0,1047 (liniowo), 0,1231 (sRGB, obecne `UO_Look`).

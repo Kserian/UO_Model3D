@@ -112,7 +112,6 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | Text | Purpose |
 |---|---|
 | `render_uo_layer.py` | Renders a layer to frames and `.vd` (run with Alt+P). |
-| `light_raster.py`, `light_data.py`, `light_fit.py`, `light_items.py` | Light and shadow analysis of the UO sprites (per-pixel geometry of the 3D body, rays to the light, fits, statistics of all wearable animations). Results: `docs/qa/light_shadow.md` (Polish). |
 | `uo_materials.py` | Puts the materials of a foreign model (PBR, textures) into the UO look: wires the colour (texture, colour, colour attribute) into the `UO_Look` node, keeps transparency (alpha >= 0.5 = pixel in the sprite), drops PBR parameters (roughness, normal maps, environment reflections), but **metal gets a UO-style highlight** (measured on the plate and helm sprites: `SPEC_STRENGTH` 1.0 × albedo, `SPEC_POWER` 16; plate 2.0/19, mail 0.7/11, see `docs/qa/light_shadow.md`); `SATURATION = 0` gives a grey item for in-game dyeing. Run it after `uo_import_item.py`. |
 | `uo_import_item.py` | Brings a foreign (e.g. free) model (`.glb` `.fbx` `.obj` `.dae`…) onto the body: bakes the mesh without the file's skeleton and weights, scales it and puts it at the height of the original UO item of that kind (`KIND`), in `Clothing` (before `uo_fit_item.py`, section 3). |
 | `uo_fit_item.py` | Turns the selected item's sleeves onto the arms and pushes it out of the skin (before `uo_bind_item.py`, section 3). |

@@ -1,6 +1,6 @@
 # Wyciąg z klienta Nelderim (sprzed zmian)
 
-Źródło: archiwum klienta (link w `SESSION_HANDOFF.md`, sekcja 2). Surowe `anim*.mul`, `*.idx`, `tiledata.mul` NIE są w repo
+Źródło: archiwum klienta (link i polecenia pobrania w `CLAUDE.md`). Surowe `anim*.mul`, `*.idx`, `tiledata.mul` NIE są w repo
 (pobieraj do `uo_client/`, w `.gitignore`). Tu jest tylko wyciąg potrzebny do pracy.
 
 | Plik | Co to jest | Skąd / jak powstał |

@@ -109,7 +109,6 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | Tekst | Rola |
 |---|---|
 | `render_uo_layer.py` | Render warstwy do klatek i `.vd` (uruchamiasz Alt+P). |
-| `light_raster.py`, `light_data.py`, `light_fit.py`, `light_items.py` | Analiza światła i cieni sprite'ów UO (geometria ciała 3D na piksel, promienie do światła, dopasowania, statystyka wszystkich animacji ubieralnych). Wyniki: `docs/qa/light_shadow.md`. |
 | `uo_materials.py` | Materiały obcego modelu (PBR, tekstury) → „UO look”: podpina kolor (tekstura, kolor, atrybut koloru) pod węzeł `UO_Look`, zachowuje przezroczystość (alpha ≥ 0,5 = piksel w sprite'cie), wyrzuca parametry PBR (roughness, mapy normalnych, odbicia otoczenia), ale **metal dostaje odblask w stylu UO** (zmierzony na sprite'ach napierśnika i hełmu: `SPEC_STRENGTH` 1,0 × albedo, `SPEC_POWER` 16; płyta 2,0/19, kolczuga 0,7/11, patrz `docs/qa/light_shadow.md`); `SATURATION = 0` daje szary przedmiot do farbowania w grze. Uruchom po `uo_import_item.py`. |
 | `uo_import_item.py` | Wprowadza obcy model (darmowy, `.glb` `.fbx` `.obj` `.dae`…) na ciało: wypieka siatkę bez obcego szkieletu i wag, skaluje i ustawia na wysokości oryginalnego przedmiotu UO danego typu (`KIND`), wrzuca do `Clothing` (przed `uo_fit_item.py`, rozdział 3). |
 | `uo_fit_item.py` | Obraca rękawy zaznaczonego przedmiotu na ręce i wypycha go ze skóry (przed `uo_bind_item.py`, rozdział 3). |
