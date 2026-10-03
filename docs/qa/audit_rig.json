@@ -1,0 +1,166 @@
+{
+ "date": "2026-10-03",
+ "blend": "model/UO_Body_0x190.blend (8c979c0)",
+ "tool": "pipeline/audit_rig.py",
+ "bones": {
+  "total": 112,
+  "body_skinning": 55,
+  "cloth_skirt": 24,
+  "cloth_cloak": 28,
+  "weapon_and_shield": 5,
+  "twist_keys_all_identity": true,
+  "clavicle_use_deform": false,
+  "fingers_2to5_identical_keys": true
+ },
+ "ablation_body_silhouette_1050_frames": {
+  "baseline": {
+   "iou": 0.89225,
+   "model_plus": 42.91,
+   "sprite_plus": 40.87
+  },
+  "twist_merged_into_limb": {
+   "iou": 0.89225,
+   "pixels_changed_per_frame": 0.0
+  },
+  "toes_merged_into_foot": {
+   "iou": 0.89218,
+   "pixels_changed_per_frame": 0.53
+  },
+  "thumbs_merged_into_hand": {
+   "iou": 0.89181
+  },
+  "all_fingers_merged_into_hand": {
+   "iou": 0.88818,
+   "pixels_changed_per_frame": 8.04
+  },
+  "neck_merged_into_head": {
+   "iou": 0.89206
+  },
+  "spine_merged_into_chest": {
+   "iou": 0.88933
+  },
+  "bone_scale_keys_set_to_1": {
+   "iou": 0.88728,
+   "model_plus": 42.01,
+   "sprite_plus": 45.39
+  }
+ },
+ "test_items_replicas_mean_iou": {
+  "baseline": {
+   "shirt": 0.711,
+   "plate": 0.694,
+   "pants": 0.8,
+   "boots": 0.768,
+   "gloves": 0.557,
+   "helm": 0.781,
+   "mean": 0.718
+  },
+  "bone_scale_keys_set_to_1": {
+   "shirt": 0.709,
+   "plate": 0.698,
+   "pants": 0.792,
+   "boots": 0.754,
+   "gloves": 0.558,
+   "helm": 0.795,
+   "mean": 0.718
+  },
+  "clavicle_made_a_deforming_bone_body_unchanged_item_weights_live": {
+   "shirt": 0.709,
+   "plate": 0.677
+  }
+ },
+ "bone_scale_keys": "x/z scale of upper_arm, forearm, hand, thigh, shin, foot, head: p5..p95 0.81..1.29, 25-56 % of frames deviate > 10 %",
+ "chest_item_weights_on_clavicle": {
+  "share_of_weight": 0.0222,
+  "vertices_over_30pct": 408,
+  "note": "clavicle bones have Deform off: Blender ignores those groups, so FOLLOW to the collarbone in uo_bind_item.py PART chest does nothing (vertex then follows the remaining bones); making it live lowers plate replica IoU 0.694 -> 0.677"
+ },
+ "cloth_chains": {
+  "skirt_tip_error_vs_neighbours_px_p50": 7.0,
+  "cloak_tip_error_vs_neighbours_px_p50": 10.6,
+  "note": "chains are not interpolable from neighbours (chord/arc offset explains ~3 px)"
+ },
+ "layer_extent_fit": {
+  "note": "share of original animations of the layer whose lowest and highest point are within 5 cm of the KIND constant of uo_import_item.py EXTENTS (stand, client/extract/layer_analysis.json)",
+  "Shirt": {
+   "n": 13,
+   "both": 0.08,
+   "top": 0.85
+  },
+  "InnerTorso(plate)": {
+   "n": 28,
+   "both": 0.21,
+   "top": 0.86
+  },
+  "Arms": {
+   "n": 14,
+   "both": 0.36,
+   "bottom": 0.79
+  },
+  "Pants": {
+   "n": 30,
+   "both": 0.4,
+   "top": 0.77
+  },
+  "OuterLegs(skirt)": {
+   "n": 7,
+   "both": 0.14
+  },
+  "Shoes(boots)": {
+   "n": 10,
+   "both": 0.1,
+   "bottom": 1.0
+  },
+  "Gloves": {
+   "n": 10,
+   "both": 0.3,
+   "bottom": 0.8
+  },
+  "Helm": {
+   "n": 59,
+   "both": 0.22,
+   "top": 0.63
+  },
+  "Cloak": {
+   "n": 5,
+   "both": 0.2,
+   "top": 0.6
+  },
+  "OuterTorso(robe)": {
+   "n": 26,
+   "both": 0.08
+  },
+  "Hair": {
+   "n": 37,
+   "both": 0.16,
+   "top": 0.92
+  },
+  "FacialHair(beard)": {
+   "n": 8,
+   "both": 0.75
+  },
+  "Neck": {
+   "n": 8,
+   "both": 0.75
+  },
+  "no_KIND": {
+   "Waist": 8,
+   "MiddleTorso": 7,
+   "Earrings": 1,
+   "Ring": 3,
+   "Bracelet": 3,
+   "Talisman": 13,
+   "Backpack": 1
+  }
+ },
+ "repo": {
+  "git_pack_mb": 986,
+  "blend_versions_in_history": 32,
+  "blend_history_blob_mb": 515,
+  "glb_fbx_stale": "glb: 14517 vertices, 107 bones, body from 2026-09-29 (before shape fit); blend: 13380 vertices, 112 bones",
+  "python_files": 174,
+  "not_reachable_from_current_tools": 106,
+  "handoff_chars": 74263,
+  "blend_commits_whose_message_says_embedded_text_only": "12 of 32 (messages: git log --format=%s -- model/UO_Body_0x190.blend | grep -ci 'embedded\\|text')"
+ }
+}

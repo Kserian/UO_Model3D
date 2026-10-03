@@ -134,8 +134,8 @@ ok. 0,88 IoU, a nowy model trafiłby w tę samą granicę.
 - **Ciało `UO_Body` (zmierzone):** 13 380 wierzchołków, 13 378 czworokątów (bez trójkątów), UV `UVMap`, bez shape keys, materiał `UO_Skin`,
   tekstury 1024×1024 (`UO_Body_Texture`, `UO_Body_Albedo_dir0..4`) i atlas oryginałów 4760×3600. Siatka z MakeHuman (CC0), mężczyzna.
   W pozie spoczynkowej (A-pose): wysokość 1,86 m, szerokość 1,43 m z rękami, głębokość 0,39 m, stopy na z = 0.
-  Szkielet `UO_Rig`: 108 kości = 55 kości skórujących ciało (19 kości UO, skręty, palce, palce stóp) + łańcuchy materiału (24 spódnicy,
-  28 płaszcza) + `shield.L`; 55 grup wag. Akcje: 35, razem 210 klatek UO na kierunek.
+  Szkielet `UO_Rig`: 112 kości (sesja 14; w sesji 1 było 108) = 55 kości skórujących ciało (19 kości UO, skręty, palce, palce stóp) + łańcuchy materiału (24 spódnicy,
+  28 płaszcza) + `shield.L` + 4 kości broni (`polearm.L`, `axe2h.L`, `bow.L`, `weapon1h.R`); 55 grup wag. Akcje: 35, razem 210 klatek UO na kierunek.
 - Kamera `UO_Camera`: ortograficzna, `ortho_scale` = 3,7778 m (= 136 px ÷ 36 px/m), `shift_x/y` = 0, pozycja
   (−0,0139; −8,4477; 5,4698), obrót X 61,544°. Scena: 136×120, `uo_anchor_height` = 0,07 m, `uo_theta_deg` = 28,4557.
   Zaczep (68,86) wynika z położenia kamery, nie z przesunięcia obrazu.
@@ -335,7 +335,18 @@ kolejne kroki miały liczby „przed/po”.
 - **Nowe:** `uo_densify_item.py`, `uo_prepare_item.py` (KIND -> densify -> fit -> bind), parametr `STIFF` w `uo_bind_item.py`, `test_items_pre.py` (zmienne `UO_TEST_DECIMATE`, `UO_TEST_DENSIFY`, `UO_TEST_PREPARE`, `UO_TEST_BIND`), `test_items.py` zapisuje `log.txt`. `model/UO_Body_0x190.blend` ZMIENIONY (binarny): tylko osadzone teksty (nowe `uo_densify_item.py`, `uo_prepare_item.py`, zmieniony `uo_bind_item.py`). Regresja `test_items`: koszula 0,711, spodnie 0,800 (bez zmian).
 - **Nie zmierzone, ustawione przez analogię:** `EDGE_BY_KIND` dla płytówki, naramienników, nogawic, hełmu, szyi, szaty, spódnicy, płaszcza, włosów, brody.
 
-## 8. Następne kroki (sesja 14)
+**Sesja 14 (2026-10-03).** Gałąź sesji `claude/upbeat-faraday-tk66l0`. Prośba użytkownika: audyt repozytorium (zbędne/nieaktualne, potencjał modelu, uproszczenie, potrzebne kości, weryfikacja ubiorów i autodopasowanie, usprawnienia). **Nic w modelu ani w potoku nie zmieniono**, `model/` bez zmian. Raport: `docs/AUDYT_2026-10-03.md`.
+- **Pomiary (nowe narzędzie `pipeline/audit_rig.py`, dane `docs/qa/audit_rig.json`):** kości skrętu (4) są pustą operacją (klucze = tożsamość; wchłonięcie w kończynę: 0 px różnicy na 1050 klatkach); klucze skali kości dają +0,005 IoU sylwetki (0,8873 -> 0,8922), ale `test_items` bez nich 0,718 = 0,718; palce razem −0,004, kręgosłup −0,003, szyja −0,0002, `toe` −0,00007. Łańcuchy materiału nie dają się zastąpić interpolacją sąsiadów.
+- **Wada znaleziona:** `clavicle.L/R` mają Deform wyłączony, więc wagi „na obojczyk” z `uo_bind_item.py` (preset `chest`, `FOLLOW`) są pomijane (408 wierzchołków zbroi z >30% takiej wagi); włączenie obojczyka (wagi ciała bez zmian) obniża replikę płytówki 0,694 -> 0,677. Nie naprawiano: wymaga decyzji (raport pkt 6.8).
+- **Autodopasowanie:** `EXTENTS` to jedna stała na `KIND` z jednego sprite'a; obie krawędzie w 5 cm ma 8-40% animacji warstwy (koszule 8%, buty 10%, szaty 8%, hełmy 22%), jedna krawędź zwykle jest stabilna (góra koszuli 85%, góra włosów 92%, dół butów 100%). Brak slotów: Waist, MiddleTorso, Earrings, Ring, Bracelet, Talisman, Backpack. `GAP_BY_KIND` nie ma `neck` (w `SLOTS` klasa „hard”), `hat`, ani luźnych/sztywnych slotów.
+- **Repo:** pack 986 MB, w tym 515 MB to 32 wersje `.blend` (12 commitów „embedded text only”); `glb`/`fbx` nieaktualne (14 517 wierzchołków, 107 kości); 106 z 174 plików `.py` to historia budowy; `SESSION_HANDOFF.md` ma 74 tys. znaków i nie mieści się w jednym odczycie.
+- Pułapka: `Blender` pomija grupy wag kości z wyłączonym Deform **i renormalizuje** (usunięcie grup z ciała: 0 różnicy), ale ustawienie `use_deform = True` na takiej kości przy usuniętych, nieznormalizowanych grupach przesuwa ciało do 5 cm: po usunięciu grup renormalizuj wagi.
+
+## 8. Następne kroki (sesja 15)
+
+**Z audytu (sesja 14, `docs/AUDYT_2026-10-03.md`, dane `docs/qa/audit_rig.json`, narzędzie `pipeline/audit_rig.py`):** pełna lista w pkt 6 raportu (A tanie, B mierzone, C decyzje użytkownika). Najpierw zapytaj użytkownika o: (1) obojczyk (wagi „na obojczyk” w `uo_bind_item.py` nie działają, bo Deform wyłączony; włączenie obniża replikę płytówki 0,694 -> 0,677), (2) usunięcie 4 kości skrętu (pusta operacja, 0 px) i kluczy skali kości (przedmioty bez zmian), (3) porządki: archiwum 106 skryptów historii, nowe glb/fbx, skrócenie handoffu, bootstrap skryptów z `pipeline/` (repo ma 986 MB przez 32 wersje `.blend`), (4) brakujące sloty (Waist, MiddleTorso, Earrings…) i tabela slotów w jednym miejscu.
+
+**Z sesji 13 cz. 2 (dawniej „sesja 14”):**
 
 **Z sesji 13 cz. 2:** (a) pobrać klienta i policzyć `slot_dynamics.py` na wszystkich 385 animacjach (wymaga zgody na `gdown`/`unrar`, patrz sekcja 2), żeby klasy slotów (ciasne/twarde/luźne) i `EDGE_BY_KIND` oprzeć na całym zbiorze; (b) sprawdzić `uo_prepare_item.py` na pierwszym prawdziwym, obcym modelu (low-poly ubranie od użytkownika) i porównać z `test_real_item.py`; (c) symulacja tkaniny (`uo_cloth_bake.py`) dla spódnicy/płaszcza vs dynamika oryginałów (`slot_dynamics.py --render`).
 
