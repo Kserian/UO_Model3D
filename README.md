@@ -28,10 +28,7 @@ English version: [`README_EN.md`](README_EN.md).
 | Plik / folder | Co to jest |
 |---|---|
 | `UO_Body_0x190.blend` | Główny plik (Blender 4.2 – 5.2): ciało, szkielet, 35 akcji, kamera UO, scena warstw ubrań, bryły konia, skrypty. |
-| `UO_Body_0x190.glb` | glTF 2.0: siatka + szkielet + animacje + tekstura (Unity, Godot, three.js, Blender). |
-| `UO_Body_0x190.fbx` | FBX: siatka + szkielet + animacje (Maya, 3ds Max, Unreal, Unity). |
 | `UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Tekstura albedo (szara jak skóra w UO, bez światła) i jej warianty dla 5 kierunków UO. |
-| `compare/*.gif` | U góry oryginalny sprite, pod spodem model wyrenderowany kamerą UO (5 kierunków). |
 | `example_clothing/` | Przykładowa warstwa (koszula) w `Example_Shirt_layer.vd` i jej podgląd na oryginalnym ciele. |
 | `vdtool/vdtool.py` | Narzędzie do rozpakowywania i pakowania `.vd` (rozdział 6). |
 | `pipeline/` | Skrypty potoku: render, dopasowanie przedmiotów, testy, pomiary (rozdział 10). |
@@ -96,7 +93,7 @@ bo koń jest w UO osobną animacją.
 
 **Materiał i światło UO.** Światło UO (jedno, przy kamerze, prawie od przodu) wyznaczyłem z klatek i oddzieliłem od koloru ciała.
 - `uo_look = 1` (domyślnie): „wygląd UO”, albedo × (0,08 otoczenia + 0,92 światła UO). Render wygląda jak klatki z gry.
-- `uo_look = 0`: zwykłe PBR (Principled BSDF), do edycji i silników gier. Tej wersji używają `.glb`/`.fbx`.
+- `uo_look = 0`: zwykłe PBR (Principled BSDF), do edycji i silników gier. Tej wersji używa `export.py` (generuje `.glb`/`.fbx` na żądanie, nie ma ich w repo).
 - Grupa węzłów **`UO_Look`** daje to samo światło przedmiotom. Węzeł „Skin hue” opcjonalnie barwi skórę.
 - **Tryby dokładne** (wymagają oryginalnych klatek w pliku i silnika Cycles):
   - `EXACT_COLORS`: ciało jest „pomalowane” oryginalną klatką UO rzutowaną z kamery, więc ma dokładnie oryginalne kolory.

@@ -56,4 +56,4 @@ Czego nie robić: korekt per klatka, dalszego strojenia replik `test_items`, dal
 - Pierwszy prawdziwy darmowy model (np. włosy Curuaty, CC BY 4.0, https://sketchfab.com/3d-models/hair-cc7e804cc15340db92d9464b32f71a2c: użytkownik sam pobiera glTF i wrzuca do repo, zapisz atrybucję autora).
 - Brakujące sloty (Waist, MiddleTorso, Earrings, Ring, Bracelet, Talisman, Backpack) i jedna tabela slotów: `docs/AUDYT_2026-10-03.md`, pkt 5-6.
 - Body 401 (kobieta) w `anim.mul` jest prawie kopią męskiego; sprawdzić w grze przed pracą nad ciałem kobiecym.
-- `model/UO_Body_0x190.glb` i `.fbx` są nieaktualne (stare ciało i szkielet 107 kości); `export.py` generuje je od nowa.
+- `.glb`/`.fbx` nie ma w repo (były nieaktualne): `pipeline/export.py --blend model/UO_Body_0x190.blend` generuje je na żądanie.

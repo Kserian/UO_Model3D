@@ -29,10 +29,7 @@ Polish version: [`README.md`](README.md).
 | File / folder | What it is |
 |---|---|
 | `UO_Body_0x190.blend` | Main file (Blender 4.2 – 5.2): body, rig, 35 actions, UO camera, clothing-layer scene, horse proxies, scripts. |
-| `UO_Body_0x190.glb` | glTF 2.0: mesh + rig + animations + texture (Unity, Godot, three.js, Blender). |
-| `UO_Body_0x190.fbx` | FBX: mesh + rig + animations (Maya, 3ds Max, Unreal, Unity). |
 | `UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Albedo texture (grey like UO skin, lighting removed) and its variants for the 5 UO directions. |
-| `compare/*.gif` | Top: original sprite; bottom: the model rendered through the UO camera (5 directions). |
 | `example_clothing/` | Example layer (a shirt) in `Example_Shirt_layer.vd`, with a preview over the original body. |
 | `vdtool/vdtool.py` | Tool to unpack and repack `.vd` files (section 6). |
 | `pipeline/` | Pipeline scripts: render, item fitting, tests, measurements (section 10). |
@@ -98,7 +95,7 @@ because in UO the horse is a separate animation.
 **Material and UO lighting.** The UO light (one light at the camera, almost frontal) was estimated from the frames and
 separated from the body colour.
 - `uo_look = 1` (default): the "UO look", albedo × (0.08 ambient + 0.92 UO light). Renders look like the game frames.
-- `uo_look = 0`: plain PBR (Principled BSDF) for editing and game engines. The `.glb`/`.fbx` use this.
+- `uo_look = 0`: plain PBR (Principled BSDF) for editing and game engines. `export.py` uses this (it creates `.glb`/`.fbx` on demand; they are not in the repo).
 - The node group **`UO_Look`** gives items the same lighting. The "Skin hue" node optionally tints the skin.
 - **Exact modes** (need the original frames in the file and the Cycles engine):
   - `EXACT_COLORS`: the body is painted with the original UO frame projected from the camera, so it has exactly the
