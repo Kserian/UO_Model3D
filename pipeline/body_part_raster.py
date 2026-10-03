@@ -4,7 +4,7 @@
 
 Writes `lab` (N, 133, 145) int8 in the canvas of the ORIGINAL body frames (145x133, anchor (75,92), 36 px/m): part index per pixel,
 -1 = empty or hidden by the horse (mounted actions); `key` (N, 3) = (action, dir, frame); `parts` = part names. Parts: dominant bone group of a triangle's vertices,
-left / right kept apart. `body_part_qa.py` compares it with the original frames.
+fingers -> hand, left / right kept apart. `body_part_qa.py` compares it with the original frames.
 Needs: pip install numpy "bpy==4.2.*".
 """
 import sys, os
@@ -16,7 +16,8 @@ STEP = 3                               # scene frames between two UO frames
 
 
 def part_of(name):
-    return name
+    base, _, side = name.partition(".")
+    return ("hand" if base.startswith("finger") else base) + ("." + side if side else "")
 
 
 def raster(ob, dg, Pm, Vm, tlab, off=(0.0, 0.0)):

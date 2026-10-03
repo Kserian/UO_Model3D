@@ -2,7 +2,7 @@
 
 A naked male body (body 0x190 / 400) rebuilt in 3D from the UO client animation file `anim1_0x0190.vd`:
 35 actions × 5 directions, 210 frames per direction, 1050 images in total. A realistic body (MakeHuman, CC0) in the
-UO character's proportions, a 19-bone UO rig (no fingers, no cloth chains), and all 35 animations fitted to the
+UO character's proportions, a 49-bone rig (19 UO bones plus the fingers), and all 35 animations fitted to the
 original frames. It is meant for designing new clothing, armour, hair and weapon layers: the `.blend` renders
 new UO frames and writes them straight into a `.vd` file.
 
@@ -50,11 +50,13 @@ To add them from your own client: copy `anim1_0x0190.vd` to `pipeline/body400.vd
 - There are no shape corrections (shape keys): the bones alone set the silhouette in every frame, so an item simply
   follows the bones.
 
-**Rig `UO_Rig`** (19 UO bones, `.L`/`.R` suffixes; only bones that move the character):
+**Rig `UO_Rig`** (49 bones: 19 UO bones + 30 finger bones, `.L`/`.R` suffixes; only bones that move the character):
 - `pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`, `pelvis → thigh → shin → foot`.
   `pelvis` is the root and carries the character's translation. Clavicles raise the shoulder; they do not deform the mesh (Deform off).
-- There are no finger, twist, toe, cloth-chain, weapon or shield bones (removed in session 14; the weights of fingers and toes went to the hand and foot).
-  The hand is rigid (open). Before the simplification (commit `b86c314`) the rig had 112 bones.
+- `finger1-1` … `finger5-3` (15 bones per hand, `finger1` is the thumb, bone X = curl axis). In every frame the hand is clenched like on the original
+  (finger and thumb curl fitted to the UO frames). Gloves (`"gloves"`) follow the fingers.
+- There are no twist, toe, cloth-chain, weapon or shield bones (removed in session 14; the weights of the toes went to the foot).
+  Before the simplification (commit `b86c314`) the rig had 112 bones.
 - Weights come from MakeHuman (smooth joints, no candy-wrapper elbows or shoulders).
 - **Girth per frame:** the X/Z scale of `upper_arm`, `forearm`, `hand`, `thigh`, `shin`, `foot`, `head` (Y = 1) makes a
   limb slightly thicker or thinner where the original needs it. The next bone of the chain does not inherit it
@@ -122,7 +124,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_job.py` | Runs long scripts (render) step by step from a modal operator, so Blender's window does not freeze (progress in the status bar, ESC cancels). Used by `render_uo_layer.py` and `uo_cloth_bake.py` (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
 
-Tool scripts outside the file (`pipeline/`): `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py` (one-off rig simplification).
+Tool scripts outside the file (`pipeline/`): `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py` and `rig_restore_fingers.py` (one-off rig changes).
 
 The scripts live in the `.blend` file, not in objects. Always work in `UO_Body_0x190.blend` (File → Open) and bring your
 items into it, not the other way round.
@@ -314,8 +316,8 @@ people). Each item has its own animation ID.
 
 - **Exact mode (`EXACT_BODY = True`):** the rendered body layer is identical to the original (all 1050 frames, checked
   with `vdtool verify`).
-- **Pure 3D model (`EXACT_BODY = False`):** mean silhouette IoU **0.888** over 1050 frames (`body_part_qa.py`), **with no shape
-  corrections** (bones only). IoU per action: `docs/qa/body_parts_after_slim_rig.json`. Colours on overlapping pixels are exact with `EXACT_COLORS`.
+- **Pure 3D model (`EXACT_BODY = False`):** mean silhouette IoU **0.892** over 1050 frames (`body_part_qa.py`), **with no shape
+  corrections** (bones only). IoU per action: `docs/qa/body_parts_after_fingers.json`. Colours on overlapping pixels are exact with `EXACT_COLORS`.
 
 The differences are almost only 1-pixel bands along the edges (the original was drawn from a different 3D model).
 There are no large errors such as an arm in a different place than on the original, so the cut-outs in items hit the
@@ -323,8 +325,9 @@ arm. For comparison: the previous model scored 0.880 without its 1254 correction
 to copy those corrections).
 
 **UO items.** A test of replicas of items from `anim.mul` (`test_items.py`: shirt, plate, trousers, boots, gloves, helmet) on the current rig:
-mean IoU with the original frames **0.710** (shirt 0.712, plate 0.686, trousers 0.796, boots 0.768, gloves 0.519, helmet 0.781; `docs/qa/items_after_slim_rig.json`).
-Before the fingers were removed the gloves had 0.557; there are no skirt, cloak or weapon tests any more.
+mean IoU with the original frames **0.718** (shirt 0.714, plate 0.690, trousers 0.800, boots 0.768, gloves 0.557, helmet 0.781; `docs/qa/items_after_fingers.json`).
+Hand shape error against the original (model pixels outside the sprite per frame): 3.9 -> 1.4 (left) and 4.3 -> 2.0 (right) after the fingers came back.
+There are no skirt, cloak or weapon tests any more (their bones were removed).
 
 ## 9. How the model was built
 
@@ -379,8 +382,8 @@ SPACE      : metres, Z up, character faces -Y, floor z = 0, UO anchor point = wo
 CAMERA     : "UO_Camera", orthographic, elevation 28.45 deg, 36 px/m, 136x120 px, anchor on pixel (68, 86), +0.5 px in x.
 DIRECTIONS : UO_Rig["uo_direction"] = d (0..4) rotates the rig by -45 deg * d; 0 = facing camera, 2 = profile facing
              left, 4 = facing away; 5..7 are mirrors of 3..1 made by the client.
-RIG        : 19 bones: pelvis (root) spine chest neck head; clavicle/upper_arm/forearm/hand .L/.R; thigh/shin/foot .L/.R
-             (clavicles do not deform). No finger, twist, toe, cloth-chain, weapon or shield bones (removed in session 14).
+RIG        : 49 bones: pelvis (root) spine chest neck head; clavicle/upper_arm/forearm/hand .L/.R; thigh/shin/foot .L/.R
+             (clavicles do not deform); finger1-1..finger5-3 .L/.R (finger1 = thumb, local X = curl axis). No twist, toe, cloth-chain, weapon or shield bones.
              Quaternion rotations, MakeHuman weights. Per-frame girth = pose-bone scale (x, 1, z) on upper_arm,
              forearm, hand, thigh, shin, foot, head; forearm/hand/shin/foot have Inherit Scale = None.
 ACTIONS    : 35 Blender actions "NN_name", props uo_action (0..34) and uo_frames; UO frame i -> scene frame 1 + 3*i.

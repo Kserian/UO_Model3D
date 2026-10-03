@@ -364,6 +364,7 @@ def body_part_mask(parts):
     """body triangles (loop_triangles order) whose dominant bone is one of `parts` (names without .L / .R)"""
     me = body.data
     names = [g.name.split(".")[0] for g in body.vertex_groups]
+    names = ["hand" if n.startswith("finger") else n for n in names]
     W = np.zeros((len(me.vertices), len(names)))
     for v in me.vertices:
         for g in v.groups:
@@ -383,6 +384,7 @@ def worn_parts(share=0.04):
         if o.hide_render or not o.vertex_groups:
             continue
         names = [g.name.split(".")[0] for g in o.vertex_groups]
+        names = ["hand" if n.startswith("finger") else n for n in names]
         tot = {}
         for v in o.data.vertices:
             for g in v.groups:

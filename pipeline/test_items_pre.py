@@ -20,7 +20,8 @@ assert np.allclose(body.scale, 1.0), "UO_Body is scaled"
 
 def base_of(n):
     s = n[-2:] if n.endswith((".L", ".R")) else ""
-    return (n[:-2] if s else n), s
+    b = n[:-2] if s else n
+    return ("hand" if b.startswith("finger") else b), s
 
 
 groups = [base_of(g.name) for g in body.vertex_groups]

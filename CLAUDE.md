@@ -12,8 +12,8 @@ Oceniaj tym każdą zmianę.
 - Dokumentacja: `README.md` (PL), `README_EN.md` (EN). Raport z analizy: `docs/RAPORT_model3D_UO.txt`, audyt: `docs/AUDYT_2026-10-03.md`, pomiary: `docs/qa/`.
   Nie ma pliku przekazania między sesjami: stan jest w kodzie, w `docs/` i w historii gita. Zasady i decyzje są poniżej; jeśli je zmieniasz, popraw ten plik.
 - **Mierz, nie ufaj.** Liczby, na których opierasz decyzję, mają pochodzić z własnego pomiaru na plikach (przed i po zmianie). Główna miara celu:
-  `pipeline/test_items.py` (przedmiot na naszym ciele vs oryginalny sprite; baseline po uproszczeniu szkieletu w `docs/qa/items_after_slim_rig.json`),
-  sylwetka ciała: `body_part_raster.py` + `body_part_qa.py` (IoU 0,888 na 1050 klatkach).
+  `pipeline/test_items.py` (przedmiot na naszym ciele vs oryginalny sprite; baseline w `docs/qa/items_after_fingers.json`: średnia 0,718),
+  sylwetka ciała: `body_part_raster.py` + `body_part_qa.py` (IoU 0,892 na 1050 klatkach).
 
 ## Środowisko
 
@@ -42,7 +42,7 @@ Oceniaj tym każdą zmianę.
 | Rozwijać czy budować od nowa | Rozwijać UO_Model3D (raport: czysty szkielet daje granicę sylwetki ok. 0,88-0,90 IoU, nowy model trafiłby w tę samą) |
 | Płótno renderu | `CANVAS` 256×256, zaczep (128, 192), 36 px/m (mieści 444 z 449 animacji ludzi/ekwipunku) |
 | Korekty kształtu per klatka (v12) | **NIE.** Ciało poprawiamy w modelu, nie maskujemy. Nie wracaj bez prośby |
-| Szkielet (sesja 14) | **Tylko 19 kości UO** (pelvis, spine, chest, neck, head, clavicle ×2, upper_arm, forearm, hand, thigh, shin, foot ×2). Bez palców, skrętu, palców stóp, łańcuchów materiału, kości broni i tarczy (decyzja użytkownika). Broń, tarcza i włosy są sztywne na kości dłoni/przedramienia/głowy (`uo_bind_item.py`, `RIGID`). Szata, spódnica i płaszcz nie mają już presetów ani symulacji tkaniny. Pomiar: IoU sylwetki 0,8922 -> 0,8882, `test_items` 0,718 -> 0,710 (`docs/qa/items_after_slim_rig.json`; rękawice 0,557 -> 0,519, reszta ±0,01). Poprzedni stan: commit `b86c314` |
+| Szkielet (sesja 14) | **19 kości UO** (pelvis, spine, chest, neck, head, clavicle ×2, upper_arm, forearm, hand, thigh, shin, foot ×2) **+ 30 kości palców** (przywrócone po prośbie użytkownika, pozy dopasowane do klatek UO; `rig_restore_fingers.py`). Bez skrętu, palców stóp, łańcuchów materiału, kości broni i tarczy (decyzja użytkownika). Broń, tarcza i włosy są sztywne na kości dłoni/przedramienia/głowy (`uo_bind_item.py`, `RIGID`). Szata, spódnica i płaszcz nie mają już presetów ani symulacji tkaniny. Pomiar bez palców: IoU sylwetki 0,8922 -> 0,8882, `test_items` 0,718 -> 0,710 (`docs/qa/items_after_slim_rig.json`); po przywróceniu palców: patrz `docs/qa/items_after_fingers.json`. Poprzedni stan: commit `b86c314` |
 | Barki i ramiona | Barki −1 cm, ramiona ×0,95 (prośba użytkownika; pomiar pokazał, że model zgadzał się z oryginałem ±1 px). Nie zwężaj dalej bez prośby |
 | Światło UO | Zostaje `UO_Look`: Lambert, L = (0,0012; −0,7572; 0,6532), ambient 0,0798 (zmierzone na 880 klatkach ciała i 393 animacjach). Odblask tylko na metalu (`uo_materials.py`). Brak AO i cienia na ziemi |
 | Cień własny | Odłożony na później (decyzja użytkownika); sprite'y mają częściowy cień własny (s = 0,4), nasz render nie |

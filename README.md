@@ -2,7 +2,7 @@
 
 Nagi mężczyzna (body 0x190 / 400) odtworzony w 3D z pliku animacji klienta UO `anim1_0x0190.vd`:
 35 akcji × 5 kierunków, 210 klatek na kierunek, razem 1050 obrazków. Realistyczne ciało (MakeHuman, CC0) w proporcjach
-postaci UO, szkielet 19 kości UO (bez palców i łańcuchów materiału), wszystkie 35 animacji dopasowane do oryginalnych klatek.
+postaci UO, szkielet 19 kości UO plus palce rąk (49 kości), wszystkie 35 animacji dopasowane do oryginalnych klatek.
 Służy do projektowania nowych warstw ubrań, zbroi, włosów i broni: plik `.blend` renderuje nowe klatki UO
 i od razu zapisuje je do `.vd`.
 
@@ -49,11 +49,13 @@ z własnego klienta: skopiuj `anim1_0x0190.vd` jako `pipeline/body400.vd`, a w `
 - Nie ma korekt kształtu (shape keys): sylwetkę w każdej klatce ustawiają same kości, więc przedmiot po prostu idzie
   za kośćmi.
 
-**Szkielet `UO_Rig`** (19 kości UO, sufiksy `.L`/`.R`; kości wyłącznie od ruchu postaci):
+**Szkielet `UO_Rig`** (49 kości: 19 kości UO + 30 kości palców, sufiksy `.L`/`.R`; kości wyłącznie od ruchu postaci):
 - `pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`, `pelvis → thigh → shin → foot`.
   `pelvis` jest korzeniem i niesie przesunięcie postaci. Obojczyki unoszą bark; nie deformują siatki (Deform wyłączony).
-- Nie ma kości palców, skrętu, palców stóp, łańcuchów materiału ani kości broni i tarczy (usunięte w sesji 14; wagi palców i palców stóp przeszły na dłoń i stopę).
-  Dłoń jest sztywna (otwarta). Przed uproszczeniem (commit `b86c314`) szkielet miał 112 kości.
+- `finger1-1` … `finger5-3` (15 kości na dłoń, `finger1` to kciuk, oś X kości = oś zgięcia). W każdej klatce dłoń jest zaciśnięta tak jak na oryginale
+  (zgięcie palców i kciuka dopasowane do klatek UO). Rękawice (`"gloves"`) idą za palcami.
+- Nie ma kości skrętu, palców stóp, łańcuchów materiału ani kości broni i tarczy (usunięte w sesji 14; wagi palców stóp przeszły na stopę).
+  Przed uproszczeniem (commit `b86c314`) szkielet miał 112 kości.
 - Wagi pochodzą z MakeHuman (gładkie stawy, bez „cukierków” w łokciach i barkach).
 - **Grubość w klatce:** skala X/Z kości `upper_arm`, `forearm`, `hand`, `thigh`, `shin`, `foot`, `head` (Y = 1) lekko
   pogrubia lub wyszczupla kończynę tam, gdzie oryginał tego wymaga. Następna kość łańcucha tej skali nie dziedziczy
@@ -119,7 +121,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_job.py` | Uruchamia długie skrypty (render) krok po kroku z modalnego operatora: okno Blendera nie „wiesza się” (pasek postępu na dole, ESC przerywa). Używany przez `render_uo_layer.py` (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
 
-Skrypty narzędziowe poza plikiem (`pipeline/`): `sync_blend_scripts.py` (wgranie skryptów do `.blend`), `run_render_headless.py` (render bez GUI), `test_*.py` (testy), `body_part_raster.py` / `body_part_qa.py` (sylwetka ciała vs oryginał), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analizy klatek z klienta), `build_originals.py` / `pack_originals.py` (oryginalne klatki do `.blend`), `export.py` (glb/fbx), `rig_simplify.py` (jednorazowe uproszczenie szkieletu).
+Skrypty narzędziowe poza plikiem (`pipeline/`): `sync_blend_scripts.py` (wgranie skryptów do `.blend`), `run_render_headless.py` (render bez GUI), `test_*.py` (testy), `body_part_raster.py` / `body_part_qa.py` (sylwetka ciała vs oryginał), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analizy klatek z klienta), `build_originals.py` / `pack_originals.py` (oryginalne klatki do `.blend`), `export.py` (glb/fbx), `rig_simplify.py` i `rig_restore_fingers.py` (jednorazowe zmiany szkieletu).
 
 Skrypty są w pliku `.blend`, nie w obiektach. Pracuj więc zawsze w `UO_Body_0x190.blend` (File → Open) i dołączaj
 do niego swoje przedmioty, a nie odwrotnie.
@@ -311,16 +313,17 @@ people). Każdy przedmiot ma osobne ID animacji.
 
 - **Tryb dokładny (`EXACT_BODY = True`):** wyrenderowana warstwa ciała jest identyczna z oryginałem (wszystkie 1050 klatek,
   sprawdzone `vdtool verify`).
-- **Sam model 3D (`EXACT_BODY = False`):** średnia zgodność obrysu (IoU) **0,888** na 1050 klatkach (`body_part_qa.py`), **bez żadnych
-  korekt kształtu** (same kości). IoU na akcję: `docs/qa/body_parts_after_slim_rig.json`. Kolory na wspólnych pikselach są dokładne z `EXACT_COLORS`.
+- **Sam model 3D (`EXACT_BODY = False`):** średnia zgodność obrysu (IoU) **0,892** na 1050 klatkach (`body_part_qa.py`), **bez żadnych
+  korekt kształtu** (same kości). IoU na akcję: `docs/qa/body_parts_after_fingers.json`. Kolory na wspólnych pikselach są dokładne z `EXACT_COLORS`.
 
 Różnice to prawie wyłącznie 1-pikselowe paski wzdłuż krawędzi (oryginał rysowano innym modelem 3D). Dużych błędów, np.
 ręki w innym miejscu niż na oryginale, nie ma, więc wycięcia w przedmiotach trafiają w rękę. Dla porównania: poprzedni
 model bez swoich 1254 korekt miał 0,880, a z nimi 0,979 (ale przedmioty musiały kopiować te korekty).
 
 **Przedmioty UO.** Test replik przedmiotów z `anim.mul` (`test_items.py`: koszula, napierśnik, spodnie, buty, rękawice, hełm) na obecnym szkielecie:
-średnia IoU z oryginalnymi klatkami **0,710** (koszula 0,712, napierśnik 0,686, spodnie 0,796, buty 0,768, rękawice 0,519, hełm 0,781; `docs/qa/items_after_slim_rig.json`).
-Przed usunięciem palców rękawice miały 0,557; po usunięciu szkieletu materiału i broni nie ma już testów spódnicy, płaszcza i broni.
+średnia IoU z oryginalnymi klatkami **0,718** (koszula 0,714, napierśnik 0,690, spodnie 0,800, buty 0,768, rękawice 0,557, hełm 0,781; `docs/qa/items_after_fingers.json`).
+Błąd kształtu dłoni względem oryginału (piksele modelu poza sprite'em na klatkę): 3,9 -> 1,4 (lewa) i 4,3 -> 2,0 (prawa) po przywróceniu palców.
+Nie ma już testów spódnicy, płaszcza i broni (usunięte z szkieletu).
 
 ## 9. Jak powstał model
 

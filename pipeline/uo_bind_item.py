@@ -5,7 +5,7 @@
 #    that skin point and smoothed over the item (SMOOTH). "chest" moves most of the upper-arm weight to the
 #    collarbones, so the shoulders of a breastplate stay on the shoulders while the arms move under it.
 # Run it again after you change the item's shape (old weights and "uo_" corrections are replaced). Your own shape
-# keys (names not starting with "uo_") are kept. The rig has the 19 UO bones only (no fingers, twist, toes, cloth chains).
+# keys (names not starting with "uo_") are kept. The rig has the 19 UO bones plus the finger bones; a finger counts as the hand in PARTS ("gloves" follows the fingers too).
 import bpy
 import numpy as np
 from mathutils import Vector
@@ -48,6 +48,13 @@ body = bpy.data.objects["UO_Body"]
 rig = bpy.data.objects["UO_Rig"]
 
 
+def group_of(name):
+    """UO bone a body bone belongs to: the finger bones count as the hand"""
+    side = name[-2:] if name.endswith((".L", ".R")) else ""
+    base = name[:-2] if side else name
+    return ("hand" if base.startswith("finger") else base) + side
+
+
 def body_regions(allowed):
     """Body skin triangles whose dominant bone is in `allowed`, plus the body vertex weights of those bones."""
     me = body.data
@@ -56,7 +63,7 @@ def body_regions(allowed):
     for v in me.vertices:
         for g in v.groups:
             W[v.index, g.group] = g.weight
-    keep = [i for i, n in enumerate(names) if (allowed is None or n in allowed) and rig.data.bones[n].use_deform]   # the clavicles do not deform
+    keep = [i for i, n in enumerate(names) if (allowed is None or group_of(n) in allowed) and rig.data.bones[n].use_deform]   # the clavicles do not deform
     basis = np.empty(len(me.vertices) * 3, np.float32)
     (me.shape_keys.key_blocks[0].data if me.shape_keys else me.vertices).foreach_get("co", basis)
     basis = basis.reshape(-1, 3).astype(np.float64)
@@ -138,7 +145,7 @@ def bind(ob, allowed):
                 h, t_ = np.array(to_body @ bone.head_local), np.array(to_body @ bone.tail_local)
                 t = ((co - h) @ (t_ - h)) / max(((t_ - h) ** 2).sum(), 1e-12)
                 f = f[0] + (1 - f[0]) * np.clip((t - f[1]) / max(f[2] - f[1], 1e-6), 0, 1)
-            for j in [j for j, nm in enumerate(bones) if nm == b]:
+            for j in [j for j, nm in enumerate(bones) if group_of(nm) == b]:   # the bone + its finger bones
                 mv = wv[:, j] * (1 - f)
                 wv[:, j] -= mv; moved += mv
                 if pb in bones:
