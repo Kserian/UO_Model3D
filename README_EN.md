@@ -212,6 +212,10 @@ items into it, not the other way round.
    Numpad 0; change the direction with `uo_direction`.
 8. **Tips:**
    - Make clothing about 1–2 cm above the skin.
+   - **An item partly on the chest and partly on the back** (harness, quiver, a sword on the back): bind the strap as `"torso"` (weights only from `pelvis`, `spine`, `chest`, `neck`;
+     in `uo_prepare_item.py` the slot `KIND = "harness"` = densify + fit + `"torso"`) and the rigid part (the sword) as `"quiver"` (100 % on `chest`). Set custom properties on the rigid
+     object: `uo_no_body_gap = 1` (the render does not bend it away when a limb enters it) and `uo_behind_torso = 1` (from the front the torso hides what is more than
+     `TORSO_HIDE_MARGIN` = 12 cm behind it, so a sword on the back does not show on the chest; from the sides and the back it stays visible). Example: `assets/witcher_back_harness/`.
    - Check attacks, spells and deaths in particular.
    - Skirts, robes and cloaks no longer have presets or a cloth simulation (removed with the cloth chains): bind them as `"legs"` / `"all"`;
      they move like the skin under them.

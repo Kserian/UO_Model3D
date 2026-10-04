@@ -210,6 +210,10 @@ do niego swoje przedmioty, a nie odwrotnie.
    Numpad 0, kierunek zmieniasz `uo_direction`.
 8. **Wskazówki:**
    - Ubranie rób ok. 1–2 cm nad skórą.
+   - **Przedmiot częściowo na piersi, częściowo na plecach** (uprząż, kołczan, miecz na plecach): pasek bindujesz jako `"torso"` (wagi tylko z `pelvis`, `spine`, `chest`, `neck`;
+     w `uo_prepare_item.py` slot `KIND = "harness"` = densify + fit + `"torso"`), a sztywną część (miecz) jako `"quiver"` (100% na `chest`). Na sztywnym obiekcie ustaw właściwości
+     niestandardowe: `uo_no_body_gap = 1` (render go nie wygina, gdy ręka lub noga wchodzi w niego) oraz `uo_behind_torso = 1` (z przodu tułów zasłania to, co jest za nim o więcej niż
+     `TORSO_HIDE_MARGIN` = 12 cm, więc miecz z tyłu nie świeci na piersi; z boków i z tyłu jest widoczny). Przykład: `assets/witcher_back_harness/`.
    - Sprawdzaj zwłaszcza ataki, czary i upadki.
    - Spódnice, szaty i płaszcze nie mają już presetów ani symulacji tkaniny (usunięte razem z łańcuchami materiału): bindujesz je jako `"legs"` / `"all"`
      i poruszają się jak skóra pod spodem.

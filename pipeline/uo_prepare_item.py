@@ -11,7 +11,7 @@ import os
 import re
 import bpy
 
-KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat
+KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, neck, harness, hair, beard, hat
 DENSIFY = True        # False: keep the mesh as it is
 FIT = True            # False: skip uo_fit_item.py (the item already sits right)
 
@@ -20,7 +20,7 @@ FIT = True            # False: skip uo_fit_item.py (the item already sits right)
 SLOTS = {
     "shirt":  ("chest", True, "tight"), "pants": ("legs", True, "tight"), "boots": ("boots", True, "tight"), "gloves": ("gloves", True, "tight"),
     "plate":  ("chest", True, "hard"),  "arms":  ("arms", True, "hard"),  "legs":  ("legs", True, "hard"),   "helm":   ("helm", True, "hard"),
-    "neck":   ("neck", True, "hard"),
+    "neck":   ("neck", True, "hard"),   "harness": ("torso", True, "tight"),   # straps over the trunk (follow pelvis / spine / chest / neck only)
     "hair":   ("hair", False, "rigid"), "beard": ("beard", False, "rigid"), "hat":   ("hat", False, "rigid"),
 }
 
