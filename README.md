@@ -238,7 +238,10 @@ Co się dzieje (to są te same skrypty, co w oknie Blendera): import (wyrzuca si
 `uo_prepare_item.py` = **`uo_autofit_item.py`** (jednostki, skala i miejsce z kształtu skóry, nie z jednej wysokości na slot; krótkie kurtki i szerokie naramienniki nie są rozciągane; `docs/qa/autofit.md`) ->
 zagęszczenie (gęste siatki, żeby się gładko zginało) -> `uo_fit_item.py` (wypchnięcie ze skóry, **miękki limit grubości** `LIMIT`: naramienniki i kołnierze nie są grubsze niż oryginały UO) -> `uo_bind_item.py`.
 Broń (`weapon`): `uo_orient_weapon.py` stawia ją pionowo (czubek w górę, płaska strona na +X, długość klasy), potem `uo_place_weapon.py` i `uo_bind_item.py`.
-Skrypt pisze w raporcie `AMBIGUOUS`, gdy dwa rozwiązania (np. przód/tył) pasują prawie tak samo: wtedy sprawdź `preview.png` i ustaw `turn` albo `scale` w przepisie.
+Obok `item.blend` powstaje `qa.json` (`pipeline/item_qa.py`, kilka sekund): ile wierzchołków jest w ciele w ruchu (przenikanie przed wypchnięciem z ciała przez render) i jak daleko przedmiot stoi od skóry (grubość). Skrypt pisze w raporcie `AMBIGUOUS`, gdy dwa rozwiązania (np. przód/tył) pasują prawie tak samo: wtedy sprawdź `preview.png` i ustaw `turn` albo `scale` w przepisie.
+
+Model z kilku przedmiotów i manekinem w pliku (np. uprząż z mieczem na plecach): `"reference": {"keep": ["=nazwa siatki manekina"], "kind": "shirt"}` dopasowuje manekina do ciała, a jego przekształcenie dostają wszystkie `"parts"`
+(`{"name": "paski", "keep": [...], "kind": "harness"}`, `{"name": "miecz", "keep": [...], "rigid": "quiver"}`; `=nazwa` = dokładna nazwa siatki). Rzeczy sztywne na plecach dostają własności `uo_behind_torso` (z przodu zasłania je tułów) i `uo_no_body_gap` (nie są odginane od kończyn).
 
 **Luźne ubrania (`kind`: `robe`, `skirt`).** Tkanina wisi od miednicy, a nogi **wypychają ją tam, gdzie sięgają** (powłoka nóg, namiot od pasa, jedna klatka bez pamięci: bez przeskoków i bez przenikania),
 wypchnięcie 5 cm i 0,8 drogi do nóg jak w oryginalnych szatach UO. Pomiar na oryginale 469: IoU dolnej części 0,641 -> 0,757 (`docs/qa/robe_physics.md`). Własność `uo_cloth` ustawia `uo_bind_item.py` (`PART` `robe` / `skirt`), a stosuje `render_uo_layer.py`.

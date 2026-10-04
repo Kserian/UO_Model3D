@@ -1,0 +1,57 @@
+{
+ "args": {
+  "part": "robe",
+  "follow": null,
+  "margin": null,
+  "drop": null,
+  "kappa": 0.8,
+  "hip": 0.95,
+  "hem": 0.08,
+  "sprite": "/home/user/UO_Model3D/pipeline/body13/mul/anim_0469.vd",
+  "actions": "04_stand,00_walk_unarmed,02_run_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward",
+  "out": "docs/qa/robe_physics.json",
+  "img": "/tmp/claude-0/-home-user-UO-Model3D/100a7560-1f94-5a71-83f1-de6ed6731c3d/scratchpad/robe_final_overlay.png",
+  "set": []
+ },
+ "result": {
+  "frames": 205,
+  "iou_low": 0.7570672099722655,
+  "iou_all": 0.7456291888051831,
+  "hem_wider": 2.602439024390244,
+  "hem_narrower": 0.8085365853658537,
+  "hem_abs": 3.4109756097560977,
+  "hem_y_abs": 3.0097560975609756,
+  "by_action": {
+   "0": {
+    "iou_low": 0.7970327720285078,
+    "hem_dw": 1.915,
+    "hem_abs": 3.0
+   },
+   "2": {
+    "iou_low": 0.7765372619282657,
+    "hem_dw": 1.57,
+    "hem_abs": 3.57
+   },
+   "4": {
+    "iou_low": 0.7475627421437006,
+    "hem_dw": 2.925,
+    "hem_abs": 2.925
+   },
+   "9": {
+    "iou_low": 0.7351539693441631,
+    "hem_dw": 0.8285714285714286,
+    "hem_abs": 2.1785714285714284
+   },
+   "16": {
+    "iou_low": 0.7518433796453312,
+    "hem_dw": 3.414285714285714,
+    "hem_abs": 3.892857142857143
+   },
+   "21": {
+    "iou_low": 0.6912518473708306,
+    "hem_dw": 1.0125,
+    "hem_abs": 4.7875
+   }
+  }
+ }
+}

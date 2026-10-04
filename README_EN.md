@@ -240,7 +240,10 @@ What happens (the same scripts as in the Blender window): import (drops the mesh
 `uo_prepare_item.py` = **`uo_autofit_item.py`** (units, size and place from the shape of the skin, not from one height per slot; short jackets and wide pauldrons are not stretched; `docs/qa/autofit.md`) ->
 densify (dense meshes, so that it bends smoothly) -> `uo_fit_item.py` (pushed out of the skin, **soft thickness limit** `LIMIT`: pauldrons and collars are no thicker than the original UO items) -> `uo_bind_item.py`.
 Weapon (`weapon`): `uo_orient_weapon.py` stands it upright (tip up, flat side on +X, class length), then `uo_place_weapon.py` and `uo_bind_item.py`.
-The report says `AMBIGUOUS` when two solutions (e.g. front / back) fit almost equally well: check `preview.png` and set `turn` or `scale` in the recipe.
+Next to `item.blend` there is `qa.json` (`pipeline/item_qa.py`, a few seconds): how many vertices are inside the body in motion (clipping before the render pushes them out of the body) and how far the item stands off the skin (thickness). The report says `AMBIGUOUS` when two solutions (e.g. front / back) fit almost equally well: check `preview.png` and set `turn` or `scale` in the recipe.
+
+A model of several items with its mannequin in the file (e.g. a harness with a sword on the back): `"reference": {"keep": ["=mannequin mesh name"], "kind": "shirt"}` fits the mannequin to the body and every one of `"parts"` gets its transform
+(`{"name": "straps", "keep": [...], "kind": "harness"}`, `{"name": "sword", "keep": [...], "rigid": "quiver"}`; `=name` = the exact mesh name). Rigid things on the back get the properties `uo_behind_torso` (the torso hides them from the front) and `uo_no_body_gap` (they are not bent away from limbs).
 
 **Loose garments (`kind`: `robe`, `skirt`).** The cloth hangs from the pelvis and the legs **push it out to where they reach** (a hull of the legs, a tent from the waist, one frame at a time with no memory: no jumps, no clipping),
 5 cm past the legs and 0.8 of the way, as in the original UO robes. Measured on the original 469: lower-body IoU 0.641 -> 0.757 (`docs/qa/robe_physics.md`). The `uo_cloth` property is set by `uo_bind_item.py` (`PART` `robe` / `skirt`) and applied by `render_uo_layer.py`.

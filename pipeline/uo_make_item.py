@@ -13,9 +13,13 @@ RECIPE.json (only "file" and "kind" are required):
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...)
 
+A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt"} is fitted to the body and its
+transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
+uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part).
+
 Steps (each is one of the scripts that are also in the .blend, see README): uo_import_item.py (clean, join, reduce) -> uo_materials.py (UO look) ->
 uo_prepare_item.py (uo_autofit_item.py size / place from the skin, uo_densify_item.py, uo_fit_item.py push out of the skin, uo_bind_item.py skin weights).
-Result: DIR/item.blend (the base .blend with the item in the collection Clothing), DIR/report.txt (what each step printed), with --preview DIR/preview.png (a few
+Result: DIR/item.blend (the base .blend with the item in the collection Clothing), DIR/report.txt (what each step printed), DIR/qa.json (item_qa.py: how much of the item is inside the posed body, how far it stands off), with --preview DIR/preview.png (a few
 actions: stand, walk, run, attack, spell, die; 3 directions, 3 moments), with --vd DIR/clothing.vd (all 35 actions, 15-30 minutes).
 """
 import argparse, json, os, re, subprocess, sys, time
@@ -41,8 +45,69 @@ def override(text, **over):
     return text
 
 
+def build_parts_stage(recipe, out_blend):
+    """a model made of several items (straps + a sword on the back...): the reference part (e.g. the model's mannequin torso) is fitted to the body, its transform is applied to every
+    other part, which then goes its own way (kind: a worn item; rigid: stiff on a bone, e.g. "quiver" = on the chest, a sword on the back)"""
+    ref = recipe["reference"]
+    parts = recipe["parts"]
+    base = dict(file=os.path.abspath(recipe["file"]), decimate=int(recipe.get("decimate", 30000)))
+    return '''
+import bpy, os, re, sys, json
+from mathutils import Matrix
+HERE = %(here)r
+rig = bpy.data.objects["UO_Rig"]; rig.data.pose_position = "REST"
+for o in list(bpy.data.collections["Clothing"].all_objects):
+    bpy.data.objects.remove(o, do_unlink=True)
+os.environ["UO_SCRIPTS"] = HERE
+def run(script, **over):
+    text = open(os.path.join(HERE, script), encoding="utf-8").read()
+    for k, v in over.items():
+        text, n = re.subn(r"^%%s\\s*=.*$" %% re.escape(k), "%%s = %%r" %% (k, v), text, count=1, flags=re.M)
+        assert n == 1, (script, k)
+    exec(compile(text, script, "exec"), {"__name__": "__main__"})
+def select(obs):
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    for o in obs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = obs[0]
+base = %(base)r
+ref = %(ref)r
+run("uo_import_item.py", FILE=base["file"], KIND="", KEEP=ref["keep"], DECIMATE_TO=0, NAME="reference")
+run("uo_autofit_item.py", KIND=ref["kind"])
+M = Matrix([bpy.context.scene["uo_last_fit"][i * 4:i * 4 + 4] for i in range(4)])
+print("uo_make_item: reference %%s fitted; the same transform goes to every part" %% ref["keep"])
+for o in [o for o in bpy.data.collections["Clothing"].all_objects]:
+    bpy.data.objects.remove(o, do_unlink=True)
+for part in %(parts)r:
+    run("uo_import_item.py", FILE=base["file"], KIND="", KEEP=part["keep"], SKIP=part.get("skip", []), DECIMATE_TO=base["decimate"], NAME=part["name"])
+    obs = [o for o in bpy.context.selected_objects if o.type == "MESH"]
+    for o in obs:
+        o.data.transform(M)
+    bpy.context.view_layer.update()
+    run("uo_materials.py", **part.get("materials", {}))
+    off = part.get("move", [0, 0, 0])
+    if any(off):
+        for o in obs:
+            o.data.transform(Matrix.Translation(off))
+    select(obs)
+    if part.get("rigid"):
+        run("uo_bind_item.py", PART=part["rigid"])
+        for o in obs:
+            for k in ("uo_no_body_gap", "uo_behind_torso"):
+                if part.get(k, True):
+                    o[k] = 1
+    else:
+        run("uo_prepare_item.py", KIND=part["kind"], AUTOFIT=False, **part.get("prepare", {}))
+bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
+print("uo_make_item: saved", %(out)r)
+''' % dict(here=HERE, base=base, ref=ref, parts=parts, out=out_blend)
+
+
 def build_stage(recipe, out_blend):
     """python text run inside the .blend: import -> materials -> prepare -> save"""
+    if "parts" in recipe:
+        return build_parts_stage(recipe, out_blend)
     kind = recipe.get("kind", "")
     imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), TURN=int(recipe.get("turn", 0)),
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
@@ -105,12 +170,14 @@ def list_file(path):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("recipe", nargs="?"); ap.add_argument("--list"); ap.add_argument("--out"); ap.add_argument("--base", default=os.path.join(HERE, "..", "model", "UO_Body_0x190.blend"))
-    ap.add_argument("--preview", action="store_true"); ap.add_argument("--vd", action="store_true"); ap.add_argument("--actions", default="")
+    ap.add_argument("--preview", action="store_true"); ap.add_argument("--vd", action="store_true"); ap.add_argument("--actions", default=""); ap.add_argument("--no-qa", action="store_true", help="skip item_qa.py (penetration / thickness)")
     a = ap.parse_args()
     if a.list:
         list_file(os.path.abspath(a.list))
     recipe = json.load(open(a.recipe))
     name = recipe.get("name") or os.path.splitext(os.path.basename(recipe["file"]))[0]
+    if "parts" in recipe:
+        recipe.setdefault("kind", "")
     out = os.path.abspath(a.out or os.path.join(os.path.dirname(os.path.abspath(a.recipe)), name))
     os.makedirs(out, exist_ok=True)
     t = time.time()
@@ -119,6 +186,10 @@ if __name__ == "__main__":
         if line.startswith(("uo_autofit", "uo_fit", "uo_import", "  WARN", "  AMB")):
             print(line[:260])
     print("prepared in %.0f s -> %s" % (time.time() - t, blend))
+    if not a.no_qa:                                          # penetration and thickness of the posed item in the main actions (a few seconds, item_qa.py)
+        q = subprocess.run([sys.executable, os.path.join(HERE, "item_qa.py"), blend, "--step", "3", "--json", os.path.join(out, "qa.json")], capture_output=True, text=True)
+        line = next((l for l in q.stdout.splitlines() if l.startswith("ITEM_QA")), "item_qa failed: " + (q.stderr or q.stdout)[-300:])
+        print(line); open(os.path.join(out, "report.txt"), "a").write(line + "\n")
     if a.preview or a.vd:
         render = os.path.join(out, "render")
         layer = "clothing" if a.vd else "all"

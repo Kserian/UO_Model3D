@@ -277,6 +277,7 @@ def run():
         ob.data.transform(Matrix(T @ U) @ ob.matrix_world)       # into the mesh: world coordinates, the object's own transform becomes identity
         ob.matrix_world = Matrix.Identity(4)
     bpy.context.view_layer.update()
+    bpy.context.scene["uo_last_fit"] = [float(v) for v in (T @ U).ravel()]       # what was done, for parts of the same model that must follow it (uo_make_item.py "reference")
     return x, f, info
 
 

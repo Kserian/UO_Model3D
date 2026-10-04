@@ -24,7 +24,7 @@ PLACE = "wrap"        # "wrap": the item is only cleaned, joined and reduced her
                       # "height": the old way, one height per KIND (EXTENTS below) - right only for items shaped like the typical original (docs/qa/autofit.md)
 TURN = 0              # deg around the vertical axis (180 when the item came in back to front)
 JOIN = True           # one object out of all the meshes of the file (False: they stay separate objects, each scaled alike)
-KEEP = ()             # names (parts of names, any case) of the meshes to keep; everything else is left out (empty = all that SKIP does not exclude)
+KEEP = ()             # names (parts of names, any case; "=name" = exactly that mesh) of the meshes to keep; everything else is left out (empty = all that SKIP does not exclude)
 SKIP = ()             # names (parts of names, any case) of meshes of the file to leave out: eyes, the model's body, helper shapes, collision meshes
 NAME = ""             # name of the result ("" = file name)
 DECIMATE_TO = 30000   # a model with more vertices than this is reduced (collapse, UVs and materials kept) - a 144k-vertex scan costs minutes in every later step; uo_densify_item.py adds
@@ -43,6 +43,12 @@ EXTENTS = {"shirt": (0.999, 1.656, "chest"), "plate": (0.651, 1.643, "chest"), "
 
 body = bpy.data.objects["UO_Body"]
 UO_NAMES = {"UO_Body", "UO_Rig", "UO_Camera", "UO_Sun"}
+
+
+def named(o, keys):
+    """is the mesh `o` named by one of `keys`: a part of the name, any case; "=name" = exactly that name (a model whose meshes are all called defaultMaterial.NNN)"""
+    n = o.name.lower()
+    return any((n == k[1:].lower()) if k.startswith("=") else (k.lower() in n) for k in keys)
 
 
 def import_file(path):
@@ -85,8 +91,8 @@ def run():
         print("uo_import_item: meshes in the file (name, vertices, size in the file's units):")
         for o in meshes:
             d = np.array(o.dimensions)
-            print("   %-30s %7d  %.3f x %.3f x %.3f%s" % (o.name, len(o.data.vertices), *d, "   <- SKIP" if any(k.lower() in o.name.lower() for k in SKIP) else ""))
-        src = [o for o in meshes if not any(k.lower() in o.name.lower() for k in SKIP) and (not KEEP or any(k.lower() in o.name.lower() for k in KEEP))]
+            print("   %-30s %7d  %.3f x %.3f x %.3f%s" % (o.name, len(o.data.vertices), *d, "   <- SKIP" if named(o, SKIP) else ""))
+        src = [o for o in meshes if not named(o, SKIP) and (not KEEP or named(o, KEEP))]
         imported = True
     else:
         src = [o for o in bpy.context.selected_objects if o.type == "MESH" and o.name not in UO_NAMES]

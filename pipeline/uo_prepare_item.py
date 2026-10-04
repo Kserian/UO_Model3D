@@ -11,7 +11,7 @@ import os
 import re
 import bpy
 
-KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat, robe, skirt
+KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat, robe, skirt, harness, quiver
 AUTOFIT = True        # first uo_autofit_item.py: units, size and place from the skin the slot covers (False: the item already stands where it should)
 DENSIFY = True        # False: keep the mesh as it is
 FIT = True            # False: skip uo_fit_item.py (the item already sits right)
@@ -23,6 +23,8 @@ SLOTS = {
     "plate":  ("chest", True, "hard"),  "arms":  ("arms", True, "hard"),  "legs":  ("legs", True, "hard"),   "helm":   ("helm", True, "hard"),
     "neck":   ("neck", True, "hard"),
     "robe":   ("robe", True, "loose"), "skirt": ("skirt", True, "loose"),
+    "harness": ("torso", True, "tight"),   # straps over the trunk (follow pelvis / spine / chest / neck only)
+    "quiver": ("quiver", False, "rigid"),  # a quiver, a sword on the back: rigid on the chest (custom properties uo_no_body_gap, uo_behind_torso: render_uo_layer.py)
     "hair":   ("hair", False, "rigid"), "beard": ("beard", False, "rigid"), "hat":   ("hat", False, "rigid"),
 }
 
