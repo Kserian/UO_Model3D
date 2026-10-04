@@ -9,7 +9,8 @@ RECIPE.json (only "file" and "kind" are required):
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
    "decimate": 30000,          # vertices above which the model is reduced
    "materials": {"SATURATION": 1.0, "METAL": null},   # uo_materials.py settings (grey item that takes a dye: SATURATION 0)
-   "prepare": {"MAX_GAP": 0.0},                       # settings of any script run by uo_prepare_item.py: {"script.py": {"NAME": value}} or flat for uo_prepare_item.py
+   "prepare": {"DENSIFY": false},                      # settings of uo_prepare_item.py itself
+   "tune": {"uo_fit_item.py": {"MIN_GAP": 0.02, "LIMIT": 0.05}, "uo_autofit_item.py": {"GAP": 0.02}},   # settings of the steps it runs (autofit, densify, fit, bind)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...)
 
@@ -120,6 +121,7 @@ rig = bpy.data.objects["UO_Rig"]; rig.data.pose_position = "REST"
 for o in list(bpy.data.collections["Clothing"].all_objects):
     bpy.data.objects.remove(o, do_unlink=True)
 os.environ["UO_SCRIPTS"] = HERE
+os.environ["UO_PREPARE_EXTRA"] = %(tune)r
 def run(script, **over):
     text = open(os.path.join(HERE, script), encoding="utf-8").read()
     for k, v in over.items():
@@ -139,7 +141,7 @@ else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"))
+''' % dict(here=HERE, imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):

@@ -7,6 +7,7 @@
 #   skinning       uo_bind_item.py PART: which bones the item follows (and RIGID presets: hair on the head).
 # The settings are measured where noted in the scripts (docs/qa/slot_geometry.md); weights stay "as the skin under the item" (SMOOTH 4, STIFF 1): the originals
 # do not tell another policy from it (docs/qa/bind_sweep.json: SMOOTH 0..12 and STIFF 0.5..4 change the IoU with the sprites by +-0.002 at most).
+import json
 import os
 import re
 import bpy
@@ -42,7 +43,11 @@ def source(name):
     return open(os.path.join(here, name), encoding="utf-8").read()
 
 
+EXTRA = json.loads(os.environ.get("UO_PREPARE_EXTRA", "{}"))     # {"uo_fit_item.py": {"MIN_GAP": 0.02}, ...}: settings for the steps (uo_make_item.py "tune")
+
+
 def run(name, **over):
+    over = dict(EXTRA.get(name, {}), **over)
     text = source(name)
     for k, v in over.items():
         text, n = re.subn(r"^%s\s*=.*$" % k, "%s = %r" % (k, v), text, count=1, flags=re.M)

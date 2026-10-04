@@ -61,3 +61,10 @@ Sloty dodane w tej sesji z zakresów oryginałów (`layer_analysis.md`), ustawie
 
 Ograniczenia: nie ma jeszcze testu na prawdziwym obcym modelu spodni/butów/rękawic; jakość ruchu naramienników (rozciągają się z ramieniem w czarach, bo model jest jedną ciągłą siatką: wagi „jak skóra”) nie jest mierzona;
 miecz i muszkiet nie mają sprite'a odniesienia (zgodność z UO nie jest zmierzona, tylko wizualna).
+
+## Grubość pancerza (pomiar na klatkach, `pipeline/item_thickness.py`)
+
+Miara: odległość pikseli przedmiotu od sylwetki oryginalnego ciała, p90, w cm (porównywalna z oryginalnymi sprite'ami, `docs/qa/layer_analysis.md`). Oryginały: koszula 3,9, plate 5,6 (p50 2,8), spodnie 2,8, hełm 3,9.
+Zmiana: `LIMIT_K` 0,35 -> 0,30 i `LIMIT_BY_KIND["plate"]` 0,08 -> 0,05. Wynik (p90 przed -> po): Void Knight 11,5 -> 8,8 (p50 bez zmian 5,6: model ma duże naramienniki i wypukły napierśnik), Dread Dragon 8,8 -> 8,3, gambeson 5,6 -> 5,6.
+Przenikanie ciała przez przedmiot bez zmian (3,6-3,7 % / 3,0 %). Ostrzejsze limity (3 cm K 0,5; 4 cm K 0,3) dają niemal to samo przy gorszym zachowaniu detali. `test_items`: 0,718 (bez zmian).
+Ręczne strojenie: pole `"tune": {"uo_fit_item.py": {"LIMIT": 0.04}}` w przepisie `uo_make_item.py`.

@@ -31,8 +31,8 @@ MAX_GAP = 0.0         # m, > 0: pull parts standing off more than this towards t
 LIMIT = -1.0          # m, soft limit of how far from the skin any part of the item may stand: what is farther is brought closer (S -> LIMIT + (S - LIMIT) * LIMIT_K), smoothly over the
                       # mesh, so details are squashed, not cut. This is what keeps big pauldrons, flared cuffs and fat collars "UO-thin": the original items of a slot stand
                       # out of the body silhouette by this much at most (docs/qa/layer_analysis.md: plate 5.6-8.1 cm, shirt 5.6, helm 8.3); < 0 = LIMIT_BY_KIND, 0 = off
-LIMIT_K = 0.35        # what is left of the excess: 0 = cut off at LIMIT, 1 = no limit
-LIMIT_BY_KIND = {"shirt": 0.07, "plate": 0.08, "harness": 0.06, "arms": 0.07, "pants": 0.06, "legs": 0.07, "boots": 0.05, "gloves": 0.05, "helm": 0.10, "neck": 0.06, "waist": 0.05, "vest": 0.07}
+LIMIT_K = 0.3         # what is left of the excess: 0 = cut off at LIMIT, 1 = no limit
+LIMIT_BY_KIND = {"shirt": 0.07, "plate": 0.05, "harness": 0.06, "arms": 0.07, "pants": 0.06, "legs": 0.07, "boots": 0.05, "gloves": 0.05, "helm": 0.10, "neck": 0.06, "waist": 0.05, "vest": 0.07}
 RADIUS = 0.04         # m, smallest area a push spreads over
 SPREAD = 3.0          # a push of d spreads over at least SPREAD * d (bigger = broader, gentler swelling)
 ITERATIONS = 12       # push rounds at most (it stops as soon as nothing is too close)
