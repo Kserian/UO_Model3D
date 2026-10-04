@@ -6,6 +6,8 @@
 RECIPE.json (only "file" and "kind" are required):
   {"name": "gambeson", "file": "models/medieval_shirt.glb", "kind": "shirt",
    "skip": ["guy"],            # meshes of the file to leave out (parts of names)      "keep": ["Blade"]  only these
+   "drop_materials": ["Belt", "Buckle"],   # materials whose faces are cut out (a belt that is one mesh with the robe)
+   "arms_down": 0,                  # deg; 80-90 for a model in a T-pose (arms out): the sleeves are turned down about the shoulders ("arm_materials": ["sleeve"] names them)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
    "decimate": 30000,          # vertices above which the model is reduced
    "materials": {"SATURATION": 1.0, "METAL": null},   # uo_materials.py settings (grey item that takes a dye: SATURATION 0)
@@ -110,7 +112,7 @@ def build_stage(recipe, out_blend):
     if "parts" in recipe:
         return build_parts_stage(recipe, out_blend)
     kind = recipe.get("kind", "")
-    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), TURN=int(recipe.get("turn", 0)),
+    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), TURN=int(recipe.get("turn", 0)),
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
     if "scale" in recipe:
         imp["SCALE"] = float(recipe["scale"])
