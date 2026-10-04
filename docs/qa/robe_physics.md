@@ -104,3 +104,11 @@ Prośba użytkownika: fizyka szaty ma odtwarzać grę, także w ruchach nóg; do
 - **Prędkość nóg i miednicy jako regresory** współczynników wychylenia rąbka: CV po akcjach R² ujemne (prędkość nie tłumaczy wychylenia), pozycje kolan i kostek tłumaczą tylko drugą harmoniczną (R² 0,46).
 - Co wynika: reszta błędu (IoU 0,76 z możliwych ok. 0,80+) to w większości kształt rąbka prawdziwej szaty (fałdy, rozkloszowanie w biegu do 15 px poza nogami), którego powłoka z nóg ani proste dynamiki nie odtwarzają. Dalszy ruch wymaga **prawdziwego darmowego modelu szaty**
   (kształt własny, test zamiast repliki-rury) albo pełnej symulacji tkaniny z kolizją, której zysk trzeba by zmierzyć na takim modelu.
+
+### Test na prawdziwym darmowym modelu szaty (użytkownik, `robe_free.glb`, licencja nieznana: plik nie jest w repo)
+Jedna siatka 34 924 wierzchołków, długa wąska szata z rękawami. `uo_make_item.py` z `kind: robe`, bez ręcznych ustawień: autofit skala x1,26, przesunięcie -0,25 m w pionie, pokrycie skóry 96%, w ciele po dopasowaniu 0 wierzchołków, w ruchu w ciele średnio 3,6% (najgorzej atak, do 15 cm, wypychane przez `BODY_GAP`), 3 min 45 s z podglądem.
+Podgląd (stand, marsz, bieg, atak, czar, upadek, 3 kierunki) wygląda poprawnie. Porównanie powłoki nóg na tym modelu (podglądy marszu i biegu, 3 kierunki):
+- **bez powłoki** (kappa 0) i **względna kappa 0,25**: nogi wystają spod wąskiej szaty w marszu i biegu (stopa i łydka widoczne na zewnątrz): zły wynik;
+- **względna 0,5**: nogi zakryte poza skrajnym wykrokiem biegu (stopy wystają na boki);
+- **obecna (bezwzględna 5 cm / 0,8) i względna 0,8**: nogi zawsze zakryte, marsz = gładki stożek jak w oryginale; w biegu w profilu rąbek rozkłada się w stożek (jak w oryginale 469), ale na wysokości uda powstają wybrzuszenia (kolano uniesione do przodu, noga wyprostowana do tyłu).
+Wniosek: na wąskiej szacie obecna powłoka daje to, czego trzeba (szata zakrywa nogi i układa się w stożek); powłoka względna z niższą kappa jej nie dorównuje. Zostaje bez zmian. Do poprawy zostaje wygładzenie wybrzuszeń uda w biegu (kandydat: mniejszy `drop` albo wygładzenie pola w wysokości).
