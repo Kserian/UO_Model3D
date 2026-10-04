@@ -121,6 +121,9 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_fit_item.py` | Turns the selected item's sleeves onto the arms and pushes it out of the skin (before `uo_bind_item.py`, section 3). |
 | `uo_densify_item.py` | Densifies the mesh of the selected item (subdivision without changing the shape, optional `SMOOTH`), so a low-poly item bends smoothly at elbows, knees and hips instead of folding along a few long edges; the target edge length depends on the slot (`EDGE_BY_KIND`, gloves 2 cm, the rest 3-5 cm). Before `uo_fit_item.py`. |
 | `uo_prepare_item.py` | One step for a slot (`KIND`): `uo_densify_item.py` -> `uo_fit_item.py` -> `uo_bind_item.py` with that slot's settings (table `SLOTS`). Results and reasons: `docs/qa/slot_geometry.md`. |
+| `uo_autofit_item.py` | Units, size and place of the selected item from the shape of the skin of its slot (not from one height per slot): `docs/qa/autofit.md`. Called by `uo_prepare_item.py` (`AUTOFIT`). |
+| `uo_orient_weapon.py` | Stands a foreign weapon upright (tip up, flat side on +X, class length: sword 1 m, musket 1.3 m...), before `uo_place_weapon.py`. |
+| `cloth_lib.py` | Loose garments (robe, skirt): a hull of the legs and a tent from the waist, per frame, numpy (`docs/qa/robe_physics.md`); used by `render_uo_layer.py` for items with the `uo_cloth` property. |
 | `uo_bind_item.py` | Binds the selected item to the body in one run: parent, Armature and weights (section 3). |
 | `uo_weapon_bones.py` | Adds the weapon bones (left hand: `polearm.L`, `axe2h.L`, `bow.L`; right hand: `weapon1h.R`) and keys their motion from `weapon_motion.json` (already run in the file; to load the motion again). |
 | `uo_place_weapon.py` | Puts the selected weapon (shaft along +Z, tip up) on the grip line of its class, before `uo_bind_item.py`. Model the head (blade, axe) as a flat plate in the XZ plane, wide side on +X; the script turns the weapon about its shaft like the original weapon `REF_ANIM` (e.g. 624 halberd, 613 executioner's axe, 623 cutlass) and the bone then turns it by the measured roll (`weapon_motion.json`, field `roll`). Bows: roll undetermined. |
@@ -181,6 +184,7 @@ items into it, not the other way round.
       | `"helm"` | helmet, hood, mask | head |
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | full suit in one object | skin under it, every bone |
+      | `"robe"`, `"skirt"` | robe, dress, skirt, kilt | like the skin down to the hips; below, the **pelvis**, and the legs push the cloth out per frame (`cloth_lib.py`, property `uo_cloth`; `docs/qa/robe_physics.md`) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
       | `"weapon1h"` | sword, mace, hammer, 1H axe, kryss, pickaxe | bone `weapon1h.R` on the right hand, motion fitted to 13 original weapons (0.7-1.3 px instead of 1.4-2.1 px); run `uo_place_weapon.py` with `PART = "weapon1h"` first |
       | `"weapon"` / `"weapon.L"` | uncalibrated weapon | rigid on `hand.R` / `hand.L` |
@@ -213,8 +217,33 @@ items into it, not the other way round.
 8. **Tips:**
    - Make clothing about 1–2 cm above the skin.
    - Check attacks, spells and deaths in particular.
-   - Skirts, robes and cloaks no longer have presets or a cloth simulation (removed with the cloth chains): bind them as `"legs"` / `"all"`;
-     they move like the skin under them.
+   - Robes, dresses and skirts: `PART = "robe"` / `"skirt"` (the cloth hangs from the pelvis and the legs push it out; no simulation, no bone chains). Cloaks still have no preset: `"all"` / `"chest"`.
+
+## 3a. The fast path: a free model -> an item in one command
+
+No Blender window (`pip install numpy pillow scipy "bpy==4.2.*"`), from the repo folder:
+
+```
+python pipeline/uo_make_item.py --list model.glb            # what is in the file: meshes, vertices, size (to choose "skip" / "keep")
+python pipeline/uo_make_item.py recipe.json --preview       # item.blend + preview.png (6 actions x 3 directions x 3 moments of the animation)
+python pipeline/uo_make_item.py recipe.json --vd            # the same + all 35 actions into clothing.vd (15-30 min)
+```
+
+The recipe (`file` and `kind` are required; every field is described in the header of `pipeline/uo_make_item.py`):
+
+```json
+{"name": "gambeson", "file": "models/medieval_shirt.glb", "kind": "shirt", "skip": ["guy"]}
+{"name": "sword", "file": "models/miecz.glb", "weapon": {"class": "sword", "part": "weapon1h"}}
+```
+
+What happens (the same scripts as in the Blender window): import (drops the meshes of `skip`, keeps `keep`, reduces a mesh over 30k vertices, smooth shading) -> `uo_materials.py` (UO look) ->
+`uo_prepare_item.py` = **`uo_autofit_item.py`** (units, size and place from the shape of the skin, not from one height per slot; short jackets and wide pauldrons are not stretched; `docs/qa/autofit.md`) ->
+densify (dense meshes, so that it bends smoothly) -> `uo_fit_item.py` (pushed out of the skin, **soft thickness limit** `LIMIT`: pauldrons and collars are no thicker than the original UO items) -> `uo_bind_item.py`.
+Weapon (`weapon`): `uo_orient_weapon.py` stands it upright (tip up, flat side on +X, class length), then `uo_place_weapon.py` and `uo_bind_item.py`.
+The report says `AMBIGUOUS` when two solutions (e.g. front / back) fit almost equally well: check `preview.png` and set `turn` or `scale` in the recipe.
+
+**Loose garments (`kind`: `robe`, `skirt`).** The cloth hangs from the pelvis and the legs **push it out to where they reach** (a hull of the legs, a tent from the waist, one frame at a time with no memory: no jumps, no clipping),
+5 cm past the legs and 0.8 of the way, as in the original UO robes. Measured on the original 469: lower-body IoU 0.641 -> 0.757 (`docs/qa/robe_physics.md`). The `uo_cloth` property is set by `uo_bind_item.py` (`PART` `robe` / `skirt`) and applied by `render_uo_layer.py`.
 
 ## 4. Rendering frames and the `.vd` file
 

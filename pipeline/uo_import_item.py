@@ -29,6 +29,7 @@ SKIP = ()             # names (parts of names, any case) of meshes of the file t
 NAME = ""             # name of the result ("" = file name)
 DECIMATE_TO = 30000   # a model with more vertices than this is reduced (collapse, UVs and materials kept) - a 144k-vertex scan costs minutes in every later step; uo_densify_item.py adds
                       # vertices back where the item has to bend. 0 = never
+SMOOTH_SHADE = True   # smooth shading on every face (UO art is shaded smoothly; a decimated or scanned model with flat faces turns into noise at 36 px/m)
 PERCENT = 0.5         # the height is measured between the PERCENT and 100 - PERCENT percentile of the vertices (a stray spike does not count)
 
 # measured on the original sprites (stand, mean of the 5 directions): z of the lowest and highest point of the item in the rest pose, m
@@ -125,6 +126,10 @@ def run():
                 me = bpy.data.meshes.new_from_object(n.evaluated_get(dg))
                 n.modifiers.clear(); old = n.data; n.data = me; bpy.data.meshes.remove(old)
             print("uo_import_item: %d vertices -> %d (DECIMATE_TO %d)" % (total, sum(len(n.data.vertices) for n in news), DECIMATE_TO))
+    if SMOOTH_SHADE:
+        for n in news:
+            n.data.polygons.foreach_set("use_smooth", [True] * len(n.data.polygons))
+            n.data.update()
     verts = np.concatenate([np.array([v.co[:] for v in n.data.vertices]) for n in news])
     if TURN:
         R = np.array(Matrix.Rotation(np.radians(TURN), 3, "Z"))

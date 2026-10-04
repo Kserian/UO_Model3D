@@ -42,7 +42,7 @@ if MODE == "wrap":                                     # units / place / size fr
     run("uo_import_item.py", FILE=os.environ["FOREIGN_GLB"], KIND="", TURN=int(os.environ["FOREIGN_TURN"]))
     run("uo_autofit_item.py", KIND=os.environ["FOREIGN_KIND"])
 else:
-    run("uo_import_item.py", FILE=os.environ["FOREIGN_GLB"], KIND=os.environ["FOREIGN_KIND"], TURN=int(os.environ["FOREIGN_TURN"]))
+    run("uo_import_item.py", FILE=os.environ["FOREIGN_GLB"], KIND=os.environ["FOREIGN_KIND"], TURN=int(os.environ["FOREIGN_TURN"]), PLACE="height")
 item = bpy.context.view_layer.objects.active
 got = np.array([item.matrix_world @ v.co for v in item.data.vertices]); ref = np.load(os.environ["FOREIGN_REF"])
 print("RESULT bbox ref  min", ref.min(0).round(3), "max", ref.max(0).round(3))

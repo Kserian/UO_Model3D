@@ -1,0 +1,242 @@
+[
+ {
+  "case": "shirt",
+  "mode": "height",
+  "mean_mm": 25.7,
+  "p95_mm": 44.0,
+  "max_mm": 50.9,
+  "height_ratio": 1.092,
+  "width_ratio": 1.092,
+  "autofit": null
+ },
+ {
+  "case": "shirt_small",
+  "mode": "height",
+  "mean_mm": 25.7,
+  "p95_mm": 44.0,
+  "max_mm": 50.9,
+  "height_ratio": 1.092,
+  "width_ratio": 1.092,
+  "autofit": null
+ },
+ {
+  "case": "shirt_short",
+  "mode": "height",
+  "mean_mm": 68.4,
+  "p95_mm": 158.2,
+  "max_mm": 211.3,
+  "height_ratio": 1.681,
+  "width_ratio": 1.681,
+  "autofit": null
+ },
+ {
+  "case": "plate",
+  "mode": "height",
+  "mean_mm": 22.1,
+  "p95_mm": 34.6,
+  "max_mm": 40.5,
+  "height_ratio": 1.04,
+  "width_ratio": 1.04,
+  "autofit": null
+ },
+ {
+  "case": "plate_short",
+  "mode": "height",
+  "mean_mm": 104.8,
+  "p95_mm": 168.7,
+  "max_mm": 209.3,
+  "height_ratio": 1.649,
+  "width_ratio": 1.649,
+  "autofit": null
+ },
+ {
+  "case": "pants",
+  "mode": "height",
+  "mean_mm": 38.5,
+  "p95_mm": 76.8,
+  "max_mm": 97.6,
+  "height_ratio": 1.254,
+  "width_ratio": 1.254,
+  "autofit": null
+ },
+ {
+  "case": "pants_short",
+  "mode": "height",
+  "mean_mm": 106.9,
+  "p95_mm": 210.5,
+  "max_mm": 272.1,
+  "height_ratio": 2.413,
+  "width_ratio": 2.413,
+  "autofit": null
+ },
+ {
+  "case": "legs",
+  "mode": "height",
+  "mean_mm": 52.7,
+  "p95_mm": 117.9,
+  "max_mm": 128.5,
+  "height_ratio": 1.4,
+  "width_ratio": 1.4,
+  "autofit": null
+ },
+ {
+  "case": "boots",
+  "mode": "height",
+  "mean_mm": 23.1,
+  "p95_mm": 55.9,
+  "max_mm": 69.6,
+  "height_ratio": 1.204,
+  "width_ratio": 1.204,
+  "autofit": null
+ },
+ {
+  "case": "gloves",
+  "mode": "height",
+  "mean_mm": 100.7,
+  "p95_mm": 187.7,
+  "max_mm": 233.3,
+  "height_ratio": 1.431,
+  "width_ratio": 1.431,
+  "autofit": null
+ },
+ {
+  "case": "helm",
+  "mode": "height",
+  "mean_mm": 14.9,
+  "p95_mm": 37.3,
+  "max_mm": 75.3,
+  "height_ratio": 1.255,
+  "width_ratio": 1.255,
+  "autofit": null
+ },
+ {
+  "case": "arms",
+  "mode": "height",
+  "mean_mm": 57.2,
+  "p95_mm": 110.7,
+  "max_mm": 126.7,
+  "height_ratio": 1.216,
+  "width_ratio": 1.231,
+  "autofit": null
+ },
+ {
+  "case": "shirt",
+  "mode": "wrap",
+  "mean_mm": 18.2,
+  "p95_mm": 26.7,
+  "max_mm": 30.6,
+  "height_ratio": 1.105,
+  "width_ratio": 1.105,
+  "autofit": "uo_autofit_item: KIND shirt | units x1 | scale 0.961 (x0.961 of the file) | turn 0 deg | move -0.115 -0.045 0.036 m | skin covered 100%, poking out 0.0%, median gap 27.6 mm (wanted 15)"
+ },
+ {
+  "case": "shirt_small",
+  "mode": "wrap",
+  "mean_mm": 7.4,
+  "p95_mm": 12.8,
+  "max_mm": 39.2,
+  "height_ratio": 0.969,
+  "width_ratio": 0.969,
+  "autofit": "uo_autofit_item: KIND shirt | units x1 | scale 1.211 (x1.211 of the file) | turn 0 deg | move 0.121 -0.049 -0.134 m | skin covered 100%, poking out 0.0%, median gap 6.9 mm (wanted 15)"
+ },
+ {
+  "case": "shirt_short",
+  "mode": "wrap",
+  "mean_mm": 4.4,
+  "p95_mm": 5.7,
+  "max_mm": 31.4,
+  "height_ratio": 1.009,
+  "width_ratio": 1.009,
+  "autofit": "uo_autofit_item: KIND shirt | units x1 | scale 1.009 (x1.009 of the file) | turn 0 deg | move -0.051 -0.031 0.092 m | skin covered 100%, poking out 0.0%, median gap 13.7 mm (wanted 15)"
+ },
+ {
+  "case": "plate",
+  "mode": "wrap",
+  "mean_mm": 8.3,
+  "p95_mm": 16.8,
+  "max_mm": 23.3,
+  "height_ratio": 0.972,
+  "width_ratio": 0.972,
+  "autofit": "uo_autofit_item: KIND plate | units x1 | scale 1.143 (x1.143 of the file) | turn 0 deg | move -0.114 -0.057 -0.187 m | skin covered 100%, poking out 0.4%, median gap 24.2 mm (wanted 30)"
+ },
+ {
+  "case": "plate_short",
+  "mode": "wrap",
+  "mean_mm": 14.0,
+  "p95_mm": 19.8,
+  "max_mm": 21.8,
+  "height_ratio": 1.063,
+  "width_ratio": 1.063,
+  "autofit": "uo_autofit_item: KIND plate | units x1 | scale 0.966 (x0.966 of the file) | turn 0 deg | move 0.049 -0.028 0.210 m | skin covered 100%, poking out 0.0%, median gap 41.4 mm (wanted 30)"
+ },
+ {
+  "case": "pants",
+  "mode": "wrap",
+  "mean_mm": 32.0,
+  "p95_mm": 59.0,
+  "max_mm": 70.4,
+  "height_ratio": 1.222,
+  "width_ratio": 1.222,
+  "autofit": "uo_autofit_item: KIND pants | units x1 | scale 0.940 (x0.940 of the file) | turn 0 deg | move -0.094 0.047 -0.406 m | skin covered 100%, poking out 2.4%, median gap 25.1 mm (wanted 15)"
+ },
+ {
+  "case": "pants_short",
+  "mode": "wrap",
+  "mean_mm": 15.4,
+  "p95_mm": 24.4,
+  "max_mm": 34.1,
+  "height_ratio": 1.05,
+  "width_ratio": 1.05,
+  "autofit": "uo_autofit_item: KIND pants | units x1 | scale 1.050 (x1.050 of the file) | turn 0 deg | move -0.000 -0.031 -0.216 m | skin covered 100%, poking out 1.7%, median gap 16.8 mm (wanted 15)"
+ },
+ {
+  "case": "legs",
+  "mode": "wrap",
+  "mean_mm": 14.6,
+  "p95_mm": 22.6,
+  "max_mm": 38.2,
+  "height_ratio": 1.035,
+  "width_ratio": 1.035,
+  "autofit": "uo_autofit_item: KIND legs | units x1 | scale 1.035 (x1.035 of the file) | turn 0 deg | move -0.155 -0.051 -0.096 m | skin covered 100%, poking out 2.0%, median gap 30.6 mm (wanted 30)"
+ },
+ {
+  "case": "boots",
+  "mode": "wrap",
+  "mean_mm": 14.5,
+  "p95_mm": 29.9,
+  "max_mm": 40.5,
+  "height_ratio": 1.1,
+  "width_ratio": 1.1,
+  "autofit": "uo_autofit_item: KIND boots | units x1 | scale 0.917 (x0.917 of the file) | turn 0 deg | move 0.000 -0.039 0.065 m | skin covered 100%, poking out 1.0%, median gap 16.4 mm (wanted 15)"
+ },
+ {
+  "case": "gloves",
+  "mode": "wrap",
+  "mean_mm": 7.3,
+  "p95_mm": 12.6,
+  "max_mm": 13.8,
+  "height_ratio": 1.005,
+  "width_ratio": 1.005,
+  "autofit": "uo_autofit_item: KIND gloves | units x1 | scale 1.117 (x1.117 of the file) | turn 0 deg | move -0.114 0.005 -0.239 m | skin covered 100%, poking out 3.2%, median gap 26.0 mm (wanted 15)"
+ },
+ {
+  "case": "helm",
+  "mode": "wrap",
+  "mean_mm": 15.4,
+  "p95_mm": 27.0,
+  "max_mm": 36.8,
+  "height_ratio": 1.105,
+  "width_ratio": 1.105,
+  "autofit": "uo_autofit_item: KIND helm | units x1 | scale 1.005 (x1.005 of the file) | turn 0 deg | move -0.050 -0.038 0.030 m | skin covered 100%, poking out 8.6%, median gap 20.1 mm (wanted 30)"
+ },
+ {
+  "case": "arms",
+  "mode": "wrap",
+  "mean_mm": 12.1,
+  "p95_mm": 20.4,
+  "max_mm": 24.8,
+  "height_ratio": 1.029,
+  "width_ratio": 1.041,
+  "autofit": "uo_autofit_item: KIND arms | units x1 | scale 0.905 (x0.905 of the file) | turn 0 deg | move -0.000 -0.025 0.069 m | skin covered 100%, poking out 0.0%, median gap 29.9 mm (wanted 30)"
+ }
+]

@@ -129,11 +129,30 @@ class Calib:
                         continue
                     g = g[i]; r0, g0 = m[int(row_hip):], g[int(row_hip):]
                     ys = np.nonzero(g.any(1))[0]; rows = range(ys.max() - 7, ys.max() + 1)
+                    rows = [y for y in rows if g[y].any()] or [ys.max()]
                     wr = np.mean([np.ptp(np.nonzero(m[y])[0]) + 1 if m[y].any() else 0 for y in rows]); wg = np.mean([np.ptp(np.nonzero(g[y])[0]) + 1 for y in rows])
                     res.append(dict(a=a, d=dr, i=i, iou=(r0 & g0).sum() / max((r0 | g0).sum(), 1), dw=wr - wg))
                     if keep_masks:
                         masks[(a, dr, i)] = (m, g)
         return res, masks
+
+
+def fit_rest(cal, p, acts=(4,), keys=("rx0", "rx1", "ry", "z_hem")):
+    """radii and hem height of the replica tube from the stand frames (no cloth): the rest shape of the garment, so that what is measured afterwards is the dynamics"""
+    from scipy import optimize
+    q = dict(p); q["hull"] = 0; q["solve"] = 0
+    x0 = np.array([q[k] for k in keys])
+
+    def cost(x):
+        for k, v in zip(keys, x):
+            q[k] = float(v)
+        res, _ = cal.evaluate(q, acts)
+        return 1 - np.mean([r["iou"] for r in res]) if res else 1.0
+
+    r = optimize.minimize(cost, x0, method="Nelder-Mead", options=dict(xatol=0.003, fatol=1e-4, maxiter=120))
+    out = dict(p)
+    out.update({k: float(v) for k, v in zip(keys, r.x)})
+    return out
 
 
 def summarize(res):
@@ -151,12 +170,15 @@ def fmt(s):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("poses"); ap.add_argument("--sprite", default=os.path.join(HERE, "body13", "mul", "anim_0469.vd")); ap.add_argument("--acts", default="4,0,2,9,16,21")
-    ap.add_argument("--set", default=""); ap.add_argument("--sweep", action="append", default=[]); ap.add_argument("--img")
+    ap.add_argument("--set", default=""); ap.add_argument("--sweep", action="append", default=[]); ap.add_argument("--img"); ap.add_argument("--fit-rest", action="store_true", help="fit the radii / hem height of the replica to the stand frames first")
     a = ap.parse_args()
     cal = Calib(a.poses, a.sprite)
     p = dict(DEFAULT)
     for kv in filter(None, a.set.split(",")):
         k, v = kv.split("="); p[k] = float(v)
+    if a.fit_rest:
+        p = fit_rest(cal, p)
+        print("rest shape fitted on the stand frames: rx0 %.3f rx1 %.3f ry %.3f z_hem %.3f" % (p["rx0"], p["rx1"], p["ry"], p["z_hem"]))
     acts = tuple(int(x) for x in a.acts.split(","))
     sweeps = [(sw.split("=")[0], [float(x) for x in sw.split("=")[1].split(",")]) for sw in a.sweep]
     for combo in itertools.product(*[v for _, v in sweeps]) if sweeps else [()]:

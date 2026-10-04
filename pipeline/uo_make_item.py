@@ -10,7 +10,8 @@ RECIPE.json (only "file" and "kind" are required):
    "decimate": 30000,          # vertices above which the model is reduced
    "materials": {"SATURATION": 1.0, "METAL": null},   # uo_materials.py settings (grey item that takes a dye: SATURATION 0)
    "prepare": {"MAX_GAP": 0.0},                       # settings of any script run by uo_prepare_item.py: {"script.py": {"NAME": value}} or flat for uo_prepare_item.py
-   "kind_part": null}          # PART of uo_bind_item.py instead of the one of the kind
+   "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
+                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...)
 
 Steps (each is one of the scripts that are also in the .blend, see README): uo_import_item.py (clean, join, reduce) -> uo_materials.py (UO look) ->
 uo_prepare_item.py (uo_autofit_item.py size / place from the skin, uo_densify_item.py, uo_fit_item.py push out of the skin, uo_bind_item.py skin weights).
@@ -22,6 +23,10 @@ import argparse, json, os, re, subprocess, sys, time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 PREVIEW_ACTIONS = "04_stand,00_walk_unarmed,02_run_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward"
+WEAPON_ACTIONS = {"weapon1h": "07_combat_idle_1h,09_attack_1h_slash,10_attack_1h_pierce,11_attack_1h_bash,03_run_armed,21_die_forward",
+                  "polearm": "08_combat_idle_2h,13_attack_2h_slash,14_attack_2h_pierce,12_attack_2h_bash,03_run_armed,21_die_forward",
+                  "axe2h": "08_combat_idle_2h,13_attack_2h_slash,12_attack_2h_bash,03_run_armed,21_die_forward,20_get_hit",
+                  "bow": "04_stand,19_attack_crossbow,18_attack_bow,03_run_armed,20_get_hit,21_die_forward"}
 
 
 def source(name):
@@ -38,8 +43,8 @@ def override(text, **over):
 
 def build_stage(recipe, out_blend):
     """python text run inside the .blend: import -> materials -> prepare -> save"""
-    kind = recipe["kind"]
-    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND=kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), TURN=int(recipe.get("turn", 0)),
+    kind = recipe.get("kind", "")
+    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), TURN=int(recipe.get("turn", 0)),
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
     if "scale" in recipe:
         imp["SCALE"] = float(recipe["scale"])
@@ -60,10 +65,16 @@ run("uo_import_item.py", **%(imp)r)
 run("uo_materials.py", **%(mat)r)
 prep = %(prep)r
 flat = {k: v for k, v in prep.items() if not isinstance(v, dict)}
-run("uo_prepare_item.py", KIND=%(kind)r, **flat)
+wp = %(weapon)r
+if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
+    run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
+    run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}))
+    run("uo_bind_item.py", PART=wp["part"])
+else:
+    run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend)
+''' % dict(here=HERE, imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"))
 
 
 def run_blend(base, stage_text, log):
@@ -94,7 +105,7 @@ def list_file(path):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("recipe", nargs="?"); ap.add_argument("--list"); ap.add_argument("--out"); ap.add_argument("--base", default=os.path.join(HERE, "..", "model", "UO_Body_0x190.blend"))
-    ap.add_argument("--preview", action="store_true"); ap.add_argument("--vd", action="store_true"); ap.add_argument("--actions", default=PREVIEW_ACTIONS)
+    ap.add_argument("--preview", action="store_true"); ap.add_argument("--vd", action="store_true"); ap.add_argument("--actions", default="")
     a = ap.parse_args()
     if a.list:
         list_file(os.path.abspath(a.list))
@@ -111,7 +122,8 @@ if __name__ == "__main__":
     if a.preview or a.vd:
         render = os.path.join(out, "render")
         layer = "clothing" if a.vd else "all"
-        acts = [x for x in a.actions.split(",")] if not a.vd else []
+        wpart = (recipe.get("weapon") or {}).get("part")
+        acts = [x for x in (a.actions or WEAPON_ACTIONS.get(wpart, PREVIEW_ACTIONS)).split(",")] if not a.vd else []
         cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, render, 'LAYER="all"' if a.preview else 'LAYER="clothing"',
                "ONLY=%r" % (acts,), "CANVAS=(256,256)", "ANCHOR=(128,192)"]
         subprocess.run(cmd, capture_output=True, text=True, check=True)

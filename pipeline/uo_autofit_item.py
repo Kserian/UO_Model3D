@@ -20,7 +20,9 @@ GAP = -1.0            # m, wanted distance from the skin to the item's inner sur
 UNIT = 0.0            # > 0: multiply the size by this (0.01: the file is in cm) instead of finding the unit; 0 = automatic
 SCALE_RANGE = (0.55, 1.8)   # the scale after the units may be this far from 1 (relative to the item as it is now)
 TURN_BACK = True      # also try the item turned by 180 deg around the vertical axis (a model that came in back to front); the better one wins
-TURN_PENALTY = 0.0004 # cost added to the item turned by 180 deg: it must be clearly better to win (front and back of a torso differ little)
+TURN_PENALTY = 0.0005 # cost added to the item turned by 180 deg, and TURN_FACTOR times its cost: it must be clearly better to win (front and back of a torso or a helmet differ little)
+TURN_FACTOR = 1.25
+COVER_WEIGHT = 0.05   # cost per unit of skin coverage missing below 90 % (ranking of the candidate solutions only)
 USE_EDGE = True       # the pull of EDGE_BY_KIND on the vertical place (off: only the wrap decides)
 SAMPLES = 3500        # skin points used
 ITEM_POINTS = 60000   # item surface points used at most
@@ -47,10 +49,12 @@ PLAUSIBLE = (0.15, 3.0)   # m, longest side of an item
 CAP = 0.10            # m, skin farther than this from the item is "not covered"
 CAP_WIDE = 0.40       # the same for the first, coarse stage
 EDGE_WEIGHT = 0.05    # 1/m^2: tie-breaker only (10 cm off costs as much as a 2 cm misfit): the wrap itself fixes the height of every item that has any structure
-SCALE_PRIOR = 0.01    # tie-breaker only: a tiny pull towards the size the model was made in (after the units)
+SCALE_PRIOR = 0.04    # a pull towards the size the model was made in (after the units): 20 % off costs as much as a 1 cm misfit of every skin point. Models are authored 1:1 far
+                      # more often than not (the helmet of docs/qa/autofit.md came out 41 % too big without it); 0 = the data alone (test_autofit.py measures with 0)
 # how far from the skin an item may stand (m) before it counts as too thick: the p90 of the distance of the item's pixels from the body silhouette in the original
 # items of the slot (docs/qa/layer_analysis.md: plate / InnerTorso 5.6-8.1 cm, shirt 5.6, pants 3.9-5.6, arms 4.7-10, helm 8.3, hair 5.6-7.9, boots 3.3) with a margin;
 # beyond it the part is pulled back by a smaller scale (OUT_WEIGHT) - big pauldrons and flares are what makes an item "too thick"
+PRIOR_BY_KIND = {"gloves": 0.0, "arms": 0.0}   # pairs far from the middle (two gloves, two sleeves): the prior pulled the fit onto one of the two; the data alone finds both (test_autofit.py)
 OUT_BY_KIND = {"shirt": 0.09, "plate": 0.12, "harness": 0.09, "pants": 0.08, "legs": 0.09, "arms": 0.10, "boots": 0.07, "gloves": 0.07, "helm": 0.12, "hat": 0.12,
                "hair": 0.12, "beard": 0.08, "neck": 0.08}   # loose garments (robe, skirt) have no limit
 OUT_WEIGHT = 3.0      # weight of the "too thick" term: 5 cm too far, over the whole surface, costs like 2.5 cm of misfit of the wrap
@@ -60,7 +64,7 @@ BAND_LOW, BAND_HIGH = 0.003, 0.003   # m: the item may stand from GAP - 3 mm to 
 BAND_PULL = 0.6       # weight of the pull to GAP inside the band
 
 import os
-for _k in ("BAND_LOW", "BAND_HIGH", "BAND_PULL", "SCALE_PRIOR", "EDGE_WEIGHT", "OUT_WEIGHT", "PIERCE", "ZONE_WEIGHT", "TURN_PENALTY"):    # tuning from the environment (test_autofit.py --env)
+for _k in ("BAND_LOW", "BAND_HIGH", "BAND_PULL", "SCALE_PRIOR", "EDGE_WEIGHT", "OUT_WEIGHT", "PIERCE", "ZONE_WEIGHT", "TURN_PENALTY", "TURN_FACTOR"):    # tuning from the environment (test_autofit.py --env)
     if "UO_AUTOFIT_" + _k in os.environ:
         globals()[_k] = float(os.environ["UO_AUTOFIT_" + _k])
 
@@ -148,6 +152,7 @@ class Fit:
         self.cap = CAP
         self.zlo, self.zhi = np.percentile(IP[:, 2], 0.5), np.percentile(IP[:, 2], 99.5)
         self.unit = 1.0
+        self.prior = PRIOR_BY_KIND.get(KIND, SCALE_PRIOR) if "UO_AUTOFIT_SCALE_PRIOR" not in os.environ else SCALE_PRIOR
         self.out_limit = OUT_BY_KIND.get(KIND)
         if self.out_limit is not None and OUT_WEIGHT > 0:
             self.sub = IP[rng.choice(len(IP), min(OUT_POINTS, len(IP)), replace=False)]
@@ -175,7 +180,7 @@ class Fit:
         wz = 1 / (1 + np.exp(-(self.BP[:, 2] - zlo) / 0.012)) / (1 + np.exp(-(zhi - self.BP[:, 2]) / 0.012))
         wsum = max(wz.sum(), 1.0)
         out = [r * np.sqrt(wz / wsum)]
-        out.append(np.array([np.sqrt(SCALE_PRIOR) * x[0]]))     # x[0]: the scale on top of the units already converted
+        out.append(np.array([np.sqrt(self.prior) * x[0]]))     # x[0]: the scale on top of the units already converted
         zone = ZONE_BY_KIND.get(KIND)
         if zone is not None:
             lo, hi = zone
@@ -210,15 +215,18 @@ def solve(BP, BN, IP, gap, yaws, unit=1.0):
         R = np.array([[c, -sn, 0], [sn, c, 0], [0, 0, 1.0]])
         for sc in np.geomspace(SCALE_RANGE[0], SCALE_RANGE[1], 14):
             for dz in np.arange(-0.3, 0.31, 0.05):
-                t0 = ctr - sc * R @ ictr
-                x0 = np.array([np.log(sc), t0[0], t0[1], (zb.mean() - sc * zi.mean()) + dz, yaw])
-                grid.append((float(np.sum(fit.eval(x0) ** 2)), 1.0, yaw, x0))
+                for dx in (-0.12, 0.0, 0.12):                                # a pair (gloves, sleeves) far from the middle: the start has to be within reach of one of them
+                    t0 = ctr - sc * R @ ictr + np.array([dx, 0.0, 0.0])
+                    x0 = np.array([np.log(sc), t0[0], t0[1], (zb.mean() - sc * zi.mean()) + dz, yaw])
+                    fit.cap = CAP_WIDE; rr = fit.eval(x0)
+                    fit.cap = CAP; cov = fit.eval(x0, detail=True)[1]["covered"]; fit.cap = CAP_WIDE
+                    grid.append((float(np.sum(rr ** 2)) + COVER_WEIGHT * max(0.0, 0.9 - cov), 1.0, yaw, x0))
     grid.sort(key=lambda g: g[0])
     starts, best = [], []
     for g in grid:                                                   # distinct starts: another turn / orientation, or scale and height not close to a chosen one
-        if all(g[1] != h[1] or g[2] != h[2] or abs(g[3][0] - h[3][0]) > 0.06 or abs(g[3][3] - h[3][3]) > 0.06 for h in starts):
+        if all(g[1] != h[1] or g[2] != h[2] or abs(g[3][0] - h[3][0]) > 0.06 or abs(g[3][3] - h[3][3]) > 0.06 or abs(g[3][1] - h[3][1]) > 0.08 for h in starts):
             starts.append(g)
-        if len(starts) >= 8:
+        if len(starts) >= 10:
             break
     lo, hi = [np.log(SCALE_RANGE[0]), -2, -2, -3], [np.log(SCALE_RANGE[1]), 2, 2, 3]
     for c0, sg, yaw, x0 in starts:
@@ -227,7 +235,9 @@ def solve(BP, BN, IP, gap, yaws, unit=1.0):
             fit.cap = cap
             r = optimize.least_squares(lambda y: fit.eval(np.r_[y, yaw]), x, bounds=(lo, hi), x_scale=[0.1, 0.05, 0.05, 0.05], max_nfev=nfev)
             x = r.x
-        best.append((float(2 * r.cost) + (TURN_PENALTY if yaw else 0.0), sg, yaw, np.r_[r.x, yaw]))
+        cov = fit.eval(np.r_[r.x, yaw], detail=True)[1]["covered"]
+        # a solution that covers only part of the skin the slot has (one glove of two) is ranked behind one that covers all of it, whatever their costs
+        best.append((float(2 * r.cost) * (TURN_FACTOR if yaw else 1.0) + (TURN_PENALTY if yaw else 0.0) + COVER_WEIGHT * max(0.0, 0.9 - cov), sg, yaw, np.r_[r.x, yaw]))
     fit.cap = CAP
     best.sort(key=lambda b: b[0])
     return fit, best

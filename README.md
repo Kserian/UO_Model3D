@@ -118,6 +118,9 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_fit_item.py` | Obraca rękawy zaznaczonego przedmiotu na ręce i wypycha go ze skóry (przed `uo_bind_item.py`, rozdział 3). |
 | `uo_densify_item.py` | Zagęszcza siatkę zaznaczonego przedmiotu (podział bez zmiany kształtu, opcjonalnie `SMOOTH`), żeby low-poly przedmiot zginał się gładko w łokciach, kolanach i biodrach, a nie łamał wzdłuż kilku długich krawędzi; docelowa długość krawędzi zależy od slotu (`EDGE_BY_KIND`, rękawice 2 cm, reszta 3–5 cm). Przed `uo_fit_item.py`. |
 | `uo_prepare_item.py` | Jeden krok dla slotu (`KIND`): `uo_densify_item.py` → `uo_fit_item.py` → `uo_bind_item.py` z ustawieniami tego slotu (tabela `SLOTS`). Wyniki i uzasadnienie: `docs/qa/slot_geometry.md`. |
+| `uo_autofit_item.py` | Jednostki, skala i miejsce zaznaczonego przedmiotu z kształtu skóry slotu (nie z jednej wysokości na slot): `docs/qa/autofit.md`. Wywołuje go `uo_prepare_item.py` (`AUTOFIT`). |
+| `uo_orient_weapon.py` | Stawia obcą broń pionowo (czubek w górę, płaska strona na +X, długość klasy: miecz 1 m, muszkiet 1,3 m...), przed `uo_place_weapon.py`. |
+| `cloth_lib.py` | Luźne ubrania (szata, spódnica): powłoka nóg i namiot od pasa, per klatka, numpy (`docs/qa/robe_physics.md`); używa go `render_uo_layer.py` dla przedmiotów z własnością `uo_cloth`. |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
 | `uo_weapon_bones.py` | Dodaje kości broni (lewa dłoń: `polearm.L`, `axe2h.L`, `bow.L`; prawa: `weapon1h.R`) i klucze ich ruchu z `weapon_motion.json` (uruchamiane już w pliku; do ponownego wgrania ruchu). |
 | `uo_place_weapon.py` | Stawia zaznaczoną broń (trzon po osi +Z, czubek w górę) na linii chwytu jej klasy, przed `uo_bind_item.py`. Głowicę (ostrze, topór) modeluj jako płaską płytkę w płaszczyźnie XZ, szeroką stroną na +X; skrypt obraca broń wokół trzonu tak jak w oryginalnej broni `REF_ANIM` (np. 624 halabarda, 613 topór kata, 623 szabla), a kość kręci nią dalej wg zmierzonego rollu (`weapon_motion.json`, pole `roll`). Łuki: roll nieokreślony. |
@@ -179,6 +182,7 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"helm"` | hełm, kaptur, maska | head |
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
       | `"all"` | cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
+      | `"robe"`, `"skirt"` | szata, sukienka, spódnica, kilt | do bioder jak skóra; poniżej **miednica**, a nogi wypychają tkaninę per klatka (`cloth_lib.py`, własność `uo_cloth`; `docs/qa/robe_physics.md`) |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |
       | `"weapon1h"` | miecz, maczuga, młot, topór 1H, kryss, kilof | kość `weapon1h.R` na prawej dłoni, ruch dopasowany do 13 oryginalnych broni (0,7–1,3 px zamiast 1,4–2,1 px); najpierw `uo_place_weapon.py` z `PART = "weapon1h"` |
       | `"weapon"` / `"weapon.L"` | broń bez kalibracji | sztywno na `hand.R` / `hand.L` |
@@ -211,8 +215,33 @@ do niego swoje przedmioty, a nie odwrotnie.
 8. **Wskazówki:**
    - Ubranie rób ok. 1–2 cm nad skórą.
    - Sprawdzaj zwłaszcza ataki, czary i upadki.
-   - Spódnice, szaty i płaszcze nie mają już presetów ani symulacji tkaniny (usunięte razem z łańcuchami materiału): bindujesz je jako `"legs"` / `"all"`
-     i poruszają się jak skóra pod spodem.
+   - Szaty, sukienki i spódnice: `PART = "robe"` / `"skirt"` (tkanina wisi od miednicy, nogi ją wypychają, bez symulacji i bez łańcuchów kości). Płaszcze (peleryny) nadal nie mają presetu: `"all"` / `"chest"`.
+
+## 3a. Najszybsza ścieżka: darmowy model -> przedmiot jednym poleceniem
+
+Bez okna Blendera (`pip install numpy pillow scipy "bpy==4.2.*"`), z katalogu repo:
+
+```
+python pipeline/uo_make_item.py --list model.glb            # co jest w pliku: siatki, wierzchołki, rozmiar (do wyboru "skip" / "keep")
+python pipeline/uo_make_item.py przepis.json --preview      # item.blend + preview.png (6 akcji x 3 kierunki x 3 momenty animacji)
+python pipeline/uo_make_item.py przepis.json --vd           # to samo + wszystkie 35 akcji do clothing.vd (15-30 min)
+```
+
+Przepis `przepis.json` (wymagane `file` i `kind`; opis wszystkich pól w nagłówku `pipeline/uo_make_item.py`):
+
+```json
+{"name": "gambeson", "file": "models/medieval_shirt.glb", "kind": "shirt", "skip": ["guy"]}
+{"name": "miecz", "file": "models/miecz.glb", "weapon": {"class": "sword", "part": "weapon1h"}}
+```
+
+Co się dzieje (to są te same skrypty, co w oknie Blendera): import (wyrzuca siatki z `skip`, zostawia `keep`, zmniejsza siatkę ponad 30 tys. wierzchołków, gładkie cieniowanie) -> `uo_materials.py` (wygląd UO) ->
+`uo_prepare_item.py` = **`uo_autofit_item.py`** (jednostki, skala i miejsce z kształtu skóry, nie z jednej wysokości na slot; krótkie kurtki i szerokie naramienniki nie są rozciągane; `docs/qa/autofit.md`) ->
+zagęszczenie (gęste siatki, żeby się gładko zginało) -> `uo_fit_item.py` (wypchnięcie ze skóry, **miękki limit grubości** `LIMIT`: naramienniki i kołnierze nie są grubsze niż oryginały UO) -> `uo_bind_item.py`.
+Broń (`weapon`): `uo_orient_weapon.py` stawia ją pionowo (czubek w górę, płaska strona na +X, długość klasy), potem `uo_place_weapon.py` i `uo_bind_item.py`.
+Skrypt pisze w raporcie `AMBIGUOUS`, gdy dwa rozwiązania (np. przód/tył) pasują prawie tak samo: wtedy sprawdź `preview.png` i ustaw `turn` albo `scale` w przepisie.
+
+**Luźne ubrania (`kind`: `robe`, `skirt`).** Tkanina wisi od miednicy, a nogi **wypychają ją tam, gdzie sięgają** (powłoka nóg, namiot od pasa, jedna klatka bez pamięci: bez przeskoków i bez przenikania),
+wypchnięcie 5 cm i 0,8 drogi do nóg jak w oryginalnych szatach UO. Pomiar na oryginale 469: IoU dolnej części 0,641 -> 0,757 (`docs/qa/robe_physics.md`). Własność `uo_cloth` ustawia `uo_bind_item.py` (`PART` `robe` / `skirt`), a stosuje `render_uo_layer.py`.
 
 ## 4. Render do klatek i pliku `.vd`
 
