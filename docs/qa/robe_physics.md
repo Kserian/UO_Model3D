@@ -61,6 +61,12 @@ margin 0-0,02 i kappa 0,3-0,5 dają 0,745-0,764. Reguła w `uo_bind_item.py` (`m
 
 Z regułą powłoka poprawia IoU na wszystkich pięciu oryginałach (+0,008...+0,043). Parametry dobrane na tych samych pięciu, więc to nie jest test na niezależnych danych.
 
+## Przeskoki między klatkami (liczone na 31 akcjach z co najmniej 3 klatkami, replika-rura, pozycje jak w grze)
+
+Największy skok wierzchołka szaty między kolejnymi klatkami / największy skok końca kapsuły nogi: mediana 0,72, maks. 1,15 (akcja 12, `attack_2h_bash`: 20,5 vs 17,9 cm); marsz 0,58 (25,7 vs 44,7 cm), bieg 0,37; koniec -> początek pętli
+marszu 14 cm, biegu 24 cm (mniej niż typowy krok 26-27 cm). Czyli tkanina nigdy nie skacze o więcej niż nogi (z tolerancją 15%), pętle chodu i biegu się zamykają. Model nie ma pamięci klatek: nie ma czego akumulować.
+Pole zasięgu jest ciągłą funkcją położenia nóg (gładkie w kącie i wysokości), więc nie ma progów, na których tkanina mogłaby przeskoczyć.
+
 ## Jazda konna (akcje 23-29)
 
 Na koniu nogi są rozstawione i wysunięte do przodu: powłoka nóg robiła z dołu szaty „worek", a szata zawieszona tylko na miednicy zostawiała uda gołe, podczas gdy oryginał układa się wzdłuż nóg do stóp.
