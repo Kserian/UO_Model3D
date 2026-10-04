@@ -41,13 +41,31 @@ Prawdziwy potok (Cycles, `pipeline/test_robe.py`, 205 klatek: stand, marsz, bieg
 Margin i kappa to „jak mocno nogi pchają”: wyżej = szerzej i lepsze IoU, niżej = mniej. Wybrane 5 cm / 0,8 (kolano wyników), zmiana: stałe `CLOTH_MARGIN`, `CLOTH_KAPPA`, `CLOTH_DROP` w `uo_bind_item.py`.
 
 Wariant numpy (`pipeline/robe_calib.py`, 1 s na ustawienie; kształt spoczynkowy dopasowany do klatek stand każdej szaty, żeby mierzyć ruch, nie kształt), IoU bez powłoki -> z powłoką:
-469 robe 0,697 -> 0,725; 447 sukienka 0,676 -> 0,700; 970 całun 0,709 -> 0,715 (błąd szerokości brzegu 4,2/4,2/5,7 -> 3,9/4,1/4,0 px). Kilt 455 nie oceniony (replika-rura się nie dopasowuje).
+469 robe 0,697 -> 0,725; 447 sukienka 0,676 -> 0,700; 970 całun 0,709 -> 0,715 (błąd szerokości brzegu 4,2/4,2/5,7 -> 3,9/4,1/4,0 px). Kilt 455 i spódnica 971: sekcja „Długość” niżej.
 Sprawdzone i odrzucone: stałe śledzenie ud (`alpha`) przy włączonej powłoce (0 najlepsze), solver więzów odległości (PBD) z kolizją kapsuł (prawie bez efektu, 0,654), „grawitacja” (zdjęcie pochylenia miednicy z zawisłej tkaniny: upadek wypada gorzej, leżąca szata nie wisi),
-promień kapsuły w centylu 85 (za gruby: szata za szeroka w stand).
+promień kapsuły w centylu 85 (za gruby: szata za szeroka w stand), dryf tkaniny za idącym / biegnącym (przesunięcie brzegu do tyłu 3-15 cm: IoU 0,700 -> 0,689-0,699, nic nie poprawia), margines narastający z tym, jak daleko noga wystaje za tkaninę (miał zmniejszyć
+szerokość brzegu w stand o 6 px: IoU 0,691-0,696 < 0,700, stand 5,2-6,9 px zamiast 6,4). Brzeg w stand zostaje o ok. 6 px (17 cm) za szeroki: poza stand (pozycja nóg w klatce stand 0 jest rozstawiona szerzej niż w spoczynku) kierunki marszu i biegu wypadają dobrze.
+
+## Długość: dłuższe szaty i krótkie spódnice (`robe_calib.py`, numpy, kształt spoczynkowy dopasowany do stand każdej)
+
+Stałe 5 cm / 0,8 psują kilt (455: IoU 0,715 bez powłoki -> 0,704) i spódnicę do kolan (971: 0,723 -> 0,705): sięgają ich tylko uda, a mniejsza tkanina jest sztywniejsza. Przegląd na tych dwóch:
+margin 0-0,02 i kappa 0,3-0,5 dają 0,745-0,764. Reguła w `uo_bind_item.py` (`mark_cloth`): od wysokości brzegu 0,15 m (długa szata: 5 cm / 0,8) do 0,30 m (krótka: 2 cm / 0,5) wartości płynnie przechodzą.
+
+| oryginał | wysokość brzegu | bez powłoki IoU / błąd brzegu px | stałe 0,8/5 cm | wg długości |
+|---|---|---|---|---|
+| 469 szata | 0,19 | 0,697 / 6,4 | 0,725 / 3,8 | **0,732** / 3,9 |
+| 447 sukienka | 0,09 | 0,676 / 4,2 | 0,684 / 5,5 | **0,684** / 5,5 |
+| 970 całun | 0,23 | 0,709 / 5,7 | 0,711 / 4,0 | **0,724** / 4,2 |
+| 455 kilt | 0,62 | 0,715 / 4,9 | 0,704 / 3,7 | **0,758** / 2,4 |
+| 971 spódnica do kolan | 0,26 | 0,723 / 4,3 | 0,705 / 4,8 | **0,742** / 3,3 |
+
+Z regułą powłoka poprawia IoU na wszystkich pięciu oryginałach (+0,008...+0,043). Parametry dobrane na tych samych pięciu, więc to nie jest test na niezależnych danych.
 
 ## Czego model nie robi (znane różnice)
 
 - Bez pamięci poprzedniej klatki: nie ma bezwładności („lecenia” szaty za biegnącym: oryginał wystaje w biegu do 28 px poza stopy, my do kilku). Dodanie dryfu zależnego od akcji (marsz/bieg) wymaga wyboru wzorca i nie jest zrobione.
 - Upadek (`die_*`) wypada najsłabiej (IoU 0,69): leżąca postać, tkanina powinna leżeć na ziemi.
-- Rękawy, kaptur, peleryna (zawieszona na ramionach, inna fizyka) nie mają tego modelu.
+- **Peleryna (Cloak, oryginał 468)**: zmierzone `pipeline/cloak_calib.py` (replika wisząca z ramion, IoU poza sylwetką ciała, kształt dopasowany do stand): powłoka nóg **nic nie zmienia** (IoU 0,395 -> 0,393-0,395; nogi prawie nie dotykają peleryny),
+  a oryginał w ataku, czarze i upadku jest większy o 175-307 px niż replika (tkanina leci i faluje, bezwładność). Peleryna wymaga innego modelu (bezwładność / wiatr); preset nie jest zrobiony, `PART robe` ani `skirt` nie nadają się do niej.
+- Rękawy, kaptur, płaszcz (zawieszona na ramionach, inna fizyka) nie mają tego modelu.
 - Test na replice, nie na prawdziwym obcym modelu szaty (w repo nie ma darmowego modelu szaty); na gambesonie (kurtka do połowy uda) jako `robe` ruch jest poprawny wizualnie (marsz, bieg).

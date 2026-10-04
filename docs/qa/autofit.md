@@ -56,5 +56,8 @@ Zmienne środowiskowe `UO_AUTOFIT_<NAZWA>` pozwalają stroić parametry (`test_a
 | miecz | broń 1H (`weapon1h`) | n/d | długość 1,0 m | n/d | `uo_orient_weapon.py`: miecz leżał wzdłuż Y, czubek po stronie -Y |
 | muszkiet (7 siatek) | `bow` (kusza) | n/d | długość 1,3 m | n/d | lufa w górę, kolba na dole; ruch kuszy/łuku |
 
+Sloty dodane w tej sesji z zakresów oryginałów (`layer_analysis.md`), ustawienia przez analogię, przetestowane tylko pod kątem działania łańcucha na kurtce zastępczej (bez błędów): `waist` (pas: strefa 0,74-1,19 m, miednica i kręgosłup, `PART torso`), `vest` (kamizelka/dublet, MiddleTorso: 0,68-1,66 m, `PART chest`), `robe`/`skirt` (luźne, `docs/qa/robe_physics.md`), `harness` (paski na tułowiu).
+`item_qa.py` (uruchamiany przez `uo_make_item.py`) mierzy, ile wierzchołków jest w ciele w ruchu i jak daleko przedmiot stoi od skóry (wiersze: akcje): gambeson 4,8% w ciele (do 74 mm), stand-off p90 4,8 cm; Void Knight 3,7% (do 113 mm), p90 10,3 cm; Dread Dragon 3,0% (128 mm), 10,9 cm; hełm 0,0% (17 mm), 11,0 cm; uprząż 1,9% (60 mm). Render wypycha te wierzchołki z ciała (`BODY_GAP`).
+
 Ograniczenia: nie ma jeszcze testu na prawdziwym obcym modelu spodni/butów/rękawic; jakość ruchu naramienników (rozciągają się z ramieniem w czarach, bo model jest jedną ciągłą siatką: wagi „jak skóra”) nie jest mierzona;
 miecz i muszkiet nie mają sprite'a odniesienia (zgodność z UO nie jest zmierzona, tylko wizualna).

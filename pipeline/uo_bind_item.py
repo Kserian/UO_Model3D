@@ -221,7 +221,8 @@ def bind(ob, allowed):
 
 CLOTH_PARTS = ("robe", "skirt")
 CLOTH_DROP = 1.0                           # m of radius the hem may narrow per m of height below a push (0 = hangs straight down from it, larger = tapers back in sooner)
-CLOTH_MARGIN, CLOTH_KAPPA = 0.05, 0.8      # how far past the legs the hem goes, how much of the way to the legs the cloth is pushed (robe_calib.py: best of the sweep on robe 469)
+CLOTH_MARGIN_SHORT, CLOTH_KAPPA_SHORT = 0.02, 0.5   # a garment that ends at the knee or above (kilt, short skirt): only the thighs push it, and less (robe_calib.py on the originals 455, 971)
+CLOTH_MARGIN, CLOTH_KAPPA = 0.05, 0.8      # a long robe (hem below 0.15 m); between 0.15 and 0.30 m of hem height the values blend into the short ones; how far past the legs the hem goes, how much of the way to the legs the cloth is pushed (robe_calib.py: best of the sweep on robe 469)
 
 
 def mark_cloth(ob):
@@ -233,8 +234,11 @@ def mark_cloth(ob):
     band = V[(V[:, 2] > 0.4) & (V[:, 2] < 0.9)]
     centre = (band[:, :2].mean(0) if len(band) else V[:, :2].mean(0))
     z_top = float(np.array(rig.matrix_world @ rig.data.bones["pelvis"].head_local)[2]) + 0.04
-    ob["uo_cloth"] = json.dumps(dict(centre=[round(float(centre[0]), 4), round(float(centre[1]), 4)], margin=CLOTH_MARGIN, kappa=CLOTH_KAPPA, z_top=round(z_top, 4),
-                                     z_hem=round(float(V[:, 2].min()), 4), ramp=0.15, drop=CLOTH_DROP))
+    z_hem = float(V[:, 2].min())
+    t = min(max((z_hem - 0.15) / 0.15, 0.0), 1.0)                       # 0 = a long robe, 1 = a garment above the knee
+    margin, kappa = CLOTH_MARGIN + (CLOTH_MARGIN_SHORT - CLOTH_MARGIN) * t, CLOTH_KAPPA + (CLOTH_KAPPA_SHORT - CLOTH_KAPPA) * t
+    ob["uo_cloth"] = json.dumps(dict(centre=[round(float(centre[0]), 4), round(float(centre[1]), 4)], margin=round(margin, 4), kappa=round(kappa, 4), z_top=round(z_top, 4),
+                                     z_hem=round(z_hem, 4), ramp=0.15, drop=CLOTH_DROP))
     print("uo_bind_item: %s: loose garment, legs push the hem out (uo_cloth %s)" % (ob.name, ob["uo_cloth"]))
 
 
