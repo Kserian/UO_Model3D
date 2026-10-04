@@ -61,6 +61,13 @@ margin 0-0,02 i kappa 0,3-0,5 dają 0,745-0,764. Reguła w `uo_bind_item.py` (`m
 
 Z regułą powłoka poprawia IoU na wszystkich pięciu oryginałach (+0,008...+0,043). Parametry dobrane na tych samych pięciu, więc to nie jest test na niezależnych danych.
 
+## Jazda konna (akcje 23-29)
+
+Na koniu nogi są rozstawione i wysunięte do przodu: powłoka nóg robiła z dołu szaty „worek", a szata zawieszona tylko na miednicy zostawiała uda gołe, podczas gdy oryginał układa się wzdłuż nóg do stóp.
+Dlatego w akcjach konnych (`CLOTH_MOUNTED` w `render_uo_layer.py`, 1 = śledź nogi, 0 = jak pieszo) szata porusza się tak, jak poruszałaby ją skóra pod nią: `uo_bind_item.py` zapisuje przed wysłaniem udziału nóg na miednicę
+wagi ud, goleni i stóp w atrybutach `uo_leg_*` (stary przedmiot bez nich: podział lewa/prawa i udo/goleń). Pomiar `test_robe.py` na replice (akcje 23, 25, 26; cała sylwetka replika vs sprite 469, klatki bez konia):
+miednica + powłoka nóg jak pieszo 0,622 (dolna część 0,113), udo/goleń z podziałem lewa/prawa 0,564, **wagi nóg jak skóra 0,678 (dolna część 0,230)**. Kształt jest „kiełbasą" grubszą niż oryginał (replika-rura, nie prawdziwa szata), ale pokrywa nogi bez dziur; koń przesłania dolną część.
+
 ## Czego model nie robi (znane różnice)
 
 - Bez pamięci poprzedniej klatki: nie ma bezwładności („lecenia” szaty za biegnącym: oryginał wystaje w biegu do 28 px poza stopy, my do kilku). Dodanie dryfu zależnego od akcji (marsz/bieg) wymaga wyboru wzorca i nie jest zrobione.

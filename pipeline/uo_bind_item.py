@@ -137,6 +137,11 @@ def bind(ob, allowed):
         wv[lost, W[idx[lost, 0]].argmax(1)] = 1.0
     if STIFF != 1.0:
         wv = wv ** STIFF; wv /= np.maximum(wv.sum(1, keepdims=True), 1e-9)
+    if PART in CLOTH_PARTS:                                          # what the skin would give the legs' share (before FOLLOW sends it to the pelvis): render_uo_layer.py lays a loose
+        for nm in LEG_BONES:                                         # garment along the legs with it when the rider sits on a horse (CLOTH_MOUNTED)
+            j = [k for k, b in enumerate(bones) if b == nm]
+            at = ob.data.attributes.get("uo_leg_" + nm) or ob.data.attributes.new(name="uo_leg_" + nm, type="FLOAT", domain="POINT")
+            at.data.foreach_set("value", (wv[:, j[0]] if j else np.zeros(n)).astype(np.float32))
     moved = np.zeros(n)
     bones = list(bones)
     for base in ("hand", "forearm", "upper_arm", "foot", "shin", "thigh", "head"):   # distal first, so chains fold
@@ -220,6 +225,7 @@ def bind(ob, allowed):
 
 
 CLOTH_PARTS = ("robe", "skirt")
+LEG_BONES = ("thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R")
 CLOTH_DROP = 1.0                           # m of radius the hem may narrow per m of height below a push (0 = hangs straight down from it, larger = tapers back in sooner)
 CLOTH_MARGIN_SHORT, CLOTH_KAPPA_SHORT = 0.02, 0.5   # a garment that ends at the knee or above (kilt, short skirt): only the thighs push it, and less (robe_calib.py on the originals 455, 971)
 CLOTH_MARGIN, CLOTH_KAPPA = 0.05, 0.8      # a long robe (hem below 0.15 m); between 0.15 and 0.30 m of hem height the values blend into the short ones; how far past the legs the hem goes, how much of the way to the legs the cloth is pushed (robe_calib.py: best of the sweep on robe 469)

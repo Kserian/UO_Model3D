@@ -10,7 +10,7 @@
   "sprite": "/home/user/UO_Model3D/pipeline/body13/mul/anim_0469.vd",
   "actions": "04_stand,00_walk_unarmed,02_run_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward",
   "out": "docs/qa/robe_physics.json",
-  "img": "/tmp/claude-0/-home-user-UO-Model3D/100a7560-1f94-5a71-83f1-de6ed6731c3d/scratchpad/robe_final_overlay.png",
+  "img": null,
   "set": []
  },
  "result": {

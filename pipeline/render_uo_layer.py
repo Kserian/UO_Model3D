@@ -29,6 +29,9 @@ ANCHOR = (128, 192)                # UO anchor pixel inside the canvas (world po
                                    # 256x256 / (128, 192) holds 444 of the 449 people / equipment animations of the Nelderim client
                                    # (the original body frames are 136x120 with anchor (68, 86); use that pair for the old size)
 CLOTHING = "Clothing"              # collection with the clothing / equipment meshes
+CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom property uo_cloth) in the mounted actions 23-29: share in which the hanging part follows the legs (thighs above the
+                                   # knee, shins below it, like skin) instead of hanging from the pelvis with the hull of the legs. A rider sits with the thighs forward and a robe that hangs from
+                                   # the pelvis would leave them bare; the original robes lie along the legs. 0 = hang and push like on foot.
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
@@ -123,7 +126,7 @@ def cloth_ctx():
     return CLOTH_CTX
 
 
-def cloth_push(o, first, dg, Mw):
+def cloth_push(o, first, dg, Mw, a=0):
     """displacement (item space, one row per welded node `first`) that the legs give a loose garment in the current pose; None when the item is not one"""
     raw = o.get("uo_cloth")
     if not raw:
@@ -138,6 +141,20 @@ def cloth_push(o, first, dg, Mw):
     sel = np.array(["pelvis" not in ctx["names"][k] for k in caps.idx])
     co = np.empty(len(o.data.vertices) * 3, np.float32); o.data.vertices.foreach_get("co", co)
     Vr = co.reshape(-1, 3).astype(np.float64); Mb_ = np.array(o.matrix_basis); Vr = (Vr @ Mb_[:3, :3].T + Mb_[:3, 3])[first]
+    if 23 <= a <= 29 and CLOTH_MOUNTED > 0:                                  # riding: the hanging part lies along the legs, as the skin under it would move it
+        Vh = np.c_[Vr, np.ones(len(Vr))]
+        nv = len(o.data.vertices); Pp = (Vh @ skin["pelvis"].T)[:, :3]; d0 = np.zeros_like(Vr)
+        have = all(("uo_leg_" + nm) in o.data.attributes for nm in cl.Capsules.NAMES)
+        if have:                                                              # the weights uo_bind_item.py kept before it sent the legs' share to the pelvis
+            for nm in cl.Capsules.NAMES:
+                w = np.empty(nv, np.float32); o.data.attributes["uo_leg_" + nm].data.foreach_get("value", w)
+                d0 += w[first][:, None] * ((Vh @ skin[nm].T)[:, :3] - Pp)
+        else:                                                                 # an item bound before: left / right of the middle, thigh above the knee, shin below
+            side = np.clip(Vr[:, 0] / 0.06, -1, 1) * 0.5 + 0.5; ws = np.clip((0.58 - Vr[:, 2]) / 0.15, 0, 1)[:, None]
+            leg = lambda sd: (1 - ws) * (Vh @ skin["thigh." + sd].T)[:, :3] + ws * (Vh @ skin["shin." + sd].T)[:, :3]
+            d0 = np.clip((prm["z_top"] - Vr[:, 2]) / 0.2, 0, 1)[:, None] * ((1 - side)[:, None] * leg("L") + side[:, None] * leg("R") - Pp)
+        d0 = d0 * CLOTH_MOUNTED
+        return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     d0 = cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
                       z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
     return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
@@ -229,7 +246,7 @@ def body_fix(a, i):
         if (o.name, a, i) not in FIX_CACHE:
             M = Bi @ Mw
             X = co[first] @ M[:3, :3].T + M[:3, 3]
-            Dc = cloth_push(o, first, dg, Mw)                                  # loose garment: the legs push it out first
+            Dc = cloth_push(o, first, dg, Mw, a)                                  # loose garment: the legs push it out first
             if Dc is not None:
                 X = X + Dc @ M[:3, :3].T
             D = (push_out(X, bvh, E, deg, BODY_GAP) if BODY_GAP > 0 else np.zeros_like(X)) @ np.linalg.inv(M[:3, :3]).T
