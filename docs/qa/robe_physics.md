@@ -112,3 +112,18 @@ Podgląd (stand, marsz, bieg, atak, czar, upadek, 3 kierunki) wygląda poprawnie
 - **względna 0,5**: nogi zakryte poza skrajnym wykrokiem biegu (stopy wystają na boki);
 - **obecna (bezwzględna 5 cm / 0,8) i względna 0,8**: nogi zawsze zakryte, marsz = gładki stożek jak w oryginale; w biegu w profilu rąbek rozkłada się w stożek (jak w oryginale 469), ale na wysokości uda powstają wybrzuszenia (kolano uniesione do przodu, noga wyprostowana do tyłu).
 Wniosek: na wąskiej szacie obecna powłoka daje to, czego trzeba (szata zakrywa nogi i układa się w stożek); powłoka względna z niższą kappa jej nie dorównuje. Zostaje bez zmian. Do poprawy zostaje wygładzenie wybrzuszeń uda w biegu (kandydat: mniejszy `drop` albo wygładzenie pola w wysokości).
+
+## Sesja 16, symulacja tkaniny Blendera na replice 469 (`pipeline/robe_cloth_sim_test.py`, eksperyment)
+Użytkownik dopuścił prawdziwą fizykę i kolizje. Stan: render nie ma symulacji (powłoka nóg jest quasi-statyczna, kolizja z ciałem tylko przez `BODY_GAP`); dawny `uo_cloth_bake.py` (Blender Cloth na łańcuchach kości, 30-60 min na przedmiot) usunięto w sesji 14 razem z łańcuchami.
+Test: replika-rura 469 (1,1 tys. wierzchołków, kształt dopasowany do stand), 2 górne pierścienie przypięte do miednicy, Cloth Blendera (quality 8, kolizja z poruszanym UO_Body, tarcie 0), każda akcja osobno (preroll 40 klatek, pętle 3 cykle, bierze się ostatni), ok. 1,5 min na akcję pętlową; miara jak wyżej (IoU dolnej części vs sprite 469):
+
+| akcja | symulacja (cotton) | powłoka nóg | sztywno na miednicy |
+|---|---|---|---|
+| stand | **0,815** | 0,770 | 0,763 |
+| marsz | 0,298 | 0,737 | 0,787 |
+| bieg | 0,303 | 0,723 | 0,704 |
+| atak | 0,649 | 0,726 | 0,675 |
+| czar | 0,616 | 0,720 | 0,681 |
+
+W marszu i biegu tkanina **wspina się po nogach** (rąbek z z 0,19 m na 0,7-0,87 m, promień 0,09 m): wąska rura bez zapasu materiału nie może opłynąć wykroczonych nóg, więc się marszczy do góry. Zmiękczenie (naprężenie i ściskanie 1 zamiast 15) podnosi marsz do 0,607, ale to już rozciąganie, nie fizyka tkaniny;
+mniejsza grawitacja i grubsza kolizja (3 cm) nie pomagają. Oryginał ma zapas materiału (rozkloszowanie do 15 px poza nogami), którego replika-rura (i wąski model szaty z darmowych plików) nie ma. Wniosek: czysta symulacja bez dopasowania gorsza od powłoki; sensowne jest tylko podejście hybrydowe (cel = kształt z powłoki, symulacja dodaje ruch wtórny i kolizje, jak dawne `GOAL`).
