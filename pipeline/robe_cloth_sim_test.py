@@ -4,7 +4,7 @@
     python robe_cloth_sim_test.py score POSES.npz OUT.npz [OUT2.npz ...]               # numpy: lower-body IoU of the simulated frames, of the hull and of the rigid pelvis hang
 
 The replica is pinned at the waist (2 rings) to the pelvis (Armature modifier), the cloth (quality 8, mass 0.3, tension / compression 15, shear 5, bending 0.5; keys: quality mass tension compression
-shear bending damp_air tdamp dist preroll cycles pin_rings gravity pin_stiff collide friction) collides with the posed UO_Body (Collision modifier). Every action is simulated on its own: PREROLL frames
+shear bending damp_air tdamp dist preroll cycles pin_rings gravity pin_stiff collide friction wx wy) collides with the posed UO_Body (Collision modifier). Every action is simulated on its own: PREROLL frames
 in the first pose, looping actions (walk, run, stand...) CYCLES cycles (the actions get a Cycles modifier), the last cycle is kept. Frames as in render_uo_layer.py (scene frame 1 + i * 3).
 """
 import json, os, sys, time
@@ -28,6 +28,7 @@ def replica(poses):
 def simulate(poses, out, acts, cfg):
     import bpy, robe_calib as rc
     cal, p = replica(poses)
+    p = dict(p); p["rx1"] *= cfg["wx"]; p["ry"] *= cfg["wy"]                    # more cloth below the hips: wx / wy widen the hem (rx1, ry) of the replica
     V0, T, E = rc.tube(p); N = int(p["n_around"])
     bpy.ops.wm.open_mainfile(filepath=os.path.abspath(BLEND))
     sc = bpy.context.scene; rig = bpy.data.objects["UO_Rig"]; body = bpy.data.objects["UO_Body"]
@@ -111,7 +112,7 @@ def score(poses, files):
 if __name__ == "__main__":
     mode, poses, out = sys.argv[1], sys.argv[2], sys.argv[3]
     if mode == "sim":
-        cfg = dict(quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, dist=0.005, preroll=40, cycles=3, pin_rings=2, gravity=1.0, pin_stiff=1.0, collide=1, friction=0.0)
+        cfg = dict(quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, dist=0.005, preroll=40, cycles=3, pin_rings=2, gravity=1.0, pin_stiff=1.0, collide=1, friction=0.0, wx=1.0, wy=1.0)
         cfg.update({k: float(v) for k, v in (kv.split("=") for kv in sys.argv[5:])})
         simulate(poses, out, [int(x) for x in sys.argv[4].split(",")], cfg)
     else:
