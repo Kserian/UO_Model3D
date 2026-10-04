@@ -79,6 +79,6 @@ miednica + powłoka nóg jak pieszo 0,622 (dolna część 0,113), udo/goleń z p
 - Bez pamięci poprzedniej klatki: nie ma bezwładności („lecenia” szaty za biegnącym: oryginał wystaje w biegu do 28 px poza stopy, my do kilku). Dodanie dryfu zależnego od akcji (marsz/bieg) wymaga wyboru wzorca i nie jest zrobione.
 - Upadek (`die_*`) wypada najsłabiej (IoU 0,69): leżąca postać, tkanina powinna leżeć na ziemi.
 - **Peleryna (Cloak, oryginał 468)**: zmierzone `pipeline/cloak_calib.py` (replika wisząca z ramion, IoU poza sylwetką ciała, kształt dopasowany do stand): powłoka nóg **nic nie zmienia** (IoU 0,395 -> 0,393-0,395; nogi prawie nie dotykają peleryny),
-  a oryginał w ataku, czarze i upadku jest większy o 175-307 px niż replika (tkanina leci i faluje, bezwładność). Peleryna wymaga innego modelu (bezwładność / wiatr); preset nie jest zrobiony, `PART robe` ani `skirt` nie nadają się do niej.
+  a oryginał w ataku, czarze i upadku jest większy o 175-307 px niż replika (tkanina leci i faluje, bezwładność). Peleryna ma własny model: pochylenie do tyłu wokół ramion per akcja i klatka (`PART cloak`, `docs/qa/cloak_physics.md`); `PART robe` ani `skirt` nie nadają się do niej.
 - Rękawy, kaptur, płaszcz (zawieszona na ramionach, inna fizyka) nie mają tego modelu.
 - Test na replice, nie na prawdziwym obcym modelu szaty (w repo nie ma darmowego modelu szaty); na gambesonie (kurtka do połowy uda) jako `robe` ruch jest poprawny wizualnie (marsz, bieg).

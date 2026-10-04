@@ -6,6 +6,7 @@
   canvas    test_canvas.py         every case pixel-identical to the reference render (CANVAS / ANCHOR)           all OK
   autofit   test_autofit.py        mean vertex error of 12 foreign replicas (wrap)                       <= 20 mm   (13.6 mm, docs/qa/autofit.json)
   robe      test_robe.py           lower-body IoU of the robe replica against the original robe 469       >= 0.74    (0.757, docs/qa/robe_physics.json)
+  cloak     test_cloak.py          silhouette IoU of a cape replica against the original cloak 468 (swing from cloak_pitch.json)       >= 0.47    (0.507, docs/qa/cloak_physics.md)
   materials test_materials.py      "RESULT OK"
   import    test_import_item.py    the chain from a foreign file runs and puts the item where the old method did (bbox)  (runs without error)
 --quick drops items and canvas (about 6 minutes less). Needs the same as the tests (bpy 4.2, numpy, scipy, pillow); each test is the script of the same name in this folder.
@@ -61,6 +62,14 @@ def _robe(tmp):
     m = re.search(r"lower-body IoU ([\d.]+)", out)
     v = float(m.group(1)) if m else 0.0
     return code == 0 and v >= 0.74, "lower-body IoU %.3f (>= 0.74)" % v, dt
+
+
+@check("cloak")
+def _cloak(tmp):
+    code, out, dt = run(["test_cloak.py", "--tmp", tmp])
+    m = re.search(r"IoU ([\d.]+)", out)
+    v = float(m.group(1)) if m else 0.0
+    return code == 0 and v >= 0.47, "silhouette IoU %.3f (>= 0.47; without the swing 0.376)" % v, dt
 
 
 @check("materials")

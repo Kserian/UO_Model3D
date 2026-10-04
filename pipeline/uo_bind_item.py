@@ -41,6 +41,7 @@ PARTS = {
     # cloth_lib.hull_push, calibrated on the original robes, docs/qa/robe_physics.md). FOLLOW also takes (share, t0, t1, end share): share near the joint -> end share along the bone.
     "robe":      (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),
     "skirt":     (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),
+    "cloak":     (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),   # cape from the shoulders: hangs from the chest, the rest follows the pelvis; swings back per action (render_uo_layer.py)
 }
 # rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
 # weapons, shields (left forearm), quivers (back). UO holds 2H weapons, staffs, bows and crossbows in the LEFT hand and 1H weapons in the right,
@@ -224,11 +225,22 @@ def bind(ob, allowed):
     print("uo_bind_item: %s -> PART %s, bones %s, %d corrections" % (ob.name, PART, bones, len(keys)))
 
 
-CLOTH_PARTS = ("robe", "skirt")
+CLOTH_PARTS = ("robe", "skirt", "cloak")
 LEG_BONES = ("thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R")
 CLOTH_DROP = 1.0                           # m of radius the hem may narrow per m of height below a push (0 = hangs straight down from it, larger = tapers back in sooner)
 CLOTH_MARGIN_SHORT, CLOTH_KAPPA_SHORT = 0.02, 0.5   # a garment that ends at the knee or above (kilt, short skirt): only the thighs push it, and less (robe_calib.py on the originals 455, 971)
 CLOTH_MARGIN, CLOTH_KAPPA = 0.05, 0.8      # a long robe (hem below 0.15 m); between 0.15 and 0.30 m of hem height the values blend into the short ones; how far past the legs the hem goes, how much of the way to the legs the cloth is pushed (robe_calib.py: best of the sweep on robe 469)
+
+
+def mark_cloak(ob):
+    """custom property `uo_cloth` of type cloak: the shoulder line (top of the item, y of its top edge) and the hem height, rest pose, world"""
+    import json
+    M = np.array(ob.matrix_world)
+    co = np.empty(len(ob.data.vertices) * 3, np.float32); ob.data.vertices.foreach_get("co", co)
+    V = co.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]
+    z_top = float(V[:, 2].max()); top = V[V[:, 2] > z_top - 0.06]
+    ob["uo_cloth"] = json.dumps(dict(type="cloak", y_top=round(float(top[:, 1].mean()), 4), z_top=round(z_top, 4), z_hem=round(float(V[:, 2].min()), 4)))
+    print("uo_bind_item: %s: cloak, swings back about the shoulders (uo_cloth %s)" % (ob.name, ob["uo_cloth"]))
 
 
 def mark_cloth(ob):
@@ -279,7 +291,9 @@ try:
             bind_rigid(ob, bone)
         else:
             bind(ob, PARTS[PART][0])
-            if PART in CLOTH_PARTS:
+            if PART == "cloak":
+                mark_cloak(ob)
+            elif PART in CLOTH_PARTS:
                 mark_cloth(ob)
             elif "uo_cloth" in ob:
                 del ob["uo_cloth"]

@@ -132,7 +132,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_job.py` | Uruchamia długie skrypty (render) krok po kroku z modalnego operatora: okno Blendera nie „wiesza się” (pasek postępu na dole, ESC przerywa). Używany przez `render_uo_layer.py` (nie uruchamiaj go ręcznie). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Dane: obrysy konia i oryginalne klatki. |
 
-Skrypty narzędziowe poza plikiem (`pipeline/`): `uo_make_item.py` (darmowy model -> przedmiot jednym poleceniem, rozdział 3a), `item_sheet.py` / `item_gif.py` (arkusz klatek i animowany GIF przedmiotu na oryginalnym ciele), `item_qa.py` (przenikanie i grubość przedmiotu w ruchu), `item_thickness.py` (grubość na klatkach względem oryginalnych sprite'ów), `pose_capture.py` / `robe_calib.py` / `cloak_calib.py` (kalibracja fizyki luźnych ubrań na oryginałach, `docs/qa/robe_physics.md`), `test_autofit.py` / `test_robe.py` / `run_qa.py` (testy autodopasowania i szat oraz jedna regresja z progami: `python pipeline/run_qa.py [--quick]`), `sync_blend_scripts.py` (wgranie skryptów do `.blend`), `run_render_headless.py` (render bez GUI), `test_*.py` (testy), `body_part_raster.py` / `body_part_qa.py` (sylwetka ciała vs oryginał), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analizy klatek z klienta), `build_originals.py` / `pack_originals.py` (oryginalne klatki do `.blend`), `export.py` (glb/fbx), `rig_simplify.py`, `rig_restore_fingers.py`, `rig_restore_weapons.py` (jednorazowe zmiany szkieletu), `weapon_*.py` i `test_weapons.py` / `test_weapon_roll.py` (kalibracja i testy broni; potrzebują sprite'ów z klienta, tylko katana 627 jest w repo).
+Skrypty narzędziowe poza plikiem (`pipeline/`): `uo_make_item.py` (darmowy model -> przedmiot jednym poleceniem, rozdział 3a), `item_sheet.py` / `item_gif.py` (arkusz klatek i animowany GIF przedmiotu na oryginalnym ciele), `item_qa.py` (przenikanie i grubość przedmiotu w ruchu), `item_thickness.py` (grubość na klatkach względem oryginalnych sprite'ów), `pose_capture.py` / `robe_calib.py` / `cloak_calib.py` / `cloak_fit_frames.py` (kalibracja fizyki luźnych ubrań na oryginałach, `docs/qa/robe_physics.md`), `test_autofit.py` / `test_robe.py` / `test_cloak.py` / `run_qa.py` (testy autodopasowania i szat oraz jedna regresja z progami: `python pipeline/run_qa.py [--quick]`), `sync_blend_scripts.py` (wgranie skryptów do `.blend`), `run_render_headless.py` (render bez GUI), `test_*.py` (testy), `body_part_raster.py` / `body_part_qa.py` (sylwetka ciała vs oryginał), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analizy klatek z klienta), `build_originals.py` / `pack_originals.py` (oryginalne klatki do `.blend`), `export.py` (glb/fbx), `rig_simplify.py`, `rig_restore_fingers.py`, `rig_restore_weapons.py` (jednorazowe zmiany szkieletu), `weapon_*.py` i `test_weapons.py` / `test_weapon_roll.py` (kalibracja i testy broni; potrzebują sprite'ów z klienta, tylko katana 627 jest w repo).
 
 Skrypty są w pliku `.blend`, nie w obiektach. Pracuj więc zawsze w `UO_Body_0x190.blend` (File → Open) i dołączaj
 do niego swoje przedmioty, a nie odwrotnie.
@@ -182,6 +182,7 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"helm"` | hełm, kaptur, maska | head |
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
       | `"all"` | cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
+      | `"cloak"` | peleryna | wisi od klatki piersiowej i **odchyla się do tyłu wokół ramion** zależnie od akcji (bieg, jazda: leci za plecami; tabela z oryginału 468, `docs/qa/cloak_physics.md`) |
       | `"robe"`, `"skirt"` | szata, sukienka, spódnica, kilt | do bioder jak skóra; poniżej **miednica**, a nogi wypychają tkaninę per klatka (`cloth_lib.py`, własność `uo_cloth`; `docs/qa/robe_physics.md`) |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |
       | `"weapon1h"` | miecz, maczuga, młot, topór 1H, kryss, kilof | kość `weapon1h.R` na prawej dłoni, ruch dopasowany do 13 oryginalnych broni (0,7–1,3 px zamiast 1,4–2,1 px); najpierw `uo_place_weapon.py` z `PART = "weapon1h"` |
@@ -215,7 +216,7 @@ do niego swoje przedmioty, a nie odwrotnie.
 8. **Wskazówki:**
    - Ubranie rób ok. 1–2 cm nad skórą.
    - Sprawdzaj zwłaszcza ataki, czary i upadki.
-   - Szaty, sukienki i spódnice: `PART = "robe"` / `"skirt"` (tkanina wisi od miednicy, nogi ją wypychają, bez symulacji i bez łańcuchów kości). Płaszcze (peleryny) nadal nie mają presetu: `"all"` / `"chest"`.
+   - Szaty, sukienki i spódnice: `PART = "robe"` / `"skirt"` (tkanina wisi od miednicy, nogi ją wypychają, bez symulacji i bez łańcuchów kości). Peleryny: `PART = "cloak"` (`kind: cloak`), odchylenie do tyłu per akcja i klatka z tabeli `cloak_pitch.json` (IoU z oryginałem 468: 0,376 -> 0,507, `docs/qa/cloak_physics.md`); bez falowania boków.
 
 ## 3a. Najszybsza ścieżka: darmowy model -> przedmiot jednym poleceniem
 

@@ -1,0 +1,63 @@
+{
+ "args": {
+  "sprite": "/home/user/UO_Model3D/pipeline/body13/mul/anim_0468.vd",
+  "actions": "04_stand,00_walk_unarmed,02_run_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward,24_mounted_run",
+  "tmp": "/ck",
+  "out": "docs/qa/cloak_physics.json",
+  "img": null,
+  "set": []
+ },
+ "result": {
+  "frames": 230,
+  "iou_low": 0.10629293740764079,
+  "iou_all": 0.5071462664846826,
+  "hem_wider": 0.5940217391304348,
+  "hem_narrower": 7.085869565217391,
+  "hem_abs": 7.6798913043478265,
+  "hem_y_abs": 2.7956521739130435,
+  "by_action": {
+   "0": {
+    "iou_low": 0.0,
+    "hem_dw": -6.34,
+    "hem_abs": 6.365,
+    "iou_all": 0.5441560788756131
+   },
+   "2": {
+    "iou_low": 0.0,
+    "hem_dw": -5.885,
+    "hem_abs": 10.085,
+    "iou_all": 0.49390673158119414
+   },
+   "4": {
+    "iou_low": 0.0,
+    "hem_dw": -6.275,
+    "hem_abs": 6.275,
+    "iou_all": 0.5606373234236328
+   },
+   "9": {
+    "iou_low": 0.29558093520194806,
+    "hem_dw": -6.878571428571429,
+    "hem_abs": 7.892857142857143,
+    "iou_all": 0.500870335461597
+   },
+   "16": {
+    "iou_low": 0.055944727209247765,
+    "hem_dw": -6.732142857142857,
+    "hem_abs": 6.860714285714286,
+    "iou_all": 0.5312225205196447
+   },
+   "21": {
+    "iou_low": 0.40479924731218414,
+    "hem_dw": -8.770833333333334,
+    "hem_abs": 9.395833333333334,
+    "iou_all": 0.4332572698675345
+   },
+   "24": {
+    "iou_low": 0.0,
+    "hem_dw": -4.44,
+    "hem_abs": 4.57,
+    "iou_all": 0.5126538438459596
+   }
+  }
+ }
+}

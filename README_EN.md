@@ -135,7 +135,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_job.py` | Runs long scripts (render) step by step from a modal operator, so Blender's window does not freeze (progress in the status bar, ESC cancels). Used by `render_uo_layer.py` and `uo_cloth_bake.py` (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
 
-Tool scripts outside the file (`pipeline/`): `uo_make_item.py` (a free model -> an item in one command, section 3a), `item_sheet.py` / `item_gif.py` (a contact sheet of frames and an animated GIF of an item on the original body), `item_qa.py` (clipping and thickness of an item in motion), `item_thickness.py` (stand-off on frames vs the original sprites), `pose_capture.py` / `robe_calib.py` / `cloak_calib.py` (calibration of the physics of loose garments on the originals, `docs/qa/robe_physics.md`), `test_autofit.py` / `test_robe.py` / `run_qa.py` (tests of the autofit and of robes, and one regression with thresholds: `python pipeline/run_qa.py [--quick]`), `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py`, `rig_restore_fingers.py`, `rig_restore_weapons.py` (one-off rig changes), `weapon_*.py` and `test_weapons.py` / `test_weapon_roll.py` (weapon calibration and tests; they need sprites from the client, only the katana 627 is in the repo).
+Tool scripts outside the file (`pipeline/`): `uo_make_item.py` (a free model -> an item in one command, section 3a), `item_sheet.py` / `item_gif.py` (a contact sheet of frames and an animated GIF of an item on the original body), `item_qa.py` (clipping and thickness of an item in motion), `item_thickness.py` (stand-off on frames vs the original sprites), `pose_capture.py` / `robe_calib.py` / `cloak_calib.py` / `cloak_fit_frames.py` (calibration of the physics of loose garments on the originals, `docs/qa/robe_physics.md`), `test_autofit.py` / `test_robe.py` / `test_cloak.py` / `run_qa.py` (tests of the autofit and of robes, and one regression with thresholds: `python pipeline/run_qa.py [--quick]`), `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py`, `rig_restore_fingers.py`, `rig_restore_weapons.py` (one-off rig changes), `weapon_*.py` and `test_weapons.py` / `test_weapon_roll.py` (weapon calibration and tests; they need sprites from the client, only the katana 627 is in the repo).
 
 The scripts live in the `.blend` file, not in objects. Always work in `UO_Body_0x190.blend` (File → Open) and bring your
 items into it, not the other way round.
@@ -184,6 +184,7 @@ items into it, not the other way round.
       | `"helm"` | helmet, hood, mask | head |
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | full suit in one object | skin under it, every bone |
+      | `"cloak"` | cloak | hangs from the chest and **swings back about the shoulders** per action (run, riding: streams out behind; table from the original 468, `docs/qa/cloak_physics.md`) |
       | `"robe"`, `"skirt"` | robe, dress, skirt, kilt | like the skin down to the hips; below, the **pelvis**, and the legs push the cloth out per frame (`cloth_lib.py`, property `uo_cloth`; `docs/qa/robe_physics.md`) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
       | `"weapon1h"` | sword, mace, hammer, 1H axe, kryss, pickaxe | bone `weapon1h.R` on the right hand, motion fitted to 13 original weapons (0.7-1.3 px instead of 1.4-2.1 px); run `uo_place_weapon.py` with `PART = "weapon1h"` first |
@@ -217,7 +218,7 @@ items into it, not the other way round.
 8. **Tips:**
    - Make clothing about 1–2 cm above the skin.
    - Check attacks, spells and deaths in particular.
-   - Robes, dresses and skirts: `PART = "robe"` / `"skirt"` (the cloth hangs from the pelvis and the legs push it out; no simulation, no bone chains). Cloaks still have no preset: `"all"` / `"chest"`.
+   - Robes, dresses and skirts: `PART = "robe"` / `"skirt"` (the cloth hangs from the pelvis and the legs push it out; no simulation, no bone chains). Cloaks: `PART = "cloak"` (`kind: cloak`), swung back per action and frame from the table `cloak_pitch.json` (IoU with the original 468: 0.376 -> 0.507, `docs/qa/cloak_physics.md`); no waving of the sides.
 
 ## 3a. The fast path: a free model -> an item in one command
 

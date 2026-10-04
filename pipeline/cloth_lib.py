@@ -175,3 +175,28 @@ def hang_matrix(S_pelvis, frac):
     K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
     Q = np.eye(3) + np.sin(ang) * K + (1 - np.cos(ang)) * K @ K
     return Q @ R
+
+
+def cloak_bend(V, z_top, z_hem, y_top, d0, d1):
+    """Cloak: displacement (rest frame) that tilts the hanging cape backwards (+Y) about the shoulder line by d0 radians at the shoulders and d1 at the hem, relative to its rest shape:
+    every height s below z_top turns by phi(s) = d0 + (d1 - d0) s / L (L = z_top - z_hem) and the centre line is the integral of that turn, so the cape bends instead of swinging as a plank
+    (cloak_fit_frames.py fits d0, d1 per action and frame on the original cloak 468, cloak_pitch.json)."""
+    L = max(z_top - z_hem, 1e-3)
+    s = np.clip(z_top - V[:, 2], 0.0, None)
+    k = (d1 - d0) / L
+    sc = np.minimum(s, L)                                           # below the hem the angle stays d1
+    ph = d0 + k * sc
+    if abs(k) > 1e-6:
+        Cy = (np.cos(d0) - np.cos(ph)) / k; Cz = (np.sin(ph) - np.sin(d0)) / k
+    else:
+        Cy = sc * np.sin(d0); Cz = sc * np.cos(d0)
+    tail = s - sc                                                   # straight continuation below the hem
+    Cy = Cy + tail * np.sin(ph); Cz = Cz + tail * np.cos(ph)
+    e = V[:, 1] - y_top
+    Vn = np.empty_like(V)
+    Vn[:, 0] = V[:, 0]
+    Vn[:, 1] = y_top + Cy + e * np.cos(ph)
+    Vn[:, 2] = z_top - Cz + e * np.sin(ph)
+    out = Vn - V
+    out[s <= 0] = 0.0
+    return out

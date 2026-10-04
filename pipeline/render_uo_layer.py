@@ -29,6 +29,7 @@ ANCHOR = (128, 192)                # UO anchor pixel inside the canvas (world po
                                    # 256x256 / (128, 192) holds 444 of the 449 people / equipment animations of the Nelderim client
                                    # (the original body frames are 136x120 with anchor (68, 86); use that pair for the old size)
 CLOTHING = "Clothing"              # collection with the clothing / equipment meshes
+CLOAK_SWING = 1.0                  # cloaks (uo_cloth type cloak): scale of the swing taken from the original cloak (0 = hangs as bound)
 CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom property uo_cloth) in the mounted actions 23-29: share in which the hanging part follows the legs (thighs above the
                                    # knee, shins below it, like skin) instead of hanging from the pelvis with the hull of the legs. A rider sits with the thighs forward and a robe that hangs from
                                    # the pelvis would leave them bare; the original robes lie along the legs. 0 = hang and push like on foot.
@@ -110,7 +111,7 @@ def cloth_ctx():
     if "caps" not in CLOTH_CTX:
         cl = cloth_module()
         Mr0 = np.array(rig.matrix_world)
-        names = list(cl.Capsules.NAMES) + ["pelvis"]
+        names = list(cl.Capsules.NAMES) + ["pelvis", "chest"]
         heads = np.array([(Mr0 @ np.append(np.array(rig.data.bones[n].head_local), 1))[:3] for n in names])
         tails = np.array([(Mr0 @ np.append(np.array(rig.data.bones[n].tail_local), 1))[:3] for n in names])
         me = body.data
@@ -126,7 +127,17 @@ def cloth_ctx():
     return CLOTH_CTX
 
 
-def cloth_push(o, first, dg, Mw, a=0):
+def cloak_table():
+    if "pitch" not in CLOTH_CTX:
+        here = globals().get("__file__") and os.path.dirname(os.path.abspath(__file__))
+        if here and os.path.exists(os.path.join(here, "cloak_pitch.json")):
+            CLOTH_CTX["pitch"] = json.load(open(os.path.join(here, "cloak_pitch.json")))
+        else:
+            CLOTH_CTX["pitch"] = json.loads(bpy.data.texts["cloak_pitch.json"].as_string())
+    return CLOTH_CTX["pitch"]
+
+
+def cloth_push(o, first, dg, Mw, a=0, i=0):
     """displacement (item space, one row per welded node `first`) that the legs give a loose garment in the current pose; None when the item is not one"""
     raw = o.get("uo_cloth")
     if not raw:
@@ -141,6 +152,13 @@ def cloth_push(o, first, dg, Mw, a=0):
     sel = np.array(["pelvis" not in ctx["names"][k] for k in caps.idx])
     co = np.empty(len(o.data.vertices) * 3, np.float32); o.data.vertices.foreach_get("co", co)
     Vr = co.reshape(-1, 3).astype(np.float64); Mb_ = np.array(o.matrix_basis); Vr = (Vr @ Mb_[:3, :3].T + Mb_[:3, 3])[first]
+    if prm.get("type") == "cloak":                                            # a cape: swings back about the shoulders with the action (cloak_pitch.json from the original 468)
+        rows = cloak_table()["actions"].get(str(a))
+        if not rows:
+            return np.zeros((len(first), 3))
+        d0, d1 = (np.radians(x) * CLOAK_SWING for x in rows[min(i, len(rows) - 1)])
+        d = cl.cloak_bend(Vr, prm["z_top"], prm["z_hem"], prm["y_top"], d0, d1)
+        return ((d @ skin["chest"][:3, :3].T) @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     if 23 <= a <= 29 and CLOTH_MOUNTED > 0:                                  # riding: the hanging part lies along the legs, as the skin under it would move it
         Vh = np.c_[Vr, np.ones(len(Vr))]
         nv = len(o.data.vertices); Pp = (Vh @ skin["pelvis"].T)[:, :3]; d0 = np.zeros_like(Vr)
@@ -246,7 +264,7 @@ def body_fix(a, i):
         if (o.name, a, i) not in FIX_CACHE:
             M = Bi @ Mw
             X = co[first] @ M[:3, :3].T + M[:3, 3]
-            Dc = cloth_push(o, first, dg, Mw, a)                                  # loose garment: the legs push it out first
+            Dc = cloth_push(o, first, dg, Mw, a, i)                                 # loose garment: the legs push it out first
             if Dc is not None:
                 X = X + Dc @ M[:3, :3].T
             D = (push_out(X, bvh, E, deg, BODY_GAP) if BODY_GAP > 0 else np.zeros_like(X)) @ np.linalg.inv(M[:3, :3]).T
