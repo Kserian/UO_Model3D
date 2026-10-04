@@ -11,7 +11,7 @@ import os
 import re
 import bpy
 
-KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat
+KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat, robe, skirt
 AUTOFIT = True        # first uo_autofit_item.py: units, size and place from the skin the slot covers (False: the item already stands where it should)
 DENSIFY = True        # False: keep the mesh as it is
 FIT = True            # False: skip uo_fit_item.py (the item already sits right)
@@ -22,6 +22,7 @@ SLOTS = {
     "shirt":  ("chest", True, "tight"), "pants": ("legs", True, "tight"), "boots": ("boots", True, "tight"), "gloves": ("gloves", True, "tight"),
     "plate":  ("chest", True, "hard"),  "arms":  ("arms", True, "hard"),  "legs":  ("legs", True, "hard"),   "helm":   ("helm", True, "hard"),
     "neck":   ("neck", True, "hard"),
+    "robe":   ("robe", True, "loose"), "skirt": ("skirt", True, "loose"),
     "hair":   ("hair", False, "rigid"), "beard": ("beard", False, "rigid"), "hat":   ("hat", False, "rigid"),
 }
 

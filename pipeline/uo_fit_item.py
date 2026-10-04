@@ -26,7 +26,7 @@ MIN_GAP = -1.0        # m, no part of the item closer to the skin than this (0 =
 # helmets and sleeves at 0.03 (plate .702/.725/.706, helm .770/.783/.658, arms .615/.619/.598, legs .667/.673/.651). The sprites agree: shirts, trousers, boots
 # stand 1 px (2.8 cm) off the silhouette of the body, plate / helmets / robes 2-4 px (docs/qa/layer_analysis.md). "neck" (gorget, a hard slot in uo_prepare_item.py) is 0.03 by
 # its class, not measured.
-GAP_BY_KIND = {"shirt": 0.015, "pants": 0.015, "boots": 0.015, "gloves": 0.015, "plate": 0.03, "legs": 0.03, "arms": 0.03, "helm": 0.03, "neck": 0.03}
+GAP_BY_KIND = {"shirt": 0.015, "pants": 0.015, "boots": 0.015, "gloves": 0.015, "plate": 0.03, "legs": 0.03, "arms": 0.03, "helm": 0.03, "neck": 0.03, "robe": 0.02, "skirt": 0.02}
 MAX_GAP = 0.0         # m, > 0: pull parts standing off more than this towards the skin (0 = off)
 LIMIT = -1.0          # m, soft limit of how far from the skin any part of the item may stand: what is farther is brought closer (S -> LIMIT + (S - LIMIT) * LIMIT_K), smoothly over the
                       # mesh, so details are squashed, not cut. This is what keeps big pauldrons, flared cuffs and fat collars "UO-thin": the original items of a slot stand

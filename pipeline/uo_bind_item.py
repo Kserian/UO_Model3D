@@ -36,6 +36,11 @@ PARTS = {
     "boots":     (["shin.L", "foot.L", "shin.R", "foot.R"], {}),               # boots, greaves
     "helm":      (["head"], {}),                                               # helmet, hat, mask
     "neck":      (["neck", "chest", "head"], {}),                              # gorget, collar
+    # loose garments (robe, dress, skirt, kilt): above the hips like "all"; the hanging part follows the PELVIS only (it does not stick to the legs like trousers): the weight
+    # of thighs, shins and feet goes to the pelvis. The legs push it out when they reach it: render_uo_layer.py does that per frame (custom property `uo_cloth`, set below;
+    # cloth_lib.hull_push, calibrated on the original robes, docs/qa/robe_physics.md). FOLLOW also takes (share, t0, t1, end share): share near the joint -> end share along the bone.
+    "robe":      (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),
+    "skirt":     (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),
 }
 # rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
 # weapons, shields (left forearm), quivers (back). UO holds 2H weapons, staffs, bows and crossbows in the LEFT hand and 1H weapons in the right,
@@ -142,12 +147,13 @@ def bind(ob, allowed):
             if b not in rig.data.bones or pb not in rig.data.bones:
                 continue
             f = FOLLOW[base]
-            if isinstance(f, tuple):                                 # share grows along the bone (t = 0 joint, 1 end)
+            if isinstance(f, tuple):                                 # share changes along the bone (t = 0 joint, 1 end, > 1 beyond it)
                 bone = rig.data.bones[b]
                 to_body = body.matrix_world.inverted() @ rig.matrix_world
                 h, t_ = np.array(to_body @ bone.head_local), np.array(to_body @ bone.tail_local)
                 t = ((co - h) @ (t_ - h)) / max(((t_ - h) ** 2).sum(), 1e-12)
-                f = f[0] + (1 - f[0]) * np.clip((t - f[1]) / max(f[2] - f[1], 1e-6), 0, 1)
+                end = f[3] if len(f) > 3 else 1.0                    # (share, t0, t1[, end share]): `share` up to t0, `end share` (default 1) from t1, linear between
+                f = f[0] + (end - f[0]) * np.clip((t - f[1]) / max(f[2] - f[1], 1e-6), 0, 1)
             for j in [j for j, nm in enumerate(bones) if group_of(nm) == b]:   # the bone + its finger bones
                 mv = wv[:, j] * (1 - f)
                 wv[:, j] -= mv; moved += mv
@@ -213,6 +219,25 @@ def bind(ob, allowed):
     print("uo_bind_item: %s -> PART %s, bones %s, %d corrections" % (ob.name, PART, bones, len(keys)))
 
 
+CLOTH_PARTS = ("robe", "skirt")
+CLOTH_DROP = 1.0                           # m of radius the hem may narrow per m of height below a push (0 = hangs straight down from it, larger = tapers back in sooner)
+CLOTH_MARGIN, CLOTH_KAPPA = 0.05, 0.8      # how far past the legs the hem goes, how much of the way to the legs the cloth is pushed (robe_calib.py: best of the sweep on robe 469)
+
+
+def mark_cloth(ob):
+    """custom property `uo_cloth` for render_uo_layer.py: the axis of the hanging part, the waist and the hem height (rest pose, world)"""
+    import json
+    M = np.array(ob.matrix_world)
+    co = np.empty(len(ob.data.vertices) * 3, np.float32); ob.data.vertices.foreach_get("co", co)
+    V = co.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]
+    band = V[(V[:, 2] > 0.4) & (V[:, 2] < 0.9)]
+    centre = (band[:, :2].mean(0) if len(band) else V[:, :2].mean(0))
+    z_top = float(np.array(rig.matrix_world @ rig.data.bones["pelvis"].head_local)[2]) + 0.04
+    ob["uo_cloth"] = json.dumps(dict(centre=[round(float(centre[0]), 4), round(float(centre[1]), 4)], margin=CLOTH_MARGIN, kappa=CLOTH_KAPPA, z_top=round(z_top, 4),
+                                     z_hem=round(float(V[:, 2].min()), 4), ramp=0.15, drop=CLOTH_DROP))
+    print("uo_bind_item: %s: loose garment, legs push the hem out (uo_cloth %s)" % (ob.name, ob["uo_cloth"]))
+
+
 def bind_rigid(ob, bone):
     body_bones = {g.name for g in body.vertex_groups}
     for g in [g for g in ob.vertex_groups if g.name in body_bones]:
@@ -244,5 +269,9 @@ try:
             bind_rigid(ob, bone)
         else:
             bind(ob, PARTS[PART][0])
+            if PART in CLOTH_PARTS:
+                mark_cloth(ob)
+            elif "uo_cloth" in ob:
+                del ob["uo_cloth"]
 finally:
     rig.data.pose_position = pose

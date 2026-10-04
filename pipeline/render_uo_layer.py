@@ -63,6 +63,7 @@ sc = bpy.context.scene
 rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
 clothes = [o for o in bpy.data.collections[CLOTHING].all_objects if o.type == "MESH"] if CLOTHING in bpy.data.collections else []
+HAS_CLOTH = any(o.get("uo_cloth") for o in clothes if not o.hide_render)
 
 # BODY_GAP: bound items pushed out of the posed limbs / head, per UO frame (shape key "uo_fix", Armature off)
 FIX_MESH, FIX_CACHE, FIX_ON, FIX_ADDED = {}, {}, {}, set()
@@ -78,6 +79,64 @@ def fix_mesh(o):
         E = np.unique(np.sort(node[E.reshape(-1, 2)], 1), axis=0); E = E[E[:, 0] != E[:, 1]]
         FIX_MESH[o.name] = (first, node, E, np.bincount(E.ravel(), minlength=len(first)).astype(float))
     return FIX_MESH[o.name]
+
+
+# Loose garments (robe, skirt; uo_bind_item.py PART "robe" sets the custom property `uo_cloth`): the hanging part follows the pelvis only and the legs push it out to where
+# they reach (cloth_lib.hull_push, calibrated on the original robes: docs/qa/robe_physics.md). Computed per UO frame together with BODY_GAP, before it.
+CLOTH_CTX = {}
+
+
+def cloth_module():
+    if "mod" not in CLOTH_CTX:
+        here = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else ""
+        if here and os.path.exists(os.path.join(here, "cloth_lib.py")):
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("cloth_lib", os.path.join(here, "cloth_lib.py"))
+            CLOTH_CTX["mod"] = importlib.util.module_from_spec(spec); spec.loader.exec_module(CLOTH_CTX["mod"])
+        else:
+            CLOTH_CTX["mod"] = bpy.data.texts["cloth_lib.py"].as_module()
+    return CLOTH_CTX["mod"]
+
+
+def cloth_ctx():
+    """legs as capsules (rest bones, radius from the body skin) and the rest matrices; built once"""
+    if "caps" not in CLOTH_CTX:
+        cl = cloth_module()
+        Mr0 = np.array(rig.matrix_world)
+        names = list(cl.Capsules.NAMES) + ["pelvis"]
+        heads = np.array([(Mr0 @ np.append(np.array(rig.data.bones[n].head_local), 1))[:3] for n in names])
+        tails = np.array([(Mr0 @ np.append(np.array(rig.data.bones[n].tail_local), 1))[:3] for n in names])
+        me = body.data
+        co = np.empty(len(me.vertices) * 3, np.float32)
+        (me.shape_keys.key_blocks[0].data if me.shape_keys else me.vertices).foreach_get("co", co)
+        Mb = np.array(body.matrix_world); V = co.reshape(-1, 3).astype(np.float64) @ Mb[:3, :3].T + Mb[:3, 3]
+        gn = {g.index: g.name for g in body.vertex_groups}
+        dom = np.array([gn[max(v.groups, key=lambda g: g.weight).group] if v.groups else "" for v in me.vertices])
+        CLOTH_CTX["caps"] = cl.Capsules(names, heads, tails, V, dom)
+        CLOTH_CTX["names"] = names
+        CLOTH_CTX["Mr0"] = Mr0
+        CLOTH_CTX["inv_local"] = {n: np.linalg.inv(np.array(rig.data.bones[n].matrix_local)) for n in names}
+    return CLOTH_CTX
+
+
+def cloth_push(o, first, dg, Mw):
+    """displacement (item space, one row per welded node `first`) that the legs give a loose garment in the current pose; None when the item is not one"""
+    raw = o.get("uo_cloth")
+    if not raw:
+        return None
+    cl = cloth_module(); ctx = cloth_ctx(); prm = json.loads(raw)
+    evr = rig.evaluated_get(dg)
+    Mr0 = ctx["Mr0"]; Mre = np.array(evr.matrix_world); Dm = Mre @ np.linalg.inv(Mr0)
+    skin = {n: Mr0 @ np.array(evr.pose.bones[n].matrix) @ ctx["inv_local"][n] @ np.linalg.inv(Mr0) for n in ctx["names"]}
+    caps = ctx["caps"]
+    heads = np.array([(skin[ctx["names"][k]] @ np.append(caps.head[j], 1))[:3] for j, k in enumerate(caps.idx)])
+    tails = np.array([(skin[ctx["names"][k]] @ np.append(caps.tail[j], 1))[:3] for j, k in enumerate(caps.idx)])
+    sel = np.array(["pelvis" not in ctx["names"][k] for k in caps.idx])
+    co = np.empty(len(o.data.vertices) * 3, np.float32); o.data.vertices.foreach_get("co", co)
+    Vr = co.reshape(-1, 3).astype(np.float64); Mb_ = np.array(o.matrix_basis); Vr = (Vr @ Mb_[:3, :3].T + Mb_[:3, 3])[first]
+    d0 = cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
+                      z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
+    return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
 
 
 def push_out(X, bvh, E, deg, gap):
@@ -165,7 +224,13 @@ def body_fix(a, i):
             continue
         if (o.name, a, i) not in FIX_CACHE:
             M = Bi @ Mw
-            D = push_out(co[first] @ M[:3, :3].T + M[:3, 3], bvh, E, deg, BODY_GAP) @ np.linalg.inv(M[:3, :3]).T
+            X = co[first] @ M[:3, :3].T + M[:3, 3]
+            Dc = cloth_push(o, first, dg, Mw)                                  # loose garment: the legs push it out first
+            if Dc is not None:
+                X = X + Dc @ M[:3, :3].T
+            D = (push_out(X, bvh, E, deg, BODY_GAP) if BODY_GAP > 0 else np.zeros_like(X)) @ np.linalg.inv(M[:3, :3]).T
+            if Dc is not None:
+                D = D + Dc
             idx = np.nonzero(np.abs(D).max(1) > 2e-4)[0]
             FIX_CACHE[(o.name, a, i)] = (idx.astype(np.int32), D[idx].astype(np.float32)) if len(idx) else None
         c = FIX_CACHE[(o.name, a, i)]
@@ -641,7 +706,7 @@ def frame_job():
                         raise KeyboardInterrupt("STOP file found in " + root)
                     set_tile(a, i, d)
                     sc.frame_set(1 + i * STEP)
-                    if BODY_GAP > 0 and LAYER != "body":
+                    if (BODY_GAP > 0 or HAS_CLOTH) and LAYER != "body":
                         body_fix(a, i)
                     orig = original(a, i, d) if EXACT_ANY else None
                     orig_m = orig[..., 3] > 0 if orig is not None else None

@@ -4,10 +4,12 @@
 
 Writes (N = number of (action, direction, frame) poses):
   key    (N, 3)       action, direction, frame
-  skin   (N, B, 4, 4) world-space skinning matrix of every bone: a point that was at x in the rest pose is at skin[i, b] @ x in the pose (UO direction included)
+  skin   (N, B, 4, 4) skinning matrix of every bone in the rest frame: a point that was at x in the rest pose is at skin[i, b] @ x in the pose (direction 0 frame)
+  dirm   (N, 4, 4)    the turn of the direction (UO_Rig is turned by a driver): a point of the pose is at dirm[i] @ skin[i, b] @ x in the world
   bones  (B,)         bone names
   P, V   (4, 4)       camera: projection and view matrix (the same for all poses); canvas of the original body frames, 145 x 133, anchor (75, 92), 36 px/m
-  body_tri / body_rest  the rest-pose skin triangles / vertices (world), for collision tests of the garments
+  body_tri / body_rest  the rest-pose skin triangles / vertices (world), body_dom the dominant bone group of every body vertex, rest_head / rest_tail the rest-pose
+                        bone ends (world) - what cloth_lib.py needs to pose the leg capsules
 Same camera set-up as body_part_raster.py (the pose does not depend on anything else).
 """
 import sys, os
@@ -49,9 +51,10 @@ def main():
 
     rig.data.pose_position = "POSE"
     bones = [b.name for b in rig.data.bones if (names is None or b.name in names)]
-    rest = {b: np.array(rig.matrix_world @ rig.data.bones[b].matrix_local) for b in bones}       # bone rest matrix, world
+    Mw0 = np.array(rig.matrix_world)                                    # rest frame of the garments: the rig as it is stored (direction 0, no driver)
+    inv_local = {b: np.linalg.inv(np.array(rig.data.bones[b].matrix_local)) for b in bones}
     acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
-    keys, skin = [], []
+    keys, skin, dirm = [], [], []
     for act in acts:
         a = int(act["uo_action"])
         if only is not None and a not in only:
@@ -61,22 +64,26 @@ def main():
             rig["uo_direction"] = d
             for i in range(int(act["uo_frames"])):
                 sc.frame_set(1 + i * STEP); rig.update_tag(); bpy.context.view_layer.update()
-                Mw = np.array(rig.matrix_world)
-                skin.append(np.stack([(Mw @ np.array(rig.pose.bones[b].matrix)) @ np.linalg.inv(np.array(rig.data.bones[b].matrix_local)) @ np.linalg.inv(Mw)
-                                      for b in bones]))
+                ev = rig.evaluated_get(bpy.context.evaluated_depsgraph_get())     # the driver of the direction acts on the evaluated object only
+                Mw = np.array(ev.matrix_world)
+                skin.append(np.stack([Mw0 @ np.array(ev.pose.bones[b].matrix) @ inv_local[b] @ np.linalg.inv(Mw0) for b in bones]))     # the pose in the rest frame (direction 0)
+                dirm.append(Mw @ np.linalg.inv(Mw0))                                                                                 # then the turn of the direction
                 keys.append((a, d, i))
         print("action", a, "done", flush=True)
     # skinning matrices above are armature-space; the rest pose is expressed in world coordinates, so conjugate by the armature matrix (done: Mw ... Mw^-1)
     me = body.data
     co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3).astype(np.float64)
     rig.data.pose_position = "REST"; bpy.context.view_layer.update()
-    kb = me.shape_keys.key_blocks["Basis"] if me.shape_keys else None
-    if kb is not None:
-        kb.data.foreach_get("co", co.ravel()) if False else None
     Mb = np.array(body.matrix_world)
     me.calc_loop_triangles()
     tri = np.array([t.vertices[:] for t in me.loop_triangles])
-    np.savez_compressed(out, key=np.array(keys), skin=np.array(skin), bones=np.array(bones), P=P, V=V, body_tri=tri, body_rest=co @ Mb[:3, :3].T + Mb[:3, 3])
+    names_ = [g.name for g in body.vertex_groups]
+    dom = np.array([names_[max(v.groups, key=lambda g: g.weight).group] if v.groups else "" for v in me.vertices])
+    Mrig = np.array(rig.matrix_world)
+    heads = np.array([(Mrig @ np.append(np.array(rig.data.bones[b].head_local), 1))[:3] for b in bones])
+    tails = np.array([(Mrig @ np.append(np.array(rig.data.bones[b].tail_local), 1))[:3] for b in bones])
+    np.savez_compressed(out, key=np.array(keys), skin=np.array(skin), dirm=np.array(dirm), bones=np.array(bones), P=P, V=V, body_tri=tri, body_rest=co @ Mb[:3, :3].T + Mb[:3, 3],
+                        body_dom=dom, rest_head=heads, rest_tail=tails)
     print("wrote", out, len(keys), "poses")
 
 
