@@ -10,7 +10,7 @@ Oceniaj tym każdą zmianę.
   Jeśli zadanie sesji narzuca inną gałąź, wypchnij na nią, a po przetestowaniu także `git push origin HEAD:main`. Pull requesta nie twórz bez prośby.
   **Nie wypychaj na gałąź `claude/friendly-knuth-44xtfw`** (kopia zapasowa stanu `ea55c0b`).
 - Dokumentacja: `README.md` (PL), `README_EN.md` (EN). Raport z analizy: `docs/RAPORT_model3D_UO.txt`, audyt: `docs/AUDYT_2026-10-03.md`, pomiary: `docs/qa/` (autodopasowanie: `autofit.md`, szaty i spódnice: `robe_physics.md`, broń z darmowych modeli: `weapons_free_models.md`).
-  Nie ma pliku przekazania między sesjami: stan jest w kodzie, w `docs/` i w historii gita. Zasady i decyzje są poniżej; jeśli je zmieniasz, popraw ten plik.
+  Przekazanie między sesjami: `docs/PRZEKAZANIE.md` (co zrobiono, zmierzono, odrzucono, co dalej); poza tym stan jest w kodzie, w `docs/` i w historii gita. Zasady i decyzje są poniżej; jeśli je zmieniasz, popraw ten plik.
 - **Mierz, nie ufaj.** Liczby, na których opierasz decyzję, mają pochodzić z własnego pomiaru na plikach (przed i po zmianie). Główna miara celu:
   `pipeline/test_items.py` (przedmiot na naszym ciele vs oryginalny sprite; baseline w `docs/qa/items_after_fingers.json`: średnia 0,718),
   sylwetka ciała: `body_part_raster.py` + `body_part_qa.py` (IoU 0,892 na 1050 klatkach).
