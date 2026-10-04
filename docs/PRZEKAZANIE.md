@@ -46,3 +46,9 @@ Solver PBD i grawitacyjne zwisanie szaty; podążanie szaty za udem (alfa), wiat
 4. Naramienniki jako ciągła siatka z korpusem rozciągają się z ramieniem w czarach.
 5. Pierwszy prawdziwy darmowy model (włosy Curuaty, CC BY 4.0: użytkownik pobiera i wrzuca, zapisać atrybucję).
 6. Body 401 (kobieta) w `anim.mul` prawie kopia męskiego; sprawdzić w grze przed ciałem kobiecym.
+
+# Sesja 16 (2026-10-04): pomiar fizyki szaty (szczegóły: `docs/qa/robe_physics.md`, „Sesja 16")
+Zlecenie: odwzorować z gry fizykę szaty i ruchy nóg; użytkownik dopuszcza symulację i pola sił, a rzeczy nieprzylegające do ciała (peleryny) mogą mieć nieco inną animację.
+Wynik: **render bez zmian** (`test_robe` 0,757). Sprawdzone i odrzucone (nie powtarzać bez nowego powodu): tabela wychylenia rąbka per klatka dopasowana na 469+447+970 (to szum kształtu repliki, po odjęciu stand gorsza), sprężyna z tłumieniem (rąbek goni cel), regresja na prędkościach nóg.
+Wdrożenie powłoki względem spoczynku nóg (`robe_hull_eval.py`) remisuje w `test_robe`. Nowe narzędzie: `pipeline/robe_hull_eval.py` (5 oryginalnych szat, ~1 min, wzorce 447/455/970/971 w `body13/mul/`).
+Dalej: prawdziwy darmowy model szaty / kiltu (test na cudzym kształcie), potem ewentualnie symulacja z kolizją.

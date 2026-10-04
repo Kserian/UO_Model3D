@@ -82,3 +82,25 @@ miednica + powłoka nóg jak pieszo 0,622 (dolna część 0,113), udo/goleń z p
   a oryginał w ataku, czarze i upadku jest większy o 175-307 px niż replika (tkanina leci i faluje, bezwładność). Peleryna ma własny model: pochylenie do tyłu wokół ramion per akcja i klatka (`PART cloak`, `docs/qa/cloak_physics.md`); `PART robe` ani `skirt` nie nadają się do niej.
 - Rękawy, kaptur, płaszcz (zawieszona na ramionach, inna fizyka) nie mają tego modelu.
 - Test na replice, nie na prawdziwym obcym modelu szaty (w repo nie ma darmowego modelu szaty); na gambesonie (kurtka do połowy uda) jako `robe` ruch jest poprawny wizualnie (marsz, bieg).
+
+## Sesja 16: czy da się lepiej? Pomiary (nic nie zmieniono w renderze)
+
+Prośba użytkownika: fizyka szaty ma odtwarzać grę, także w ruchach nóg; dopuszczona symulacja i pola sił. Zmierzone na pięciu oryginałach (469 szata, 447 sukienka, 970 całun, 455 kilt, 971 spódnica), wszystko na klatkach z `anim.mul`
+(wzorce w `pipeline/body13/mul/`, narzędzie `pipeline/robe_hull_eval.py`, protokół jak wyżej: kształt spoczynkowy repliki dopasowany do stand bez powłoki):
+
+| wariant | 469 | 447 | 970 | 455 | 971 | średnia IoU dolnej części | błąd szerokości rąbka |
+|---|---|---|---|---|---|---|---|
+| bez powłoki | 0,724 | 0,699 | 0,736 | 0,515 | 0,644 | 0,664 | 5,55 px |
+| powłoka produkcyjna (bezwzględna, reguła długości) | 0,756 | 0,729 | 0,751 | 0,462 | 0,676 | 0,675 | 4,69 px |
+| powłoka względem pozycji spoczynkowej nóg, kappa 0,25 | 0,764 | 0,734 | 0,750 | 0,516 | 0,675 | **0,688** | **4,03 px** |
+
+- **Powłoka względem spoczynku** (`hull_push_rel` w `robe_hull_eval.py`: pchają tylko nogi poza zasięgiem spoczynkowym, kappa·nadmiar, namiot od pasa) jest fizycznie czystsza (szata zrobiona wokół nóg w spoczynku nic nie dostaje w spoczynku, kilt nie jest psuty) i na replikach z dopasowanym kształtem lepsza o 0,013.
+  **Nie wdrożona:** w prawdziwym potoku (Cycles, `test_robe.py`, replika zmierzona na 469) remisuje z obecną: kappa 0,25 → 0,673, 0,55 → 0,740, 0,7 → 0,756, 0,85 → 0,758, 1,0 → 0,748 (obecna: 0,757). Optymalna kappa zależy od tego, jak szeroką replikę zbudujemy (0,25 dla dopasowanej do stand, 0,7-0,85 dla zmierzonej ręcznie),
+  więc przejście nie ma uzasadnienia w mierze głównej. Do rozważenia, gdy będzie prawdziwy darmowy model szaty.
+- **Tabela ruchu rąbka per akcja i klatka (jak dla peleryny)**: 5 współczynników na klatkę (rąbek szerszy, przesunięty, wydłużony wzdłuż kroku) dopasowanych wspólnie na 469+447+970 dała IoU 0,739 → 0,798, a dopasowania z osobnych szat korelowały 0,8-0,97. **To był fałszywy trop:** współczynniki w stand są niezerowe (c0 -0,10, c1 +0,12)
+  i poprawiają kształt repliki we wszystkich klatkach naraz (replika-rura nie ma kształtu prawdziwej szaty). Po odjęciu wartości ze stand (tak jak działałby nowy model z własnym kształtem) tabela **pogarsza**: 0,755 → 0,723 (469), 0,716 → 0,666 (447), 0,747 → 0,710 (970); także na kilcie i spódnicy. Wynik wysokiej korelacji
+  między szatami to wspólny błąd kształtu, nie wspólna fizyka. Nie wdrożona.
+- **Bezwładność (sprężyna z tłumieniem, rąbek goni cel z powłoki)**: z powłoką bezwzględną daje +0,02 (marsz 0,735 → 0,79), ale to tylko osłabia jej nadmiar; z powłoką względną: 0,753 → 0,755 (4 szaty, 24 ustawienia ω, ζ, profil). Nic nie dodaje.
+- **Prędkość nóg i miednicy jako regresory** współczynników wychylenia rąbka: CV po akcjach R² ujemne (prędkość nie tłumaczy wychylenia), pozycje kolan i kostek tłumaczą tylko drugą harmoniczną (R² 0,46).
+- Co wynika: reszta błędu (IoU 0,76 z możliwych ok. 0,80+) to w większości kształt rąbka prawdziwej szaty (fałdy, rozkloszowanie w biegu do 15 px poza nogami), którego powłoka z nóg ani proste dynamiki nie odtwarzają. Dalszy ruch wymaga **prawdziwego darmowego modelu szaty**
+  (kształt własny, test zamiast repliki-rury) albo pełnej symulacji tkaniny z kolizją, której zysk trzeba by zmierzyć na takim modelu.
