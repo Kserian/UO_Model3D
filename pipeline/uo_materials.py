@@ -15,6 +15,7 @@
 # selected it takes every mesh object of the collection "Clothing". Idempotent: a material already wired to UO_Look is left alone.
 #   SATURATION = 0 : grey item. In UO items that take a hue (a dye) are drawn in greys, so a dyeable shirt should be SATURATION = 0, BRIGHTNESS = 1.
 import bpy
+import numpy as np
 
 SATURATION = 1.0      # 1 = the model's colours, 0 = greys only (an item the game tints with a hue), in between = washed out
 BRIGHTNESS = 1.0      # multiplier of the albedo (UO items are rarely darker than 0.15 or lighter than 0.9; the light is 0.08 + 0.92 cos)
@@ -26,6 +27,8 @@ SPEC_STRENGTH = 1.0   # highlight = SPEC_STRENGTH * albedo * max(N.L, 0) ^ SPEC_
 SPEC_POWER = 16       # Measured on the metal-named wearable animations of the client (light_items.py, 41 animations, body normals as the proxy): mail / ring / chain
                       # SPEC_STRENGTH 0.7, power 11; the brightest quartile (plate, helms) 2.0, power 19; cloth and leather: Lambert only (0.3, no better than none).
                       # 1.0 / 16 is in between; use 2.0 / 19 for shiny plate, 0.7 / 11 for mail. Docs: docs/qa/light_shadow.md
+TEXTURE_PX = 0        # > 0: a texture larger than this (px, the longer side) is scaled down to it: a fine weave or noise texture rendered at 36 px/m aliases into white speckles, which UO cloth does not have
+                      # (the colour of the cloth is its average); 0 = leave the textures. A recipe of uo_make_item.py: "materials": {"TEXTURE_PX": 64}. Do not use for cut-out textures (hair cards, lace).
 REPORT = True
 
 _metallic = 0.0
@@ -168,6 +171,16 @@ def run():
     if not obs and "Clothing" in bpy.data.collections:
         obs = [o for o in bpy.data.collections["Clothing"].all_objects if o.type == "MESH"]
     done = set(); lines = []
+    if TEXTURE_PX > 0:
+        used = {n.image for o in obs for sl in o.material_slots if sl.material and sl.material.use_nodes for n in sl.material.node_tree.nodes if n.type == "TEX_IMAGE" and n.image}   # only the item's own textures
+        for im in used:
+            w, h = im.size
+            if im.type == "IMAGE" and max(w, h) > TEXTURE_PX:
+                k = max(1, int(max(w, h) // TEXTURE_PX)); w2, h2 = w // k, h // k          # box average (image.scale does not filter: it would keep the speckles)
+                px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px)
+                px = px.reshape(h, w, 4)[:h2 * k, :w2 * k].reshape(h2, k, w2, k, 4).mean((1, 3))
+                im.scale(w2, h2); im.pixels.foreach_set(px.ravel()); im.update(); im.pack()                # packed: the saved .blend keeps the reduced pixels (an unpacked image is read again from its file)
+                lines.append("texture %s %dx%d -> %dx%d (box average)" % (im.name, w, h, w2, h2))
     for o in obs:
         if not o.material_slots:
             o.data.materials.append(bpy.data.materials.new(o.name + "_Mat"))

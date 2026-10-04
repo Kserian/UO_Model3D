@@ -7,12 +7,13 @@ RECIPE.json (only "file" and "kind" are required):
   {"name": "gambeson", "file": "models/medieval_shirt.glb", "kind": "shirt",
    "skip": ["guy"],            # meshes of the file to leave out (parts of names)      "keep": ["Blade"]  only these
    "drop_materials": ["Belt", "Buckle"],   # materials whose faces are cut out (a belt that is one mesh with the robe)
-   "arms_down": 0,                  # deg; 80-90 for a model in a T-pose (arms out): the sleeves are turned down about the shoulders ("arm_materials": ["sleeve"] names them)
+   "arms_down": 0,                  # deg; 80-90 for a model in a T-pose (arms out): the sleeves are turned down about the shoulders ("arm_materials": ["sleeve"] names them, "arm_blend": 0.12 m is the width over which the turn fades into the body)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
    "decimate": 30000,          # vertices above which the model is reduced
    "materials": {"SATURATION": 1.0, "METAL": null},   # uo_materials.py settings (grey item that takes a dye: SATURATION 0)
    "prepare": {"DENSIFY": false},                      # settings of uo_prepare_item.py itself
    "tune": {"uo_fit_item.py": {"MIN_GAP": 0.02, "LIMIT": 0.05}, "uo_autofit_item.py": {"GAP": 0.02}},   # settings of the steps it runs (autofit, densify, fit, bind)
+   "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...)
 
@@ -112,7 +113,7 @@ def build_stage(recipe, out_blend):
     if "parts" in recipe:
         return build_parts_stage(recipe, out_blend)
     kind = recipe.get("kind", "")
-    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), TURN=int(recipe.get("turn", 0)),
+    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), ARM_BLEND=float(recipe.get("arm_blend", 0.12)), TURN=int(recipe.get("turn", 0)),
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
     if "scale" in recipe:
         imp["SCALE"] = float(recipe["scale"])
@@ -190,7 +191,7 @@ def list_file(path):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("recipe", nargs="?"); ap.add_argument("--list"); ap.add_argument("--out"); ap.add_argument("--base", default=os.path.join(HERE, "..", "model", "UO_Body_0x190.blend"))
-    ap.add_argument("--preview", action="store_true"); ap.add_argument("--vd", action="store_true"); ap.add_argument("--actions", default=""); ap.add_argument("--no-qa", action="store_true", help="skip item_qa.py (penetration / thickness)")
+    ap.add_argument("--preview", action="store_true"); ap.add_argument("--vd", action="store_true"); ap.add_argument("--actions", default=""); ap.add_argument("--no-qa", action="store_true", help="skip item_qa.py (penetration / thickness)"); ap.add_argument("--no-sim", action="store_true", help="no cloth simulation of a loose garment (uo_cloth_sim.py)")
     a = ap.parse_args()
     if a.list:
         list_file(os.path.abspath(a.list))
@@ -206,6 +207,14 @@ if __name__ == "__main__":
         if line.startswith(("uo_autofit", "uo_fit", "uo_import", "  WARN", "  AMB")):
             print(line[:260])
     print("prepared in %.0f s -> %s" % (time.time() - t, blend))
+    sim = recipe.get("sim", recipe.get("kind") in ("robe", "skirt")) and not recipe.get("weapon")      # loose garments: cloth simulation on top of the leg push (uo_cloth_sim.py), on by default
+    if sim and a.no_sim is False:
+        t = time.time(); cfg = ["%s=%s" % kv for kv in (recipe["sim"].items() if isinstance(recipe.get("sim"), dict) else [])]
+        acts = [x for x in (a.actions or PREVIEW_ACTIONS).split(",")] if a.preview and not a.vd else None
+        cmd = [sys.executable, os.path.join(HERE, "uo_cloth_sim.py"), blend, "--jobs", "4", "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + cfg
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        line = next((l for l in r.stdout.splitlines() if l.startswith("wrote")), "uo_cloth_sim failed: " + (r.stderr or r.stdout)[-400:])
+        print("cloth simulation: %s (%.0f s)" % (line, time.time() - t)); open(os.path.join(out, "report.txt"), "a").write(line + "\n")
     if not a.no_qa:                                          # penetration and thickness of the posed item in the main actions (a few seconds, item_qa.py)
         q = subprocess.run([sys.executable, os.path.join(HERE, "item_qa.py"), blend, "--step", "3", "--json", os.path.join(out, "qa.json")], capture_output=True, text=True)
         line = next((l for l in q.stdout.splitlines() if l.startswith("ITEM_QA")), "item_qa failed: " + (q.stderr or q.stdout)[-300:])

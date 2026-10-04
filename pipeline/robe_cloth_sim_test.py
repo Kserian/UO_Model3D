@@ -4,7 +4,7 @@
     python robe_cloth_sim_test.py score POSES.npz OUT.npz [OUT2.npz ...]               # numpy: lower-body IoU of the simulated frames, of the hull and of the rigid pelvis hang
 
 The replica is pinned at the waist (2 rings) to the pelvis (Armature modifier), the cloth (quality 8, mass 0.3, tension / compression 15, shear 5, bending 0.5; keys: quality mass tension compression
-shear bending damp_air tdamp dist preroll cycles pin_rings gravity pin_stiff collide friction wx wy) collides with the posed UO_Body (Collision modifier). Every action is simulated on its own: PREROLL frames
+shear bending damp_air tdamp dist preroll cycles pin_rings gravity pin_stiff collide friction wx wy hybrid goal goal_rings margin kappa) collides with the posed UO_Body (Collision modifier). Every action is simulated on its own: PREROLL frames
 in the first pose, looping actions (walk, run, stand...) CYCLES cycles (the actions get a Cycles modifier), the last cycle is kept. Frames as in render_uo_layer.py (scene frame 1 + i * 3).
 """
 import json, os, sys, time
@@ -38,11 +38,18 @@ def simulate(poses, out, acts, cfg):
     rig.data.pose_position = "POSE"
     me = bpy.data.meshes.new("replica"); me.from_pydata(V0.tolist(), [], T.tolist()); me.update()
     ob = bpy.data.objects.new("replica", me); sc.collection.objects.link(ob)
+    hybrid = bool(cfg.get("hybrid", 0))
     ob.vertex_groups.new(name="pelvis").add(list(range(len(V0))), 1.0, "REPLACE")
     pin = ob.vertex_groups.new(name="pin")
-    for r in range(int(cfg["pin_rings"])):
-        pin.add(list(range(r * N, (r + 1) * N)), (1.0, 0.5, 0.25)[min(r, 2)], "REPLACE")
-    am = ob.modifiers.new("Armature", "ARMATURE"); am.object = rig; am.use_vertex_groups = True
+    K = int(p["n_rings"])
+    for r in range(K + 1):
+        if hybrid:                                              # goal strength: 1 at the waist, falling to `goal` at the hem (the hanging part is free to swing and to collide)
+            wgt = max(cfg["goal"], 1.0 - (1.0 - cfg["goal"]) * min(1.0, r / max(cfg["goal_rings"], 1.0)))
+            pin.add(list(range(r * N, (r + 1) * N)), wgt, "REPLACE")
+        elif r < int(cfg["pin_rings"]):
+            pin.add(list(range(r * N, (r + 1) * N)), (1.0, 0.5, 0.25)[min(r, 2)], "REPLACE")
+    if not hybrid:
+        am = ob.modifiers.new("Armature", "ARMATURE"); am.object = rig; am.use_vertex_groups = True
     cm = ob.modifiers.new("Cloth", "CLOTH"); st = cm.settings
     st.quality = int(cfg["quality"]); st.mass = cfg["mass"]; st.tension_stiffness = cfg["tension"]; st.compression_stiffness = cfg["compression"]; st.shear_stiffness = cfg["shear"]
     st.bending_stiffness = cfg["bending"]; st.air_damping = cfg["damp_air"]; st.tension_damping = st.compression_damping = st.shear_damping = cfg["tdamp"]
@@ -51,6 +58,18 @@ def simulate(poses, out, acts, cfg):
     sc.gravity = (0, 0, -9.81 * cfg["gravity"])
     body.modifiers.new("Collision", "COLLISION"); body.collision.thickness_outer = 0.005; body.collision.use_culling = False; body.collision.damping = 0.5; body.collision.cloth_friction = cfg["friction"]
     res = {}
+    import cloth_lib as cl
+    ip = cal.bones.index("pelvis")
+
+    def targets(a, nfr):
+        out = []
+        for i in range(nfr):
+            Sk = cal.skin[cal.index[(a, 0, i)]]
+            X = (np.c_[V0, np.ones(len(V0))] @ Sk[ip].T)[:, :3]
+            h, t = cal.caps.posed(Sk)
+            out.append(X + cl.hull_push(V0, Sk[ip], h, t, cal.caps.radius, margin=cfg["margin"], kappa=cfg["kappa"], z_top=p["z_top"], z_hem=p["z_hem"], use_tent=True, drop=1.0))
+        return out
+
     for act in sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"])):
         a = int(act["uo_action"])
         if a not in acts:
@@ -64,6 +83,17 @@ def simulate(poses, out, acts, cfg):
         pre = int(cfg["preroll"]); cyc = int(cfg["cycles"]) if loop else 1
         f0 = 1 - pre; f1 = 1 + period * cyc if loop else 1 + (nfr - 1) * STEP
         sc.frame_start = f0; sc.frame_end = f1; cm.point_cache.frame_start = f0; cm.point_cache.frame_end = f1
+        if hybrid:
+            tg = targets(a, nfr)
+
+            def setpos(scene, dg=None, tg=tg, nfr=nfr, loop=loop):
+                u = (scene.frame_current - 1) / STEP
+                u = u % nfr if loop else min(max(u, 0.0), nfr - 1)
+                i0 = int(np.floor(u)); fr = u - i0; i1 = (i0 + 1) % nfr if loop else min(i0 + 1, nfr - 1)
+                X = tg[i0 % nfr] * (1 - fr) + tg[i1] * fr
+                ob.data.vertices.foreach_set("co", X.astype(np.float32).ravel()); ob.data.update()
+            bpy.app.handlers.frame_change_pre[:] = [setpos]
+            setpos(sc)
         sc.frame_set(f0)
         base = 1 + (cyc - 1) * period if loop else 1
         want = {base + i * STEP: i for i in range(nfr)}
@@ -112,7 +142,7 @@ def score(poses, files):
 if __name__ == "__main__":
     mode, poses, out = sys.argv[1], sys.argv[2], sys.argv[3]
     if mode == "sim":
-        cfg = dict(quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, dist=0.005, preroll=40, cycles=3, pin_rings=2, gravity=1.0, pin_stiff=1.0, collide=1, friction=0.0, wx=1.0, wy=1.0)
+        cfg = dict(quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, dist=0.005, preroll=40, cycles=3, pin_rings=2, gravity=1.0, pin_stiff=1.0, collide=1, friction=0.0, wx=1.0, wy=1.0, hybrid=0, goal=0.3, goal_rings=26, margin=0.05, kappa=0.8)
         cfg.update({k: float(v) for k, v in (kv.split("=") for kv in sys.argv[5:])})
         simulate(poses, out, [int(x) for x in sys.argv[4].split(",")], cfg)
     else:

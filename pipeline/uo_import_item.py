@@ -89,6 +89,36 @@ def bake(ob):
     return bpy.data.objects.new(ob.name, me)
 
 
+def pose_own_arms(everything):
+    """a model that came with its own skeleton (a Daz / Genesis rig: lShldrBend, ...) in a T-pose: the shoulder bones are turned down by ARMS_DOWN about the front-back axis, so that the sleeves and the
+    shoulders deform with the weights the author made (bake() then takes the posed mesh). True if there was a skeleton with shoulders."""
+    import re
+    from mathutils import Matrix, Vector
+    arms = [o for o in everything if o.type == "ARMATURE"]
+    if not arms:
+        return False
+    arm = arms[0]; done = 0
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="POSE")
+    for pb in arm.pose.bones:
+        nm = pb.name.lower()
+        if not re.search(r"(shldr|shoulder|upperarm|upper_arm|uparm)", nm) or re.search(r"(twist|collar|clav|handle)", nm):
+            continue
+        if pb.parent is not None and re.search(r"(shldr|shoulder|upperarm|upper_arm|uparm)", pb.parent.name.lower()) and not re.search(r"collar|clav", pb.parent.name.lower()):
+            continue                                                     # the lower segment of the same arm follows its parent
+        head = arm.matrix_world @ pb.head; tail = arm.matrix_world @ pb.tail
+        sg = 1.0 if head.x > 0 else -1.0                                 # which side the arm is on (the bone itself may point anywhere: Daz bones point up)
+        R = Matrix.Rotation(sg * np.radians(ARMS_DOWN), 4, "Y")           # about +Y: the +X arm goes down
+        T = Matrix.Translation(head)
+        Rw = T @ R @ T.inverted()
+        pb.matrix = arm.matrix_world.inverted() @ Rw @ (arm.matrix_world @ pb.matrix)
+        bpy.context.view_layer.update()
+        done += 1
+    bpy.ops.object.mode_set(mode="OBJECT")
+    print("uo_import_item: ARMS_DOWN %.0f deg: %d shoulder bone(s) of the model's own skeleton turned" % (ARMS_DOWN, done))
+    return done > 0
+
+
 def arms_down(n):
     """turn the sleeves of a T-pose model down about the shoulders (see ARMS_DOWN): per side the pivot is the inner end of the sleeve faces; vertices turn by ARMS_DOWN times a weight that is 1 on the
     sleeve and fades to 0 over ARM_BLEND towards the body"""
@@ -127,11 +157,12 @@ def run():
         for o in meshes:
             d = np.array(o.dimensions)
             print("   %-30s %7d  %.3f x %.3f x %.3f%s" % (o.name, len(o.data.vertices), *d, "   <- SKIP" if named(o, SKIP) else ""))
+        posed_own = bool(ARMS_DOWN) and pose_own_arms(everything)             # T-pose + own skeleton: pose it before the meshes are baked
         src = [o for o in meshes if not named(o, SKIP) and (not KEEP or named(o, KEEP))]
         imported = True
     else:
         src = [o for o in bpy.context.selected_objects if o.type == "MESH" and o.name not in UO_NAMES]
-        imported = False
+        imported = False; posed_own = False
     if not src:
         raise RuntimeError("no mesh to work on (FILE is empty and nothing is selected, or the file has no mesh)")
     bpy.context.view_layer.update()
@@ -143,7 +174,7 @@ def run():
         n = bake(o)
         clo.objects.link(n)
         news.append(n)
-    if ARMS_DOWN:
+    if ARMS_DOWN and not posed_own:
         for n in news:
             arms_down(n)
     if DROP_MATERIALS:
