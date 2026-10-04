@@ -162,20 +162,6 @@ def hull_push(Vrest, S_pelvis, heads, tails, radius, centre_xy=(0.0, -0.02), mar
     return d_rest @ S_pelvis[:3, :3].T
 
 
-def robe_flare(Vrest, coef, centre_xy=(0.0, -0.02), z_top=1.02, z_hem=0.05, pw=1.0):
-    """Hem swing of a loose garment, in the rest frame of the pelvis: radial displacement (n, 3) that grows from the waist (0) to the hem (full) as t ** pw.
-    coef = (c0, c1c, c1s, c2c, c2s) metres: the radius changes by c0 + c1 cos(a) + c1 sin(a) + c2 cos(2a) + c2 sin(2a) at the hem, a = angle around the vertical axis of the waist
-    (c0 = the whole hem wider / narrower, c1 = shifted to one side, c2 = stretched along an axis: the stride). The table per action and frame (robe_flare.json) was fitted jointly on
-    the original robes 469, 447, 970 (robe_flare_fit.py): the game's cloth swings the same way on every one of them (the fitted values of different robes correlate 0.8-0.97)."""
-    u = Vrest[:, :2] - np.asarray(centre_xy)
-    a = np.arctan2(u[:, 1], u[:, 0])
-    t = np.clip((z_top - Vrest[:, 2]) / max(z_top - z_hem, 1e-3), 0.0, 1.0)
-    f = coef[0] + coef[1] * np.cos(a) + coef[2] * np.sin(a) + coef[3] * np.cos(2 * a) + coef[4] * np.sin(2 * a)
-    d = np.zeros((len(Vrest), 3))
-    d[:, :2] = (t ** pw * f)[:, None] * np.c_[np.cos(a), np.sin(a)]
-    return d
-
-
 def hang_matrix(S_pelvis, frac):
     """rotation of the pelvis with a fraction `frac` of its tilt taken out (0 = the pelvis as it is, 1 = the pelvis turned upright: only its turn about the vertical stays):
     hanging cloth is pulled down by gravity, not carried with a body that bends forward or lies down"""
