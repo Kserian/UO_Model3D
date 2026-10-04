@@ -20,10 +20,15 @@ from mathutils import Matrix
 FILE = ""             # path of the model to import ("" = take the SELECTED mesh objects instead, e.g. something you appended yourself)
 KIND = "shirt"        # shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat ("" = do not scale or move; only clean + join)
 SCALE = 0.0           # > 0: uniform scale you give (the item is then only moved), 0 = from the height of KIND
+PLACE = "wrap"        # "wrap": the item is only cleaned, joined and reduced here, its units, size and place are found from the skin by uo_autofit_item.py (called by uo_prepare_item.py);
+                      # "height": the old way, one height per KIND (EXTENTS below) - right only for items shaped like the typical original (docs/qa/autofit.md)
 TURN = 0              # deg around the vertical axis (180 when the item came in back to front)
 JOIN = True           # one object out of all the meshes of the file (False: they stay separate objects, each scaled alike)
+KEEP = ()             # names (parts of names, any case) of the meshes to keep; everything else is left out (empty = all that SKIP does not exclude)
 SKIP = ()             # names (parts of names, any case) of meshes of the file to leave out: eyes, the model's body, helper shapes, collision meshes
 NAME = ""             # name of the result ("" = file name)
+DECIMATE_TO = 30000   # a model with more vertices than this is reduced (collapse, UVs and materials kept) - a 144k-vertex scan costs minutes in every later step; uo_densify_item.py adds
+                      # vertices back where the item has to bend. 0 = never
 PERCENT = 0.5         # the height is measured between the PERCENT and 100 - PERCENT percentile of the vertices (a stray spike does not count)
 
 # measured on the original sprites (stand, mean of the 5 directions): z of the lowest and highest point of the item in the rest pose, m
@@ -80,7 +85,7 @@ def run():
         for o in meshes:
             d = np.array(o.dimensions)
             print("   %-30s %7d  %.3f x %.3f x %.3f%s" % (o.name, len(o.data.vertices), *d, "   <- SKIP" if any(k.lower() in o.name.lower() for k in SKIP) else ""))
-        src = [o for o in meshes if not any(k.lower() in o.name.lower() for k in SKIP)]
+        src = [o for o in meshes if not any(k.lower() in o.name.lower() for k in SKIP) and (not KEEP or any(k.lower() in o.name.lower() for k in KEEP))]
         imported = True
     else:
         src = [o for o in bpy.context.selected_objects if o.type == "MESH" and o.name not in UO_NAMES]
@@ -108,6 +113,18 @@ def run():
     for k, n in enumerate(news):
         n.name = (NAME or os.path.splitext(os.path.basename(FILE))[0] or "Item") + ("" if len(news) == 1 else "_%d" % k)
         n.data.name = n.name
+    if DECIMATE_TO > 0:
+        total = sum(len(n.data.vertices) for n in news)
+        if total > DECIMATE_TO:
+            ratio = DECIMATE_TO / total
+            for n in news:
+                md = n.modifiers.new("uo_decimate", "DECIMATE"); md.ratio = ratio
+            bpy.context.view_layer.update()
+            dg = bpy.context.evaluated_depsgraph_get()
+            for n in news:
+                me = bpy.data.meshes.new_from_object(n.evaluated_get(dg))
+                n.modifiers.clear(); old = n.data; n.data = me; bpy.data.meshes.remove(old)
+            print("uo_import_item: %d vertices -> %d (DECIMATE_TO %d)" % (total, sum(len(n.data.vertices) for n in news), DECIMATE_TO))
     verts = np.concatenate([np.array([v.co[:] for v in n.data.vertices]) for n in news])
     if TURN:
         R = np.array(Matrix.Rotation(np.radians(TURN), 3, "Z"))
@@ -116,7 +133,9 @@ def run():
             n.data.transform(Matrix.Translation(c0) @ Matrix.Rotation(np.radians(TURN), 4, "Z") @ Matrix.Translation(-c0))
         verts = np.concatenate([np.array([v.co[:] for v in n.data.vertices]) for n in news])
     info = "%d mesh object(s), %d vertices, size %.3f x %.3f x %.3f (as imported)" % (len(news), len(verts), *(verts.max(0) - verts.min(0)))
-    if KIND:
+    if KIND and PLACE == "wrap":
+        print("uo_import_item: PLACE = wrap: size and place are left to uo_autofit_item.py (uo_prepare_item.py runs it)")
+    elif KIND:
         if KIND not in EXTENTS:
             raise ValueError("KIND must be one of %s" % list(EXTENTS))
         zlo, zhi, part = EXTENTS[KIND]

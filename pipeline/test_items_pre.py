@@ -95,7 +95,7 @@ if os.environ.get("UO_TEST_DENSIFY"):                           # experiment: uo
     item_me = item.data
 if os.environ.get("UO_TEST_PREPARE") == "1":                    # the whole slot chain: densify -> fit -> bind
     os.environ["UO_SCRIPTS"] = scripts
-    run("uo_prepare_item.py", KIND=os.environ["UO_TEST_ITEM"])
+    run("uo_prepare_item.py", KIND=os.environ["UO_TEST_ITEM"], AUTOFIT=False)
 elif os.environ.get("UO_TEST_FIT") == "1":
     run("uo_fit_item.py", KIND=os.environ["UO_TEST_ITEM"], **({"MIN_GAP": float(os.environ["UO_TEST_MIN_GAP"])} if "UO_TEST_MIN_GAP" in os.environ else {}))
 over = {}

@@ -28,6 +28,11 @@ MIN_GAP = -1.0        # m, no part of the item closer to the skin than this (0 =
 # its class, not measured.
 GAP_BY_KIND = {"shirt": 0.015, "pants": 0.015, "boots": 0.015, "gloves": 0.015, "plate": 0.03, "legs": 0.03, "arms": 0.03, "helm": 0.03, "neck": 0.03}
 MAX_GAP = 0.0         # m, > 0: pull parts standing off more than this towards the skin (0 = off)
+LIMIT = -1.0          # m, soft limit of how far from the skin any part of the item may stand: what is farther is brought closer (S -> LIMIT + (S - LIMIT) * LIMIT_K), smoothly over the
+                      # mesh, so details are squashed, not cut. This is what keeps big pauldrons, flared cuffs and fat collars "UO-thin": the original items of a slot stand
+                      # out of the body silhouette by this much at most (docs/qa/layer_analysis.md: plate 5.6-8.1 cm, shirt 5.6, helm 8.3); < 0 = LIMIT_BY_KIND, 0 = off
+LIMIT_K = 0.35        # what is left of the excess: 0 = cut off at LIMIT, 1 = no limit
+LIMIT_BY_KIND = {"shirt": 0.07, "plate": 0.08, "harness": 0.06, "arms": 0.07, "pants": 0.06, "legs": 0.07, "boots": 0.05, "gloves": 0.05, "helm": 0.10, "neck": 0.06}
 RADIUS = 0.04         # m, smallest area a push spreads over
 SPREAD = 3.0          # a push of d spreads over at least SPREAD * d (bigger = broader, gentler swelling)
 ITERATIONS = 12       # push rounds at most (it stops as soon as nothing is too close)
@@ -42,6 +47,8 @@ SLIM = 1.0            # < 1 makes the item narrower below the chest (e.g. 0.85 =
 
 if MIN_GAP < 0:
     MIN_GAP = GAP_BY_KIND.get(KIND, 0.015)
+if LIMIT < 0:
+    LIMIT = LIMIT_BY_KIND.get(KIND, 0.0)
 
 body = bpy.data.objects["UO_Body"]
 rig = bpy.data.objects["UO_Rig"]
@@ -281,7 +288,7 @@ def fit(ob, bvh):
     Q = Q0.copy()
     S0 = skin(bvh, Q0, MIN_GAP + 0.3)[1][node]
     turn = ""
-    if MATCH_ARMS or SLIM < 1:
+    if MATCH_ARMS or SLIM < 1 or LIMIT > 0:
         me.calc_loop_triangles()
         tri = node[np.array([t.vertices[:] for t in me.loop_triangles])]
         edges = np.unique(np.sort(np.r_[tri[:, [0, 1]], tri[:, [1, 2]], tri[:, [2, 0]]], 1), axis=0)
@@ -293,6 +300,18 @@ def fit(ob, bvh):
     if SLIM < 1:
         Q = slim(Q, edges, Arms())
         turn += " | slimmed to %.2f" % SLIM
+    if LIMIT > 0:                                                    # bring what stands out too far closer to the skin (smoothly), never nearer than LIMIT
+        N, S = skin(bvh, Q, 0.6)
+        over = np.where(S < 0.6, np.maximum(0, S - LIMIT), 0.0)
+        if (over > 1e-4).any():
+            V = -(1 - LIMIT_K) * over[:, None] * N
+            for _ in range(6):                                       # the nearest skin point jumps from one place to another: smooth the displacement over the mesh
+                acc = V.copy(); cnt = np.ones(len(Q))
+                np.add.at(acc, edges[:, 0], V[edges[:, 1]]); np.add.at(acc, edges[:, 1], V[edges[:, 0]])
+                np.add.at(cnt, edges[:, 0], 1); np.add.at(cnt, edges[:, 1], 1)
+                V = 0.5 * V + 0.5 * acc / cnt[:, None]
+            Q = Q + V
+            turn += " | limited to %.0f cm: %d verts pulled in (max %.1f cm)" % (100 * LIMIT, (np.linalg.norm(V, axis=1) > 1e-4).sum(), 100 * np.linalg.norm(V, axis=1).max())
     rounds = 0
     Sn = skin(bvh, Q)[1]
     close = np.nonzero(Sn < MIN_GAP + 0.05)[0]                        # only these can end up too close

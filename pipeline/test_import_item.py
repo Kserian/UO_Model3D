@@ -37,10 +37,21 @@ def run(script, **over):
         text, n = re.subn(r"^%s\s*=.*$" % k, "%s = %r" % (k, v), text, count=1, flags=re.M)
         assert n == 1, (script, k)
     exec(compile(text, script, "exec"), {"__name__": "__main__"})
-run("uo_import_item.py", FILE=os.environ["FOREIGN_GLB"], KIND=os.environ["FOREIGN_KIND"], TURN=int(os.environ["FOREIGN_TURN"]))
+MODE = os.environ.get("FOREIGN_MODE", "height")
+if MODE == "wrap":                                     # units / place / size from the skin (uo_autofit_item.py), not from one height per KIND
+    run("uo_import_item.py", FILE=os.environ["FOREIGN_GLB"], KIND="", TURN=int(os.environ["FOREIGN_TURN"]))
+    run("uo_autofit_item.py", KIND=os.environ["FOREIGN_KIND"])
+else:
+    run("uo_import_item.py", FILE=os.environ["FOREIGN_GLB"], KIND=os.environ["FOREIGN_KIND"], TURN=int(os.environ["FOREIGN_TURN"]))
 item = bpy.context.view_layer.objects.active
 got = np.array([item.matrix_world @ v.co for v in item.data.vertices]); ref = np.load(os.environ["FOREIGN_REF"])
 print("RESULT bbox ref  min", ref.min(0).round(3), "max", ref.max(0).round(3))
+from scipy.spatial import cKDTree
+_e = cKDTree(got).query(ref)[0] * 1000
+print("RESULT nearest-vertex error mm (ref -> got): mean %.1f  p95 %.1f  max %.1f | height ratio %.3f  width ratio %.3f" % (_e.mean(), np.percentile(_e, 95), _e.max(), np.ptp(got[:, 2]) / max(np.ptp(ref[:, 2]), 1e-9), np.ptp(got[:, 0]) / max(np.ptp(ref[:, 0]), 1e-9)))
+if len(ref) == len(got):
+    e = np.linalg.norm(got - ref, axis=1) * 1000
+    print("RESULT vertex error mm: mean %.1f  p95 %.1f  max %.1f  | scale ratio %.3f" % (e.mean(), np.percentile(e, 95), e.max(), np.ptp(got[:, 2]) / max(np.ptp(ref[:, 2]), 1e-9)))
 print("RESULT bbox got  min", got.min(0).round(3), "max", got.max(0).round(3))
 run("uo_materials.py")
 run("uo_fit_item.py")
@@ -51,11 +62,14 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--item", default="shirt"); ap.add_argument("--scale", default="1.15"); ap.add_argument("--offset", default="0.12,0.05,-0.20")
     ap.add_argument("--turn", default="0"); ap.add_argument("--skip", default="icosphere"); ap.add_argument("--tmp"); ap.add_argument("--render", action="store_true")
+    ap.add_argument("--mode", default="height", choices=["height", "wrap"]); ap.add_argument("--zrange", help="lo,hi: cut the replica to this height range (a short item)")
     a = ap.parse_args()
     tmp = os.path.abspath(a.tmp) if a.tmp else tempfile.mkdtemp(prefix="test_import_")
     os.makedirs(tmp, exist_ok=True)
     sys.path.insert(0, HERE)
     import test_items as ti
+    if a.zrange:
+        ti.ITEMS[a.item] = dict(ti.ITEMS[a.item], zrange=[float(x) for x in a.zrange.split(",")])
     spec = os.path.join(tmp, "spec.json"); json.dump(ti.ITEMS, open(spec, "w"))
     blend = os.path.abspath(os.path.join(HERE, "..", "model", "UO_Body_0x190.blend"))
     sa, sb = os.path.join(tmp, "stage_a.py"), os.path.join(tmp, "stage_b.py")
@@ -63,10 +77,10 @@ if __name__ == "__main__":
     kind = a.item
     env = dict(os.environ, UO_TEST_SPEC=spec, UO_TEST_ITEM=a.item, UO_TEST_FIT="0", UO_TEST_SCRIPTS=HERE, FOREIGN_SCALE=a.scale, FOREIGN_OFFSET=a.offset,
                FOREIGN_REF=os.path.join(tmp, "ref.npy"), FOREIGN_GLB=os.path.join(tmp, "foreign.glb"), FOREIGN_KIND=kind, FOREIGN_TURN=a.turn,
-               FOREIGN_PART=ti.ITEMS[a.item]["part"], UO_IMPORT_SKIP=a.skip, FOREIGN_OUT=os.path.join(tmp, "imported.blend"))
+               FOREIGN_PART=ti.ITEMS[a.item]["part"], UO_IMPORT_SKIP=a.skip, FOREIGN_OUT=os.path.join(tmp, "imported.blend"), FOREIGN_MODE=a.mode)
     for stage in (sa, sb):
         r = subprocess.run([sys.executable, os.path.join(HERE, "run_script_in_blend.py"), blend, stage], capture_output=True, text=True, env=env)
-        print("\n".join(l for l in r.stdout.splitlines() if l.startswith(("RESULT", "uo_import_item", "uo_materials", "uo_fit", "uo_bind", "stage", "   "))))
+        print("\n".join(l for l in r.stdout.splitlines() if l.startswith(("RESULT", "  AMBIG", "uo_autofit_item", "uo_import_item", "uo_materials", "uo_fit", "uo_bind", "stage", "   "))))
         if r.returncode:
             sys.exit("%s failed:\n%s\n%s" % (stage, r.stdout[-2500:], r.stderr[-2500:]))
     if a.render:
