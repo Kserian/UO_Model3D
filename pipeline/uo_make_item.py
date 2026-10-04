@@ -153,17 +153,33 @@ def run_blend(base, stage_text, log):
     return keep
 
 
+HINTS = ("mannequin", "dummy", "guy", "human", "body", "skin", "head", "eye", "teeth", "tongue", "base_mesh", "collision", "shadow", "ground", "floor", "stand", "plane")
+
+
 def list_file(path):
+    """meshes of a model file with their size, and which of them look like something other than the item (a mannequin, eyes, a ground plane): candidates for `skip`"""
     import bpy
+    import numpy as np
     bpy.ops.wm.read_factory_settings(use_empty=True)
     ext = os.path.splitext(path)[1].lower()
     (bpy.ops.import_scene.gltf if ext in (".glb", ".gltf") else bpy.ops.import_scene.fbx if ext == ".fbx" else bpy.ops.wm.obj_import)(filepath=path)
-    import numpy as np
-    print("%-34s %9s  %-22s %s" % ("mesh", "vertices", "size (world, file units)", "world z range"))
+    rows = []
     for o in bpy.data.objects:
         if o.type == "MESH":
-            v = np.array([(o.matrix_world @ x.co)[:] for x in o.data.vertices]); d = v.max(0) - v.min(0)
-            print("%-34s %9d  %6.3f x %6.3f x %6.3f  %.3f .. %.3f" % (o.name, len(v), *d, v[:, 2].min(), v[:, 2].max()))
+            v = np.array([(o.matrix_world @ x.co)[:] for x in o.data.vertices]); rows.append((o.name, len(v), v.max(0) - v.min(0), v[:, 2].min(), v[:, 2].max()))
+    allv = np.array([(max(r[3] for r in rows)), (min(r[4] for r in rows))]) if rows else None
+    big = max((r[2].max() for r in rows), default=0)
+    print("%-34s %9s  %-24s %-18s %s" % ("mesh", "vertices", "size (file units)", "z range", "hint"))
+    for name, n, d, z0, z1 in rows:
+        hint = []
+        if any(h in name.lower() for h in HINTS):
+            hint.append("name looks like a mannequin / helper: skip?")
+        if n < 40:
+            hint.append("tiny (%d vertices): a detail" % n)
+        if n >= 3000 and d[2] > 0.8 * big and d[2] > 1.5 * max(d[0], d[1]) * 0.9 and len(rows) > 1:
+            hint.append("whole figure? (as tall as the model): skip?")
+        print("%-34s %9d  %6.3f x %6.3f x %6.3f  %.3f .. %.3f  %s" % (name, n, *d, z0, z1, "; ".join(hint)))
+    print("total %d meshes, %d vertices. Use  \"skip\": [parts of names]  or  \"keep\": [parts of names]  (\"=name\" = the exact name) in the recipe." % (len(rows), sum(r[1] for r in rows)))
     os._exit(0)
 
 

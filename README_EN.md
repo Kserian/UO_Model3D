@@ -242,6 +242,8 @@ densify (dense meshes, so that it bends smoothly) -> `uo_fit_item.py` (pushed ou
 Weapon (`weapon`): `uo_orient_weapon.py` stands it upright (tip up, flat side on +X, class length), then `uo_place_weapon.py` and `uo_bind_item.py`.
 Next to `item.blend` there is `qa.json` (`pipeline/item_qa.py`, a few seconds): how many vertices are inside the body in motion (clipping before the render pushes them out of the body) and how far the item stands off the skin (thickness). The report says `AMBIGUOUS` when two solutions (e.g. front / back) fit almost equally well: check `preview.png` and set `turn` or `scale` in the recipe.
 
+In the Blender window `uo_autofit_item.py` needs `scipy` (Blender does not ship it): `import subprocess, sys; subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'scipy'])` in Blender's Python console, or simply run `uo_make_item.py` from outside. Without scipy `uo_import_item.py` falls back to the old placement from one height per slot (with a warning) and `uo_prepare_item.py` skips the fit.
+
 A model of several items with its mannequin in the file (e.g. a harness with a sword on the back): `"reference": {"keep": ["=mannequin mesh name"], "kind": "shirt"}` fits the mannequin to the body and every one of `"parts"` gets its transform
 (`{"name": "straps", "keep": [...], "kind": "harness"}`, `{"name": "sword", "keep": [...], "rigid": "quiver"}`; `=name` = the exact mesh name). Rigid things on the back get the properties `uo_behind_torso` (the torso hides them from the front) and `uo_no_body_gap` (they are not bent away from limbs).
 

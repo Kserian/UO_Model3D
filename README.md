@@ -240,6 +240,8 @@ zagęszczenie (gęste siatki, żeby się gładko zginało) -> `uo_fit_item.py` (
 Broń (`weapon`): `uo_orient_weapon.py` stawia ją pionowo (czubek w górę, płaska strona na +X, długość klasy), potem `uo_place_weapon.py` i `uo_bind_item.py`.
 Obok `item.blend` powstaje `qa.json` (`pipeline/item_qa.py`, kilka sekund): ile wierzchołków jest w ciele w ruchu (przenikanie przed wypchnięciem z ciała przez render) i jak daleko przedmiot stoi od skóry (grubość). Skrypt pisze w raporcie `AMBIGUOUS`, gdy dwa rozwiązania (np. przód/tył) pasują prawie tak samo: wtedy sprawdź `preview.png` i ustaw `turn` albo `scale` w przepisie.
 
+W oknie Blendera `uo_autofit_item.py` wymaga `scipy` (Blender go nie ma): `import subprocess, sys; subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'scipy'])` w konsoli Pythona Blendera albo po prostu `uo_make_item.py` z zewnątrz. Bez scipy `uo_import_item.py` wraca do starego ustawiania z jednej wysokości na slot (z ostrzeżeniem), a `uo_prepare_item.py` pomija dopasowanie.
+
 Model z kilku przedmiotów i manekinem w pliku (np. uprząż z mieczem na plecach): `"reference": {"keep": ["=nazwa siatki manekina"], "kind": "shirt"}` dopasowuje manekina do ciała, a jego przekształcenie dostają wszystkie `"parts"`
 (`{"name": "paski", "keep": [...], "kind": "harness"}`, `{"name": "miecz", "keep": [...], "rigid": "quiver"}`; `=nazwa` = dokładna nazwa siatki). Rzeczy sztywne na plecach dostają własności `uo_behind_torso` (z przodu zasłania je tułów) i `uo_no_body_gap` (nie są odginane od kończyn).
 

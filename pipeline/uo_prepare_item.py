@@ -54,7 +54,14 @@ if KIND not in SLOTS:
     raise ValueError("KIND must be one of %s" % list(SLOTS))
 _part, _dens, _cls = SLOTS[KIND]
 print("uo_prepare_item: KIND %s -> PART %s, class %s" % (KIND, _part, _cls))
-if AUTOFIT:
+try:
+    import scipy                                      # noqa: F401
+    _scipy = True
+except ImportError:
+    _scipy = False
+if AUTOFIT and not _scipy:
+    print("uo_prepare_item: scipy is not installed in this Python: no fit to the skin (uo_autofit_item.py); the item stays where uo_import_item.py put it")
+elif AUTOFIT:
     run("uo_autofit_item.py", KIND=KIND)
 if DENSIFY and _dens:
     run("uo_densify_item.py", KIND=KIND)

@@ -13,7 +13,11 @@
 import bpy
 import numpy as np
 from mathutils import Matrix
-from scipy import optimize, spatial
+try:
+    from scipy import optimize, spatial
+except ImportError:                                  # Blender's own Python has numpy but not scipy
+    raise RuntimeError("uo_autofit_item.py needs scipy. Install it into Blender's Python (Blender: Scripting > Python Console: import subprocess, sys; "
+                       "subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'scipy'])), or make the item outside the window: python pipeline/uo_make_item.py recipe.json")
 
 KIND = "shirt"        # slot, see PARTS_BY_KIND ("" = every body part)
 GAP = -1.0            # m, wanted distance from the skin to the item's inner surface; < 0 = by KIND (as MIN_GAP of uo_fit_item.py)

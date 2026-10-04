@@ -175,6 +175,13 @@ def run():
     return news
 
 
+try:
+    import scipy                                      # noqa: F401  (uo_autofit_item.py needs it)
+except ImportError:
+    if PLACE == "wrap" and KIND:
+        PLACE = "height"
+        print("uo_import_item: WARNING - scipy is not installed in this Python, so the size and place come from ONE HEIGHT per KIND (PLACE = height), which only suits items shaped like the "
+              "typical original (docs/qa/autofit.md). For the fit to the skin install scipy into Blender's Python or run  python pipeline/uo_make_item.py recipe.json  outside the window.")
 FILE = os.environ.get("UO_IMPORT_FILE", FILE)
 KIND = os.environ.get("UO_IMPORT_KIND", KIND)
 SKIP = [k for k in os.environ.get("UO_IMPORT_SKIP", "").split(",") if k] or SKIP
