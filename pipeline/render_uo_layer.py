@@ -68,6 +68,7 @@ W, H = CANVAS
 DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original frames sit inside the canvas
 
 sc = bpy.context.scene
+DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
 rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
 clothes = [o for o in bpy.data.collections[CLOTHING].all_objects if o.type == "MESH"] if CLOTHING in bpy.data.collections else []

@@ -22,6 +22,8 @@ a fizykę badamy na **oryginalnych** przedmiotach z klatek. Reguły: nadmiar ele
 9. **Narzędzia QA:** `run_qa.py [--quick]` (items, canvas, autofit, robe, cloak, materials, import; `--quick` pomija items i canvas, ok. 6 min taniej), `item_sheet.py`, `item_gif.py`, `pose_capture.py` (macierze skórowania do numpy bez Blendera), `robe_calib.py`, `cloak_calib.py`, `cloak_fit_frames.py`, `test_robe.py`, `test_cloak.py`, `test_autofit.py`, `test_import_item.py`, `item_qa.py`, `item_thickness.py`.
    Stan testów na koniec: `test_items` 0,718 (bez zmian), `test_canvas` 16/16 OK, `test_materials` OK, `run_qa --quick` PASSED (autofit 13,6 mm, robe 0,757, cloak 0,507, import 18,2 mm).
 
+10. **Detale tekstury (sesja 15, po prośbie użytkownika):** renderer `DESPECKLE` (domyślnie 28: pojedyncze ciemne piksele wewnątrz przedmiotu przejmują kolor otoczenia) kasował zapięcie przodu gambesonu (paski, guziki, ściegi); render ma 1 próbkę na piksel, a pasek ma ok. 1 px. Teraz `uo_prepare_item.py` ustawia własność sceny `uo_despeckle = 0` dla klas `tight`/`loose` (tkanina, skóra), a `render_uo_layer.py` ją czyta; zbroje (`hard`) zostają przy 28 (nity, głębokie fałdy). Nadpisanie w przepisie: `"tune": {"scene": {"uo_despeckle": 0}}`.
+
 ## Wnioski do zapamiętania
 - **Metoda:** zawsze liczba z własnego pomiaru przed/po (replika oryginału -> obcy plik -> odzysk; sylwetka vs duszek). Mierzone na klatkach, nie na siatce: „grubość” = piksele poza sylwetką oryginalnego ciała.
 - **Duszek a z:** przedmioty za plecami rzutują się wyżej na ekranie (głębia 0,2 m ≈ +9 cm), więc „górna krawędź duszka” ≠ wysokość fizyczna.

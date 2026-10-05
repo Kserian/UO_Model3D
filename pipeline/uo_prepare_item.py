@@ -73,3 +73,10 @@ if DENSIFY and _dens:
 if FIT:
     run("uo_fit_item.py", KIND=KIND)
 run("uo_bind_item.py", PART=_part)
+# Cloth and leather keep the dark details of their texture (laces, buttons, stitches): the renderer's DESPECKLE (single dark pixels inside the item) is meant for sculpted
+# armour (rivets, deep folds) and removed the front closure of a gambeson. Hard items keep it; "tune": {"scene": {"uo_despeckle": 0}} in a recipe overrides.
+_dsp = EXTRA.get("scene", {}).get("uo_despeckle", 0 if _cls in ("tight", "loose") else None)
+if _dsp is not None:
+    _sc = bpy.context.scene
+    _sc["uo_despeckle"] = min(int(_dsp), int(_sc["uo_despeckle"])) if "uo_despeckle" in _sc else int(_dsp)
+    print("uo_prepare_item: renderer DESPECKLE %d (scene property uo_despeckle)" % _sc["uo_despeckle"])
