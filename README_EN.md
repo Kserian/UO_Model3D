@@ -218,7 +218,7 @@ items into it, not the other way round.
 8. **Tips:**
    - Make clothing about 1–2 cm above the skin.
    - Check attacks, spells and deaths in particular.
-   - Robes, dresses and skirts: `PART = "robe"` / `"skirt"` (the cloth hangs from the pelvis and the legs push it out; no simulation, no bone chains). Cloaks: `PART = "cloak"` (`kind: cloak`), swung back per action and frame from the table `cloak_pitch.json` (IoU with the original 468: 0.376 -> 0.507, `docs/qa/cloak_physics.md`); no waving of the sides.
+   - Robes, dresses and skirts: `PART = "robe"` / `"skirt"` (the cloth hangs from the pelvis and the legs push it out, and Blender's cloth simulation with collision against the body runs on top: `pipeline/uo_cloth_sim.py`, on by default in `uo_make_item.py` for `robe` / `skirt`, `--no-sim` turns it off; no bone chains). Cloaks: `PART = "cloak"` (`kind: cloak`), swung back per action and frame from the table `cloak_pitch.json` (IoU with the original 468: 0.376 -> 0.507, `docs/qa/cloak_physics.md`); no waving of the sides.
 
 ## 3a. The fast path: a free model -> an item in one command
 

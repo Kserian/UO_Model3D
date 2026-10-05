@@ -48,3 +48,14 @@ Solver PBD i grawitacyjne zwisanie szaty; podążanie szaty za udem (alfa), wiat
 4. Naramienniki jako ciągła siatka z korpusem rozciągają się z ramieniem w czarach.
 5. Pierwszy prawdziwy darmowy model (włosy Curuaty, CC BY 4.0: użytkownik pobiera i wrzuca, zapisać atrybucję).
 6. Body 401 (kobieta) w `anim.mul` prawie kopia męskiego; sprawdzić w grze przed ciałem kobiecym.
+
+# Sesja 16 (2026-10-04): pomiar fizyki szaty (szczegóły: `docs/qa/robe_physics.md`, „Sesja 16")
+Zlecenie: odwzorować z gry fizykę szaty i ruchy nóg; użytkownik dopuszcza symulację i pola sił, a rzeczy nieprzylegające do ciała (peleryny) mogą mieć nieco inną animację.
+Wynik: **render bez zmian** (`test_robe` 0,757). Sprawdzone i odrzucone (nie powtarzać bez nowego powodu): tabela wychylenia rąbka per klatka dopasowana na 469+447+970 (to szum kształtu repliki, po odjęciu stand gorsza), sprężyna z tłumieniem (rąbek goni cel), regresja na prędkościach nóg.
+Wdrożenie powłoki względem spoczynku nóg (`robe_hull_eval.py`) remisuje w `test_robe`. Nowe narzędzie: `pipeline/robe_hull_eval.py` (5 oryginalnych szat, ~1 min, wzorce 447/455/970/971 w `body13/mul/`).
+Dalej: prawdziwy darmowy model szaty / kiltu (test na cudzym kształcie), potem ewentualnie symulacja z kolizją.
+
+## Sesja 16, ciąg dalszy: symulacja tkaniny wdrożona (`pipeline/uo_cloth_sim.py`)
+Na żądanie użytkownika ("szata ma się dobrze układać, ciało nie przebija, chód naturalny z realnym materiałem") luźne ubrania dostają hybrydową symulację Blendera (cel = kształt z powłoki nóg, kolizja z ciałem, miękki limit 0,12 m), szczegóły i pomiary: `docs/qa/robe_physics.md`, "Sesja 16: symulacja hybrydowa". `uo_make_item.py` robi to domyślnie dla `robe` / `skirt` (`--no-sim`, recepta `"sim"`), render czyta `cloth_sim.npz` obok `item.blend`.
+Nowe opcje importu (recepta): `drop_materials` (wycięcie pasa z jednej siatki), `arms_down` (T-poza: kości ramion własnego szkieletu modelu, w zapasie obrót siatki), `arm_blend`; `materials.TEXTURE_PX` (uśrednienie tekstury). Modele testowe użytkownika (robe_free.glb, Myrddin_robe.fbx) nie są w repo (licencje nieznane).
+Otwarte: boczne "skrzydła" rąbka w biegu poza zasięgiem nóg (oryginał), rękawy dzwonowe (kolizja z tułowiem, samokolizja wyłączona), wybrzuszenie uda w biegu na wąskiej szacie, symulacja nie obejmuje akcji konnych i peleryny.

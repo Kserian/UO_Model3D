@@ -30,6 +30,7 @@ ANCHOR = (128, 192)                # UO anchor pixel inside the canvas (world po
                                    # (the original body frames are 136x120 with anchor (68, 86); use that pair for the old size)
 CLOTHING = "Clothing"              # collection with the clothing / equipment meshes
 CLOAK_SWING = 1.0                  # cloaks (uo_cloth type cloak): scale of the swing taken from the original cloak (0 = hangs as bound)
+CLOTH_SIM = 1                      # 1 = add the cloth simulation of uo_cloth_sim.py (cloth_sim.npz next to the .blend, if there is one) to the push of the legs
 CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom property uo_cloth) in the mounted actions 23-29: share in which the hanging part follows the legs (thighs above the
                                    # knee, shins below it, like skin) instead of hanging from the pelvis with the hull of the legs. A rider sits with the thighs forward and a robe that hangs from
                                    # the pelvis would leave them bare; the original robes lie along the legs. 0 = hang and push like on foot.
@@ -128,6 +129,17 @@ def cloth_ctx():
     return CLOTH_CTX
 
 
+def cloth_sim_table():
+    """the difference the cloth simulation (uo_cloth_sim.py) makes to the kinematic cloth, per action and frame: {"a_i": (n, 3)} in the rest frame; {} when there is none"""
+    if "sim" not in CLOTH_CTX:
+        CLOTH_CTX["sim"] = {}
+        path = os.path.join(os.path.dirname(bpy.data.filepath), "cloth_sim.npz") if bpy.data.filepath else ""
+        if CLOTH_SIM and path and os.path.exists(path):
+            z = np.load(path); CLOTH_CTX["sim"] = {k: z[k] for k in z.files}
+            print("render_uo_layer: cloth simulation %s (%d frames)" % (path, len(CLOTH_CTX["sim"])))
+    return CLOTH_CTX["sim"]
+
+
 def cloak_table():
     if "pitch" not in CLOTH_CTX:
         here = globals().get("__file__") and os.path.dirname(os.path.abspath(__file__))
@@ -176,6 +188,9 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
         return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     d0 = cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
                       z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
+    sim = cloth_sim_table().get("%d_%d" % (a, i))
+    if sim is not None and len(sim) == len(o.data.vertices):                   # the simulated cloth: what the simulation did on top of the push of the legs
+        d0 = d0 + sim[first].astype(np.float64)
     return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
 
 

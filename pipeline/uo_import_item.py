@@ -26,6 +26,11 @@ TURN = 0              # deg around the vertical axis (180 when the item came in 
 JOIN = True           # one object out of all the meshes of the file (False: they stay separate objects, each scaled alike)
 KEEP = ()             # names (parts of names, any case; "=name" = exactly that mesh) of the meshes to keep; everything else is left out (empty = all that SKIP does not exclude)
 SKIP = ()             # names (parts of names, any case) of meshes of the file to leave out: eyes, the model's body, helper shapes, collision meshes
+DROP_MATERIALS = ()   # names (parts of names, any case) of MATERIALS whose faces are cut out of the model: a belt, a buckle, a bag that is one mesh with the robe
+ARMS_DOWN = 0.0       # deg: a model in a T-pose (arms out) has its sleeves turned down by this much about the shoulders (80-90 for a T-pose, 0 = leave); the sleeves are the faces of ARM_MATERIALS, the
+                      # item around the shoulders follows them over ARM_BLEND m of the arm (uo_fit_item.py MATCH_ARMS only finds up to MAX_TURN deg, and a T-pose is beyond it)
+ARM_MATERIALS = ("sleeve",)   # names (parts of names, any case) of the materials of the sleeves (a trim of the sleeves too: "sleeve" matches TrimSleeve)
+ARM_BLEND = 0.12      # m: the width of the shoulder over which the turn fades from the sleeve into the body
 NAME = ""             # name of the result ("" = file name)
 DECIMATE_TO = 30000   # a model with more vertices than this is reduced (collapse, UVs and materials kept) - a 144k-vertex scan costs minutes in every later step; uo_densify_item.py adds
                       # vertices back where the item has to bend. 0 = never
@@ -84,6 +89,66 @@ def bake(ob):
     return bpy.data.objects.new(ob.name, me)
 
 
+def pose_own_arms(everything):
+    """a model that came with its own skeleton (a Daz / Genesis rig: lShldrBend, ...) in a T-pose: the shoulder bones are turned down by ARMS_DOWN about the front-back axis, so that the sleeves and the
+    shoulders deform with the weights the author made (bake() then takes the posed mesh). True if there was a skeleton with shoulders."""
+    import re
+    from mathutils import Matrix, Vector
+    arms = [o for o in everything if o.type == "ARMATURE"]
+    if not arms:
+        return False
+    arm = arms[0]; done = 0
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="POSE")
+    for pb in arm.pose.bones:
+        nm = pb.name.lower()
+        if not re.search(r"(shldr|shoulder|upperarm|upper_arm|uparm)", nm) or re.search(r"(twist|collar|clav|handle)", nm):
+            continue
+        if pb.parent is not None and re.search(r"(shldr|shoulder|upperarm|upper_arm|uparm)", pb.parent.name.lower()) and not re.search(r"collar|clav", pb.parent.name.lower()):
+            continue                                                     # the lower segment of the same arm follows its parent
+        head = arm.matrix_world @ pb.head; tail = arm.matrix_world @ pb.tail
+        sg = 1.0 if head.x > 0 else -1.0                                 # which side the arm is on (the bone itself may point anywhere: Daz bones point up)
+        R = Matrix.Rotation(sg * np.radians(ARMS_DOWN), 4, "Y")           # about +Y: the +X arm goes down
+        T = Matrix.Translation(head)
+        Rw = T @ R @ T.inverted()
+        pb.matrix = arm.matrix_world.inverted() @ Rw @ (arm.matrix_world @ pb.matrix)
+        bpy.context.view_layer.update()
+        done += 1
+    bpy.ops.object.mode_set(mode="OBJECT")
+    print("uo_import_item: ARMS_DOWN %.0f deg: %d shoulder bone(s) of the model's own skeleton turned" % (ARMS_DOWN, done))
+    return done > 0
+
+
+def arms_down(n):
+    """turn the sleeves of a T-pose model down about the shoulders (see ARMS_DOWN): per side the pivot is the inner end of the sleeve faces; vertices turn by ARMS_DOWN times a weight that is 1 on the
+    sleeve and fades to 0 over ARM_BLEND towards the body"""
+    me = n.data
+    mats = {i for i, m in enumerate(me.materials) if m and any(k.lower() in m.name.lower() for k in ARM_MATERIALS)}
+    if not mats:
+        print("uo_import_item: ARMS_DOWN: no material of %s in %s" % (list(ARM_MATERIALS), n.name)); return
+    co = np.empty(len(me.vertices) * 3); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+    sl = np.zeros(len(co), bool)
+    for p in me.polygons:
+        if p.material_index in mats:
+            sl[list(p.vertices)] = True
+    th = np.radians(ARMS_DOWN)
+    for sg in (1.0, -1.0):
+        side = sl & (co[:, 0] * sg > 0)
+        if not side.any():
+            continue
+        xin = np.percentile(np.abs(co[side, 0]), 2)                             # the inner end of the sleeve
+        ring = side & (np.abs(co[:, 0]) < xin + 0.03)
+        pv = co[ring].mean(0)
+        w = np.clip((np.abs(co[:, 0]) - (xin - ARM_BLEND)) / ARM_BLEND, 0, 1) * (co[:, 0] * sg > 0)
+        w = np.where(sl & (co[:, 0] * sg > 0), 1.0, w * (np.abs(co[:, 2] - pv[2]) < 0.2))   # the body fades in only at the height of the arm opening (not the chest, not the skirt)
+        a = sg * th * w                                                          # positive a turns the +X side down (z' = -dx sin a + dz cos a)
+        dx, dz = co[:, 0] - pv[0], co[:, 2] - pv[2]
+        co[:, 0] = np.where(w > 0, pv[0] + dx * np.cos(a) + dz * np.sin(a), co[:, 0])
+        co[:, 2] = np.where(w > 0, pv[2] - dx * np.sin(a) + dz * np.cos(a), co[:, 2])
+        print("uo_import_item: ARMS_DOWN %.0f deg, side %+d: pivot %s, %d sleeve vertices" % (ARMS_DOWN, sg, np.round(pv, 3), int(side.sum())))
+    me.vertices.foreach_set("co", co.ravel()); me.update()
+
+
 def run():
     if FILE:
         everything = import_file(FILE)
@@ -92,11 +157,12 @@ def run():
         for o in meshes:
             d = np.array(o.dimensions)
             print("   %-30s %7d  %.3f x %.3f x %.3f%s" % (o.name, len(o.data.vertices), *d, "   <- SKIP" if named(o, SKIP) else ""))
+        posed_own = bool(ARMS_DOWN) and pose_own_arms(everything)             # T-pose + own skeleton: pose it before the meshes are baked
         src = [o for o in meshes if not named(o, SKIP) and (not KEEP or named(o, KEEP))]
         imported = True
     else:
         src = [o for o in bpy.context.selected_objects if o.type == "MESH" and o.name not in UO_NAMES]
-        imported = False
+        imported = False; posed_own = False
     if not src:
         raise RuntimeError("no mesh to work on (FILE is empty and nothing is selected, or the file has no mesh)")
     bpy.context.view_layer.update()
@@ -108,6 +174,21 @@ def run():
         n = bake(o)
         clo.objects.link(n)
         news.append(n)
+    if ARMS_DOWN and not posed_own:
+        for n in news:
+            arms_down(n)
+    if DROP_MATERIALS:
+        import bmesh
+        for n in news:
+            drop = {i for i, m in enumerate(n.data.materials) if m and any(k.lower() in m.name.lower() for k in DROP_MATERIALS)}
+            if not drop:
+                continue
+            bm = bmesh.new(); bm.from_mesh(n.data)
+            faces = [f for f in bm.faces if f.material_index in drop]
+            bmesh.ops.delete(bm, geom=faces, context="FACES")
+            bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+            print("uo_import_item: DROP_MATERIALS %s: %d faces cut out of %s" % (sorted(DROP_MATERIALS), len(faces), n.name))
+            bm.to_mesh(n.data); bm.free(); n.data.update()
     for o in (everything if imported else src):      # drop what the file brought (meshes, armature, empties, lights, cameras)
         bpy.data.objects.remove(o, do_unlink=True)
     bpy.ops.object.select_all(action="DESELECT")
@@ -185,4 +266,6 @@ except ImportError:
 FILE = os.environ.get("UO_IMPORT_FILE", FILE)
 KIND = os.environ.get("UO_IMPORT_KIND", KIND)
 SKIP = [k for k in os.environ.get("UO_IMPORT_SKIP", "").split(",") if k] or SKIP
+ARMS_DOWN = float(os.environ.get("UO_IMPORT_ARMS_DOWN", ARMS_DOWN))
+DROP_MATERIALS = [k for k in os.environ.get("UO_IMPORT_DROP_MATERIALS", "").split(",") if k] or DROP_MATERIALS
 _result = run()
