@@ -25,7 +25,7 @@ Model: `światło(piksel) = albedo[teksel UV] * S(piksel)`, albedo na teksel (96
 
 1. **Światło i kierunek są dobre**, nic nie zmieniać. Ambient zostaje.
 2. **Odblask metalu** (zrobione): `uo_materials.py` dodaje `SPEC_STRENGTH * albedo * max(n·L,0)^SPEC_POWER`, domyślnie 1,0 i 16. Stare wartości (0,5 absolutne, bez albedo) były za słabe dla płyty i za mocne dla jasnych albedo. Płyta i hełmy: 2,0 / 19, metal ogólnie (kolczuga itp.): 0,7 / 11.
-3. **Cień własny nie jest odtwarzany w naszym renderze** (UO_Look to emisja, nie dostaje cieni). Efekt na ciało jest mały (rms -2,5%), na przedmioty potencjalnie większy (mediana 0,69). Zrobić go w Cycles można jako: emisja `s * c` bez cienia + diffuse od słońca `L` z cieniem `(1 - s) * c`, s = 0,4; wymaga sprawdzenia, czy ciało-holdout rzuca cień na przedmiot. Niezrobione (czeka na decyzję).
+3. **Cień własny nie jest odtwarzany w naszym renderze** (UO_Look to emisja, nie dostaje cieni). Efekt na ciało jest mały (rms -2,5%), na przedmioty potencjalnie większy (mediana 0,69). ZROBIONE dla przedmiotów z darmowych modeli (sesja 15, `uo_materials.py` SHADOW 0,4: emisja + Diffuse ze Słońcem rzucającym cień, `test_materials.py`); ciało-holdout w warstwie przedmiotu cienia nie rzuca (cień własny przedmiotu tylko). Na gambesonie 1,9% pikseli w cieniu.
 4. Brak AO i brak cienia na ziemi w sprite'ach: nie dodawać.
 
 ## Ograniczenia

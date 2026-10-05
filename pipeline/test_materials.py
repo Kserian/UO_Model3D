@@ -30,7 +30,7 @@ if V == "ref":
 else:
     b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
     b.inputs["Metallic"].default_value = 1.0 if V in ("raw", "metal") else 0.0; b.inputs["Roughness"].default_value = 0.15
-    if V in ("flat", "raw", "metal"):
+    if V in ("flat", "raw", "metal", "shadow"):
         img = bpy.data.images.new("t", 8, 8, alpha=True); img.colorspace_settings.name = "Non-Color"; px = np.tile(np.array(col, np.float32), 64); img.pixels.foreach_set(px)
     elif V == "checker":
         img = bpy.data.images.new("t", 64, 64, alpha=True); img.colorspace_settings.name = "Non-Color"; a = np.zeros((64, 64, 4), np.float32); a[..., 3] = 1
@@ -43,8 +43,19 @@ else:
     if V == "alpha": nt.links.new(tx.outputs["Alpha"], b.inputs["Alpha"])
 ob.data.materials.append(mat)
 bpy.ops.object.select_all(action="DESELECT"); ob.select_set(True); bpy.context.view_layer.objects.active = ob
+if V == "shadow":                                           # an invisible disc between the sphere and the UO light: its shadow falls on the sphere
+    import mathutils, re
+    L = mathutils.Vector((0.0012, -0.757, 0.653))
+    bpy.ops.mesh.primitive_circle_add(radius=0.12, fill_type="NGON", location=mathutils.Vector((0, -0.05, 1.35)) + L * 0.45)
+    oc = bpy.context.active_object; oc.rotation_euler = mathutils.Vector((0, 0, 1)).rotation_difference(L).to_euler(); oc.visible_camera = False
+    for c in list(oc.users_collection): c.objects.unlink(oc)
+    bpy.context.scene.collection.objects.link(oc)
+    bpy.ops.object.select_all(action="DESELECT"); ob.select_set(True); bpy.context.view_layer.objects.active = ob
 if V not in ("ref", "raw"):                                 # raw = the foreign material as it came (the "before" measurement)
     text = open(os.path.join(os.environ["MAT_SCRIPTS"], "uo_materials.py")).read()
+    if V != "shadow":                                       # the other cases test the Lambert look alone (the own shadow has its own case)
+        import re
+        text = re.sub(r"^SHADOW = [0-9.]+", "SHADOW = 0.0", text, count=1, flags=re.M)
     exec(compile(text, "uo_materials.py", "exec"), {"__name__": "__main__"})
 '''
 
@@ -70,7 +81,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--tmp"); a = ap.parse_args()
     tmp = os.path.abspath(a.tmp) if a.tmp else tempfile.mkdtemp(prefix="test_mat_")
     os.makedirs(tmp, exist_ok=True)
-    res = {v: render(v, tmp) for v in ("ref", "raw", "flat", "metal", "checker", "alpha")}
+    res = {v: render(v, tmp) for v in ("ref", "raw", "flat", "metal", "checker", "alpha", "shadow")}
     ok = True
     for v, fr in res.items():
         print("%-8s frames %d, opaque px %d, colours %d" % (v, len(fr), sum(int((f[..., 3] > 0).sum()) for f in fr), len({tuple(p) for f in fr for p in f[f[..., 3] > 0][:, :3]})))
@@ -97,5 +108,15 @@ if __name__ == "__main__":
     print("checker: %d colours vs %d for the flat sphere" % (nchk, nref)); ok &= nchk > nref
     areas = {v: sum(int((f[..., 3] > 0).sum()) for f in res[v]) for v in res}
     print("alpha sphere area %.2f of the flat one" % (areas["alpha"] / areas["flat"])); ok &= 0.2 < areas["alpha"] / areas["flat"] < 0.95   # the inside of the far half shows through the cut-out
+    # own shadow: the sphere with the disc in front of the light vs the same sphere without it (flat): the shaded part keeps ~0.4-0.5 of the light, the rest is unchanged
+    ratios, dark = [], 0
+    for f, g in zip(res["flat"], res["shadow"]):
+        sel = ndimage.binary_erosion(f[..., 3] > 0, iterations=2)
+        a, b = dec(f[..., 0][sel].astype(float) / 255), dec(g[..., 0][sel].astype(float) / 255)
+        k = b < 0.8 * a
+        dark += int(k.sum()); ratios += list(b[k] / np.maximum(a[k], 1e-6))
+    fr = dark / max(sum(int(ndimage.binary_erosion(f[..., 3] > 0, iterations=2).sum()) for f in res["flat"]), 1)
+    print("own shadow: %.0f%% of the sphere is shaded, the shaded part keeps %.2f of the light (flat 1.00; expected 0.45-0.65)" % (100 * fr, float(np.median(ratios)) if ratios else 1.0))
+    ok &= fr > 0.1 and bool(ratios) and 0.35 < float(np.median(ratios)) < 0.75
     print("RESULT", "OK" if ok else "FAIL")
     print("output in", tmp)

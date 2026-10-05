@@ -29,6 +29,7 @@ ANCHOR = (128, 192)                # UO anchor pixel inside the canvas (world po
                                    # 256x256 / (128, 192) holds 444 of the 449 people / equipment animations of the Nelderim client
                                    # (the original body frames are 136x120 with anchor (68, 86); use that pair for the old size)
 CLOTHING = "Clothing"              # collection with the clothing / equipment meshes
+SHADOW_SUN_K = 1.0                 # calibration of the Sun of the own shadow (uo_materials.py SHADOW): 1 = a lit surface has (1 - s) of the UO diffuse light (checked with test_shadow.py)
 CLOAK_SWING = 1.0                  # cloaks (uo_cloth type cloak): scale of the swing taken from the original cloak (0 = hangs as bound)
 CLOTH_SIM = 1                      # 1 = add the cloth simulation of uo_cloth_sim.py (cloth_sim.npz next to the .blend, if there is one) to the push of the legs
 CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom property uo_cloth) in the mounted actions 23-29: share in which the hanging part follows the legs (thighs above the
@@ -394,6 +395,43 @@ sc.view_settings.view_transform = "Standard"
 sc["uo_look"] = 1.0                 # UO lighting (see node group "UO_Look")
 sc["uo_exact"] = 1.0 if (EXACT_COLORS and "UO_Original_Atlas" in bpy.data.images) else 0.0   # no atlas -> model colours
 EXACT_ANY = EXACT_COLORS or EXACT_BODY
+
+
+SUN_STATE = {}
+
+
+def shadow_sun(on):
+    """own shadow of items whose materials use the node group UO_Look_NS (uo_materials.py SHADOW): a Sun with the UO light direction, in the camera frame like the UO light, that casts shadows;
+    its strength is pi * (1 - ambient) * (1 - s) so that a lit surface gets (1 - s) of the UO diffuse light from it (the rest, s, is emission in the group)"""
+    ob = bpy.data.objects.get("UO_Sun")
+    if not on:
+        if ob is not None:
+            ld = ob.data; bpy.data.objects.remove(ob, do_unlink=True); bpy.data.lights.remove(ld)
+        for m, v in SUN_STATE.pop("emission", {}).items():
+            m.cycles.emission_sampling = v
+        if "bounces" in SUN_STATE:
+            sc.cycles.diffuse_bounces = SUN_STATE.pop("bounces")
+        return
+    g = bpy.data.node_groups.get("UO_Look_NS")
+    if g is None or sc.render.engine != "CYCLES":
+        return
+    used = any(n.type == "GROUP" and n.node_tree == g for o in clothes if not o.hide_render for m in o.data.materials if m and m.node_tree for n in m.node_tree.nodes)
+    if not used:
+        return
+    from mathutils import Vector
+    Lv = Vector(next(n for n in g.nodes if n.type == "COMBXYZ").inputs[i].default_value for i in range(3))
+    if ob is None:
+        ld = bpy.data.lights.new("UO_Sun", "SUN"); ob = bpy.data.objects.new("UO_Sun", ld); sc.collection.objects.link(ob)
+    ob.data.angle = 0.0
+    ob.data.energy = SHADOW_SUN_K * 3.14159265 * (1.0 - g["uo_ambient"]) * (1.0 - g["uo_shadow"])
+    ob.rotation_euler = Vector((0, 0, 1)).rotation_difference(Lv.normalized()).to_euler()      # a Sun shines along its -Z: +Z points to the light
+    ob.hide_render = False
+    # the diffuse part must see the Sun only: emissive surfaces (the body, the items: UO_Look is emission) must not light it (that would be noise at 1 sample) and no bounces
+    if "bounces" not in SUN_STATE:
+        SUN_STATE["bounces"] = sc.cycles.diffuse_bounces; sc.cycles.diffuse_bounces = 0
+        SUN_STATE["emission"] = {m: m.cycles.emission_sampling for m in bpy.data.materials}
+        for m in bpy.data.materials:
+            m.cycles.emission_sampling = "NONE"
 if EXACT_ANY and sc.render.engine == "CYCLES":
     sc.cycles.pixel_filter_type = "BOX"          # one sample point per pixel centre, like the UO art (no blur)
     sc.cycles.filter_width = 0.01
@@ -446,6 +484,7 @@ body.hide_render = False
 body.is_holdout = LAYER == "clothing"
 for o in clothes:
     o.hide_render = LAYER == "body"
+shadow_sun(LAYER != "body")
 if LAYER == "clothing" and not any(not o.hide_render for o in clothes):
     raise RuntimeError("No visible meshes in the 'Clothing' collection")
 
@@ -809,6 +848,7 @@ def frame_job():
 
 
 def restore_all():
+    shadow_sun(False)
     view_prefs.render_display_type = render_display
     set_horse(-1, 0)
     body.is_holdout, body.hide_render = state["holdout"], state["body_hide"]
