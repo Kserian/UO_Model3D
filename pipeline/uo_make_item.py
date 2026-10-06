@@ -17,9 +17,9 @@ RECIPE.json (only "file" and "kind" are required):
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...)
 
-A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt"} is fitted to the body and its
+A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
-uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part).
+uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
 
 Steps (each is one of the scripts that are also in the .blend, see README): uo_import_item.py (clean, join, reduce) -> uo_materials.py (UO look) ->
 uo_prepare_item.py (uo_autofit_item.py size / place from the skin, uo_densify_item.py, uo_fit_item.py push out of the skin, uo_bind_item.py skin weights).
@@ -78,7 +78,7 @@ def select(obs):
 base = %(base)r
 ref = %(ref)r
 run("uo_import_item.py", FILE=base["file"], KIND="", KEEP=ref["keep"], DECIMATE_TO=0, NAME="reference")
-run("uo_autofit_item.py", KIND=ref["kind"])
+run("uo_autofit_item.py", KIND=ref["kind"], TURN_BACK=bool(ref.get("turn_back", True)))
 M = Matrix([bpy.context.scene["uo_last_fit"][i * 4:i * 4 + 4] for i in range(4)])
 print("uo_make_item: reference %%s fitted; the same transform goes to every part" %% ref["keep"])
 for o in [o for o in bpy.data.collections["Clothing"].all_objects]:
@@ -97,6 +97,13 @@ for part in %(parts)r:
     select(obs)
     if part.get("rigid"):
         run("uo_bind_item.py", PART=part["rigid"])
+        sh = float(part.get("pelvis_share", 0.0))
+        if sh > 0:                                       # hangs from the belt: part of the leg's swing only (rigid on the thigh alone drives the hilt into the hip when the leg swings)
+            for o in obs:
+                bone = [g.name for g in o.vertex_groups][0]
+                idx = list(range(len(o.data.vertices)))
+                o.vertex_groups[bone].add(idx, 1.0 - sh, "REPLACE")
+                (o.vertex_groups.get("pelvis") or o.vertex_groups.new(name="pelvis")).add(idx, sh, "REPLACE")
         for o in obs:
             for k in ("uo_no_body_gap", "uo_behind_torso"):
                 if part.get(k, True):

@@ -36,6 +36,7 @@ PARTS = {
     "boots":     (["shin.L", "foot.L", "shin.R", "foot.R"], {}),               # boots, greaves
     "helm":      (["head"], {}),                                               # helmet, hat, mask
     "neck":      (["neck", "chest", "head"], {}),                              # gorget, collar
+    "belt":      (["pelvis", "spine", "chest", "thigh.L", "thigh.R"], {}),     # belt with straps and hangers that reach down over the hips: what hangs below the waist follows the thigh under it
     # loose garments (robe, dress, skirt, kilt): above the hips like "all"; the hanging part follows the PELVIS only (it does not stick to the legs like trousers): the weight
     # of thighs, shins and feet goes to the pelvis. The legs push it out when they reach it: render_uo_layer.py does that per frame (custom property `uo_cloth`, set below;
     # cloth_lib.hull_push, calibrated on the original robes, docs/qa/robe_physics.md). FOLLOW also takes (share, t0, t1, end share): share near the joint -> end share along the bone.
@@ -44,11 +45,12 @@ PARTS = {
     "cloak":     (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),   # cape from the shoulders: hangs from the chest, the rest follows the pelvis; swings back per action (render_uo_layer.py)
 }
 # rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
-# weapons, shields (left forearm), quivers (back). UO holds 2H weapons, staffs, bows and crossbows in the LEFT hand and 1H weapons in the right,
+# weapons, shields (left forearm), quivers (back), a sword or dagger hung from the belt (thigh). UO holds 2H weapons, staffs, bows and crossbows in the LEFT hand and 1H weapons in the right,
 # and moves them differently from the hand: they ride on the weapon bones polearm.L / axe2h.L / bow.L / weapon1h.R (uo_weapon_bones.py,
 # calibrated on the original weapons: model the shaft along the class line, see uo_place_weapon.py) and the shield on shield.L (uo_place_shield.py).
 # "weapon" = rigid in hand.R and "weapon.L" = rigid in hand.L (no calibration).
 RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "weapon1h": "weapon1h.R", "shield": "shield.L", "quiver": "chest",
+         "hip.L": "thigh.L", "hip.R": "thigh.R",      # a sword / dagger on the belt: stiff on the thigh of its side (it moves with the leg)
          "polearm": "polearm.L", "staff": "polearm.L", "weapon2h": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "crossbow": "bow.L"}
 PARENT = {"hand": "forearm", "forearm": "upper_arm", "upper_arm": "chest", "foot": "shin", "shin": "thigh",
           "thigh": "pelvis", "head": "neck"}

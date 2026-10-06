@@ -24,7 +24,7 @@ SLOTS = {
     "plate":  ("chest", True, "hard"),  "arms":  ("arms", True, "hard"),  "legs":  ("legs", True, "hard"),   "helm":   ("helm", True, "hard"),
     "neck":   ("neck", True, "hard"),
     "robe":   ("robe", True, "loose"), "skirt": ("skirt", True, "loose"), "cloak": ("cloak", True, "loose"),
-    "waist":  ("torso", True, "tight"), "vest": ("chest", True, "tight"),   # belt / sash (Waist), waistcoat / doublet (MiddleTorso): measured ranges, settings by analogy (docs/qa/autofit.md)
+    "waist":  ("belt", True, "tight"), "vest": ("chest", True, "tight"),   # belt / sash (Waist), waistcoat / doublet (MiddleTorso): measured ranges, settings by analogy (docs/qa/autofit.md)
     "harness": ("torso", True, "tight"),   # straps over the trunk (follow pelvis / spine / chest / neck only)
     "quiver": ("quiver", False, "rigid"),  # a quiver, a sword on the back: rigid on the chest (custom properties uo_no_body_gap, uo_behind_torso: render_uo_layer.py)
     "hair":   ("hair", False, "rigid"), "beard": ("beard", False, "rigid"), "hat":   ("hat", False, "rigid"),
