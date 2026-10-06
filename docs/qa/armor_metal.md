@@ -1,4 +1,4 @@
-# Zbroja metalowa (Quaternius, „Armor Metal”) – pierwszy render (sesja 18)
+# Zbroja metalowa (Quaternius, „Armor Metal”) – render (sesja 18)
 
 Model: jeden obiekt `Armor_Metal2` (352 wierzchołki po sklejeniu, 1 materiał `LightSteel`, bez UV), czyli napierśnik + dwa naramienniki-kopuły (z płetwą). Plik `.glb` od użytkownika **nie jest w repo**
 (licencja do potwierdzenia; Quaternius publikuje zwykle jako CC0). Przepis: `docs/qa/armor_metal_recipe.json`.
@@ -30,3 +30,12 @@ Nowe opcje przepisu części (`uo_make_item.py`): `cup`, `to_bone`, `scale`, `on
 - Skóra widoczna na szyi i nad naramiennikiem (kołnierz napierśnika jest niski): jak w ciele UO bez hełmu.
 - Płetwy naramienników zostały spłaszczone przez limit grubości (`LIMIT` 4 cm).
 - Pełny render `.vd` (35 akcji) nie był robiony: `python pipeline/uo_make_item.py docs/qa/armor_metal_recipe.json --vd`.
+
+## Poprawka po uwagach użytkownika („kanciasta”, „przebija ramię”) i pełny `.vd`
+- **Przyczyna skóry w napierśniku:** `split_model.py` eksportował siatkę z płaskim cieniowaniem, więc każda ścianka miała własne wierzchołki; zaokrąglające zagęszczenie (`uo_densify_item.py`, `SMOOTH` > 0) rozrywało takie wyspy, a w pancerzu powstawały szczeliny. Pomiar: klatek z dziurami w pancerzu (alfa 0 otoczona pancerzem) na stand + chód: 46 z 55 przy rozerwanej siatce, po naprawie 13 z 200 (zostają ramię i ręka przed klatką piersiową, 65-78 px).
+  Teraz `split_model.py` domyślnie eksportuje gładkie normalne (siatka spawana: 204 wierzchołki napierśnika zamiast 1226); `--flat` przywraca stare zachowanie.
+- **Kanciastość:** `smooth_shade` (gładkie normalne po zagęszczeniu) i `uo_densify_item.py` `SMOOTH 0.7` (zaokrąglenie jak Catmull-Clark; fit wypycha z ciała to, co się zapadło). Napierśnik: krawędź 2,2 cm, 4988 wierzchołków.
+- **Ramię w napierśniku:** nowy krok `uo_pose_clear.py` (opcja części `pose_clear`): ramię (łopatka, przedramię, dłoń) przeciągane przez pozy stand / chód / bieg / combat idle / advance; wierzchołek bliżej skóry ramienia niż 12 mm jest wypychany po normalnej ramienia, a przesunięcie wraca do pozy spoczynkowej przez odwrotność macierzy skinningu wierzchołka (max 3 cm, wygładzone, 2 rundy), potem ponowne `uo_bind_item.py`. Pozy z ramieniem skrzyżowanym przez korpus (atak, czar) zostawione rendererowi (BODY_GAP).
+  Napierśnik w kończynach: stand 2,9 → 1,2 %, chód 7,8 → 4,5 %, atak 6,0 → 6,0 %, czar 3,7 → 3,1 %, jazda w biegu 10,6 → 8,2 %. Naramienniki: w tułowiu i kończynach 0-5 %, do 3 cm (czar).
+- Pełny `.vd`: 35 akcji × 5 kierunków = 1050 klatek, 724 KB, 6 minut (`uo_make_item.py docs/qa/armor_metal_recipe.json --vd`). Plik nie jest w repo (jak model).
+- Odrzucone: wydłużony margines zasłaniania przez ciało (`HOLDOUT_MARGIN` 0,03 / 0,05) i `BODY_GAP` 0,02: bez wpływu na dziury (przyczyną były szczeliny siatki, nie zasłanianie).

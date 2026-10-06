@@ -1,10 +1,10 @@
 """Split a model that is ONE mesh of several loose parts (a cuirass and two pauldrons in one object) into one object per part, so that a recipe of uo_make_item.py can treat them
 separately ("parts"; `keep` takes whole objects). The vertices are welded first (a model exported with split vertices has one island per face).
 
-    python split_model.py IN.glb OUT.glb [--scale N=sx,sy,sz ...]
+    python split_model.py IN.glb OUT.glb [N=sx,sy,sz ...] [--flat]
     python split_model.py IN.glb --list
 
-The parts are named Part0, Part1, ... (most vertices first, then by x). --scale N=sx,sy,sz stretches part N about its centre (file units): a stylised model whose torso is far too wide for the UO body
+The parts are named Part0, Part1, ... (most vertices first, then by x). N=sx,sy,sz stretches part N about its centre (file units): a stylised model whose torso is far too wide for the UO body
 (0.57,0.63,0.9 for the Quaternius armour) gets the proportions of the body before the autofit makes one uniform scale of it. Run with bpy 4.2 (python -I).
 """
 import os, sys
@@ -17,6 +17,7 @@ def main(argv):
     src = os.path.abspath(argv[0])
     listing = "--list" in argv
     out = None if listing else os.path.abspath(argv[1])
+    SMOOTH = "--flat" not in argv                            # smooth normals: the exporter then keeps the vertices welded (flat shading splits every face from its neighbours, and a later subdivision with rounding tears cracks between them)
     scales = {int(a.split("=")[0]): [float(x) for x in a.split("=")[1].split(",")] for a in argv if "=" in a and not a.startswith("--")}
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=src)
@@ -45,7 +46,7 @@ def main(argv):
         return
     for k, (x, n, c) in enumerate(info):
         for p in x.data.polygons:
-            p.use_smooth = False
+            p.use_smooth = SMOOTH
         if k in scales:
             s = scales[k]
             for p in x.data.vertices:

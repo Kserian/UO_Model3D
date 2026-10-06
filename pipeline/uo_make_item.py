@@ -216,6 +216,15 @@ for part in %(parts)r:
     else:
         os.environ["UO_PREPARE_EXTRA"] = json.dumps(part.get("tune", {}))
         run("uo_prepare_item.py", KIND=part["kind"], AUTOFIT=False, **part.get("prepare", {}))
+        if part.get("pose_clear") is not None:                       # the arms swept through the poses of the animations: the rest shape is pushed out of them (uo_pose_clear.py), then bound again for the new shape
+            pc = dict(part["pose_clear"]) if isinstance(part["pose_clear"], dict) else {}
+            bind_part = pc.pop("bind", None)
+            select(obs)
+            run("uo_pose_clear.py", **pc)
+            run("uo_bind_item.py", PART=part.get("prepare", {}).get("PART") or bind_part or "chest")
+        if part.get("smooth_shade"):                     # smooth normals: a low-poly model shaded flat shows its facets (they stay visible after densifying)
+            for o in obs:
+                o.data.polygons.foreach_set("use_smooth", [True] * len(o.data.polygons)); o.data.update()
         if part.get("to_bone"):                          # fitted to the skin in the rest pose (pushed out of it), then stiff on one bone of its side: a shoulder cup turns with the upper arm, a sphere round the joint stays round it
             for o in obs:
                 wx = sum((o.matrix_world @ v.co).x for v in o.data.vertices) / len(o.data.vertices)
