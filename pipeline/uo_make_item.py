@@ -19,7 +19,7 @@ RECIPE.json (only "file" and "kind" are required):
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
-uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
+uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
 
 Steps (each is one of the scripts that are also in the .blend, see README): uo_import_item.py (clean, join, reduce) -> uo_materials.py (UO look) ->
 uo_prepare_item.py (uo_autofit_item.py size / place from the skin, uo_densify_item.py, uo_fit_item.py push out of the skin, uo_bind_item.py skin weights).
@@ -57,8 +57,41 @@ def build_parts_stage(recipe, out_blend):
     base = dict(file=os.path.abspath(recipe["file"]), decimate=int(recipe.get("decimate", 30000)))
     return '''
 import bpy, os, re, sys, json
+import numpy as np
 from mathutils import Matrix, Vector
 HERE = %(here)r
+AXIS = []                                   # (centre, direction) of the first thickened part: the long axis of a sword, shared by its hilt parts
+
+
+def thicken(obs, th):
+    """widen a long thin part about its own long axis: "width": m (the widest cross-section of the part becomes this wide, e.g. 0.05 m = 2 px at 36 px/m) or "factor": scale of the cross-section;
+    a part with "own_axis" false uses the axis of the first one (a hilt on the sword's axis)"""
+    Ms = [np.array(o.matrix_world) for o in obs]
+    Vs = [np.array([(Mw @ np.append(np.array(v.co), 1.0))[:3] for v in o.data.vertices]) for o, Mw in zip(obs, Ms)]
+    V = np.concatenate(Vs)
+    if not AXIS or th.get("own_axis", True):
+        c = V.mean(0); u = np.linalg.svd(V - c, full_matrices=False)[2][0]
+        AXIS[:] = [(c, u)]
+    c, u = AXIS[0]
+    d = V - c; t = d @ u; perp = d - np.outer(t, u)
+    if "width" in th:                                                    # each cross-section direction at least `width` wide (a flat scabbard seen edge-on is a 1-px line)
+        mid = (t > np.percentile(t, 20)) & (t < np.percentile(t, 80))
+        pc = np.linalg.svd(perp[mid] - perp[mid].mean(0), full_matrices=False)[2]
+        pc1 = pc[0]; pc2 = np.cross(u, pc1)
+        e1 = perp[mid] @ pc1; e2 = perp[mid] @ pc2
+        w1, w2 = float(np.percentile(e1, 98) - np.percentile(e1, 2)), float(np.percentile(e2, 98) - np.percentile(e2, 2))
+        f1, f2 = max(1.0, float(th["width"]) / max(w1, 1e-6)), max(1.0, float(th["width"]) / max(w2, 1e-6))
+        perp = np.outer(perp @ pc1, pc1) * f1 + np.outer(perp @ pc2, pc2) * f2
+        cur, f = max(w1, w2), 1.0
+        msg = "x%%.2f / x%%.2f (cross-section %%.1f x %%.1f cm)" %% (f1, f2, 100 * w1, 100 * w2)
+    else:
+        cur, f = 0.0, float(th["factor"]); msg = "x%%.2f" %% f
+    print("uo_make_item: thicken %%s %%s" %% (obs[0].name, msg))
+    k = 0
+    for o, Mw, Vo in zip(obs, Ms, Vs):
+        n = len(Vo); new = c + np.outer(t[k:k + n], u) + f * perp[k:k + n]; k += n
+        loc = (np.linalg.inv(Mw) @ np.c_[new, np.ones(n)].T).T[:, :3]
+        o.data.vertices.foreach_set("co", loc.astype(np.float32).ravel()); o.data.update()
 rig = bpy.data.objects["UO_Rig"]; rig.data.pose_position = "REST"
 for o in list(bpy.data.collections["Clothing"].all_objects):
     bpy.data.objects.remove(o, do_unlink=True)
@@ -89,6 +122,8 @@ for part in %(parts)r:
     for o in obs:
         o.data.transform(M)
     bpy.context.view_layer.update()
+    if part.get("thicken"):
+        thicken(obs, part["thicken"])
     run("uo_materials.py", **part.get("materials", {}))
     if part.get("scale") or part.get("on_bone"):         # a part that is the wrong size / place for the body (a pauldron of a stylised armour): scaled about its own centre, then its centre put on a bone (+ offset, m)
         import numpy as np
