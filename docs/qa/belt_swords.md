@@ -17,8 +17,9 @@ Model ma 16 siatek: pas z paskami i uchwytami (`Object_4,6,8,10,12,14,34`), rapi
 ## Miecz widoczny i do barwienia (partial hue)
 - `thicken` {`width`: 0.06}: przekrój pochwy i klingi powiększony wokół osi miecza tak, by oba kierunki miały >= 6 cm (było 3,9 x 1,6 cm, czyli x1,5 / x3,8); jelec i rękojeść osobną częścią x1,3 na tej samej osi (`own_axis: false`).
   Przy 36 px/m pochwa 3 cm = 1 px (cienka linia, w ruchu się gubiła), 6 cm = ok. 2 px.
-- Szary: pochwa i kling `FLAT_GREY` 0,85 (nowe ustawienie `uo_materials.py`: jeden gładki szary zamiast tekstury), rękojeść `SATURATION` 0 + `BRIGHTNESS` 1,6. Obrys renderera (x0,38) i połysk metalu zostawiają szarość.
-- Pomiar na warstwie samego miecza (stand, walk, run, atak 1H, 140 klatek, bez pasa): widocznych pikseli 2889 -> **7290**, piksele dokładnie szare (R=G=B) 44% -> **100%** (wcześniej czerwony wzór rękojeści i brąz skóry), średni poziom 26 -> 77 (z 255).
+- Szary tylko ostrze (pochwa i kling): `FLAT_GREY` 0,6 (nowe ustawienie `uo_materials.py`: jeden gładki szary zamiast tekstury) i `METAL` false (bez połysku metalu, który dawał białą smugę); rękojeść i jelec zostają w kolorach modelu (czerwony oplot, mosiądz).
+  Albedo 0,95 dawało czystą biel po oświetlonej stronie (1,2% pikseli > 200, max 253), 0,55 było za ciemne (mediana 66), 0,6: **0% pikseli > 220**, max 206.
+- Pomiar na warstwie samego ostrza (stand, walk, run, atak 1H, 140 klatek, bez pasa i rękojeści): 5509 pikseli, **100%** dokładnie szarych (R=G=B), poziom p10/p50/p90 = 48/69/77 (z 255; obrys x0,38 wlicza się). Przed pogrubieniem miecz miał 2889 widocznych pikseli (z rękojeścią).
   Strona w cieniu (miecz za ciałem) zostaje ciemnoszara (ok. 60/255), jak w UO.
 
 ## Pomiar (przed render, `item_qa`-podobny, skóra = UO_Body w pozie)
