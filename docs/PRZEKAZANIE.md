@@ -69,3 +69,9 @@ Otwarte: boczne "skrzydła" rąbka w biegu poza zasięgiem nóg (oryginał), rę
 
 ## Sesja 17: pas z mieczem i sztyletem (`docs/qa/belt_swords.md`)
 Pierwszy prawdziwy darmowy model slotu `waist` (CC BY 4.0, idemotts). Nowe: PART `belt` (uda w wagach), `hip.L`/`hip.R` (sztywno na udzie), `pelvis_share` i `reference.turn_back` w przepisie `uo_make_item.py`. Slot `waist` wiąże teraz PART `belt`. Do zrobienia: miecz przebija tułów przy czarze (ręka/tułów na pochwie), sztylet w chodzie 17% w biodrze.
+
+## Sesja 18: zbroja metalowa Quaternius (`docs/qa/armor_metal.md`)
+Zlecenie: wygenerować darmową zbroję (jedna siatka: napierśnik + 2 naramienniki) w szarościach, z metalikiem, przylegającą do skóry bez przebić; podgląd póz (chód, bieg, atak, jazda).
+Nowe: `pipeline/split_model.py` (spawanie i podział siatki na części, nierówna skala części), opcje części w `uo_make_item.py` (`cup`, `to_bone`, `scale`, `on_bone`, `cut_below`, `arm_share`, `clear_skin`, `tune` per część), `uo_prepare_item.py` `PART` (waga skinu inna niż slotu). Przepis: `docs/qa/armor_metal_recipe.json`, podgląd: `docs/qa/armor_metal/preview_*.png` (skóra pokolorowana, żeby było widać przebicia).
+Wnioski: (1) model stylizowany (napierśnik 2× za szeroki) wymaga nierównej skali przed autofitem; (2) kopułę naramiennika najlepiej wiązać sztywno na `upper_arm` (kula wokół stawu), nie jak skórę; (3) napierśnik z wagami tylko tułowia (`PART torso`) nie daje dziur ze skóry, kończyny wypycha render; (4) `.blend` nie zmieniony (osadzony `uo_prepare_item.py` bez `PART`, `uo_make_item.py` czyta pliki).
+Otwarte: postrzępiony dół na jeździe od przodu, pełny `.vd` nierenderowany, brak testu na innej zbroi.
