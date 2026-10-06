@@ -1,7 +1,69 @@
-{"name": "belt_swords", "file": "cinto_de_armas.glb", "kind": "waist",
- "reference": {"keep": ["=Object_4", "=Object_6", "=Object_8", "=Object_10", "=Object_12", "=Object_14", "=Object_34"], "kind": "waist", "turn_back": false},
+{
+ "name": "belt_sword",
+ "file": "cinto_de_armas.glb",
+ "kind": "waist",
+ "reference": {
+  "keep": [
+   "=Object_4",
+   "=Object_6",
+   "=Object_8",
+   "=Object_10",
+   "=Object_12",
+   "=Object_14",
+   "=Object_34"
+  ],
+  "kind": "waist",
+  "turn_back": false
+ },
  "parts": [
-  {"name": "belt", "keep": ["=Object_4", "=Object_6", "=Object_8", "=Object_10", "=Object_12", "=Object_14", "=Object_34"], "kind": "waist"},
-  {"name": "sword", "keep": ["=Object_16", "=Object_18", "=Object_20", "=Object_22", "=Object_24"], "rigid": "hip.L", "pelvis_share": 0.4, "uo_behind_torso": false},
-  {"name": "dagger", "keep": ["=Object_26", "=Object_28", "=Object_30", "=Object_32"], "rigid": "hip.R", "pelvis_share": 0.6, "uo_behind_torso": false}
- ]}
+  {
+   "name": "belt",
+   "keep": [
+    "=Object_4",
+    "=Object_6",
+    "=Object_8",
+    "=Object_10",
+    "=Object_12",
+    "=Object_14",
+    "=Object_34"
+   ],
+   "kind": "waist"
+  },
+  {
+   "name": "blade",
+   "keep": [
+    "=Object_16",
+    "=Object_24"
+   ],
+   "rigid": "hip.L",
+   "pelvis_share": 0.4,
+   "uo_behind_torso": false,
+   "thicken": {
+    "width": 0.06
+   },
+   "materials": {
+    "SATURATION": 0.0,
+    "FLAT_GREY": 0.85
+   }
+  },
+  {
+   "name": "hilt",
+   "keep": [
+    "=Object_18",
+    "=Object_20",
+    "=Object_22"
+   ],
+   "rigid": "hip.L",
+   "pelvis_share": 0.4,
+   "uo_behind_torso": false,
+   "thicken": {
+    "factor": 1.3,
+    "own_axis": false
+   },
+   "materials": {
+    "SATURATION": 0.0,
+    "BRIGHTNESS": 1.6
+   }
+  }
+ ]
+}
