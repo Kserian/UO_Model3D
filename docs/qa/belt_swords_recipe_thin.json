@@ -39,7 +39,7 @@
    "pelvis_share": 0.4,
    "uo_behind_torso": false,
    "thicken": {
-    "width": 0.105
+    "width": 0.06
    },
    "materials": {
     "SATURATION": 0.0,
