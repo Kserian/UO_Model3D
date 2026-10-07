@@ -22,6 +22,8 @@ KIND = "shirt"        # shirt, plate, arms, pants, legs, boots, gloves, helm, ne
 SCALE = 0.0           # > 0: uniform scale you give (the item is then only moved), 0 = from the height of KIND
 PLACE = "wrap"        # "wrap": the item is only cleaned, joined and reduced here, its units, size and place are found from the skin by uo_autofit_item.py (called by uo_prepare_item.py);
                       # "height": the old way, one height per KIND (EXTENTS below) - right only for items shaped like the typical original (docs/qa/autofit.md)
+STRETCH = (1.0, 1.0, 1.0)   # (width, depth, height) factors about the centre of the model, before the fit: a model made on a mannequin with other proportions than the UO body (a vest much wider and shallower than the
+                      # torso: (0.8, 1.25, 1.0)). Recipe of uo_make_item.py: "stretch": [0.8, 1.25, 1.0]
 TURN = 0              # deg around the vertical axis (180 when the item came in back to front)
 JOIN = True           # one object out of all the meshes of the file (False: they stay separate objects, each scaled alike)
 KEEP = ()             # names (parts of names, any case; "=name" = exactly that mesh) of the meshes to keep; everything else is left out (empty = all that SKIP does not exclude)
@@ -224,6 +226,12 @@ def run():
         for n in news:
             n.data.transform(Matrix.Translation(c0) @ Matrix.Rotation(np.radians(TURN), 4, "Z") @ Matrix.Translation(-c0))
         verts = np.concatenate([np.array([v.co[:] for v in n.data.vertices]) for n in news])
+    if tuple(STRETCH) != (1.0, 1.0, 1.0):
+        c0 = (verts.min(0) + verts.max(0)) / 2
+        for n in news:
+            n.data.transform(Matrix.Translation(c0) @ Matrix.Diagonal((*[float(k) for k in STRETCH], 1.0)) @ Matrix.Translation(-c0))
+        verts = np.concatenate([np.array([v.co[:] for v in n.data.vertices]) for n in news])
+        print("uo_import_item: STRETCH %s about the centre" % (tuple(STRETCH),))
     info = "%d mesh object(s), %d vertices, size %.3f x %.3f x %.3f (as imported)" % (len(news), len(verts), *(verts.max(0) - verts.min(0)))
     if KIND and PLACE == "wrap":
         print("uo_import_item: PLACE = wrap: size and place are left to uo_autofit_item.py (uo_prepare_item.py runs it)")

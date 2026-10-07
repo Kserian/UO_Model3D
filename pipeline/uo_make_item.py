@@ -9,6 +9,7 @@ RECIPE.json (only "file" and "kind" are required):
    "drop_materials": ["Belt", "Buckle"],   # materials whose faces are cut out (a belt that is one mesh with the robe)
    "arms_down": 0,                  # deg; 80-90 for a model in a T-pose (arms out): the sleeves are turned down about the shoulders ("arm_materials": ["sleeve"] names them, "arm_blend": 0.12 m is the width over which the turn fades into the body)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
+   "stretch": [0.8, 1.25, 1.0],  # width, depth, height factors about the centre (a model made on a mannequin with other proportions than the UO body); "tune": {"uo_autofit_item.py": {"UNIT": 0.3}} = the file is not in metres
    "decimate": 30000,          # vertices above which the model is reduced
    "materials": {"SATURATION": 1.0, "METAL": null},   # uo_materials.py settings (grey item that takes a dye: SATURATION 0)
    "prepare": {"DENSIFY": false},                      # settings of uo_prepare_item.py itself
@@ -19,7 +20,7 @@ RECIPE.json (only "file" and "kind" are required):
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
-uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
+uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "behind_torso": true = the torso hides what is behind it (garments that wrap the trunk); "cut_above" / "cut_below": z (m) at which a part is cut (a collar above the shoulders, a hem over the thighs); "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
 
 Steps (each is one of the scripts that are also in the .blend, see README): uo_import_item.py (clean, join, reduce) -> uo_materials.py (UO look) ->
 uo_prepare_item.py (uo_autofit_item.py size / place from the skin, uo_densify_item.py, uo_fit_item.py push out of the skin, uo_bind_item.py skin weights).
@@ -185,6 +186,14 @@ for part in %(parts)r:
             g = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, float(part["cut_below"])), plane_no=(0, 0, 1), clear_inner=True)
             bm.transform(o.matrix_world.inverted()); bm.to_mesh(o.data); bm.free()
         print("uo_make_item: cut below z = %%.3f m" %% float(part["cut_below"]))
+    if part.get("cut_above") is not None:                # collar peaks and straps that stand above the shoulder line: the part is cut at this height (m, body rest pose, after "move")
+        import bmesh
+        off0 = part.get("move", [0, 0, 0])
+        for o in obs:
+            bm = bmesh.new(); bm.from_mesh(o.data); bm.transform(o.matrix_world)
+            bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, float(part["cut_above"]) - off0[2]), plane_no=(0, 0, 1), clear_outer=True)
+            bm.transform(o.matrix_world.inverted()); bm.to_mesh(o.data); bm.free()
+        print("uo_make_item: cut above z = %%.3f m" %% float(part["cut_above"]))
     off = part.get("move", [0, 0, 0])
     if any(off):
         for o in obs:
@@ -222,6 +231,9 @@ for part in %(parts)r:
             select(obs)
             run("uo_pose_clear.py", **pc)
             run("uo_bind_item.py", PART=part.get("prepare", {}).get("PART") or bind_part or "chest")
+        if part.get("behind_torso"):                     # a garment that wraps the trunk (vest, belt): the torso hides the half that is behind it in the clothing layer (TORSO_HIDE_MARGIN of render_uo_layer.py), else the client draws the back panel over the chest (through the V of a vest)
+            for o in obs:
+                o["uo_behind_torso"] = 1
         if part.get("smooth_shade"):                     # smooth normals: a low-poly model shaded flat shows its facets (they stay visible after densifying)
             for o in obs:
                 o.data.polygons.foreach_set("use_smooth", [True] * len(o.data.polygons)); o.data.update()
@@ -251,6 +263,8 @@ def build_stage(recipe, out_blend):
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
     if "scale" in recipe:
         imp["SCALE"] = float(recipe["scale"])
+    if "stretch" in recipe:
+        imp["STRETCH"] = tuple(float(k) for k in recipe["stretch"])
     return '''
 import bpy, os, re, sys
 HERE = %(here)r

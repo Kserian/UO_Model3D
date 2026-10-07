@@ -18,6 +18,7 @@ ROUNDS = 2            # measure + push + smooth rounds
 SMOOTH = 3            # smoothing passes of the pushes over the mesh edges
 AVOID = ("upper_arm", "forearm", "hand", "finger")      # body parts (vertex group names start with) the item must clear
 REPORT = True
+AVOID = tuple(AVOID)    # a recipe gives a list
 
 body = bpy.data.objects["UO_Body"]
 rig = bpy.data.objects["UO_Rig"]

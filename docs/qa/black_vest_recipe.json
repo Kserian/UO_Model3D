@@ -1,0 +1,56 @@
+{
+ "name": "black_vest",
+ "file": "black_suit_vest_pre.glb",
+ "kind": "vest",
+ "reference": {
+  "keep": [
+   "=Object_4"
+  ],
+  "kind": "vest",
+  "turn_back": false
+ },
+ "parts": [
+  {
+   "name": "vest",
+   "keep": [
+    "=Object_4"
+   ],
+   "kind": "vest",
+   "prepare": {
+    "PART": "torso"
+   },
+   "smooth_shade": true,
+   "pose_clear": {
+    "AVOID": [
+     "upper_arm",
+     "forearm",
+     "hand",
+     "finger",
+     "chest",
+     "spine",
+     "pelvis"
+    ],
+    "ACTIONS": "04_stand,00_walk_unarmed,02_run_unarmed,07_combat_idle_1h,15_combat_advance,09_attack_1h_slash,16_spell_directed,21_die_forward,25_mounted_stand",
+    "GAP": 0.012,
+    "CAP": 0.05,
+    "ROUNDS": 3
+   },
+   "tune": {
+    "uo_fit_item.py": {
+     "MIN_GAP": 0.035,
+     "LIMIT": 0.08
+    },
+    "uo_autofit_item.py": {
+     "GAP": 0.035
+    }
+   },
+   "move": [
+    0,
+    0,
+    -0.085
+   ],
+   "cut_above": 1.6,
+   "behind_torso": true
+  }
+ ]
+}
