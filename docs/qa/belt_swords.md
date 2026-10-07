@@ -27,6 +27,17 @@ Model ma 16 siatek: pas z paskami i uchwytami (`Object_4,6,8,10,12,14,34`), rapi
 - Pomiar na całym rapierze (stand, walk, run, atak 1H, 140 klatek, bez pasa): 7258 pikseli, **100%** dokładnie szarych (R=G=B), p10 / p50 / p90 / p99 / max = 33 / 49 / 57 / 147 / 159, 0% pikseli > 160. Przed pogrubieniem miecz miał 2889 widocznych pikseli (z rękojeścią).
   Strona w cieniu (miecz za ciałem) zostaje ciemnoszara (ok. 60/255), jak w UO.
 
+## Tył pasa nie może być widoczny (klient rysuje przedmiot na ciele)
+Warstwa przedmiotu (`.vd`) idzie na oryginalne ciało, a tułów domyślnie niczego nie zasłania (`TORSO_HIDE_MARGIN` działa tylko dla przedmiotów z własnością `uo_behind_torso`), więc tylna połowa pasa
+(pierścień!) była rysowana na piersi w widoku od przodu, a przednia na plecach. Slot `waist` ustawia teraz `uo_behind_torso` (`uo_prepare_item.py`): tułów zasłania to, co jest >= 12 cm za nim. Widok z przodu: tylko przednia taśma, z tyłu: tylko tylna, boki bez zmian
+(sprawdzone na składance ciało + warstwa przedmiotu, stoi / chód, 5 kierunków). Miecz zostaje bez tej własności (wisi z boku).
+
+## Wersje (ostatnie prośby)
+- **A** (`belt_swords_recipe.json`): ostrze o 1 px grubsze: `thicken` {`width`: 0,105} (miara: pole / długość klatki z samym ostrzem 1,54 -> 2,57 px, 5486 -> 10039 pikseli; szerokości 0,06 / 0,085 dawały 1,54 / 2,12 px).
+- **B** (`belt_swords_recipe_thin.json`): o 1 px cieńsze niż A: `width` 0,06 (1,54 px).
+- Oplot w obu: brąz o 20% ciemniejszy (liniowe albedo x0,8): `FLAT_COLOR` (0,272; 0,144; 0,06), `CLAMP_MAX` 0,32, `METAL` false; oświetlony piksel (145, 108, 71), mediana (48, 35, 23). Wcześniejsze wersje: (0,34; 0,18; 0,075) za jasna,
+  (0,55; 0,30; 0,13) i (0,85; 0,55; 0,32) pomarańczowa / brzoskwiniowa. Ostrze, pochwa, pierścienie, jelec, pomel bez zmian (szarości, najjaśniejszy piksel 152).
+
 ## Pomiar (przed render, `item_qa`-podobny, skóra = UO_Body w pozie)
 Wierzchołki w ciele >2 mm / najgłębiej (mm), run3 (wagi: pas z udami, miecz 0,4, sztylet 0,6):
 
