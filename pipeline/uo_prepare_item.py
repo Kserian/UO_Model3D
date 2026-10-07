@@ -73,6 +73,10 @@ if DENSIFY and _dens:
 if FIT:
     run("uo_fit_item.py", KIND=KIND)
 run("uo_bind_item.py", PART=_part)
+if KIND == "waist":                                    # a belt is a ring: the half behind the torso is hidden by it in the clothing layer (render_uo_layer.py TORSO_HIDE_MARGIN), otherwise the client draws it over the chest
+    for _o in bpy.context.selected_objects:
+        if _o.type == "MESH" and _o.name != "UO_Body":
+            _o["uo_behind_torso"] = 1
 # Cloth and leather keep the dark details of their texture (laces, buttons, stitches): the renderer's DESPECKLE (single dark pixels inside the item) is meant for sculpted
 # armour (rivets, deep folds) and removed the front closure of a gambeson. Hard items keep it; "tune": {"scene": {"uo_despeckle": 0}} in a recipe overrides.
 _dsp = EXTRA.get("scene", {}).get("uo_despeckle", 0 if _cls in ("tight", "loose") else None)
