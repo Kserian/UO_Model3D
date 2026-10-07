@@ -97,11 +97,52 @@ W, H = GW * SS, GH * SS
 tmp = os.path.join(OUT, "_tmp.png")
 a1 = render(tmp, W, H, PXM * SS, cxw, czw, belt, True)
 a2 = render(tmp, W, H, PXM * SS, cxw, czw, sword, False)
-r1, r2 = box_down(a1, SS), cap(box_down(a2, SS))                       # the belt keeps its own colours, the sword (grey, a hue is put on it by the game) is capped
-res = np.where(r2[..., 3:4] > 0, r2, r1)         # the sword (and its hilt) in front of the belt
-np.save(os.path.join(OUT, "gump_raw.npy"), res)
+
+# Where the belt band sits on each body gump (the client's own belts, measured on their gumps): the 3D model's body has other proportions than the drawn paperdoll bodies, so the belt is fitted
+# to the waist of each: horizontally to x0..x1, the top edge of the band to `top` (male: Belt_Sword / Belt_Mace / Belt_Dagger 50000 + 1519 / 1517 / 1521: x 79..112, top 126-127, thickness 6-10;
+# female: the waist belts 60000 + 1053 (Gargoyle Belt) and 943 (Elven Plate Belt): x 79..110, top 118-121; the female body gump 13 has the waist ca. 7 px higher than the male one)
+TARGETS = {"male": (79.0, 112.0, 127.0), "female": (79.0, 110.0, 120.0)}
+
+
+def band_of(a):
+    """x range (percentiles 2 / 98 of the band rows) and top edge (median of the column tops over the middle half) of the belt in a supersampled render, in supersampled pixels"""
+    m = a[..., 3] > 0.5
+    ys, xs = np.nonzero(m)
+    x0, x1 = xs.min(), xs.max()
+    cols = range(int(x0 + 0.25 * (x1 - x0)), int(x0 + 0.75 * (x1 - x0)))
+    top = float(np.median([np.nonzero(m[:, c])[0].min() for c in cols if m[:, c].any()]))
+    rows = m[int(top):int(top + 10 * SS)]
+    rx = np.nonzero(rows)[1]
+    return float(np.percentile(rx, 2)), float(np.percentile(rx, 98)), top
+
+
+def fit(a, kx, dx, dy, x_ref, y_ref):
+    """scale about x_ref horizontally by kx, move by (dx, dy) (supersampled pixels); premultiplied linear resampling"""
+    from scipy import ndimage
+    pm = a.copy(); pm[..., :3] *= pm[..., 3:]
+    out = np.zeros_like(pm)
+    for c in range(4):
+        out[..., c] = ndimage.affine_transform(pm[..., c], [1.0, 1.0 / kx], offset=[-dy, x_ref - (x_ref + dx) / kx], order=1, mode="constant", cval=0.0)
+    out[..., :3] /= np.maximum(out[..., 3:], 1e-6)
+    return out
+
+
+sx0, sx1, stop = band_of(a1)
+print("PD our band: x %.1f..%.1f top %.1f (gump px)" % (sx0 / SS, sx1 / SS, stop / SS))
 from PIL import Image
-Image.fromarray(to_rgba8(res)).save(os.path.join(OUT, "gump.png"))
+for gender, (tx0, tx1, ttop) in TARGETS.items():
+    kx = (tx1 - tx0) * SS / (sx1 - sx0)
+    # fit(): x' = x_ref + (x - x_ref) * kx + dx with x_ref = sx0: the left end of the band (sx0) goes to tx0, the right end to tx1
+    belt_g = fit(a1, kx, tx0 * SS - sx0, ttop * SS - stop, sx0, 0)
+    # the sword hangs from the right end of the band: it moves as that end does, keeps its own size and tilt
+    rx_old, rx_new = sx1, tx1 * SS
+    sword_g = fit(a2, 1.0, rx_new - rx_old, ttop * SS - stop, 0, 0)
+    r1, r2 = box_down(belt_g, SS), cap(box_down(sword_g, SS))
+    res = np.where(r2[..., 3:4] > 0, r2, r1)
+    np.save(os.path.join(OUT, "gump_%s_raw.npy" % gender), res)
+    Image.fromarray(to_rgba8(res)).save(os.path.join(OUT, "gump_%s.png" % gender))
+    b0, b1, bt = band_of(belt_g)
+    print("PD %s: band now x %.1f..%.1f top %.1f (target %.0f..%.0f top %.0f), kx %.3f" % (gender, b0 / SS, b1 / SS, bt / SS, tx0, tx1, ttop, kx))
 
 # art: the item as one object, tilted towards the camera, fitted into 44 x 32
 AW, AH = 44, 32
