@@ -19,7 +19,8 @@ import numpy as np
 
 SATURATION = 1.0      # 1 = the model's colours, 0 = greys only (an item the game tints with a hue), in between = washed out
 BRIGHTNESS = 1.0      # multiplier of the albedo (UO items are rarely darker than 0.15 or lighter than 0.9; the light is 0.08 + 0.92 cos)
-CLAMP = True          # albedo kept between 0.02 and 0.98 (sprites have neither pure black nor pure white, the 1-px outline is added by the renderer)
+CLAMP_MAX = 0.98      # upper limit of the albedo when CLAMP (linear; a lit face renders at sRGB(albedo): 0.98 = 250/255, 0.5 = 188, 0.22 = 130). A grey that must never look white (a blade): 0.22-0.3
+CLAMP = True          # albedo kept between 0.02 and CLAMP_MAX (0.98) (sprites have neither pure black nor pure white, the 1-px outline is added by the renderer)
 ALPHA = True          # keep transparency from the model's Alpha input (False = opaque)
 METAL = None          # None = metal where the model's Metallic >= METAL_AT, True = every material is metal (plate), False = none (cloth, leather)
 METAL_AT = 0.5
@@ -271,7 +272,7 @@ def convert(mat, ng):
         mapr = nt.nodes.new("ShaderNodeVectorMath"); mapr.operation = "MAXIMUM"; mapr.location = (where[0] - 440, where[1])
         mapr.inputs[1].default_value = (0.02, 0.02, 0.02)
         mapx = nt.nodes.new("ShaderNodeVectorMath"); mapx.operation = "MINIMUM"; mapx.location = (where[0] - 330, where[1])
-        mapx.inputs[1].default_value = (0.98, 0.98, 0.98)
+        mapx.inputs[1].default_value = (CLAMP_MAX, CLAMP_MAX, CLAMP_MAX)
         if cur is not None:
             nt.links.new(cur, mapr.inputs[0])
         else:

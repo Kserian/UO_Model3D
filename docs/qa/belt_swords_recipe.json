@@ -43,8 +43,9 @@
    },
    "materials": {
     "SATURATION": 0.0,
-    "FLAT_GREY": 0.5,
-    "METAL": false
+    "FLAT_GREY": 0.3,
+    "METAL": false,
+    "CLAMP_MAX": 0.32
    }
   },
   {
@@ -61,8 +62,9 @@
    },
    "materials": {
     "SATURATION": 0.0,
-    "FLAT_GREY": 0.5,
-    "METAL": false
+    "FLAT_GREY": 0.3,
+    "METAL": false,
+    "CLAMP_MAX": 0.32
    }
   },
   {
@@ -79,8 +81,9 @@
    },
    "materials": {
     "SATURATION": 0.0,
-    "FLAT_GREY": 0.55,
-    "METAL": false
+    "FLAT_GREY": 0.32,
+    "METAL": false,
+    "CLAMP_MAX": 0.34
    }
   },
   {
@@ -99,7 +102,8 @@
    "materials": {
     "SATURATION": 0.0,
     "METAL": false,
-    "BRIGHTNESS": 1.5
+    "BRIGHTNESS": 1.2,
+    "CLAMP_MAX": 0.34
    }
   }
  ]
