@@ -38,6 +38,18 @@ Warstwa przedmiotu (`.vd`) idzie na oryginalne ciało, a tułów domyślnie nicz
 - Oplot w obu: brąz o 20% ciemniejszy (liniowe albedo x0,8): `FLAT_COLOR` (0,272; 0,144; 0,06), `CLAMP_MAX` 0,32, `METAL` false; oświetlony piksel (145, 108, 71), mediana (48, 35, 23). Wcześniejsze wersje: (0,34; 0,18; 0,075) za jasna,
   (0,55; 0,30; 0,13) i (0,85; 0,55; 0,32) pomarańczowa / brzoskwiniowa. Ostrze, pochwa, pierścienie, jelec, pomel bez zmian (szarości, najjaśniejszy piksel 152).
 
+## Ikona (art) i gump paperdolla
+Narzędzia: `pipeline/uo_gump_art.py` (odczyt i zapis `Gumpart.mul` / `art.mul`: `gump DIR ID OUT.png`, `art DIR ID OUT.png`, `list DIR A B`) i `pipeline/uo_render_paperdoll.py` (render z tego samego modelu 3D:
+`PD_OUT=DIR python pipeline/run_script_in_blend.py ITEM.blend pipeline/uo_render_paperdoll.py`).
+Zmierzone na kliencie Nelderim: gump ciała męskiego 12 ma **260 x 237** (głowa y 54, stopy y 221 = 1,855 m, czyli **90,5 px/m**, oś ciała x 94,5); gumpy ekwipunku mają ten sam rozmiar (204 z 600 gumpów 50000+ID), męski `50000 + AnimID`, żeński `60000 + AnimID`;
+ikony przedmiotów (`art.mul`, indeks 0x4000 + ID) mają 44 x 32 (np. Belt_Sword 41997).
+W kliencie jest już `Belt_Sword` (AnimID 1519, przedmiot 41997), `Belt_Mace` (1517) i `Belt_Dagger` (1521): pas z bronią, według którego dopasowano położenie (pas na y 126-135, miecz przy prawym biodrze na ekranie).
+- Gump: widok z przodu, ortogonalny, ciało w pozie spoczynku jako holdout (ukrywa tylną połowę pasa), miecz bez holdoutu (leży na nodze jak w oryginale). Świat 1:1 do gumpa 12: pas wypada na y ok. 125-140, szerokość pasa ok. 38 px (oryginał 37).
+  Miecz grubszy niż w animacji, bo skala gumpa jest 2,5x większa: A 0,06 m (ok. 5,5 px), B 0,05 m (ok. 4,5 px); oryginalna pochwa ma ok. 6 px.
+- Jasność miecza: oświetlenie z przodu daje jaśniejsze piksele niż klatki animacji (199 przy 159), więc miecz (nie pas) ma ten sam sufit 160/255 (`PD_MAX_LEVEL`). Sprawdzone, że część jasności nie zależy od albedo (świat i Słońce wyłączone: nadal 170).
+- Ikona: pas i miecz razem, obrócone o 35 stopni i przechylone o 55 stopni do kamery, wpasowane w 44 x 32 (60,6 px/m); pas to cienka taśma (1 px), więc na ikonie jest cienkim pierścieniem (oryginalne ikony pasów to zbite plamy).
+- Kodowanie: round trip na oryginałach klienta (gumpy 12, 51519, 51517, ikony 41997, 41996, 5441: dekodowanie -> kodowanie -> dekodowanie identyczne w 15 bitach) i na naszych; wpis `Gumpidx`: extra = (szerokość << 16) | wysokość.
+
 ## Pomiar (przed render, `item_qa`-podobny, skóra = UO_Body w pozie)
 Wierzchołki w ciele >2 mm / najgłębiej (mm), run3 (wagi: pas z udami, miecz 0,4, sztylet 0,6):
 
