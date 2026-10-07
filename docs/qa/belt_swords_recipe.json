@@ -43,7 +43,7 @@
    },
    "materials": {
     "SATURATION": 0.0,
-    "FLAT_GREY": 0.6,
+    "FLAT_GREY": 0.5,
     "METAL": false
    }
   },
@@ -61,7 +61,7 @@
    },
    "materials": {
     "SATURATION": 0.0,
-    "FLAT_GREY": 0.6,
+    "FLAT_GREY": 0.5,
     "METAL": false
    }
   },
@@ -78,12 +78,8 @@
     "own_axis": false
    },
    "materials": {
-    "SATURATION": 1.0,
-    "FLAT_COLOR": [
-     0.8,
-     0.58,
-     0.4
-    ],
+    "SATURATION": 0.0,
+    "FLAT_GREY": 0.55,
     "METAL": false
    }
   },
@@ -100,7 +96,11 @@
     "factor": 1.3,
     "own_axis": false
    },
-   "materials": {}
+   "materials": {
+    "SATURATION": 0.0,
+    "METAL": false,
+    "BRIGHTNESS": 1.5
+   }
   }
  ]
 }

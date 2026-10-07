@@ -19,10 +19,12 @@ Model ma 16 siatek: pas z paskami i uchwytami (`Object_4,6,8,10,12,14,34`), rapi
   Przy 36 px/m pochwa 3 cm = 1 px (cienka linia, w ruchu się gubiła), 6 cm = ok. 2 px.
 - Części modelu (siatki): `Object_16` ostrze przy jelcu, `Object_24` pochwa, `Object_18` oplot rękojeści, `Object_20` jelec (mosiądz) **razem ze złotymi pierścieniami przy wlocie pochwy**, `Object_22` pomel.
   `belt_swords_prep.py` wydziela pierścienie z jelca jako `Object_20b` (kawałki luźne dalej niż -0,47 m na osi pochwy), żeby były szare razem z ostrzem.
-- Ostrze, pochwa i pierścienie (`blade`, `ring`): `FLAT_GREY` 0,6 + `METAL` false (bez połysku metalu, który dawał białą smugę). Albedo 0,95 dawało czystą biel po oświetlonej stronie (1,2% pikseli > 200), 0,55 było za ciemne.
-- Oplot (`grip`): jasny brąz, `FLAT_COLOR` (0,80; 0,58; 0,40) liniowo, `METAL` false (nowe ustawienie `uo_materials.py`: jeden kolor zamiast tekstury). (0,5; 0,28; 0,12) wychodziło ciemnobrązowe, (0,98; 0,62; 0,30) pomarańczowe (światło UO mocno ściemnia i podbija nasycenie).
-  Jelec (mosiądz) i pomel (stal) zostają w kolorach modelu.
-- Pomiar na warstwie ostrza z pierścieniami (stand, walk, run, atak 1H, 140 klatek, bez pasa i rękojeści): 5595 pikseli, **100%** dokładnie szarych (R=G=B), mediana / p90 = 69 / 77, najjaśniejszy 206, 0% pikseli > 220. Przed pogrubieniem miecz miał 2889 widocznych pikseli (z rękojeścią).
+- **Cały rapier w szarościach** (ostatnia prośba użytkownika, zastępuje jasnobrązowy oplot), bez połysku metalu i bez białych poświat (`METAL` false wszędzie):
+  ostrze, pochwa i pierścienie `FLAT_GREY` 0,5, oplot `FLAT_GREY` 0,55, jelec i pomel tekstura modelu zdesaturowana (`SATURATION` 0, `BRIGHTNESS` 1,5; mosiądz inaczej wychodził czarny).
+  Poświata na ostrzu to oświetlona strona stalowego ostrza przy jelcu: albedo 0,6 dawało ok. 206/255 (0,95: czysta biel). Przy 0,5 najjaśniejszy piksel to 199, a 99% ma <= 185.
+  Wcześniej próbowane kolory oplotu (nie wracać bez prośby): (0,5; 0,28; 0,12) za ciemny, (0,98; 0,62; 0,30) pomarańczowy, (0,80; 0,58; 0,40) jasny brąz. `FLAT_COLOR` zostaje w `uo_materials.py`.
+- Przy 2 px szerokości każdy piksel ostrza jest brzegowy i dostaje obrys renderera (x0,38): ostrze wygląda na ciemniejsze niż jego albedo (mediana ok. 62/255), jaśniejsze są tylko oświetlone fragmenty przy jelcu.
+- Pomiar na całym rapierze (stand, walk, run, atak 1H, 140 klatek, bez pasa): 7258 pikseli, **100%** dokładnie szarych (R=G=B), p10 / p50 / p90 / p99 / max = 40 / 62 / 71 / 185 / 199, 0% pikseli > 200. Przed pogrubieniem miecz miał 2889 widocznych pikseli (z rękojeścią).
   Strona w cieniu (miecz za ciałem) zostaje ciemnoszara (ok. 60/255), jak w UO.
 
 ## Pomiar (przed render, `item_qa`-podobny, skóra = UO_Body w pozie)
