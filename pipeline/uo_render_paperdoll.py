@@ -75,7 +75,8 @@ GRAY_MAX = float(os.environ.get("PD_MAX_LEVEL", "160")) / 255.0     # brightness
 def cap(a):
     """pixels brighter than GRAY_MAX are scaled down to it (hue and the dark shading stay): the lighting of the front view is brighter than the animation's"""
     top = a[..., :3].max(-1, keepdims=True)
-    k = np.minimum(1.0, GRAY_MAX / np.maximum(top, 1e-6))
+    grey = (top - a[..., :3].min(-1, keepdims=True)) <= 10.0 / 255.0         # only the grey parts (the blade): coloured parts (a red grip, brass) keep their colour
+    k = np.where(grey, np.minimum(1.0, GRAY_MAX / np.maximum(top, 1e-6)), 1.0)
     out = a.copy(); out[..., :3] = a[..., :3] * k
     return out
 
