@@ -1,0 +1,99 @@
+{
+ "name": "armor_metal",
+ "file": "armor_metal_split.glb",
+ "kind": "plate",
+ "reference": {
+  "keep": [
+   "=Part0"
+  ],
+  "kind": "plate"
+ },
+ "parts": [
+  {
+   "name": "cuirass",
+   "keep": [
+    "=Part0"
+   ],
+   "kind": "plate",
+   "prepare": {
+    "PART": "torso"
+   },
+   "materials": {
+    "SATURATION": 0.0,
+    "METAL": true,
+    "BRIGHTNESS": 0.42,
+    "SPEC_STRENGTH": 6.0,
+    "SPEC_POWER": 19
+   },
+   "smooth_shade": true,
+   "pose_clear": {},
+   "tune": {
+    "uo_densify_item.py": {
+     "SMOOTH": 0.7
+    }
+   }
+  },
+  {
+   "name": "pauldron_a",
+   "keep": [
+    "=Part1"
+   ],
+   "kind": "plate",
+   "prepare": {
+    "PART": "shoulders"
+   },
+   "cup": {
+    "bone": "upper_arm",
+    "gap": 0.035
+   },
+   "to_bone": "upper_arm",
+   "tune": {
+    "uo_fit_item.py": {
+     "LIMIT": 0.04
+    },
+    "uo_densify_item.py": {
+     "SMOOTH": 0.7
+    }
+   },
+   "materials": {
+    "SATURATION": 0.0,
+    "METAL": true,
+    "BRIGHTNESS": 0.42,
+    "SPEC_STRENGTH": 6.0,
+    "SPEC_POWER": 19
+   },
+   "smooth_shade": true
+  },
+  {
+   "name": "pauldron_b",
+   "keep": [
+    "=Part2"
+   ],
+   "kind": "plate",
+   "prepare": {
+    "PART": "shoulders"
+   },
+   "cup": {
+    "bone": "upper_arm",
+    "gap": 0.035
+   },
+   "to_bone": "upper_arm",
+   "tune": {
+    "uo_fit_item.py": {
+     "LIMIT": 0.04
+    },
+    "uo_densify_item.py": {
+     "SMOOTH": 0.7
+    }
+   },
+   "materials": {
+    "SATURATION": 0.0,
+    "METAL": true,
+    "BRIGHTNESS": 0.42,
+    "SPEC_STRENGTH": 6.0,
+    "SPEC_POWER": 19
+   },
+   "smooth_shade": true
+  }
+ ]
+}

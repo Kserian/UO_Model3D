@@ -58,7 +58,7 @@ def build_parts_stage(recipe, out_blend):
     return '''
 import bpy, os, re, sys, json
 import numpy as np
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 HERE = %(here)r
 AXIS = []                                   # (centre, direction) of the first thickened part: the long axis of a sword, shared by its hilt parts
 
@@ -125,6 +125,66 @@ for part in %(parts)r:
     if part.get("thicken"):
         thicken(obs, part["thicken"])
     run("uo_materials.py", **part.get("materials", {}))
+    if part.get("scale") or part.get("on_bone"):         # a part that is the wrong size / place for the body (a pauldron of a stylised armour): scaled about its own centre, then its centre put on a bone (+ offset, m)
+        import numpy as np
+        for o in obs:
+            vs = np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices]); c = (vs.min(0) + vs.max(0)) / 2
+            k = float(part.get("scale", 1.0))
+            o.data.transform(o.matrix_world.inverted() @ Matrix.Translation(c) @ Matrix.Scale(k, 4) @ Matrix.Translation(-c) @ o.matrix_world)
+            if part.get("on_bone"):
+                bn, d = part["on_bone"]
+                bl = (rig.matrix_world @ rig.data.bones[bn + ".L"].head_local)
+                side = "L" if abs(bl.x - c[0]) < abs(-bl.x - c[0]) else "R"
+                tgt = rig.matrix_world @ rig.data.bones[bn + "." + side].head_local
+                o.data.transform(o.matrix_world.inverted() @ Matrix.Translation(Vector(tgt) + Vector(d) - Vector(c)) @ o.matrix_world)
+        gap = part.get("clear_skin")
+        if gap:                                          # grow the part about its place until it clears the skin of the rest pose (at most 2 %% of its vertices closer than `gap` m): a cup that must not sit inside the shoulder
+            from mathutils.bvhtree import BVHTree
+            bpy.context.view_layer.update(); body = bpy.data.objects["UO_Body"]; dg = bpy.context.evaluated_depsgraph_get(); eb = body.evaluated_get(dg); mb = eb.to_mesh(); mb.calc_loop_triangles()
+            bv = BVHTree.FromPolygons([eb.matrix_world @ v.co for v in mb.vertices], [t.vertices[:] for t in mb.loop_triangles]); eb.to_mesh_clear()
+            for o in obs:
+                vs = np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices]); c = (vs.min(0) + vs.max(0)) / 2; k0 = 1.0
+                def inside(k):
+                    n = 0
+                    for q in vs:
+                        p = Vector(c + (q - c) * k); loc, nrm, fi, d = bv.find_nearest(p, 0.5)
+                        n += loc is not None and ((p - loc).dot(nrm) < gap)
+                    return n / len(vs)
+                while inside(k0) > 0.02 and k0 < 2.5:
+                    k0 *= 1.04
+                o.data.transform(o.matrix_world.inverted() @ Matrix.Translation(c) @ Matrix.Scale(k0, 4) @ Matrix.Translation(-c) @ o.matrix_world)
+                print("uo_make_item: %%s grown x%%.2f to clear the skin by %%.0f mm" %% (o.name, k0, 1000 * gap))
+        bpy.context.view_layer.update()
+    cup = part.get("cup")
+    if cup:                                              # a shoulder cup (dome): its sphere is fitted, scaled to the shoulder (radius of the skin round the bone head + gap) and centred on the bone head (+ offset)
+        import numpy as np
+        from mathutils.bvhtree import BVHTree
+        bpy.context.view_layer.update(); body = bpy.data.objects["UO_Body"]; dg = bpy.context.evaluated_depsgraph_get(); eb = body.evaluated_get(dg); mb = eb.to_mesh(); mb.calc_loop_triangles()
+        bv = BVHTree.FromPolygons([eb.matrix_world @ v.co for v in mb.vertices], [t.vertices[:] for t in mb.loop_triangles]); eb.to_mesh_clear()
+        for o in obs:
+            vs = np.array([(o.matrix_world @ v.co)[:] for v in o.data.vertices]); keep = np.ones(len(vs), bool)
+            for _ in range(4):                           # sphere least squares on the vertices that lie on the dome (the fin and the rim do not)
+                A = np.c_[2 * vs[keep], np.ones(keep.sum())]; b = (vs[keep] ** 2).sum(1)
+                x = np.linalg.lstsq(A, b, rcond=None)[0]; ctr = x[:3]; r = np.sqrt(x[3] + ctr @ ctr)
+                keep = np.abs(np.linalg.norm(vs - ctr, axis=1) - r) < 0.2 * r
+            bn = cup.get("bone", "upper_arm")
+            bl = rig.matrix_world @ rig.data.bones[bn + ".L"].head_local
+            side = "L" if abs(bl.x - ctr[0]) < abs(-bl.x - ctr[0]) else "R"
+            head = rig.matrix_world @ rig.data.bones[bn + "." + side].head_local
+            loc, nrm, fi, dsk = bv.find_nearest(Vector(head), 0.5)
+            k = (dsk + float(cup.get("gap", 0.025))) / r
+            tgt = Vector(head) + Vector(cup.get("offset", [0, 0, 0]))
+            mx = Matrix.Translation(tgt) @ Matrix.Scale(k, 4) @ Matrix.Translation(-Vector(ctr))
+            o.data.transform(o.matrix_world.inverted() @ mx @ o.matrix_world)
+            print("uo_make_item: %%s: dome r %%.3f m (%%d of %%d vertices) -> shoulder %%s, skin %%.3f m from the bone head, scaled x%%.2f" %% (o.name, r, keep.sum(), len(vs), side, dsk, k))
+        bpy.context.view_layer.update()
+    if part.get("cut_below") is not None:                # the hem of a cuirass that reaches over the thighs (they poke through it when the legs move): the part is cut at this height (m, body rest pose)
+        import bmesh
+        for o in obs:
+            bm = bmesh.new(); bm.from_mesh(o.data); bm.transform(o.matrix_world)
+            g = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, float(part["cut_below"])), plane_no=(0, 0, 1), clear_inner=True)
+            bm.transform(o.matrix_world.inverted()); bm.to_mesh(o.data); bm.free()
+        print("uo_make_item: cut below z = %%.3f m" %% float(part["cut_below"]))
     off = part.get("move", [0, 0, 0])
     if any(off):
         for o in obs:
@@ -139,12 +199,44 @@ for part in %(parts)r:
                 idx = list(range(len(o.data.vertices)))
                 o.vertex_groups[bone].add(idx, 1.0 - sh, "REPLACE")
                 (o.vertex_groups.get("pelvis") or o.vertex_groups.new(name="pelvis")).add(idx, sh, "REPLACE")
+        arm = part.get("arm_share")
+        if arm:                                          # a pauldron: stiff on the chest, part of the weight on the upper arm of its side (turns with the arm only partly, does not stretch)
+            for o in obs:
+                wx = sum((o.matrix_world @ v.co).x for v in o.data.vertices) / len(o.data.vertices)
+                bl = (rig.matrix_world @ rig.data.bones["upper_arm.L"].head_local).x
+                side = "L" if abs(bl - wx) < abs(-bl - wx) else "R"
+                idx = list(range(len(o.data.vertices)))
+                bone = [g.name for g in o.vertex_groups][0]
+                o.vertex_groups[bone].add(idx, 1.0 - float(arm), "REPLACE")
+                o.vertex_groups.new(name="upper_arm." + side).add(idx, float(arm), "REPLACE")
         for o in obs:
             for k in ("uo_no_body_gap", "uo_behind_torso"):
                 if part.get(k, True):
                     o[k] = 1
     else:
+        os.environ["UO_PREPARE_EXTRA"] = json.dumps(part.get("tune", {}))
         run("uo_prepare_item.py", KIND=part["kind"], AUTOFIT=False, **part.get("prepare", {}))
+        if part.get("pose_clear") is not None:                       # the arms swept through the poses of the animations: the rest shape is pushed out of them (uo_pose_clear.py), then bound again for the new shape
+            pc = dict(part["pose_clear"]) if isinstance(part["pose_clear"], dict) else {}
+            bind_part = pc.pop("bind", None)
+            select(obs)
+            run("uo_pose_clear.py", **pc)
+            run("uo_bind_item.py", PART=part.get("prepare", {}).get("PART") or bind_part or "chest")
+        if part.get("smooth_shade"):                     # smooth normals: a low-poly model shaded flat shows its facets (they stay visible after densifying)
+            for o in obs:
+                o.data.polygons.foreach_set("use_smooth", [True] * len(o.data.polygons)); o.data.update()
+        if part.get("to_bone"):                          # fitted to the skin in the rest pose (pushed out of it), then stiff on one bone of its side: a shoulder cup turns with the upper arm, a sphere round the joint stays round it
+            for o in obs:
+                wx = sum((o.matrix_world @ v.co).x for v in o.data.vertices) / len(o.data.vertices)
+                bl = (rig.matrix_world @ rig.data.bones[part["to_bone"] + ".L"].head_local).x
+                bone = part["to_bone"] + ("." + ("L" if abs(bl - wx) < abs(-bl - wx) else "R"))
+                for g in list(o.vertex_groups):
+                    o.vertex_groups.remove(g)
+                o.vertex_groups.new(name=bone).add(list(range(len(o.data.vertices))), 1.0, "REPLACE")
+                if o.data.shape_keys:
+                    for k in [k for k in o.data.shape_keys.key_blocks if k.name.startswith("uo_")]:
+                        o.shape_key_remove(k)
+                print("uo_make_item: %%s -> rigid on %%s" %% (o.name, bone))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
 ''' % dict(here=HERE, base=base, ref=ref, parts=parts, out=out_blend)

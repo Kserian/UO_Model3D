@@ -16,6 +16,7 @@ KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, he
 AUTOFIT = True        # first uo_autofit_item.py: units, size and place from the skin the slot covers (False: the item already stands where it should)
 DENSIFY = True        # False: keep the mesh as it is
 FIT = True            # False: skip uo_fit_item.py (the item already sits right)
+PART = None           # skin weights of uo_bind_item.py: None = those of the slot (SLOTS below); e.g. "torso" for a cuirass whose pauldrons are a separate part (stays on pelvis / spine / chest / neck, does not stretch with the arms)
 
 # KIND -> (PART of uo_bind_item.py, densify?, class). class: "tight" (cloth / leather close to the skin), "hard" (armour, thick: keeps its distance, 3 cm),
 # "rigid" (one bone). Same parts as EXTENTS of uo_import_item.py.
@@ -58,6 +59,7 @@ def run(name, **over):
 if KIND not in SLOTS:
     raise ValueError("KIND must be one of %s" % list(SLOTS))
 _part, _dens, _cls = SLOTS[KIND]
+_part = PART or _part
 print("uo_prepare_item: KIND %s -> PART %s, class %s" % (KIND, _part, _cls))
 try:
     import scipy                                      # noqa: F401
