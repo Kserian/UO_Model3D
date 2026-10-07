@@ -1,6 +1,6 @@
 {
  "name": "belt_sword",
- "file": "cinto_de_armas.glb",
+ "file": "belt_split.glb",
  "kind": "waist",
  "reference": {
   "keep": [
@@ -48,10 +48,49 @@
    }
   },
   {
+   "name": "ring",
+   "keep": [
+    "=Object_20b"
+   ],
+   "rigid": "hip.L",
+   "pelvis_share": 0.4,
+   "uo_behind_torso": false,
+   "thicken": {
+    "factor": 1.3,
+    "own_axis": false
+   },
+   "materials": {
+    "SATURATION": 0.0,
+    "FLAT_GREY": 0.6,
+    "METAL": false
+   }
+  },
+  {
+   "name": "grip",
+   "keep": [
+    "=Object_18"
+   ],
+   "rigid": "hip.L",
+   "pelvis_share": 0.4,
+   "uo_behind_torso": false,
+   "thicken": {
+    "factor": 1.3,
+    "own_axis": false
+   },
+   "materials": {
+    "SATURATION": 1.0,
+    "FLAT_COLOR": [
+     0.8,
+     0.58,
+     0.4
+    ],
+    "METAL": false
+   }
+  },
+  {
    "name": "hilt",
    "keep": [
-    "=Object_18",
-    "=Object_20",
+    "=Object_20a",
     "=Object_22"
    ],
    "rigid": "hip.L",

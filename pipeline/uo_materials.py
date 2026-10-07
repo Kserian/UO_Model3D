@@ -40,6 +40,7 @@ SHADOW = 0.4          # own shadow (docs/qa/light_shadow.md: the UO sprites are 
                       # the item gets s of the light as emission (no shadow) and 1 - s as a diffuse BSDF lit by a Sun with the UO light direction that casts shadows (render_uo_layer.py makes
                       # the Sun). Folds, a sleeve over the chest, an arm over the coat get their shade. 0 = off (UO_Look: Lambert, no shadows)
 FLAT_GREY = None      # 0..1: one plain grey instead of the model's colours and textures (an item the game tints with a hue: a sword, a blade; 0.55 = mid grey, the hue then shows). None = the model's colour
+FLAT_COLOR = None     # (r, g, b) linear 0..1: one plain colour instead of the model's colours and textures (e.g. a leather grip (0.5, 0.28, 0.12)); wins over FLAT_GREY
 REPORT = True
 
 _metallic = 0.0
@@ -238,7 +239,9 @@ def convert(mat, ng):
     where = out.location.x - 300, out.location.y
     grp = nt.nodes.new("ShaderNodeGroup"); grp.node_tree = ng; grp.label = "UO_Look"; grp.location = (where[0], where[1])
     how = "colour"
-    if FLAT_GREY is not None:
+    if FLAT_COLOR is not None:
+        col, default = None, (*FLAT_COLOR, 1.0)
+    elif FLAT_GREY is not None:
         col, default = None, (FLAT_GREY, FLAT_GREY, FLAT_GREY, 1.0)
     nmap = next((n for n in (nt.nodes if mat.use_nodes else []) if n.type == "NORMAL_MAP" and n.inputs["Color"].links), None) if NORMAL_MAP else None
     if nmap is not None or SHADOW > 0:                    # the model's normal map lights the item; the own shadow needs the Normal input too

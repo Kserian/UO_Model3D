@@ -1,7 +1,7 @@
 # Pas z mieczem (darmowy model, test ramek)
 
 Model: „Cinto de armas” (idemotts, https://sketchfab.com/3d-models/cinto-de-armas-9f70d7d64cb4413e95300e892724052d), **CC BY 4.0**. Pliku `.glb` nie ma w repo (8,7 MB); przepis: `belt_swords_recipe.json`
-(`python pipeline/uo_make_item.py docs/qa/belt_swords_recipe.json --preview --no-qa`, plik `cinto_de_armas.glb` obok).
+(najpierw `python -I docs/qa/belt_swords_prep.py cinto_de_armas.glb belt_split.glb`, potem `python pipeline/uo_make_item.py docs/qa/belt_swords_recipe.json --preview --no-qa`).
 
 Model ma 16 siatek: pas z paskami i uchwytami (`Object_4,6,8,10,12,14,34`), rapier z pochwą (`Object_16-24`, na lewym biodrze: rękojeść z przodu, czubek z tyłu w dół). Sztylet (`Object_26-32`, prawe biodro) usunięty na prośbę użytkownika (osobno nie ma sensu).
 
@@ -17,9 +17,12 @@ Model ma 16 siatek: pas z paskami i uchwytami (`Object_4,6,8,10,12,14,34`), rapi
 ## Miecz widoczny i do barwienia (partial hue)
 - `thicken` {`width`: 0.06}: przekrój pochwy i klingi powiększony wokół osi miecza tak, by oba kierunki miały >= 6 cm (było 3,9 x 1,6 cm, czyli x1,5 / x3,8); jelec i rękojeść osobną częścią x1,3 na tej samej osi (`own_axis: false`).
   Przy 36 px/m pochwa 3 cm = 1 px (cienka linia, w ruchu się gubiła), 6 cm = ok. 2 px.
-- Szary tylko ostrze (pochwa i kling): `FLAT_GREY` 0,6 (nowe ustawienie `uo_materials.py`: jeden gładki szary zamiast tekstury) i `METAL` false (bez połysku metalu, który dawał białą smugę); rękojeść i jelec zostają w kolorach modelu (czerwony oplot, mosiądz).
-  Albedo 0,95 dawało czystą biel po oświetlonej stronie (1,2% pikseli > 200, max 253), 0,55 było za ciemne (mediana 66), 0,6: **0% pikseli > 220**, max 206.
-- Pomiar na warstwie samego ostrza (stand, walk, run, atak 1H, 140 klatek, bez pasa i rękojeści): 5509 pikseli, **100%** dokładnie szarych (R=G=B), poziom p10/p50/p90 = 48/69/77 (z 255; obrys x0,38 wlicza się). Przed pogrubieniem miecz miał 2889 widocznych pikseli (z rękojeścią).
+- Części modelu (siatki): `Object_16` ostrze przy jelcu, `Object_24` pochwa, `Object_18` oplot rękojeści, `Object_20` jelec (mosiądz) **razem ze złotymi pierścieniami przy wlocie pochwy**, `Object_22` pomel.
+  `belt_swords_prep.py` wydziela pierścienie z jelca jako `Object_20b` (kawałki luźne dalej niż -0,47 m na osi pochwy), żeby były szare razem z ostrzem.
+- Ostrze, pochwa i pierścienie (`blade`, `ring`): `FLAT_GREY` 0,6 + `METAL` false (bez połysku metalu, który dawał białą smugę). Albedo 0,95 dawało czystą biel po oświetlonej stronie (1,2% pikseli > 200), 0,55 było za ciemne.
+- Oplot (`grip`): jasny brąz, `FLAT_COLOR` (0,80; 0,58; 0,40) liniowo, `METAL` false (nowe ustawienie `uo_materials.py`: jeden kolor zamiast tekstury). (0,5; 0,28; 0,12) wychodziło ciemnobrązowe, (0,98; 0,62; 0,30) pomarańczowe (światło UO mocno ściemnia i podbija nasycenie).
+  Jelec (mosiądz) i pomel (stal) zostają w kolorach modelu.
+- Pomiar na warstwie ostrza z pierścieniami (stand, walk, run, atak 1H, 140 klatek, bez pasa i rękojeści): 5595 pikseli, **100%** dokładnie szarych (R=G=B), mediana / p90 = 69 / 77, najjaśniejszy 206, 0% pikseli > 220. Przed pogrubieniem miecz miał 2889 widocznych pikseli (z rękojeścią).
   Strona w cieniu (miecz za ciałem) zostaje ciemnoszara (ok. 60/255), jak w UO.
 
 ## Pomiar (przed render, `item_qa`-podobny, skóra = UO_Body w pozie)
