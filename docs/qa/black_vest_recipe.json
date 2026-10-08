@@ -36,11 +36,37 @@
    ],
    "cut_above": 1.6,
    "behind_torso": true,
-   "smooth_mesh": {
-    "iterations": 4,
-    "factor": 0.5
+   "no_body_gap": true,
+   "skin_shell": {
+    "GAP": 0.03,
+    "D": 0.085,
+    "ZMAX": 1.59,
+    "GROUPS": [
+     "pelvis",
+     "spine",
+     "chest",
+     "clavicle",
+     "neck"
+    ],
+    "VNECK": [
+     1.3,
+     1.56,
+     0.11
+    ],
+    "SMOOTH": 6,
+    "NECK_RADIUS": 0.09,
+    "INSIDE": 0.7,
+    "BORDER_SMOOTH": 16
    },
-   "no_body_gap": true
+   "materials": {
+    "FLAT_COLOR": [
+     0.035,
+     0.033,
+     0.033
+    ],
+    "METAL": false
+   },
+   "min_piece": 24
   }
  ]
 }

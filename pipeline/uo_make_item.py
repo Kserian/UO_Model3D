@@ -20,7 +20,7 @@ RECIPE.json (only "file" and "kind" are required):
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
-uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "smooth_mesh": {"iterations": 3, "factor": 0.5} = smooth the finished shape (borders stay); "no_body_gap": true = not bent around the limbs by the renderer; "behind_torso": true = the torso hides what is behind it (garments that wrap the trunk); "cut_above" / "cut_below": z (m) at which a part is cut (a collar above the shoulders, a hem over the thighs); "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
+uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "skin_shell": {"GAP": 0.03, "VNECK": [1.3, 1.56, 0.1], "ZMAX": 1.56} = rebuild a vest as a shell of the body skin (uo_skin_shell.py); "smooth_mesh": {"iterations": 3, "factor": 0.5} = smooth the finished shape (borders stay); "min_piece": 24 = the renderer drops detached bits smaller than 24 px (default 8); "no_body_gap": true = not bent around the limbs by the renderer; "behind_torso": true = the torso hides what is behind it (garments that wrap the trunk); "cut_above" / "cut_below": z (m) at which a part is cut (a collar above the shoulders, a hem over the thighs); "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
 
 Steps (each is one of the scripts that are also in the .blend, see README): uo_import_item.py (clean, join, reduce) -> uo_materials.py (UO look) ->
 uo_prepare_item.py (uo_autofit_item.py size / place from the skin, uo_densify_item.py, uo_fit_item.py push out of the skin, uo_bind_item.py skin weights).
@@ -231,6 +231,12 @@ for part in %(parts)r:
             select(obs)
             run("uo_pose_clear.py", **pc)
             run("uo_bind_item.py", PART=part.get("prepare", {}).get("PART") or bind_part or "chest")
+        if part.get("skin_shell") is not None:             # a vest / waistcoat as a shell of the body skin (uo_skin_shell.py): clean, can not poke through the body; the fitted item gives the outline, then it is bound again
+            ss = dict(part["skin_shell"]) if isinstance(part["skin_shell"], dict) else {}
+            bind_over = ss.pop("bind", {})                    # settings of uo_bind_item.py for the shell (SMOOTH 0: the weights of the skin under each vertex, not smoothed over the mesh)
+            select(obs)
+            run("uo_skin_shell.py", **ss)
+            run("uo_bind_item.py", PART=part.get("prepare", {}).get("PART") or "torso", **bind_over)
         if part.get("smooth_mesh"):                      # Laplacian smoothing of the finished rest shape (bumps and waves left by the push-out of the fit); border vertices (armholes, neckline, hem) stay, the skin weights stay
             sm = part["smooth_mesh"] if isinstance(part["smooth_mesh"], dict) else {}
             import bmesh
@@ -241,6 +247,8 @@ for part in %(parts)r:
                     bmesh.ops.smooth_vert(bm, verts=inner, factor=float(sm.get("factor", 0.5)), use_axis_x=True, use_axis_y=True, use_axis_z=True)
                 bm.to_mesh(o.data); bm.free(); o.data.update()
             print("uo_make_item: smoothed the shape: %%d iterations, factor %%.2f" %% (int(sm.get("iterations", 3)), float(sm.get("factor", 0.5))))
+        if part.get("min_piece"):                        # detached bits of the item smaller than this (px) are removed by the renderer (scene property uo_min_piece; default 8): the straps of a vest cut by an arm leave specks
+            bpy.context.scene["uo_min_piece"] = max(int(part["min_piece"]), int(bpy.context.scene.get("uo_min_piece", 0)))
         if part.get("no_body_gap"):                      # the renderer does not bend this item around the limbs frame by frame (BODY_GAP: edges jump and tear into spikes where the arm sweeps through a vest); the arm hides what is behind it
             for o in obs:
                 o["uo_no_body_gap"] = 1
