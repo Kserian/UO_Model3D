@@ -11,24 +11,26 @@ python pipeline/uo_make_item.py docs/qa/black_vest_recipe.json --preview        
 ## Co było trzeba (i dlaczego), z pomiarami
 | Problem | Pomiar | Rozwiązanie |
 |---|---|---|
-| Autodopasowanie wzięło plik za metry i przeskalowało kamizelkę do wysokości 1,2 m (do ud), z „skrzydłami” na ramionach (otwory na ręce mniejsze niż nasze ramiona, fit wypychał brzegi) | `ITEM_QA`: średnio 3,3% wierzchołków w ciele, 12 cm głęboko, odstęp p90 10 cm | `stretch_glb.py`: skala 0,3 do metrów i nierówne rozciągnięcie szerokość x0,8, głębokość x1,25, wysokość x0,77 (kamizelka z manekina była szersza i płytsza niż tułów: tułów ciała 0,36 x 0,28 m, kamizelka po skali do 0,55 x 0,22) |
+| Autodopasowanie wzięło plik za metry i przeskalowało kamizelkę do wysokości 1,2 m (do ud), z „skrzydłami” na ramionach | `ITEM_QA`: średnio 3,3% wierzchołków w ciele, 12 cm głęboko, odstęp p90 10 cm | `stretch_glb.py`: skala 0,3 do metrów i nierówne rozciągnięcie szerokość x0,8, głębokość x1,25, wysokość x0,77 (kamizelka z manekina była szersza i płytsza niż tułów: tułów ciała 0,36 x 0,28 m, kamizelka po skali do 0,55 x 0,22) |
 | Wiązanie `chest` ciągnęło boki z ramieniem | skóra tułowia w kamizelce | `prepare.PART = "torso"` (pelvis, spine, chest, neck) |
-| Ramiona w kamizelce w pozach animacji | w kończynach 3-5% wierzchołków, do 8 cm | `pose_clear` (ramiona + tułów, 9 akcji, 3 rundy, `GAP` 12 mm, `CAP` 5 cm); kończyny dodatkowo wypycha render (`BODY_GAP`) |
-| Poza inna niż spoczynek: skóra tułowia (pierś, brzuch) w kamizelce mimo „inside 0” w pozie spoczynkowej | 4% wierzchołków w tułowiu we wszystkich akcjach, do 56 mm | odstęp od skóry 35 mm zamiast 20 (`MIN_GAP`, `GAP` w `tune`): 0,4-1,0% i do 35-50 mm; 5 cm dawało prawie 0, ale kamizelka jest wtedy za gruba |
-| Czubki kołnierza i paski nad barkiem (czarne „rogi”, uderzały w żuchwę) | wierzchołki z > 1,6 m w głowie | `move` -8,5 cm i `cut_above` 1,60 m (nowa opcja części przepisu) |
-| **Tylny panel widać przez dekolt V** (warstwa przedmiotu idzie na oryginalne ciało, tułów niczego nie zasłania) | skóra w obrębie kamizelki na klatkach (ciało „all” jasne, kamizelka ciemna): **5,6% pikseli** | `behind_torso` (nowa opcja części przepisu, ta sama co dla pasa): tułów zasłania to, co jest >= 12 cm za nim: **1,22%** |
+| Poza inna niż spoczynek: skóra tułowia w kamizelce mimo „inside 0” w pozie spoczynkowej | 4% wierzchołków w tułowiu we wszystkich akcjach, do 56 mm | odstęp od skóry 35 mm zamiast 20 (`MIN_GAP`, `GAP` w `tune`); 5 cm dawało prawie 0, ale kamizelka jest wtedy za gruba |
+| Czubki kołnierza i paski nad barkiem (czarne „rogi”) | wierzchołki z > 1,6 m uderzały w żuchwę | `move` -8,5 cm i `cut_above` 1,60 m |
+| Tylny panel widać przez dekolt V (warstwa przedmiotu idzie na oryginalne ciało, tułów niczego nie zasłania) | skóra w obrębie kamizelki na klatkach: 5,6% pikseli | `behind_torso` (ta sama opcja co dla pasa): 1,2% |
+| **Poszarpane krawędzie, ostre odłamki, nierówna powierzchnia** (uwaga użytkownika) | siatka w pozie spoczynkowej po `pose_clear` rozerwana na kolce przy otworach na ręce (wypchnięcia o 8-14 cm bez wygładzenia); w sprite'ach czarne kolce na ramionach i szyi | **`pose_clear` odrzucony** (ani na ramiona, ani na tułów; nawet łagodny, CAP 12 mm, SMOOTH 25, zostawia zmarszczki), `smooth_mesh` (4 przebiegi Laplace'a, brzegi i wagi bez zmian) i `no_body_gap` (renderer nie gnie kamizelki wokół ramion klatka po klatce: ramię w klatce ją zasłania) |
+| (próba odrzucona) wycięcie otworów na ręce tam, gdzie ramiona przemiatają pozy | zaznaczało 49% siatki (boczne panele leżą dokładnie w strefie ramion): zostawały tylko przód i tył | usunięte z repo (`uo_arm_cut.py`); nie powtarzać |
 
-## Wynik (pełny `.vd`, 35 akcji x 5 kierunków = 1050 klatek, 517 KB; w repo go nie ma)
-- Skóra widoczna w obrębie kamizelki (`skinshow`: piksel ciała jaśniejszy niż 95 tam, gdzie warstwa przedmiotu ma kamizelkę, a kamizelka jest ciemna): **1,32% pikseli ogółem**, najgorsze akcje: 29_mounted_attack_2h 2,33%, 17_spell_area 2,24%, 22_die_backward 2,11%; reszta to pojedyncze piksele przy krawędzi ramienia.
-- `ITEM_QA` (siatka, poza renderem): średnio 1,9% wierzchołków w ciele, najgłębiej 76 mm (czar). Tułów: 0,4-1,0% wierzchołków, do 35 mm (atak 50 mm); kończyny: 0,5-1,3%, wypycha je render.
-- Grubość: p50 3,9 cm, p90 8,3 cm (oryginalna koszula 3,9, płytówka 5,6): p90 to czubki pasków na barkach i szeroki dół; dekolt V odsłania ciało tak jak w modelu.
+## Wynik (pełny `.vd`, 35 akcji x 5 kierunków = 1050 klatek, 513 KB; w repo go nie ma)
+- Skóra widoczna w obrębie kamizelki (piksel ciała jaśniejszy niż 95 tam, gdzie warstwa przedmiotu ma kamizelkę): **1,02% pikseli ogółem** (poprzednia wersja 1,32%), najgorsze akcje: 17_spell_area 2,08%, 29_mounted_attack_2h 2,00%, 22_die_backward 1,82%; reszta to pojedyncze piksele przy krawędzi ramienia.
+- Siatka (poza renderem): tułów w kamizelce 0-0,3% wierzchołków (stand 0, chód 0,3% do 26 mm, atak 0,15% do 80 mm, czar 0,12%). **Ramiona w bocznych panelach: 16-18% wierzchołków w stand / chodzie** (do 7 cm): kamizelki nie wypychamy i nie wycinamy, bo ramię ją tam zasłania w klatce (tak jak oryginalne rękawy); to też powód, że `ITEM_QA` pokazuje teraz średnio 5,6% w ciele (wcześniej 1,9% z wypychaniem, które rwało siatkę).
+- Grubość (odstęp od sylwetki ciała): **p50 2,8 cm, p90 6,2 cm** (wcześniej 3,9 / 8,3; oryginalna koszula 3,9, płytówka 5,6).
+- Obrys: kolce i rogi przy szyi i ramionach zniknęły (zestawienie klatek przed / po w opisie sesji); kawałków na klatkę 1,19, drobnych pyłków (< 12 px) 0,04.
 - Sprawdzone: żadna z 1050 klatek nie jest pusta ani nie dotyka krawędzi płótna.
 
 ## Nowe w narzędziach
-`pipeline/stretch_glb.py` (skala i rozciąganie pliku), `uo_import_item.py` `STRETCH` (recepta jednej siatki: `"stretch": [sx, sy, sz]`), opcje części w `uo_make_item.py`: `cut_above`, `behind_torso`; `uo_pose_clear.py`: `AVOID` może być listą (z przepisu), a lista części do omijania obejmuje tułów.
+`pipeline/stretch_glb.py` (skala i rozciąganie pliku), `uo_import_item.py` `STRETCH` (recepta jednej siatki: `"stretch": [sx, sy, sz]`), opcje części w `uo_make_item.py`: `cut_above`, `behind_torso`, `no_body_gap`, `smooth_mesh`; `uo_pose_clear.py`: `AVOID` może być listą (z przepisu).
 Wniosek ogólny: **pas, kamizelka i każda odzież obejmująca tułów** (pierścień, V-dekolt) potrzebuje `uo_behind_torso`, inaczej klient rysuje tylny panel na piersi.
 
 ## Otwarte
-- Czubki pasków na barkach nadal lekko sterczą ponad linię barku w kilku klatkach (tułów w pozie ma inną linię barku niż model).
-- Resztki skóry przy krawędzi ramienia (1-2% pikseli) i do 5 cm w tułowiu w ataku/czarze na kilku wierzchołkach.
+- Drobne kępki czarnych pikseli przy barku w kilku klatkach (linia barku ciała w pozie inna niż w modelu).
+- Resztki skóry przy krawędzi ramienia (ok. 1% pikseli) i na kilku wierzchołkach tułowia do 8 cm w ataku.
 - Dekolt V i brak rękawów: skóra jest tam odsłonięta zgodnie z modelem, nie jest błędem.
