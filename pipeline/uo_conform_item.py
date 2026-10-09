@@ -14,7 +14,7 @@ above the UO arms, the chest of the UO body through its front and back) cannot b
      at most WRAP_STEP a pass, smoothed (even vertices, hollows like the armpit bridged) and no edge stretched more than STRETCH x; the outline (hem, neck, cuffs)
      and the UVs stay those of the model. SKIRT: below the crotch the model keeps its shape (out of the legs by GAP): the skirt of a tunic hangs, it does not wrap the legs;
   3. weights: those of the skin point under the vertex (SMOOTH passes; hands -> forearm), except that the torso part keeps only TORSO_ARM of the arm's weight (the skin of
-     the upper chest and shoulder carries 30-90 % of the arm: the item slid after a raised arm); the sleeves keep all of it, fading over TORSO_ARM_SMOOTH. SKIRT: what
+     the upper chest and shoulder carries 30-90 % of the arm: the item slid after a raised arm); within TORSO_ARM_NEAR of the arm's skin it keeps all of it. SKIRT: what
      lies over the thighs follows the pelvis and the legs push it per frame (render_uo_layer.py, custom property uo_cloth, like a robe);
   4. the render keeps it POSE_GAP off the skin in every frame (custom property uo_conform, point attribute uo_region: cloth_lib.conform_push): the torso part off the
      torso, legs, head and arms, a sleeve off its arm, the root of a sleeve off its arm and the torso. (A static version, moving the rest shape out for all the poses,
@@ -41,7 +41,8 @@ SKIRT_TOP = 0.05      # m above the crotch where the shell starts to give way to
 SKIRT_BAND = 0.08
 POSE_GAP = 0.008      # m: in every frame of every action nothing of the item closer than this to the skin of its own region (render_uo_layer.py BODY_GAP is 0.006)
 TORSO_ARM = 0.35      # share of the arm's weight the torso part of the item keeps (front, back, sides, the cap of the shoulder); the rest goes to the chest; the sleeves keep all of it. 1 = as the skin
-TORSO_ARM_SMOOTH = 30 # passes over which the sleeve's "all of the arm" fades into TORSO_ARM (a sharp change tears the shoulder seam open when the arm moves)
+TORSO_ARM_NEAR = 0.02 # m from the skin of the arm (upper arm, forearm) within which the item keeps all of the arm's weight
+TORSO_ARM_FADE = 0.06 # m beyond that over which it fades to TORSO_ARM (a sharp change tears the shoulder seam open when the arm moves)
 ROOT_SHARE = 0.1      # a sleeve vertex with at least this share of torso weight is the root of the sleeve: the render keeps it off the torso too (the side of the chest under a raised arm)
 SMOOTH = 4            # passes of weight smoothing over the item
 RELAX = 3             # passes of smoothing of the shell offset (h) over the item
@@ -162,7 +163,8 @@ def align_sleeves(X, rig, G):
         w = G.smooth(w, 6); w = w * w * (3 - 2 * w)
         Y = (X - cs) @ R.T + target
         X = X + w[:, None] * (Y - X)
-        member = np.maximum(member, w)
+        root_ramp = np.clip((s + 0.02) / 0.05, 0, 1)                    # for the weights the whole sleeve counts, from its root (the move above fades in over BLEND)
+        member = np.maximum(member, G.smooth(wt * root_ramp * (X[:, 0] * sg > 0), 2))
         off = np.linalg.norm((cs - J) - ((cs - J) @ da) * da)
         print("uo_conform_item: sleeve %s: %.1f deg off the arm, centre line %.1f cm from it -> moved onto the arm (%d vertices, fade over %.0f cm)" % (
             sd, np.degrees(np.arccos(np.clip(ds @ da, -1, 1))), 100 * off, int((w > 0).sum()), 100 * BLEND), flush=True)
@@ -233,6 +235,7 @@ def main():
     anyset = np.nonzero(~bare)[0]
     bvh_any = BVHTree.FromPolygons([Vector(p) for p in Vb], tri[anyset].tolist())
     hands = np.array([b.split(".")[0] == "hand" or b.startswith("finger") for b in domb])
+    bvh_arm = {sd: BVHTree.FromPolygons([Vector(p) for p in Vb], tri[np.isin(domb, ["upper_arm." + sd, "forearm." + sd])].tolist()) for sd in ("L", "R")}
     bvh_col = BVHTree.FromPolygons([Vector(p) for p in Vb], tri[~hands].tolist())   # what the item is kept out of while it is wrapped: the head too (a collar around it)
     leg = np.array([b.split(".")[0] in ("thigh", "shin", "foot") for b in bones])
     hand = np.array([b.split(".")[0] == "hand" or b.startswith("finger") for b in bones])
@@ -253,7 +256,7 @@ def main():
 
         X0 = X0 + np.array(MOVE)                                         # a nudge of the whole item (e.g. a model that sits too high on the UO shoulders)
         # 1. sleeves onto the arms
-        X, sleeve = align_sleeves(X0, rig, G) if SLEEVES else (X0.copy(), None)
+        X, sleeve = align_sleeves(X0, rig, G) if SLEEVES else (X0.copy(), np.zeros(len(X0)))
 
         # 2. wrap: the target stand-off h from the model's own (aligned) stand-off
         l, _, f, _ = nearest(bvh_any, X)
@@ -362,10 +365,12 @@ def main():
             Wn[:, bones.index("forearm" + side)] += Wn[:, j].sum(1); Wn[:, j] = 0
         Wn[:, ~np.array([rig.data.bones[bn].use_deform for bn in bones])] = 0
         Wn = np.clip(Wn, 0, None); Wn /= np.maximum(Wn.sum(1, keepdims=True), 1e-12)
-        if TORSO_ARM < 1 and sleeve is not None:                        # the front and back of the item stay on the torso when an arm goes up (the skin of the upper chest and the shoulder
+        if TORSO_ARM < 1:                                               # the front and back of the item stay on the torso when an arm goes up (the skin of the upper chest and the shoulder
             ch = bones.index("chest")                                   # carries 30-90 % of the arm: the item followed the raised arm and slid to one side in the spells); the sleeve takes the arm
             for sd, sg in (("L", 1.0), ("R", -1.0)):
-                f = G.smooth(sleeve, TORSO_ARM_SMOOTH)                  # the sleeve (step 1: its tube, fading in from its root) keeps the arm, the rest TORSO_ARM of it
+                da = nearest(bvh_arm[sd], X1, 0.5)[3]                    # all of the arm within TORSO_ARM_NEAR of the skin of the arm (the sleeve, the cap of the shoulder, the armpit:
+                f = np.clip(1 - (np.abs(da) - TORSO_ARM_NEAR) / TORSO_ARM_FADE, 0, 1)   # with less, the root of the sleeve lagged behind a raised arm and left the upper arm bare),
+                f = np.maximum(G.smooth(f * f * (3 - 2 * f), 4), sleeve)              # fading to TORSO_ARM over TORSO_ARM_FADE: the front and back of the chest
                 keep = TORSO_ARM + (1 - TORSO_ARM) * f
                 for bn in ("upper_arm." + sd, "forearm." + sd):
                     j = bones.index(bn); mv = Wn[:, j] * (1 - keep)

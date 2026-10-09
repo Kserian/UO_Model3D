@@ -175,7 +175,9 @@ def main():
             if d["conf"] is not None:                                         # what the render does per frame
                 cb = [BVHTree.FromPolygons([Vector(p) for p in Pb], tri[m].tolist()) for m in cmask]
                 lab, cg, deg = d["conf"]
-                P = P + cl.conform_push(P, cb, lab, d["E"], deg, max(cg, 0.006))
+                limbs = [((S[bones.index(n)] @ np.append(heads[bones.index(n)], 1))[:3], (S[bones.index(n)] @ np.append(tails[bones.index(n)], 1))[:3], 0.07)
+                         for n in ("upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R", "thigh.L", "shin.L", "thigh.R", "shin.R")]
+                P = P + cl.conform_push(P, cb, lab, d["E"], deg, max(cg, 0.006), limbs=limbs)
             sd, fi = signed(bvh, P)
             near = treg[np.maximum(fi, 0)]
             mine = (near == d["reg"]) | (fi < 0)

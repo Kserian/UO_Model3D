@@ -292,7 +292,7 @@ def body_fix(a, i):
             if o.get("uo_conform") and cbvh is not None and "uo_region" in o.data.attributes:
                 lab = np.empty(len(o.data.vertices), np.int32); o.data.attributes["uo_region"].data.foreach_get("value", lab)
                 gap = max(float(json.loads(o["uo_conform"]).get("gap", BODY_GAP)), BODY_GAP)
-                D = cloth_module().conform_push(X, cbvh, np.clip(lab[first], 0, len(cbvh) - 1), E, deg, gap) @ np.linalg.inv(M[:3, :3]).T
+                D = cloth_module().conform_push(X, cbvh, np.clip(lab[first], 0, len(cbvh) - 1), E, deg, gap, limbs=posed_limbs(dg, Bi)) @ np.linalg.inv(M[:3, :3]).T
             else:
                 D = (push_out(X, bvh, E, deg, BODY_GAP) if BODY_GAP > 0 else np.zeros_like(X)) @ np.linalg.inv(M[:3, :3]).T
             if Dc is not None:
@@ -527,6 +527,21 @@ def render_px():
     px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px)
     bpy.data.images.remove(im)
     return px.reshape(h, w, 4)[::-1]                        # Blender pixels start at the bottom row
+
+
+LIMB_BONES = ("upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R", "thigh.L", "shin.L", "thigh.R", "shin.R")
+LIMB_R = 0.07                      # m: conformed garments: a vertex inside a limb this close to its bone is pushed straight away from the bone (cloth_lib.conform_push)
+
+
+def posed_limbs(dg, Bi):
+    """(head, tail, radius) of the posed limb bones in body space"""
+    evr = rig.evaluated_get(dg); Mr = Bi @ np.array(evr.matrix_world)
+    out = []
+    for n in LIMB_BONES:
+        pb = evr.pose.bones.get(n)
+        if pb is not None:
+            out.append(((Mr @ np.append(np.array(pb.head), 1))[:3], (Mr @ np.append(np.array(pb.tail), 1))[:3], LIMB_R))
+    return out
 
 
 def CONFORM_TRIS():

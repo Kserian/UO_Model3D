@@ -202,14 +202,13 @@ def cloak_bend(V, z_top, z_hem, y_top, d0, d1):
     return out
 
 
-# Conformed garments (uo_conform_item.py: custom property uo_conform, point attribute uo_region): every frame each vertex is kept `gap` outside the skin of its own region
-# (0 the body of a shirt, its skirt and collar: torso, legs, head and both arms, which pass in front of it; 1 / 2 a sleeve: the left / right arm + hand; 3 / 4 the root of a
-# sleeve: its arm and the torso, the side of the chest comes out under a raised arm), pushed along the skin normal and spread over the item, so the skin never comes through
-# it. A sleeve does not look at the torso: an arm pressed to the side of the torso is in its sleeve, between them.
-_TORSO = {"pelvis", "spine", "chest", "neck", "clavicle.L", "clavicle.R", "head", "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R"}
-_ARMS = {"upper_arm.L", "forearm.L", "hand.L", "upper_arm.R", "forearm.R", "hand.R"}
-CONFORM_BONES = (_TORSO | _ARMS, {"upper_arm.L", "forearm.L", "hand.L"}, {"upper_arm.R", "forearm.R", "hand.R"},
-                 _TORSO | {"upper_arm.L", "forearm.L", "hand.L"}, _TORSO | {"upper_arm.R", "forearm.R", "hand.R"})
+# Conformed garments (uo_conform_item.py: custom property uo_conform, point attribute uo_region): every frame each vertex is kept `gap` outside the skin, pushed along the skin
+# normal and spread over the item, so the skin never comes through it. All the skin counts for every part of the item (torso, legs, head, both arms and hands): sparing a
+# sleeve the torso or the other arm (a body-to-body contact) left the arm and the chest showing through the sleeves in the spells (docs/qa/jedi_tunic.md). The regions stay in
+# the data (0 torso part, 1 / 2 sleeves, 3 / 4 their roots), each with its own set of bones here.
+_ALL = {"pelvis", "spine", "chest", "neck", "clavicle.L", "clavicle.R", "head", "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R",
+        "upper_arm.L", "forearm.L", "hand.L", "upper_arm.R", "forearm.R", "hand.R"}
+CONFORM_BONES = (_ALL, _ALL, _ALL, _ALL, _ALL)
 
 
 def conform_masks(dom_bones):
@@ -218,8 +217,10 @@ def conform_masks(dom_bones):
     return [np.array([b in s for b in base]) for s in CONFORM_BONES]
 
 
-def conform_push(X, bvhs, lab, E, deg, gap, iters=16, exact=6):
-    """displacement that keeps every point X[i] `gap` outside the body part bvhs[lab[i]] (mathutils BVHTree, same space as X); smoothed over the item edges E"""
+def conform_push(X, bvhs, lab, E, deg, gap, iters=16, exact=6, limbs=()):
+    """displacement that keeps every point X[i] `gap` outside the body part bvhs[lab[i]] (mathutils BVHTree, same space as X); smoothed over the item edges E.
+    limbs: (head, tail, radius) of the posed limb bones (same space): a point inside the skin closer than radius to a bone is pushed straight away from the bone (deep in
+    a limb the nearest skin can be the far side, and the push would carry the cloth through to it)"""
     from mathutils import Vector
     D = np.zeros_like(X); look = np.arange(len(X)); reach = 0.15
     for it in range(iters + exact):                                 # the last `exact` rounds are not smoothed: what is left is millimetres (a push along one face normal at a corner)
@@ -230,6 +231,15 @@ def conform_push(X, bvhs, lab, E, deg, gap, iters=16, exact=6):
                 near.append(i); sd = (p - loc).dot(nrm)
                 if sd < gap:
                     need[i] = gap - sd; N[i] = nrm
+                    if sd < 0 and limbs:
+                        best = None
+                        for A, B, r in limbs:
+                            ab = B - A; t = min(max(float((P[i] - A) @ ab) / max(float(ab @ ab), 1e-12), 0.0), 1.0)
+                            dv = P[i] - (A + t * ab); dl = float(np.linalg.norm(dv))
+                            if dl < r and dl > 1e-6 and (best is None or dl < best[0]):
+                                best = (dl, dv / dl)
+                        if best is not None:
+                            N[i] = best[1]
         if it == 0:
             look = np.array(near, int); reach = gap + 0.08
         if not (need > 1e-4).any():
