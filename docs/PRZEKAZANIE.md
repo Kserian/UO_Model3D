@@ -81,8 +81,26 @@ Sesja 18, poprawka: skóra „przebijająca” przez napierśnik to były szczel
 Paperdoll i ikona pasa z mieczem (docs/qa/belt_swords.md): `uo_gump_art.py` (czytnik / zapis gumpów i artów), `uo_render_paperdoll.py` (gump 260 x 237, art 44 x 32, wariant A grubszy / B cieńszy). Klient (uo_client/, poza repo): wypakowane `art.mul`, `artidx.mul`, `Gumpart.mul`, `Gumpidx.mul`, `tiledata.mul`.
 
 ## Sesja 19: biała tunika z „Jedi robes” (`docs/qa/jedi_tunic.md`)
-Zlecenie: z zipa użytkownika zostawić tylko białą tunikę (bez pasa), dopasować bez przebić skóry w żadnej akcji, materiał w minimalnej odległości od ciała, bez dziwnego rozciągania; potem: przy czarowaniu tunika nie może jechać za jedną ręką.
-Nowe: `pipeline/uo_conform_item.py` (przepis `"conform"` w `uo_make_item.py`: rękawy na osie rąk, owinięcie jak membrana z limitem rozciągania 1,25×, wagi jak skóra, tułów `TORSO_ARM` 35% wagi ramienia), `cloth_lib.conform_push` + gałąź w `render_uo_layer.body_fix` (własność `uo_conform`, atrybut `uo_region`: w każdej klatce 8 mm od skóry strefy), `pipeline/item_clearance.py` (przebicia po pchnięciu renderu, w nogach, dłoniach, rozciągnięcie; 35 akcji ok. 4 min).
-Wynik: przebicia własnej strefy 0,35% -> 0,03% (najgorsza klatka 2,7% -> 0,33%), najgłębiej 125 -> 29 mm, rozciągnięcie p99 5,0 -> 3,1, barki względem klatki w czarze 14,6 -> 4,9 cm. Odrzucone próby i ich liczby: `jedi_tunic.md`. Zmieniony binarny `.blend`: osadzone `render_uo_layer.py`, `cloth_lib.py`.
-Pułapki: `item_qa.py` mierzy przed pchnięciem renderu i liczy każdy styk (rękaw przyciśnięty do boku, dłoń w mankiecie), więc dla tuniki pokazuje 7% / 107 mm; miarą jest `item_clearance.py`. Znak odległości do otwartego fragmentu skóry (sam tułów) jest zły przy jego brzegach: znak zawsze z całego ciała. Model użytkownika nie jest w repo (licencja nieznana).
-Sesja 19, poprawka: przebicia przy czarach (widoczne dopiero na podglądzie `all` z niebieską tuniką i kolorowymi częściami ciała): pełna waga ramienia do 2 cm od skóry ręki (okno na ramieniu przy ręce nad głową), pchnięcie w renderze od całej skóry i od kości kończyn; na nowym modelu czaru 17 (inna sesja) zostaje 40 px czystej skóry w 19 z 1050 klatek. Szczegóły: `docs/qa/jedi_tunic.md`, „Poprawka po uwagach”. Zmieniony binarny `.blend`: osadzone `render_uo_layer.py`, `cloth_lib.py`.
+Zlecenie: z zipa użytkownika (`Jedi robes.glb`, licencja nieznana, poza repo) zostawić tylko białą tunikę (`Outer tunic`, bez pasa), dopasować bez przebić skóry w żadnej akcji, materiał w minimalnej
+odległości od ciała, bez dziwnego rozciągania; potem: przy czarach tunika nie może jechać za jedną ręką ani przepuszczać skóry. Przepis: `docs/qa/jedi_tunic_recipe.json` (`"conform": {"MOVE": [0, 0, -0.07]}`).
+
+Co zmieniłem:
+- **nowe** `pipeline/uo_conform_item.py`: rękawy przestawione na osie rąk UO, owinięcie tuniki jak membrana 1,5 cm od skóry (ściąganie wzdłuż normalnej materiału, wypychanie wzdłuż normalnej skóry,
+  wewnątrz ręki od kości, krawędź maks. 1,25×), dół poniżej krocza wisi (wagi miednicy + `uo_cloth`), wagi jak skóra pod spodem, ale dalej niż 2 cm od skóry ręki (`TORSO_ARM_NEAR`, przejście
+  `TORSO_ARM_FADE` 6 cm) tylko 35% wagi ramienia (`TORSO_ARM`); zapisuje własność `uo_conform` i atrybut `uo_region`.
+- `pipeline/uo_make_item.py`: opcja przepisu `"conform"` (wyłącza fit / densify z `uo_prepare_item`, uruchamia `uo_conform_item.py` i `item_clearance.py`).
+- `pipeline/cloth_lib.py`: `CONFORM_BONES` (każda część przedmiotu pilnuje całej skóry: tułów, nogi, głowa, ręce, dłonie), `conform_masks`, `conform_push` (8 mm, wygładzane po siatce,
+  6 ostatnich rund bez wygładzania, `limbs`: wierzchołek < 7 cm od kości kończyny wypychany od kości).
+- `pipeline/render_uo_layer.py` (`body_fix`): dla przedmiotów z `uo_conform` zamiast `push_out` jest `conform_push`; `CONFORM_TRIS`, `posed_limbs`, `LIMB_BONES`, `LIMB_R`. Inne przedmioty bez zmian.
+- **nowe** `pipeline/item_clearance.py`: przebicia przedmiotu w każdej klatce po pchnięciu renderu (własna strefa, nogi, dłonie / głowa, inna strefa) i rozciągnięcie krawędzi; 35 akcji ok. 4 min.
+- **nowe** `pipeline/item_skin_check.py`: podgląd `all` z niebieskim przedmiotem i kolorowymi częściami ciała, liczba pikseli skóry ręki / tułowia przez przedmiot, arkusz z zaznaczeniem
+  (to pokazało przebicia, których warstwa `clothing` nie pokazuje). Pełne 35 akcji ok. 7 min.
+- `model/UO_Body_0x190.blend`: wgrane tylko `render_uo_layer.py` i `cloth_lib.py`. Dokumentacja: `docs/qa/jedi_tunic.md`, `README.md`, `README_EN.md`, `CLAUDE.md` (wiersz „Przedmioty”).
+
+Wynik (na modelu z poprawionym czarem 17 z innej sesji): `item_skin_check.py` 40 px czystej skóry w 19 z 1050 klatek (łuk 15 px: nadgarstek przy cięciwie; upadek 21: 12 px, miednica pod dołem),
+`item_clearance.py` własna strefa 0,085% (najgorsza klatka 0,45%), najgłębiej 20,7 mm, rozciągnięcie p99 3,65 (skóra 2,80), barki względem klatki w czarze 17: 12,5 / 12,6 cm (symetrycznie).
+`test_items` 0,718, `test_canvas` OK. Odrzucone próby z liczbami (zwykły fit, rzut na skórę, membrana bez limitu, statyczna kontrola póz, ostre odpięcie barku): `jedi_tunic.md`.
+Pułapki: `item_qa.py` mierzy przed pchnięciem renderu i liczy każdy styk (7% / 107 mm dla tuniki): miarą są `item_clearance.py` i `item_skin_check.py`. Znak odległości do otwartego fragmentu
+skóry jest zły przy jego brzegach: znak zawsze z całego ciała. Dwa zadania w tle piszące do jednego katalogu renderu psują `_tmp.png` (PNG CRC error).
+Otwarte: akcja 21 (w kliencie „Die Backward”, u nas nazwana `21_die_forward`; 22 pewnie też ma zamienioną nazwę): w klatkach 4-5 prawe przedramię sterczy w górę (łokieć ok. 95°, nadgarstek ~30 cm
+nad barkiem), oryginał ma ręce płasko na ziemi; IoU klatek 4-5 0,76-0,84 (akcja 0,852). Mankiet dzwonowy przy uniesionym przedramieniu jak prostokątny płat.
