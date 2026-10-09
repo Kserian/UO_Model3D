@@ -1,7 +1,7 @@
 """Symmetric fit of the arms of a UO action against the ORIGINAL body frames (5 directions at once): L arm = mirror of the R arm (arm_mirror_action.py convention), optionally the
-torso: sym = spine / chest only pitch about the local X free, free = spine / chest any rotation with a small prior, keep = as in the key. One frame at a time, Powell from the key and a few perturbed starts.
+torso: sym = spine / chest only pitch about the local X free, free = spine / chest any rotation with a small prior, keep = as in the key, upper = pelvis, spine, chest, neck, head pure pitch (no twist, no side lean), legs keep their world orientation. One frame at a time, Powell from the key and a few perturbed starts.
 
-    python arm_sym_fit.py IN.blend OUT.json --action 17 --frame 2 [--torso keep|sym|free] [--from R]   (env NRAND, MAXFEV)
+    python arm_sym_fit.py IN.blend OUT.json --action 17 --frame 2 [--torso keep|sym|free|upper] [--from R]   (env NRAND, MAXFEV)
     python arm_sym_fit.py IN.blend OUT.blend --action 17 --apply a.json,b.json,...                (writes the keys of the fitted frames; save with bpy 4.2)
 
 Objective: 1 - IoU of the pure-3D body silhouette vs the sprite over 5 directions + the same above TOP rows + a small prior; so the numbers can be compared with
@@ -56,6 +56,10 @@ def fit(blend, out, aid, frame, torso, s_from):
     srcf = {f: Quaternion(P["%s.%s" % (f, s_from)].rotation_quaternion) for f in fingers}
     tk = {b: Quaternion(P[b].rotation_quaternion) for b in ("spine", "chest")}
     old = {n: [list(P[n].rotation_quaternion), list(P[n].scale), list(P[n].location)] for n in P.keys()}
+    EXTRA = bool(int(os.environ.get("EXTRA", 0))); pel_loc0 = Vector(P["pelvis"].location)
+    TORSO = ("pelvis", "spine", "chest", "neck", "head")
+    legs0 = {t: (P[t].matrix.copy(), Vector(P[t].location)) for t in ("thigh.L", "thigh.R")}      # world orientation of the legs, kept when the pelvis changes
+    pitch0 = np.array([tk_q.to_euler("XYZ").x for tk_q in (Quaternion(P[b].rotation_quaternion) for b in TORSO)])
 
     def setfrom(x):
         # x: 3 clavicle, 3 upper arm, 3 forearm, 3 hand (rotation vectors on the key of the source arm), torso pitch spine / chest
@@ -70,21 +74,35 @@ def fit(blend, out, aid, frame, torso, s_from):
         if torso == "sym":
             for k, b in enumerate(("spine", "chest")):
                 e = tk[b].to_euler("XYZ"); P[b].rotation_quaternion = Quaternion((1, 0, 0), e.x + x[12 + k])
+        if EXTRA:
+            P["pelvis"].location = pel_loc0 + Vector(x[17:20])
+            for k, b in enumerate(("upper_arm", "forearm")):
+                sc_ = src[b]["s"].copy(); sc_.y *= float(np.exp(x[20 + k]))
+                P["%s.%s" % (b, s_from)].scale = sc_; P["%s.%s" % (b, s_to)].scale = sc_
+        if torso == "upper":
+            for k, b in enumerate(TORSO):
+                P[b].rotation_quaternion = Quaternion((1, 0, 0), x[12 + k])         # local X of these bones = lateral axis: pure pitch, no twist, no side lean
+            bpy.context.view_layer.update()
+            for t, (m0, l0) in legs0.items():
+                m = m0.copy(); m.translation = P[t].head
+                P[t].matrix = m; P[t].location = l0
         elif torso == "free":
             for k, b in enumerate(("spine", "chest")):
                 P[b].rotation_quaternion = tk[b] @ rotvec(x[12 + 3 * k:15 + 3 * k])
 
     def f(x):
-        setfrom(x); return cost() + 0.003 * float(np.sum(np.square(x[:12]))) + (0.02 if torso == "sym" else 0.01) * float(np.sum(np.square(x[12:])))
+        setfrom(x); return cost() + 0.003 * float(np.sum(np.square(x[:12]))) + (1.0 * float(np.sum(np.square(x[17:20]))) + 0.5 * float(np.sum(np.square(x[20:22]))) if EXTRA else 0.0) + (0.0 if torso == "upper" else (0.02 if torso == "sym" else 0.01)) * float(np.sum(np.square(x[12:]))) + (float(os.environ.get("NECK_PRIOR", 0.0)) * float(np.sum(np.square(x[15:17] - 0.5 * pitch0[3:5] * 0))) if torso == "upper" else 0.0)
 
-    n = 18 if torso == "free" else 14
+    n = 18 if torso == "free" else (17 if torso == "upper" else 14)
+    if EXTRA: n += 5
     x0 = np.zeros(n)
+    if torso == "upper": x0[12:17] = pitch0
     c_old = cost()
     setfrom(x0); c_mir = cost()
     rng = np.random.default_rng(frame)
     best = None
     for k in range(1 + NRAND):
-        xs = x0.copy() if k == 0 else rng.normal(0, float(os.environ.get("SIG", 0.35)), n) * np.r_[np.ones(12), np.full(n - 12, 0.3)]
+        xs = x0.copy() if k == 0 else rng.normal(0, float(os.environ.get("SIG", 0.35)), n) * np.r_[np.ones(12), np.full(5, 0.3), np.full(n - 17, 0.05)] + (x0 * np.r_[np.zeros(12), np.ones(n - 12)])
         r = minimize(f, xs, method="Powell", options={"xtol": 1e-2, "ftol": 1e-4, "maxfev": MAXFEV})
         print(" frame", frame, "start", k, "cost %.4f" % r.fun, flush=True)
         if best is None or r.fun < best.fun: best = r
