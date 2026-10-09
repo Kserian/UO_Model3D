@@ -23,7 +23,7 @@ python pipeline/uo_make_item.py docs/qa/jedi_tunic_recipe.json --preview      # 
 1. **Rękawy na ręce:** oś rękawu (środki przekrojów, PCA części dalszej) obrócona i przesunięta na oś ręki UO (bark -> nadgarstek); ruch narasta przez 10 cm od nasady rękawu i gaśnie poza promieniem „rury” rękawu (bok tułowia pod pachą zostaje). Tunika najpierw w dół o 7 cm (`MOVE`): siedziała za wysoko (kołnierz przy twarzy), po tym rękawy są 4,2 cm od osi ręki zamiast 8,7.
 2. **Owinięcie jak membrana:** cel h = GAP 1,5 cm + 25% luzu modelu (maks. 3 cm) + fałdy (maks. 2 cm). Ściąganie wzdłuż normalnej materiału (odległość od skóry jest ciągła, więc nic się nie rwie), wypychanie ze skóry wzdłuż normalnej skóry (wewnątrz ręki: od kości), maks. 1 cm na przebieg, wygładzanie (równe wierzchołki, zagłębienia jak pacha przykryte mostem), krawędź rozciągnięta maks. 1,25×. Obrys (dół, kołnierz, mankiety) i UV zostają z modelu. Panele obrócone tak, żeby normalne patrzyły na zewnątrz.
    Poniżej krocza dół wisi (kształt modelu, poza nogami o GAP) i podąża za miednicą; nogi pchają go w renderze (`uo_cloth`, jak szata).
-3. **Wagi:** jak skóra pod materiałem (SMOOTH 4, dłonie -> przedramię), ale część tułowiowa zostawia tylko **35% wagi ramienia** (`TORSO_ARM`), reszta idzie na klatkę; rękaw ma całą, z przejściem przez 30 przebiegów wygładzania. Skóra UO na górze piersi i barku ma 30-90% wagi ramienia, więc tunika jechała za uniesioną ręką.
+3. **Wagi:** jak skóra pod materiałem (SMOOTH 4, dłonie -> przedramię), ale materiał dalej niż 2 cm od skóry ręki (przód i tył piersi) zostawia tylko **35% wagi ramienia** (`TORSO_ARM`), reszta idzie na klatkę (zob. „Poprawka po uwagach”). Skóra UO na górze piersi i barku ma 30-90% wagi ramienia, więc tunika jechała za uniesioną ręką.
 4. **Render pilnuje odstępu w każdej klatce** (`render_uo_layer.py` + `cloth_lib.conform_push`, własność `uo_conform`, atrybut `uo_region`): każdy wierzchołek trzymany 8 mm od skóry swojej strefy, wypychany i wygładzany po siatce (jak `BODY_GAP`, który jest dla kończyn). Strefy: tułów tuniki od tułowia, nóg, głowy i obu rąk; rękaw od swojej ręki z dłonią; nasada rękawu (≥ 10% wagi tułowia) od swojej ręki i od tułowia. Rękaw nie patrzy na tułów: ręka przyciśnięta do boku jest w rękawie.
 
 ## Wynik (35 akcji, 210 klatek, `pipeline/item_clearance.py`, po pchnięciu renderu)
@@ -43,3 +43,18 @@ Miara „odkrytej skóry” (promień ze skóry nie trafia w materiał) odrzucon
 - Dzwonowy mankiet przy uniesionym przedramieniu wygląda jak prostokątny płat (kształt modelu, luz rękawu ograniczony do 3 cm ponad GAP).
 - Rozciągnięcie p99 nieco wyższe niż skóry (3,1 vs 2,8): pchnięcie w klatce i mniejsza waga ramienia na barku.
 - Kolor materiału z tekstury modelu (kremowy, w świetle UO lekko różowawy); kropki 1 px zasłaniania przez dłonie i głowę w warstwie przedmiotu.
+
+## Poprawka po uwagach użytkownika (przebicia przy czarach, nowy model czaru 17)
+Niebieska tunika i kolorowe części ciała na podglądzie `all` (render ciała i przedmiotu razem w 3D, `pre_parts`: dłonie czerwone, głowa zielona, ręce żółte, tułów fioletowy, nogi turkusowe) pokazały,
+czego warstwa `clothing` nie pokazuje (tam przedmiot zasłania ciało, a te same piksele w podglądzie są skórą):
+1. **Okno na ramieniu przy ręce uniesionej nad głowę:** nasada rękawu miała obniżoną wagę ramienia (`TORSO_ARM` z przejściem wygładzanym w głąb rękawu), zostawała w tyle, ręka przechodziła przez tylną
+   ścianę, a pchnięcie w renderze przenosiło ją na drugą stronę ręki. Teraz pełną wagę ramienia ma materiał do 2 cm od skóry ręki (`TORSO_ARM_NEAR`), przejście do 35% przez 6 cm (`TORSO_ARM_FADE`).
+   Dalsze obniżanie (np. 0 / 4 cm) od razu otwiera okno.
+2. **Pchnięcie w renderze od całej skóry:** każda część przedmiotu trzyma 8 mm od tułowia, nóg, głowy, obu rąk i dłoni (wcześniej rękaw tylko od swojej ręki: ręka przyciśnięta do boku i druga
+   ręka przechodziły przez rękaw); wierzchołek głęboko w kończynie (< 7 cm od kości) jest wypychany od kości, nie do najbliższej skóry (`cloth_lib.conform_push`, `limbs`).
+3. **Czar 17 w starym modelu** miał lewe przedramię zwisające z łokcia uniesionego nad głowę (oryginał: obie dłonie w górze); poprawione na `main` w innej sesji (`docs/qa/elbow_spell.md`). To też była
+   przyczyna „tunika przesuwa się za jedną ręką”: barki względem klatki w czarze 17 na nowym modelu 12,5 / 12,6 cm (symetrycznie).
+
+Wynik na nowym modelu (35 akcji × 5 kierunków, 1050 klatek podglądu `all`, piksele czystych kolorów, bez mieszanych z krawędzi dłoni): **ręka 29 px, tułów 11 px, w 19 klatkach**
+(łuk 15 px przy nadgarstku naciągającym cięciwę, upadek do przodu 12 px: miednica pod dołem tuniki). Czar 17: ręka 93 -> 3 px po zmianach (stary model 40 px po p. 1). `item_clearance.py`:
+własna strefa 0,085% (najgorsza klatka 0,45%), najgłębiej 20,7 mm, styk z inną strefą 0,37% -> 0,11%, rozciągnięcie p99 3,65 (skóra 2,80). `test_items` 0,718, `test_canvas` OK.
