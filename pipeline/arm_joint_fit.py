@@ -125,9 +125,10 @@ def main():
             r = minimize(f_all, x0, method="Powell", options={"xtol": 1e-2, "ftol": 1e-4, "maxfev": 2 * MAXFEV})
             print(" joint", i, j, "cost %.4f" % r.fun, flush=True)
             if best is None or r.fun < best.fun: best = r
-    if best.fun > c_old:                 # never worse than the key: keep it
-        best.x[:] = 0.0
-    f_all(best.x); c_new = cost()
+    f_all(best.x)
+    if best.fun > c_old:                 # never worse than the key: keep it (x = 0 is not the key: the forearm is set absolutely)
+        for n_, (q, s_, l) in old.items(): P[n_].rotation_quaternion = q
+    c_new = cost()
     chg = {}
     for n_, (q, s_, l) in old.items():
         qn, sn, ln = list(P[n_].rotation_quaternion), list(P[n_].scale), list(P[n_].location)
