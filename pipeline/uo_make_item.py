@@ -14,6 +14,8 @@ RECIPE.json (only "file" and "kind" are required):
    "materials": {"SATURATION": 1.0, "METAL": null},   # uo_materials.py settings (grey item that takes a dye: SATURATION 0)
    "prepare": {"DENSIFY": false},                      # settings of uo_prepare_item.py itself
    "tune": {"uo_fit_item.py": {"MIN_GAP": 0.02, "LIMIT": 0.05}, "uo_autofit_item.py": {"GAP": 0.02}},   # settings of the steps it runs (autofit, densify, fit, bind)
+   "conform": {"MOVE": [0, 0, -0.07]},   # shirt / tunic / coat made on another mannequin: rebuilt as a shell of the body (uo_conform_item.py: sleeves onto the arms, wrapped GAP off the skin,
+                                    # weights of the skin under it; the render keeps it out of the skin of its region in every frame); its settings, true = the defaults
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...)
@@ -370,12 +372,29 @@ if __name__ == "__main__":
         recipe.setdefault("kind", "")
     out = os.path.abspath(a.out or os.path.join(os.path.dirname(os.path.abspath(a.recipe)), name))
     os.makedirs(out, exist_ok=True)
+    if recipe.get("conform"):                                # uo_conform_item.py replaces the fit and the weights: only the autofit (place, size) is wanted from uo_prepare_item.py
+        recipe.setdefault("prepare", {}); recipe["prepare"].setdefault("FIT", False); recipe["prepare"].setdefault("DENSIFY", False)
     t = time.time()
     blend = os.path.join(out, "item.blend")
     for line in run_blend(os.path.abspath(a.base), build_stage(recipe, blend), os.path.join(out, "report.txt")):
         if line.startswith(("uo_autofit", "uo_fit", "uo_import", "  WARN", "  AMB")):
             print(line[:260])
     print("prepared in %.0f s -> %s" % (time.time() - t, blend))
+    if recipe.get("conform"):                                # a shirt / tunic / coat as a shell of the body: sleeves onto the arms, wrapped at GAP, weights of the skin under it; the render keeps it out of the skin per frame
+        t = time.time(); cfg = recipe["conform"] if isinstance(recipe["conform"], dict) else {}
+        sets = sum([["--set", "%s=%s" % (k, ",".join(str(x) for x in v) if isinstance(v, (list, tuple)) else v)] for k, v in cfg.items()], [])
+        r = subprocess.run([sys.executable, os.path.join(HERE, "uo_conform_item.py"), blend, blend] + sets, capture_output=True, text=True)
+        lines = [l for l in r.stdout.splitlines() if l.startswith("uo_conform_item")]
+        open(os.path.join(out, "report.txt"), "a").write("\n".join(lines) + "\n")
+        if r.returncode or not any("saved" in l for l in lines):
+            sys.exit("uo_conform_item failed:\n%s\n%s" % (r.stdout[-3000:], r.stderr[-2000:]))
+        for l in lines:
+            print(l[:260])
+        print("conformed in %.0f s" % (time.time() - t))
+        if not a.no_qa:                                      # skin through the item in every frame of every action, after the render's push (item_clearance.py, ~4 min)
+            q = subprocess.run([sys.executable, os.path.join(HERE, "item_clearance.py"), blend, "--json", os.path.join(out, "clearance.json")], capture_output=True, text=True)
+            line = next((l for l in q.stdout.splitlines() if l.startswith("CLEARANCE")), "item_clearance failed: " + (q.stderr or q.stdout)[-300:])
+            print(line); open(os.path.join(out, "report.txt"), "a").write(line + "\n")
     sim = recipe.get("sim", recipe.get("kind") in ("robe", "skirt")) and not recipe.get("weapon")      # loose garments: cloth simulation on top of the leg push (uo_cloth_sim.py), on by default
     if sim and a.no_sim is False:
         t = time.time(); cfg = ["%s=%s" % kv for kv in (recipe["sim"].items() if isinstance(recipe.get("sim"), dict) else [])]

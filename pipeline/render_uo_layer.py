@@ -270,6 +270,10 @@ def body_fix(a, i):
         me.calc_loop_triangles()
         tri = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tri)
         tri = tri.reshape(-1, 3); Bi = np.array(eb.matrix_world.inverted()); eb.to_mesh_clear()
+        cbvh = None
+        if any(o.get("uo_conform") for o in todo):      # conformed garments: kept out of the skin of their own region (cloth_lib.conform_push)
+            cm = CONFORM_TRIS()
+            cbvh = [BVHTree.FromPolygons([Vector(p) for p in bco], tri[m].tolist()) for m in cm]
         if len(OCCLUDER_TRIS) == len(tri):
             tri = tri[OCCLUDER_TRIS]                    # arms, hands, legs, head: the parts that cut holes
         bvh = BVHTree.FromPolygons([Vector(p) for p in bco], tri.tolist())
@@ -285,7 +289,12 @@ def body_fix(a, i):
             Dc = cloth_push(o, first, dg, Mw, a, i)                                 # loose garment: the legs push it out first
             if Dc is not None:
                 X = X + Dc @ M[:3, :3].T
-            D = (push_out(X, bvh, E, deg, BODY_GAP) if BODY_GAP > 0 else np.zeros_like(X)) @ np.linalg.inv(M[:3, :3]).T
+            if o.get("uo_conform") and cbvh is not None and "uo_region" in o.data.attributes:
+                lab = np.empty(len(o.data.vertices), np.int32); o.data.attributes["uo_region"].data.foreach_get("value", lab)
+                gap = max(float(json.loads(o["uo_conform"]).get("gap", BODY_GAP)), BODY_GAP)
+                D = cloth_module().conform_push(X, cbvh, np.clip(lab[first], 0, len(cbvh) - 1), E, deg, gap) @ np.linalg.inv(M[:3, :3]).T
+            else:
+                D = (push_out(X, bvh, E, deg, BODY_GAP) if BODY_GAP > 0 else np.zeros_like(X)) @ np.linalg.inv(M[:3, :3]).T
             if Dc is not None:
                 D = D + Dc
             idx = np.nonzero(np.abs(D).max(1) > 2e-4)[0]
@@ -518,6 +527,21 @@ def render_px():
     px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px)
     bpy.data.images.remove(im)
     return px.reshape(h, w, 4)[::-1]                        # Blender pixels start at the bottom row
+
+
+def CONFORM_TRIS():
+    """triangle masks of the regions of conformed garments (cloth_lib.CONFORM_BONES), computed once"""
+    if "conform" not in CLOTH_CTX:
+        me = body.data
+        names = [g.name for g in body.vertex_groups]
+        W = np.zeros((len(me.vertices), len(names)))
+        for v in me.vertices:
+            for g in v.groups:
+                W[v.index, g.group] = g.weight
+        me.calc_loop_triangles()
+        tri = np.array([t.vertices[:] for t in me.loop_triangles])
+        CLOTH_CTX["conform"] = cloth_module().conform_masks([names[k] for k in W[tri].sum(1).argmax(1)])
+    return CLOTH_CTX["conform"]
 
 
 def body_part_mask(parts):

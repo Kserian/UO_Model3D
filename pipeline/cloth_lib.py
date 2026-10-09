@@ -200,3 +200,45 @@ def cloak_bend(V, z_top, z_hem, y_top, d0, d1):
     out = Vn - V
     out[s <= 0] = 0.0
     return out
+
+
+# Conformed garments (uo_conform_item.py: custom property uo_conform, point attribute uo_region): every frame each vertex is kept `gap` outside the skin of its own region
+# (0 the body of a shirt, its skirt and collar: torso, legs, head and both arms, which pass in front of it; 1 / 2 a sleeve: the left / right arm + hand; 3 / 4 the root of a
+# sleeve: its arm and the torso, the side of the chest comes out under a raised arm), pushed along the skin normal and spread over the item, so the skin never comes through
+# it. A sleeve does not look at the torso: an arm pressed to the side of the torso is in its sleeve, between them.
+_TORSO = {"pelvis", "spine", "chest", "neck", "clavicle.L", "clavicle.R", "head", "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R"}
+_ARMS = {"upper_arm.L", "forearm.L", "hand.L", "upper_arm.R", "forearm.R", "hand.R"}
+CONFORM_BONES = (_TORSO | _ARMS, {"upper_arm.L", "forearm.L", "hand.L"}, {"upper_arm.R", "forearm.R", "hand.R"},
+                 _TORSO | {"upper_arm.L", "forearm.L", "hand.L"}, _TORSO | {"upper_arm.R", "forearm.R", "hand.R"})
+
+
+def conform_masks(dom_bones):
+    """triangle masks of the conform regions; dom_bones = the dominant bone name of every body triangle (finger bones count as the hand of their side)"""
+    base = [("hand" + b[-2:]) if b.startswith("finger") else b for b in dom_bones]
+    return [np.array([b in s for b in base]) for s in CONFORM_BONES]
+
+
+def conform_push(X, bvhs, lab, E, deg, gap, iters=16, exact=6):
+    """displacement that keeps every point X[i] `gap` outside the body part bvhs[lab[i]] (mathutils BVHTree, same space as X); smoothed over the item edges E"""
+    from mathutils import Vector
+    D = np.zeros_like(X); look = np.arange(len(X)); reach = 0.15
+    for it in range(iters + exact):                                 # the last `exact` rounds are not smoothed: what is left is millimetres (a push along one face normal at a corner)
+        P = X + D; need = np.zeros(len(X)); N = np.zeros_like(X); near = []
+        for i in look:
+            p = Vector(P[i]); loc, nrm, fi, dist = bvhs[lab[i]].find_nearest(p, reach)
+            if loc is not None:
+                near.append(i); sd = (p - loc).dot(nrm)
+                if sd < gap:
+                    need[i] = gap - sd; N[i] = nrm
+        if it == 0:
+            look = np.array(near, int); reach = gap + 0.08
+        if not (need > 1e-4).any():
+            break
+        D += need[:, None] * N
+        if it < iters - 1:
+            for _ in range(2):
+                acc = np.zeros_like(D)
+                np.add.at(acc, E[:, 0], D[E[:, 1]]); np.add.at(acc, E[:, 1], D[E[:, 0]])
+                D = np.where(deg[:, None] > 0, 0.5 * D + 0.5 * acc / np.maximum(deg, 1)[:, None], D)
+            look = np.union1d(look, np.nonzero(np.abs(D).max(1) > 1e-5)[0])
+    return D
