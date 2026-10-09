@@ -45,3 +45,15 @@ Odrzucone: tułów „keep” (stary skręcony) z symetrycznymi rękami (koszt 0
 
 Nie ruszone: `26_mounted_attack_1h` (prawa 162°, klatka 0) i `29_mounted_attack_2h` (lewa 161°, klatka 1) mają ten sam typ błędu; dla jazdy symetria nie jest znana. Ten sam skręt tułowia w kluczach mogą mieć inne akcje (nie sprawdzano poza 16 i 17).
 Zmieniony binarny `model/UO_Body_0x190.blend`: klucze akcji 17 (miednica, kręgosłup, klatka, szyja, głowa, uda, obojczyki, ręce, palce); osadzone skrypty bez zmian. Poprzedni stan: commit `40dbcf7`.
+
+## Dłonie i palce w akcji 17 (2026-10-09, po prośbie „popraw ułożenie dłoni i palców”)
+Stan wyjściowy: palce 2-5 w kluczach akcji 17 były wyprostowane (zgięcie 1-2°, jak deska), kciuk 20-36°; w widoku z tyłu i z boku model miał wąskie dłonie zwężające się w szpic, oryginał ma bryłowate, lekko zaciśnięte dłonie z kciukiem.
+Pomiar (okolica dłoni = koła o promieniu 11 px wokół obu dłoni, 5 kierunków, miara 1 − IoU sylwetki vs sprite, `pipeline/hand_fit.py`, `pipeline/hand_fit_joint.py`):
+- powierzchnia dłoni modelu vs sprite 0,96-1,03 (ok. 1000-1300 px, niezgodne 100-180 px po każdej stronie): sylwetka dłoni zgadza się w granicy rozdzielczości (1 px = 2,8 cm, palec ma ok. 1 px),
+- obrót dłoni: siatka 105 orientacji (obrót wokół osi przedramienia, zgięcie, odchylenie nadgarstka) – klucz jest już najlepszy, każda zmiana pogarsza (0,171 -> 0,18-0,19),
+- zgięcie i rozstaw palców dopasowane osobno dla klatki: zmiany o kilka stopni, o różnych znakach dla różnych palców, zysk 0,005-0,02 (szum); rozstaw palców i skala dłoni (1,00) nie dają nic; miara krawędzi (obrys + skoki głębi vs ciemne piksele sprite'a) jest równie płaska,
+- wspólna poza palców dla klatek 1-4 (jedna, bez drżenia między klatkami): koszt 0,2182 (stary klucz) -> 0,2183 (zgięcie 20-35°), całkowita pięść (69°) gorsza o 0,03: sylwetka nie odróżnia otwartej dłoni od lekko zgiętej, ale wyklucza zaciśniętą pięść,
+- odbicie lewej ręki bez błędu: kości L/R są dokładnymi lustrami (0,0 cm), końce palców po odbiciu 0,0 cm.
+Wdrożone: jedna wspólna poza dla wszystkich 7 kluczy: palce 2-5 zgięte o 22 / 34 / 21 / 21° (stawy 1:1:0,8), kciuk bez zmian, skala dłoni 1,045, obrót dłoni bez zmian; lewa = lustro prawej. Wybrana, bo przy tej samej mierzonej zgodności (średni koszt 0,1999 vs 0,2000) usuwa szpiczaste, wyprostowane dłonie i daje zaokrąglone, bryłowate dłonie jak w oryginale (ocena na kafelkach oryginał/model, kierunki 0 i 3, klatki 1-4).
+Pomiar po zmianie: IoU akcji 17 0,8641 -> 0,8637, ciało 1050 klatek 0,89226 -> 0,89225, `test_items` 0,718 -> 0,718, `test_canvas` 16/16 OK, pozostałe 34 akcje bez zmian (`body_parts_after_hands17.json`, `items_after_hands17.json`). Zmieniony binarny `model/UO_Body_0x190.blend`: klucze palców i dłoni akcji 17; poprzedni stan: commit `7536a44`.
+Czego nie da się ustalić z sylwetek: dokładnego ułożenia palców (otwarte / zgięte 20-35° są nierozróżnialne). Jeśli użytkownik widzi w konkretnej klatce i kierunku inny kształt dłoni, trzeba to ustawić ręcznie na podstawie tej klatki.
