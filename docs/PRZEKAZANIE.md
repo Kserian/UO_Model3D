@@ -104,3 +104,10 @@ Pułapki: `item_qa.py` mierzy przed pchnięciem renderu i liczy każdy styk (7% 
 skóry jest zły przy jego brzegach: znak zawsze z całego ciała. Dwa zadania w tle piszące do jednego katalogu renderu psują `_tmp.png` (PNG CRC error).
 Otwarte: akcja 21 (w kliencie „Die Backward”, u nas nazwana `21_die_forward`; 22 pewnie też ma zamienioną nazwę): w klatkach 4-5 prawe przedramię sterczy w górę (łokieć ok. 95°, nadgarstek ~30 cm
 nad barkiem), oryginał ma ręce płasko na ziemi; IoU klatek 4-5 0,76-0,84 (akcja 0,852). Mankiet dzwonowy przy uniesionym przedramieniu jak prostokątny płat.
+
+## Sesja 20 (2026-10-09): ręce w śmierci, atakach, łuku i bloku (`docs/qa/arm_poses.md`)
+Zlecenie użytkownika: poprawić ułożenie rąk w akcji 17 (zrobione wcześniej) i w „śmierci do tyłu” (akcja 21 w kliencie, u nas `21_die_forward`; 22 = „Die Forward”, nazwy zamienione), potem przejrzeć inne akcje (ręce, barki, ciało).
+Zrobione: ranking klatek wg niezgodności ręki (`arm_mismatch.py`), nakładki (`action_overlay.py`), wspólne dopasowanie obu rąk z wolnym kręgosłupem / klatką (`arm_joint_fit.py`), wdrożone tylko klatki z lepszym IoU:
+21 kl. 2-5 (0,8516 -> 0,8633), 22 kl. 1-5 (0,8578 -> 0,8686), 9 kl. 1/4/5/6 (0,8762 -> 0,8843), 18 kl. 4-5, 14 kl. 6, 30 kl. 3. Ciało 1050 klatek 0,8922 -> 0,8934, `test_items` 0,719 (było 0,718), `test_canvas` OK.
+Zmieniony binarny: `model/UO_Body_0x190.blend` (klucze tych akcji; osadzone skrypty bez zmian). Poprzedni stan: commit `e9544f6`.
+Otwarte: klatki 1 i 4-5 akcji 21 nadal z niezgodnością ręki 265-320 px (sylwetka nie rozstrzyga zgięcia łokcia), akcja 17 kl. 3-5 (symetria rąk, decyzja użytkownika), jazda 23-29 (dopasowanie nie zna maski konia), barki / tułów w innych akcjach nieprzeglądane osobno. Reguła z tej sesji: dopasowanie robić obiema rękami naraz, wdrażać klatkę tylko gdy IoU nie spada.
