@@ -2,7 +2,7 @@
 ORIGINAL body frames, 5 directions at once. Unlike arm_sym_fit.py the arms are independent (death / fall actions are not symmetric) and unlike arm_grid.py / arm_refit.py the
 other arm is fitted too (a fit of one arm with the other one wrong only moves the error).
 
-    python arm_joint_fit.py IN.blend OUT.json --action 21 --frame 4 [--torso 0|1] [--flex 145] (env NRAND, MAXFEV, TORSO_PRIOR)
+    python arm_joint_fit.py IN.blend OUT.json --action 21 --frame 4 [--torso 0|1] [--flex 145] (env NRAND, MAXFEV, TORSO_PRIOR, TOP_W); mounted frames: the horse hides the body as in body_part_raster.py
     python arm_sym_fit.py IN.blend OUT.blend --action 21 --apply a.json,b.json                 (writes the keys, same layout; save with bpy 4.2)
 
 Objective: as arm_sym_fit.py (1 - IoU whole + above TOP rows, mean of 5 directions) + small priors (elbow flex 0..FLEX, rotations near the key); starts: the key, the key with
@@ -15,11 +15,29 @@ from mathutils import Quaternion, Vector, Matrix
 from scipy.optimize import minimize
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from body_part_raster import raster, CW, CH, STEP
-from arm_refit import setup, ROOT, TOP, TOP_W, rotvec
+from body_part_raster import raster, CW, CH, CANCH, STEP
+from arm_refit import setup, ROOT, TOP, rotvec
 
 NRAND, MAXFEV = int(os.environ.get("NRAND", 6)), int(os.environ.get("MAXFEV", 1500))
+TOP_W = float(os.environ.get("TOP_W", 1.0))           # weight of the rows above the shoulder line (arm_refit.py: 1.0)
 CHAIN = ["clavicle", "upper_arm", "forearm", "hand"]
+
+
+def horse_masks(aid, frame):
+    """horse object of a mounted frame and its sprite masks per direction (same data as body_part_raster.py); (None, {}) when not mounted"""
+    import base64, zlib
+    h = bpy.data.objects.get("Horse_a%d_f%d" % (aid, frame))
+    if h is None or "uo_horse_masks.json" not in bpy.data.texts:
+        return None, {}
+    h.hide_viewport = h.hide_render = False
+    HM = {}
+    for k, v in json.loads(bpy.data.texts["uo_horse_masks.json"].as_string())["masks"].items():
+        a, f, d = (int(x) for x in k.split(","))
+        if (a, f) != (aid, frame): continue
+        bits = np.unpackbits(np.frombuffer(zlib.decompress(base64.b64decode(v)), np.uint8))[:120 * 136].reshape(120, 136).astype(bool)
+        m = np.zeros((CH, CW), bool); m[CANCH[1] - 86:CANCH[1] - 86 + 120, CANCH[0] - 68:CANCH[0] - 68 + 136] = bits
+        HM[d] = m
+    return h, HM
 
 
 def main():
@@ -37,12 +55,18 @@ def main():
     ORIG = {d: np.array(Image.open(os.path.join(ROOT, "client/body_0x190_frames/frames/%s/dir%d/%02d.png" % (act.name, d, frame))).convert("RGBA"))[..., 3] > 0 for d in range(5)}
     sc.frame_set(1 + frame * STEP); rig.update_tag(); bpy.context.view_layer.update()
 
+    horse, HM = horse_masks(aid, frame)
+
     def cost():
         c = 0.0
         for d in range(5):
             rig["uo_direction"] = d; rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
             dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
-            lab, _ = raster(body, dg, np.array(cam.calc_matrix_camera(dg, x=CW, y=CH)), np.array(cam.matrix_world.inverted()), None)
+            Pm, Vm = np.array(cam.calc_matrix_camera(dg, x=CW, y=CH)), np.array(cam.matrix_world.inverted())
+            lab, depth = raster(body, dg, Pm, Vm, None)
+            if horse is not None and d in HM:           # mounted: the horse hides what is behind it, clipped to its sprite (as body_part_raster.py)
+                hl, hd = raster(horse, dg, Pm, Vm, None)
+                lab[(hl >= 0) & (hd < depth) & HM[d]] = -1
             s, b = lab >= 0, ORIG[d]
             c += 1 - (s & b).sum() / max((s | b).sum(), 1)
             s, b = s[:TOP], b[:TOP]; c += TOP_W * (1 - (s & b).sum() / max((s | b).sum(), 1))
@@ -101,6 +125,8 @@ def main():
             r = minimize(f_all, x0, method="Powell", options={"xtol": 1e-2, "ftol": 1e-4, "maxfev": 2 * MAXFEV})
             print(" joint", i, j, "cost %.4f" % r.fun, flush=True)
             if best is None or r.fun < best.fun: best = r
+    if best.fun > c_old:                 # never worse than the key: keep it
+        best.x[:] = 0.0
     f_all(best.x); c_new = cost()
     chg = {}
     for n_, (q, s_, l) in old.items():
