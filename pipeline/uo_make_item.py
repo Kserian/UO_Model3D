@@ -11,6 +11,7 @@ RECIPE.json (only "file" and "kind" are required):
    "outer_shell": false,       # true for a garment that is a closed solid ~1.5 cm thick (cloth simulator export): only the outer layer is kept before the reduction (uo_import_item.py OUTER_SHELL);
                                # a number (0.006 m) = first rebuilt by a voxel remesh into one continuous solid (separate panels whose seams open when the item is fitted), the texture baked (OUTER_REMESH)
    "bake_texture": 0,          # px (2048): the reduced model gets new UVs and a texture baked from the original (a reduction smears the UVs of a detailed texture; uo_import_item.py BAKE_TEXTURE)
+   "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1},   # per-item settings of render_uo_layer.py (outline strength, hands / head hide a pixel less, the legs never hide a long robe)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
    "stretch": [0.8, 1.25, 1.0],  # width, depth, height factors about the centre (a model made on a mannequin with other proportions than the UO body); "tune": {"uo_autofit_item.py": {"UNIT": 0.3}} = the file is not in metres
    "decimate": 30000,          # vertices above which the model is reduced
@@ -316,9 +317,12 @@ if wp:                                                           # a weapon: upr
     run("uo_bind_item.py", PART=wp["part"])
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
+for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
+    bpy.context.scene[k] = v
+    print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=recipe.get("scene", {}), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):

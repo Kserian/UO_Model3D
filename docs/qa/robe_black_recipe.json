@@ -1,4 +1,6 @@
 {"name": "robe_black", "file": "robe_black.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000,
+ "materials": {"GREY_CLOTH": {"value": 0.6, "contrast": 0.5, "fill": 0.04, "flatten": 0.05}},
  "prepare": {"HEM": 0.15},
- "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04},
- "sim": {"arm_goal": 0.95}}
+ "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02},
+ "sim": {"arm_goal": 0.95, "smooth": 0.04},
+ "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 28}}

@@ -11,7 +11,8 @@ pushes whatever is still inside the body out, as before. Mounted actions (23-29)
 
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the pose of the loop), looping actions (walk, run, stand, combat idle) CYCLES cycles and the last one is
 kept, so the loop closes without a jump. Settings (key=value): goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3), tension / compression (15), shear (5), bending (0.5),
-damp_air (1), tdamp (5), dist (0.005), preroll (40), cycles (3), self_collision (0), friction (0), arm_goal (0.7; -1 = sleeves as the rest above the waist; 0-1 = their own goal), arm_x (0.19 m from the middle: where the sleeves start), arm_zmin (the sleeves are the vertices above this height; default 0.05 m below the waist: long bell sleeves that hang below it need e.g. 0.55), thick (0.02 m: the outer thickness of the body as a collider; a fast leg tunnels through the cloth with a thin one: leg pixels through the robe in the run 466 at 0.005 m, 196 at 0.02, 147 with dist 0.02 too but 3 x slower), in_max (0.01 m: below the waist the cloth may move at most this much TOWARDS the axis of the pelvis against the target: the target already holds it just outside the legs' reach, and a
+damp_air (1), tdamp (5), dist (0.005), preroll (40), cycles (3), self_collision (0), friction (0), arm_goal (0.7; -1 = sleeves as the rest above the waist; 0-1 = their own goal), arm_x (0.19 m from the middle: where the sleeves start), arm_zmin (the sleeves are the vertices above this height; default 0.05 m below the waist: long bell sleeves that hang below it need e.g. 0.55), thick (0.02 m: the outer thickness of the body as a collider; a fast leg tunnels through the cloth with a thin one: leg pixels through the robe in the run 466 at 0.005 m, 196 at 0.02, 147 with dist 0.02 too but 3 x slower), smooth (0 m; > 0 = the simulation's move averaged over this distance in space, 2 passes: neighbouring pleats that cross each other in the simulation opened slits
+through which the legs showed; 0.04 m on docs/qa/robe_black.md: leg pixels through the robe in walk 44 -> 12), in_max (0.01 m: below the waist the cloth may move at most this much TOWARDS the axis of the pelvis against the target: the target already holds it just outside the legs' reach, and a
 simulated hem that lagged inwards let a foot come out through it in the run; < 0 = no limit), max_move (0.12 m: the most the cloth may differ from the kinematic target, soft limit; 0 = none). Measured on the replica of the original robe 469 (robe_cloth_sim_test.py, hybrid=1):
 lower-body IoU walk 0.754 -> 0.765, run 0.731 -> 0.735 against the kinematic result (docs/qa/robe_physics.md); the simulation alone (no goal) collapses in walk and run.
 """
@@ -26,7 +27,7 @@ from bpy_compat import action_fcurves                                       # no
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
 CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, dist=0.005, preroll=40, cycles=3,
-           self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01)
+           self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
 
 def run_parallel(blend, out, only, jobs, extra):
@@ -214,6 +215,18 @@ def main():
                 res["%d_%d" % (a, i)] = d.astype(np.float32)
         d = np.array([np.linalg.norm(res["%d_%d" % (a, i)], axis=1).max() for i in range(nfr)])
         print("action %2d %-26s %d frames, loop %s, %.0f s, largest cloth move %.2f m" % (a, act.name, nfr, loop, time.time() - t0, d.max()), flush=True)
+    if cfg["smooth"] > 0 and res:                                               # the move averaged in space (rest positions): pleats move together, they do not cut through each other
+        from scipy.spatial import cKDTree
+        from scipy.sparse import coo_matrix
+        r = cfg["smooth"]; pr = cKDTree(Vr).query_pairs(r, output_type="ndarray")
+        dd = np.linalg.norm(Vr[pr[:, 0]] - Vr[pr[:, 1]], axis=1); wk = np.exp(-(dd / (0.5 * r)) ** 2)
+        K = coo_matrix((np.r_[wk, wk, np.ones(nv)], (np.r_[pr[:, 0], pr[:, 1], np.arange(nv)], np.r_[pr[:, 1], pr[:, 0], np.arange(nv)])), shape=(nv, nv)).tocsr()
+        ks = np.asarray(K.sum(1)).ravel()
+        for k in res:
+            D = res[k].astype(np.float64)
+            for _ in range(2):
+                D = (K @ D) / ks[:, None]
+            res[k] = D.astype(np.float32)
     np.savez_compressed(out, **res)
     print("wrote", out, "(%d frames)" % len(res))
 

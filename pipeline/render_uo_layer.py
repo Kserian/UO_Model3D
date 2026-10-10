@@ -46,6 +46,11 @@ HOLDOUT_MARGIN = 0.01              # m: in the clothing layer the body hides an 
 OCCLUDERS = ["head", "upper_arm", "forearm", "hand", "thigh", "shin", "foot"]   # body parts that may hide items
                                    # (with HOLDOUT_MARGIN > 0); the torso (pelvis, spine, chest, neck) never does, because
                                    # items are worn over it and a torso poking through is a model error, not an occluder
+HIDE_ERODE = 0                     # px: the area where a HAND or the HEAD hides an item is shrunk by this much. The 3D hand / head stand 1-2 px off the
+                                   # original sprite, and where they cut the item the ORIGINAL body shows through (EXACT_BODY): a wrist or a shoulder of the
+                                   # original in a hole of a sleeve or a collar (docs/qa/robe_black.md). 0 = off; scene property uo_hide_erode
+LEGS_UNDER = False                 # the legs (thighs, shins, feet) never hide the item: a long robe covers them in the client, and a leg that comes out in front of it in 3D (a foot
+                                   # lifted in a fall, a knee through the front slit) cut a hole that showed the ORIGINAL legs (docs/qa/robe_black.md). Scene property uo_legs_under
 OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs item: thighs, shins, pelvis) never hide it: the item
                                    # wraps them, so their skin in front of the item shell is the item's own edge, not an occluder
                                    # (it cut 1-px strips off the sides of trousers). False = every OCCLUDERS part may hide it
@@ -71,6 +76,9 @@ DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original
 
 sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
+HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
+LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
+OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
 rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
@@ -597,8 +605,12 @@ def worn_parts(share=0.04):
 
 
 WORN = worn_parts() if (LAYER == "clothing" and OWN_PARTS_NEVER_HIDE) else set()
+if LAYER == "clothing" and LEGS_UNDER:
+    WORN |= {"thigh", "shin", "foot"}
 OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP keeps the items away from
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
+HANDHEAD_TRIS = body_part_mask({"hand", "head"})                # HIDE_ERODE shrinks what these hide (a hand only next to its sleeve)
+HEAD_TRIS = body_part_mask({"head"})
 BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and any(o.get("uo_behind_torso") for o in clothes if not o.hide_render)
 TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if BEHIND_TORSO else None
 print("render_uo_layer: items wrap %s; body parts that may hide them: %s" % (sorted(WORN), sorted(set(OCCLUDERS) - WORN)))
@@ -652,7 +664,7 @@ def body_occlusion(free, margin):
     """the clothing render without the body, with the body in front of the item removed. The body hides a pixel only
     where it is more than `margin` in front of the visible item surface. Returns (hold, body coverage)."""
     cov, _ = raster([body])
-    occ, zb = raster([body], HIDER_TRIS)               # only the parts that may hide items (not the torso)
+    occ, zb = raster([body], HIDER_TRIS & ~HANDHEAD_TRIS if HIDE_ERODE > 0 else HIDER_TRIS)   # only the parts that may hide items (not the torso)
     _, zi = raster([o for o in clothes if not o.hide_render])
     seen = free[..., 3] >= 0.5
     for _ in range(2):                                  # item pixels Cycles drew but the raster missed: neighbour depth
@@ -664,6 +676,20 @@ def body_occlusion(free, margin):
         zi = np.where(miss, nb, zi)
     hold = free.copy()
     hold[occ & (zb < zi - margin)] = 0.0
+    if HIDE_ERODE > 0:                                   # hands and head: their hiding area shrunk (they stand off the original sprite by a pixel or two)
+        vis = [o for o in clothes if not o.hide_render]
+        for part_tris, near_sleeve in ((HIDER_TRIS & HEAD_TRIS, False), (HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS, True)):
+            occh, zh = raster([body], part_tris)
+            hh = occh & (zh < zi - margin)
+            shrunk = ~binary_dilation(~hh, HIDE_ERODE)
+            if near_sleeve and len(vis) == 1 and "uo_region" in vis[0].data.attributes:   # a hand: only next to its sleeve (the wrist at the cuff), a hand in front of the robe keeps its size
+                me = vis[0].data; me.calc_loop_triangles()
+                rv = np.empty(len(me.vertices), np.int32); me.attributes["uo_region"].data.foreach_get("value", rv)
+                tv = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tv)
+                sl, zs = raster(vis, rv[tv.reshape(-1, 3)].max(1) > 0)
+                near = binary_dilation(sl & (zs <= zi + 0.005), HIDE_ERODE + 1)
+                shrunk = np.where(near, shrunk, hh)
+            hold[shrunk] = 0.0
     if TORSO_TRIS is not None:                           # items behind the torso (on the back): clearly behind = hidden
         occt, zt = raster([body], TORSO_TRIS)
         hold[occt & (zt < zi - TORSO_HIDE_MARGIN)] = 0.0

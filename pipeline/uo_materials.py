@@ -30,6 +30,10 @@ SPEC_POWER = 16       # Measured on the metal-named wearable animations of the c
                       # 1.0 / 16 is in between; use 2.0 / 19 for shiny plate, 0.7 / 11 for mail. Docs: docs/qa/light_shadow.md
 TEXTURE_PX = 0        # > 0: a texture larger than this (px, the longer side) is scaled down to it: a fine weave or noise texture rendered at 36 px/m aliases into white speckles, which UO cloth does not have
                       # (the colour of the cloth is its average); 0 = leave the textures. A recipe of uo_make_item.py: "materials": {"TEXTURE_PX": 64}. Do not use for cut-out textures (hair cards, lace).
+GREY_CLOTH = None     # {"value": 0.55, "keep_sat": 0.25, "hue": (0.04, 0.2), "contrast": 1.0, "fill": 0.0, "flatten": 0.0}: ("fill" m: gaps in the gold up to this size closed with gold; "flatten" m: the grey relative to the cloth around, panels of another cloth do not stand out) the cloth of the texture (pixels that are not saturated gold / yellow) becomes grey,
+                      # its median at "value" (0-1 of the stored texture), the texture's own light and dark kept (ratio to the median ** contrast); gold pixels (saturation
+                      # >= keep_sat, hue in the range, 0-1 = 0-360 deg) stay as they are, blended softly at their edge. A black robe with gold embroidery made grey like
+                      # the hue-able UO robes (docs/qa/robe_black.md). Recipe: "materials": {"GREY_CLOTH": {...}}
 TEXTURE_FILTER = True # box-average every colour / normal texture that is finer than the sprite (more than FILTER_TEXELS_PER_M texels per metre of the item): at one sample per pixel
                       # a 1 m coat on a 1024 px texture is sampled every ~25th texel and comes out as noise, and the thin dark details (laces, buttons, stitches) appear and disappear
                       # from frame to frame. Averaged, they stay as one soft dark pixel line. Skipped for cut-out textures (Alpha used) and for small textures.
@@ -304,6 +308,52 @@ def convert(mat, ng):
     return "%s: %s%s" % (mat.name, how, "" if col is not None else " (plain colour %s)" % ", ".join("%.2f" % c for c in grp.inputs["Albedo"].default_value[:3]))
 
 
+def grey_cloth(obs, lines):
+    """GREY_CLOTH on the item's own colour textures (see the setting)"""
+    cfg = dict(dict(value=0.55, keep_sat=0.25, hue=(0.04, 0.2), contrast=1.0, fill=0.0, flatten=0.0), **GREY_CLOTH)
+    used = {n.image for o in obs for sl in o.material_slots if sl.material and sl.material.use_nodes for n in sl.material.node_tree.nodes
+            if n.type == "TEX_IMAGE" and n.image and n.image.type == "IMAGE" and n.image.colorspace_settings.name != "Non-Color"}
+    for im in used:
+        w, h = im.size
+        px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px); px = px.reshape(-1, 4)
+        rgb = px[:, :3].astype(np.float64); mx = rgb.max(1); mn = rgb.min(1); d = np.maximum(mx - mn, 1e-9)
+        sat = np.where(mx > 1e-6, (mx - mn) / np.maximum(mx, 1e-6), 0.0)
+        r, g, b = rgb.T
+        hue = np.where(mx == r, ((g - b) / d) % 6, np.where(mx == g, (b - r) / d + 2, (r - g) / d + 4)) / 6.0
+        h0, h1 = cfg["hue"]
+        ws = np.clip((sat - (cfg["keep_sat"] - 0.08)) / 0.16, 0, 1)
+        wh = np.clip(np.minimum(hue - (h0 - 0.03), (h1 + 0.03) - hue) / 0.03, 0, 1)
+        wv = np.clip((mx - 0.08) / 0.08, 0, 1)
+        wgold = ws * wh * wv; wgold = wgold * wgold * (3 - 2 * wgold)
+        filled = 0
+        dens = max([x for x in (texel_density(o, im) for o in obs) if x], default=0.0) or max(w, h)     # texels per metre
+        if cfg["fill"] > 0:                                              # gaps in the gold embroidery up to `fill` m closed with gold (a floral band on dark cloth: grey in its gaps breaks it up at 36 px/m)
+            from scipy.ndimage import binary_closing, uniform_filter
+            rad = max(1, int(round(cfg["fill"] * dens)))
+            gm = (wgold >= 0.5).reshape(h, w)
+            closed = binary_closing(gm, iterations=rad, border_value=0)
+            add = (closed & ~gm).ravel()
+            if add.any():
+                k = 2 * rad + 1; g3 = gm.astype(float)
+                num = np.stack([uniform_filter(g3 * rgb[:, c].reshape(h, w), k) for c in range(3)], -1).reshape(-1, 3); den = uniform_filter(g3, k).ravel()
+                rgb[add] = num[add] / np.maximum(den[add, None], 1e-6); wgold[add] = 1.0; filled = int(add.sum())
+        lum = rgb @ np.array([0.299, 0.587, 0.114])
+        cloth = wgold < 0.5
+        baked = cloth & (lum > 0.005)                                     # texels outside the UV islands (black background of a baked texture) do not count
+        med = float(np.median(lum[baked])) if baked.any() else 0.5
+        ref = np.full(len(lum), max(med, 1e-4))
+        if cfg["flatten"] > 0:                                           # the grey relative to the cloth AROUND the texel (Gaussian, sigma `flatten` m): panels of another cloth (a darker damask strip down
+            from scipy.ndimage import gaussian_filter                    # the back) do not stand out as lighter / darker grey; folds and the small pattern stay
+            sig = max(1.0, cfg["flatten"] * dens); vm = baked.reshape(h, w).astype(float)
+            num = gaussian_filter((lum * baked).reshape(h, w), sig); den = gaussian_filter(vm, sig)
+            ref = np.where(den.ravel() > 0.05, num.ravel() / np.maximum(den.ravel(), 1e-6), ref)
+            ref = np.maximum(ref, 1e-4)
+        grey = np.clip(cfg["value"] * (np.maximum(lum, 1e-4) / ref) ** cfg["contrast"], 0, 1)
+        new = wgold[:, None] * rgb + (1 - wgold[:, None]) * grey[:, None]
+        px[:, :3] = new; im.pixels.foreach_set(px.ravel()); im.update(); im.pack()
+        lines.append("GREY_CLOTH %s: %.0f%% gold kept (%d texels of gaps filled), cloth median %.3f -> %.3f, contrast %.2f" % (im.name, 100 * (wgold >= 0.5).mean(), filled, med, cfg["value"], cfg["contrast"]))
+
+
 def run():
     ng = bpy.data.node_groups.get("UO_Look")
     if ng is None:
@@ -312,6 +362,8 @@ def run():
     if not obs and "Clothing" in bpy.data.collections:
         obs = [o for o in bpy.data.collections["Clothing"].all_objects if o.type == "MESH"]
     done = set(); lines = []
+    if GREY_CLOTH:
+        grey_cloth(obs, lines)
     if TEXTURE_FILTER:
         filter_textures(obs, lines)
     if TEXTURE_PX > 0:

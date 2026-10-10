@@ -34,6 +34,9 @@ FOLD_MAX = 0.02       # m: folds of the model (stand-off minus its smooth part) 
 FOLD_SMOOTH = 12      # passes that make the smooth part of the stand-off (bigger = broader things count as folds)
 MOVE = (0.0, 0.0, 0.0) # m: the whole item is moved by this first
 SLEEVES = True        # step 1
+SLEEVE_END = -1.0     # m: >= 0 = each sleeve is shortened along its arm (only its last SLEEVE_SPAN before the end is squeezed, the cuff keeps its shape) so that it ends this far past the
+                      # wrist (the head of the hand bone): a bell sleeve of a longer-armed mannequin hid the hands (docs/qa/robe_black.md: 9 cm past the wrist -> 0.02). < 0 = as the model
+SLEEVE_SPAN = 0.25    # m
 BLEND = 0.10          # m: along the sleeve from its root, over which it goes from where the model has it to the UO arm
 TUBE_MARGIN = 0.05    # m: beyond the radius of the sleeve tube the move fades out over this (the side of the torso under the arm stays)
 SKIRT = True          # below the crotch: hangs (the model's shape, pushed out of the legs), follows the pelvis, the legs push it in the render
@@ -261,6 +264,20 @@ def main():
         X0 = X0 + np.array(MOVE)                                         # a nudge of the whole item (e.g. a model that sits too high on the UO shoulders)
         # 1. sleeves onto the arms
         X, sleeve = align_sleeves(X0, rig, G) if SLEEVES else (X0.copy(), np.zeros(len(X0)))
+        if SLEEVE_END >= 0:                                              # sleeves shortened to end SLEEVE_END past the wrist
+            for sd, sg in (("L", 1.0), ("R", -1.0)):
+                J = np.array(rig.matrix_world @ rig.data.bones["upper_arm." + sd].head_local); Hd = np.array(rig.matrix_world @ rig.data.bones["hand." + sd].head_local)
+                ax = (Hd - J) / np.linalg.norm(Hd - J); tw = (Hd - J) @ ax
+                m = (sleeve > 0.5) & (X[:, 0] * sg > 0)
+                if m.sum() < 20:
+                    continue
+                t = (X - J) @ ax; tend = float(np.percentile(t[m], 99.5)); want = tw + SLEEVE_END
+                if tend <= want:
+                    continue
+                t0 = want - SLEEVE_SPAN; k = (want - t0) / (tend - t0)
+                w = np.clip(sleeve, 0, 1) * (X[:, 0] * sg > 0) * (t > t0)
+                X = X - (w * (t - t0) * (1 - k))[:, None] * ax
+                print("uo_conform_item: sleeve %s shortened: ended %.1f cm past the wrist, now %.1f cm (last %.0f cm squeezed x%.2f)" % (sd, 100 * (tend - tw), 100 * SLEEVE_END, 100 * SLEEVE_SPAN, k), flush=True)
 
         # 2. wrap: the target stand-off h from the model's own (aligned) stand-off
         l, _, f, _ = nearest(bvh_any, X)
