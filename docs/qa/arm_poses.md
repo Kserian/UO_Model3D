@@ -44,3 +44,10 @@ Wynik: 31 klatek dopasowanych, 23 wgrane (9 kl. 2, 6; 14 kl. 4, 6; 16 kl. 4; 18 
 Najwięcej: 9/2 błędy ≥ 2 px 43 -> 5, 16/4 43 -> 6, 18/2 46 -> 13, 23/2 42 -> 13, 28/1 42 -> 11, 34/0 59 -> 23, 29/1 167 -> 95.
 Ciało 1050 klatek IoU 0,8934 -> **0,8947**, błędy ≥ 2 px 3746 -> **3282**; akcje: 29 0,8194 -> 0,8295, 26 0,8564 -> 0,8647, 23 0,8577 -> 0,8644, 24 0,8587 -> 0,8648, 34 0,9079 -> 0,9122, 9 0,8843 -> 0,8875 (`body_parts_after_arms2.json`); `test_items` 0,720 (`items_after_arms2.json`), `test_canvas` 16/16 OK.
 Dalej: runda 3 z `EDGE_W = 1`, zgięcie łokcia do 145°, na 34 klatkach z ≥ 30 px błędu.
+
+## Runda 3 (2026-10-10): kara za błędy ≥ 2 px
+`EDGE_W = 1` (koszt = 1 − IoU + piksele ≥ 2 px / suma), zgięcie łokcia do 145°, 34 klatki z ≥ 30 px błędu; akcja 21: `--torso 2` (dodatkowo miednica: obrót + położenie, uda, golenie), klatka 1 także `TOP_W = 0`, `EDGE_W = 2` (z wagą rzędów nad barkami IoU spadało).
+Wgrane 26 klatek (to samo kryterium): m.in. 9/4 błędy 34 -> 2, 24/1 51 -> 11, 16/3 33 -> 10, 16/5 31 -> 11, 18/3 37 -> 18, 23/0 41 -> 21, 28/6 51 -> 29, 29/2 130 -> 96, **21/1 92 -> 84** (pierwszy raz lepiej), **21/4 122 -> 91**. Odrzucona 18/5.
+Wycofana 25/0 (błędy 37 -> 30): `test_canvas` (przypadek `all`, `25_mounted_stand`, płótno 200×180) dawał 1 piksel cieniowania różny o 5 poziomów (128 vs 123, sylwetka identyczna; zaokrąglenie na krawędzi trójkąta przy przesuniętym płótnie). Testu nie zmieniano.
+Wynik: ciało 0,8947 -> **0,8958**, błędy ≥ 2 px 3282 -> **2888** (start sesji 3746), klatek z ≥ 40 px 34 -> 20; akcje: 21 0,8637 -> 0,8675, 23 0,8644 -> 0,8719, 29 0,8295 -> 0,8358, 9 0,8875 -> 0,8909 (`body_parts_after_arms3.json`); `test_items` 0,721 (`items_after_arms3.json`), `test_canvas` 16/16 OK.
+Sprawdzone ruchy dłoni między klatkami: w jeździe lewa dłoń przesunęła się bardziej niż przed zmianą (24 kl. 0->1 0,14 -> 0,35 m, 29 kl. 1->2 0,41 -> 0,84 m); na nakładkach to ruch do miejsca dłoni w oryginale (kier. 3 w 24/1, kier. 0 w 29/2), nie przypadkowe położenie za koniem.

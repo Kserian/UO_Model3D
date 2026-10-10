@@ -125,3 +125,4 @@ Pułapki: `os._exit(0)` bez `sys.stdout.flush()` gubi wydruk; Cloth pin nie widz
 Otwarte: szeroki rozkloszowany dół w biegu z profilu (cena zakrycia wykroku), symulacja 0,7 s/klatkę.
 
 Sesja 20, ciąg dalszy (2026-10-10, „ma się pokrywać idealnie”): skala zmierzona i optymalna (każde skalowanie pogarsza), 91% różnic to obwódka 1 px; druga runda dopasowania rąk (31 klatek, 23 wgrane, w tym jazda z maską konia): ciało 0,8934 -> 0,8947, błędy ≥ 2 px 3746 -> 3282, `test_items` 0,720. Szczegóły: `docs/qa/arm_poses.md`, „Runda 2”. Kolejne rundy w toku (`EDGE_W`).
+Runda 3 (`EDGE_W`, `--torso 2` dla akcji 21): 26 klatek, ciało 0,8958, błędy ≥ 2 px 2888 (start 3746), `test_items` 0,721, `test_canvas` OK; 25/0 wycofana (1 px cieniowania w `test_canvas`). Pozostało 20 klatek z ≥ 40 px błędu (w tym 17 kl. 3-5, symetria). Szczegóły: `docs/qa/arm_poses.md`, „Runda 3”.
