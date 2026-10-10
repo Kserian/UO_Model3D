@@ -123,3 +123,5 @@ Co zmieniłem:
 Wynik (35 akcji, 1050 klatek): skóra tułowia przez szatę 0 px; ręce 1,8 px na klatkę (nadgarstki przy mankiecie); nogi: tylko stopy pod rąbkiem (0,15 m) i nogi jeźdźca; `item_clearance` 0,012% / 0,18% / 13 mm. `test_items` 0,719, `run_qa.py` bez zmian.
 Pułapki: `os._exit(0)` bez `sys.stdout.flush()` gubi wydruk; Cloth pin nie widzi zmian siatki z handlera klatki (tylko deformację z animacji / modyfikatorów); model z symulatora bywa zestawem stykających się paneli: każda deformacja liczona po siatce rozsuwa szwy.
 Otwarte: szeroki rozkloszowany dół w biegu z profilu (cena zakrycia wykroku), symulacja 0,7 s/klatkę.
+
+Sesja 20, ciąg dalszy (2026-10-10, „ma się pokrywać idealnie”): skala zmierzona i optymalna (każde skalowanie pogarsza), 91% różnic to obwódka 1 px; druga runda dopasowania rąk (31 klatek, 23 wgrane, w tym jazda z maską konia): ciało 0,8934 -> 0,8947, błędy ≥ 2 px 3746 -> 3282, `test_items` 0,720. Szczegóły: `docs/qa/arm_poses.md`, „Runda 2”. Kolejne rundy w toku (`EDGE_W`).

@@ -34,3 +34,13 @@ Nie ruszone: akcja 17 (symetria rąk to decyzja użytkownika, kl. 3-5 nadal maj�
 
 ## Czego sylwetka nie rozstrzyga
 Przy leżącej postaci zgięcie łokcia i kierunek przedramienia w kierunku patrzenia są niejednoznaczne; dopasowania dają zysk 0,01-0,03 IoU na klatkę, nie rozwiązanie „idealne” (kl. 4 akcji 21 nadal ma 299 px niezgodności ręki, kl. 5 265 px). Jeśli użytkownik widzi w konkretnej klatce i kierunku inne ułożenie, trzeba je ustawić ręcznie wg tej klatki (narzędzia: `action_overlay.py`, `arm_joint_fit.py --frame`).
+
+## Runda 2 (2026-10-10, prośba użytkownika: „model ma się pokrywać idealnie”)
+Najpierw sprawdzona skala (1050 klatek, skalowanie maski modelu wokół zaczepu): obecny model 0,894; ×0,98 / ×1,02 0,862 / 0,872; sama szerokość ×0,97 / ×1,03 0,890 / 0,891; sama wysokość ×0,98 / ×1,02 0,862 / 0,872; najlepsza skala per klatka 0,895. Powierzchnia modelu / sprite'a 1,004. **Skala jest optymalna, przeskalowanie pogarsza.**
+Skąd niezgodności: 90,7% pikseli różnicy leży 1 px od krawędzi drugiej sylwetki (obwódka innego renderera, 1 px = 2,8 cm), 7,6% 2 px, 1,6% dalej; po pominięciu obwódki 1 px IoU = 0,990. Prawdziwe błędy pozy (≥ 2 px): 3746 px w 1050 klatkach, w 34 klatkach ≥ 40 px (suma 5 kierunków), głównie ręce (dłoń / przedramię / ramię 2656 z 3746), w jeździe (23-29) ok. 40%.
+Zmiany w `arm_joint_fit.py`: maska konia w koszcie (jazda), `TOP_W`, `EDGE_W` (kara za piksele ≥ 2 px), powrót do klucza gdy żaden start nie jest lepszy (wcześniej `x = 0` prostował przedramię).
+Kryterium wgrania klatki: IoU klatki rośnie **i** liczba pikseli ≥ 2 px nie rośnie. Akcja 17 pominięta (symetria rąk, decyzja użytkownika).
+Wynik: 31 klatek dopasowanych, 23 wgrane (9 kl. 2, 6; 14 kl. 4, 6; 16 kl. 4; 18 kl. 2; 21 kl. 5; 22 kl. 4; 23 kl. 0, 2; 24 kl. 1-4; 26 kl. 0, 3; 28 kl. 1, 6; 29 kl. 0-3; 34 kl. 0), odrzucone 9/5, 18/5, 21/1, 21/4, 23/3.
+Najwięcej: 9/2 błędy ≥ 2 px 43 -> 5, 16/4 43 -> 6, 18/2 46 -> 13, 23/2 42 -> 13, 28/1 42 -> 11, 34/0 59 -> 23, 29/1 167 -> 95.
+Ciało 1050 klatek IoU 0,8934 -> **0,8947**, błędy ≥ 2 px 3746 -> **3282**; akcje: 29 0,8194 -> 0,8295, 26 0,8564 -> 0,8647, 23 0,8577 -> 0,8644, 24 0,8587 -> 0,8648, 34 0,9079 -> 0,9122, 9 0,8843 -> 0,8875 (`body_parts_after_arms2.json`); `test_items` 0,720 (`items_after_arms2.json`), `test_canvas` 16/16 OK.
+Dalej: runda 3 z `EDGE_W = 1`, zgięcie łokcia do 145°, na 34 klatkach z ≥ 30 px błędu.
