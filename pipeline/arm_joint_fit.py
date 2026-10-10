@@ -1,8 +1,8 @@
-"""Joint fit of BOTH arms (clavicle, upper arm, forearm hinge + twist, hand) and optionally the upper torso (spine / chest free rotation) of one frame of a UO action against the
+"""Joint fit of BOTH arms (clavicle, upper arm, forearm hinge + twist, hand) and optionally the upper torso (spine / chest free rotation; --torso 2: also pelvis rotation + location, thighs, shins) of one frame of a UO action against the
 ORIGINAL body frames, 5 directions at once. Unlike arm_sym_fit.py the arms are independent (death / fall actions are not symmetric) and unlike arm_grid.py / arm_refit.py the
 other arm is fitted too (a fit of one arm with the other one wrong only moves the error).
 
-    python arm_joint_fit.py IN.blend OUT.json --action 21 --frame 4 [--torso 0|1] [--flex 145] (env NRAND, MAXFEV, TORSO_PRIOR, TOP_W, EDGE_W); mounted frames: the horse hides the body as in body_part_raster.py
+    python arm_joint_fit.py IN.blend OUT.json --action 21 --frame 4 [--torso 0|1|2] [--flex 145] (env NRAND, MAXFEV, TORSO_PRIOR, TOP_W, EDGE_W); mounted frames: the horse hides the body as in body_part_raster.py
     python arm_sym_fit.py IN.blend OUT.blend --action 21 --apply a.json,b.json                 (writes the keys, same layout; save with bpy 4.2)
 
 Objective: as arm_sym_fit.py (1 - IoU whole + above TOP rows, mean of 5 directions) + small priors (elbow flex 0..FLEX, rotations near the key); starts: the key, the key with
@@ -78,7 +78,10 @@ def main():
         return c / 5
 
     key = {(b, s): Quaternion(P["%s.%s" % (b, s)].rotation_quaternion) for b in CHAIN for s in "LR"}
-    tkey = {b: Quaternion(P[b].rotation_quaternion) for b in ("spine", "chest")}
+    TB = ("spine", "chest") + (("pelvis", "thigh.L", "thigh.R", "shin.L", "shin.R") if torso == 2 else ())
+    tkey = {b: Quaternion(P[b].rotation_quaternion) for b in TB}
+    ploc0 = Vector(P["pelvis"].location)
+    NT = 0 if not torso else 3 * len(TB) + (3 if torso == 2 else 0)
     old = {n: [list(P[n].rotation_quaternion), list(P[n].scale), list(P[n].location)] for n in P.keys()}
     NA = 11
 
@@ -93,7 +96,8 @@ def main():
         return 5 * max(0, x[3] - FLEX) + 5 * max(0, -x[3]) + 0.004 * float(np.sum(np.square(x[[0, 1, 2, 5, 6, 7]]))) + 0.01 * x[4] ** 2 + 0.02 * float(np.sum(np.square(x[8:11])))
 
     def settorso(x):
-        for k, b in enumerate(("spine", "chest")): P[b].rotation_quaternion = tkey[b] @ rotvec(x[3 * k:3 * k + 3])
+        for k, b in enumerate(TB): P[b].rotation_quaternion = tkey[b] @ rotvec(x[3 * k:3 * k + 3])
+        if torso == 2: P["pelvis"].location = ploc0 + Vector(x[3 * len(TB):3 * len(TB) + 3])     # bone-local units, small
 
     def f_side(x, s):
         setarm(s, x); return cost() + pen_arm(x)
@@ -126,18 +130,19 @@ def main():
     best = None
     for i in range(2):
         for j in range(2):
-            x0 = np.r_[xs["L"][i][1], xs["R"][j][1], np.zeros(6 if torso else 0)]
+            x0 = np.r_[xs["L"][i][1], xs["R"][j][1], np.zeros(NT)]
             r = minimize(f_all, x0, method="Powell", options={"xtol": 1e-2, "ftol": 1e-4, "maxfev": 2 * MAXFEV})
             print(" joint", i, j, "cost %.4f" % r.fun, flush=True)
             if best is None or r.fun < best.fun: best = r
     f_all(best.x)
     if best.fun > c_old:                 # never worse than the key: keep it (x = 0 is not the key: the forearm is set absolutely)
-        for n_, (q, s_, l) in old.items(): P[n_].rotation_quaternion = q
+        for n_, (q, s_, l) in old.items(): P[n_].rotation_quaternion = q; P[n_].location = l
     c_new = cost()
     chg = {}
     for n_, (q, s_, l) in old.items():
         qn, sn, ln = list(P[n_].rotation_quaternion), list(P[n_].scale), list(P[n_].location)
-        if np.abs(np.array(qn) - q).max() > 1e-9: chg[n_] = {"rotation_quaternion": qn}
+        if np.abs(np.array(qn) - q).max() > 1e-9: chg.setdefault(n_, {})["rotation_quaternion"] = qn
+        if np.abs(np.array(ln) - l).max() > 1e-9: chg.setdefault(n_, {})["location"] = ln
     el = {s: float(np.degrees(best.x[k * NA + 3])) for k, s in enumerate("LR")}
     print("FRAME", frame, "cost old %.4f -> fitted %.4f, elbows L %.0f R %.0f" % (c_old, c_new, el["L"], el["R"]), flush=True)
     json.dump({"action": aid, "frame": frame, "torso": torso, "cost_old": c_old, "cost_fit": c_new, "elbow_deg": el, "channels": chg}, open(out, "w"), indent=1)
