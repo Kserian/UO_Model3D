@@ -2,7 +2,7 @@
 ORIGINAL body frames, 5 directions at once. Unlike arm_sym_fit.py the arms are independent (death / fall actions are not symmetric) and unlike arm_grid.py / arm_refit.py the
 other arm is fitted too (a fit of one arm with the other one wrong only moves the error).
 
-    python arm_joint_fit.py IN.blend OUT.json --action 21 --frame 4 [--torso 0|1] [--flex 145] (env NRAND, MAXFEV, TORSO_PRIOR, TOP_W); mounted frames: the horse hides the body as in body_part_raster.py
+    python arm_joint_fit.py IN.blend OUT.json --action 21 --frame 4 [--torso 0|1] [--flex 145] (env NRAND, MAXFEV, TORSO_PRIOR, TOP_W, EDGE_W); mounted frames: the horse hides the body as in body_part_raster.py
     python arm_sym_fit.py IN.blend OUT.blend --action 21 --apply a.json,b.json                 (writes the keys, same layout; save with bpy 4.2)
 
 Objective: as arm_sym_fit.py (1 - IoU whole + above TOP rows, mean of 5 directions) + small priors (elbow flex 0..FLEX, rotations near the key); starts: the key, the key with
@@ -13,13 +13,15 @@ import numpy as np
 import bpy
 from mathutils import Quaternion, Vector, Matrix
 from scipy.optimize import minimize
+from scipy.ndimage import distance_transform_edt
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from body_part_raster import raster, CW, CH, CANCH, STEP
 from arm_refit import setup, ROOT, TOP, rotvec
 
 NRAND, MAXFEV = int(os.environ.get("NRAND", 6)), int(os.environ.get("MAXFEV", 1500))
-TOP_W = float(os.environ.get("TOP_W", 1.0))           # weight of the rows above the shoulder line (arm_refit.py: 1.0)
+TOP_W = float(os.environ.get("TOP_W", 1.0))            # weight of the rows above the shoulder line (arm_refit.py: 1.0)
+EDGE_W = float(os.environ.get("EDGE_W", 0.0))          # extra weight of the >= 2 px errors (round 2 of docs/qa/arm_poses.md)
 CHAIN = ["clavicle", "upper_arm", "forearm", "hand"]
 
 
@@ -69,6 +71,9 @@ def main():
                 lab[(hl >= 0) & (hd < depth) & HM[d]] = -1
             s, b = lab >= 0, ORIG[d]
             c += 1 - (s & b).sum() / max((s | b).sum(), 1)
+            if EDGE_W:                                  # pixels off by >= 2 px from the other silhouette (pose errors, not the 1-px outline)
+                dd = np.where(s & ~b, distance_transform_edt(~b), distance_transform_edt(~s))
+                c += EDGE_W * ((s ^ b) & (dd >= 2)).sum() / max((s | b).sum(), 1)
             s, b = s[:TOP], b[:TOP]; c += TOP_W * (1 - (s & b).sum() / max((s | b).sum(), 1))
         return c / 5
 
