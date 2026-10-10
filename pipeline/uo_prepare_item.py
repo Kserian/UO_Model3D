@@ -16,6 +16,9 @@ KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, he
 AUTOFIT = True        # first uo_autofit_item.py: units, size and place from the skin the slot covers (False: the item already stands where it should)
 DENSIFY = True        # False: keep the mesh as it is
 FIT = True            # False: skip uo_fit_item.py (the item already sits right)
+HEM = None            # m: a robe / skirt that is longer than the body (made on a taller mannequin) has its part below HEM_FROM shortened (uniformly, folds and embroidery squeezed) so that the hem lands this high above the ground
+                      # (the original robes end at 0.0-0.2 m; a hem below the ground would hang under the feet of the sprite). None = leave. Recipe: "prepare": {"HEM": 0.02}
+HEM_FROM = 0.70       # m: the shortening starts here (the sleeves of the model end above it)
 PART = None           # skin weights of uo_bind_item.py: None = those of the slot (SLOTS below); e.g. "torso" for a cuirass whose pauldrons are a separate part (stays on pelvis / spine / chest / neck, does not stretch with the arms)
 
 # KIND -> (PART of uo_bind_item.py, densify?, class). class: "tight" (cloth / leather close to the skin), "hard" (armour, thick: keeps its distance, 3 cm),
@@ -70,6 +73,20 @@ if AUTOFIT and not _scipy:
     print("uo_prepare_item: scipy is not installed in this Python: no fit to the skin (uo_autofit_item.py); the item stays where uo_import_item.py put it")
 elif AUTOFIT:
     run("uo_autofit_item.py", KIND=KIND)
+if HEM is not None:                                   # after the autofit the mesh holds world coordinates (the object's own transform is the identity)
+    import numpy as np
+    _obs = [o for o in bpy.context.selected_objects if o.type == "MESH" and o.name != "UO_Body"]
+    _co = {o: np.empty(len(o.data.vertices) * 3, np.float32) for o in _obs}
+    for o in _obs:
+        o.data.vertices.foreach_get("co", _co[o])
+    _zmin = float(min(c[2::3].min() for c in _co.values()))
+    if _zmin < HEM - 1e-3:
+        _k = (HEM_FROM - HEM) / (HEM_FROM - _zmin)
+        for o, c in _co.items():
+            z = c[2::3]; low = z < HEM_FROM
+            z[low] = HEM_FROM - (HEM_FROM - z[low]) * _k
+            o.data.vertices.foreach_set("co", c); o.data.update()
+        print("uo_prepare_item: HEM: the part below %.2f m shortened x%.2f, the hem was at %.3f m, now %.3f m" % (HEM_FROM, _k, _zmin, HEM))
 if DENSIFY and _dens:
     run("uo_densify_item.py", KIND=KIND)
 if FIT:

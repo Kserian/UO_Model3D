@@ -111,3 +111,15 @@ Zrobione: ranking klatek wg niezgodności ręki (`arm_mismatch.py`), nakładki (
 21 kl. 2-5 (0,8516 -> 0,8633), 22 kl. 1-5 (0,8578 -> 0,8686), 9 kl. 1/4/5/6 (0,8762 -> 0,8843), 18 kl. 4-5, 14 kl. 6, 30 kl. 3. Ciało 1050 klatek 0,8922 -> 0,8934, `test_items` 0,719 (było 0,718), `test_canvas` OK.
 Zmieniony binarny: `model/UO_Body_0x190.blend` (klucze tych akcji; osadzone skrypty bez zmian). Poprzedni stan: commit `e9544f6`.
 Otwarte: klatki 1 i 4-5 akcji 21 nadal z niezgodnością ręki 265-320 px (sylwetka nie rozstrzyga zgięcia łokcia), akcja 17 kl. 3-5 (symetria rąk, decyzja użytkownika), jazda 23-29 (dopasowanie nie zna maski konia), barki / tułów w innych akcjach nieprzeglądane osobno. Reguła z tej sesji: dopasowanie robić obiema rękami naraz, wdrażać klatkę tylko gdy IoU nie spada.
+
+## Sesja 21 (2026-10-09/10): czarna szata z symulatora tkaniny, Blender 5.2 (`docs/qa/robe_black.md`)
+Zlecenie: pobrać model użytkownika (Google Drive, `.glb`, licencja nieznana, poza repo), zbudować środowisko na Blenderze 5.2+, dopasować i zanimować szatę bez przebić ciała, materiał ma się ruszać naturalnie, nogi nie mogą przebijać. Po pierwszej wersji uwagi: za duża, nie widać dłoni, stopy przebijają w biegu, rękawy rozdarte przy pachach; wolno skalować części.
+Przepis: `docs/qa/robe_black_recipe.json`. Środowisko: Python 3.13 + `bpy==5.2.2` (potok przedmiotów działa); model synchronizowany nadal w `bpy 4.2`.
+Co zmieniłem:
+- `uo_cloth_sim.py`: **symulacja z sesji 16 nie trzymała celu** (pin zostawał na celu pierwszej klatki; zmierzone w bpy 4.2 i 5.2). Cel = klucze kształtu animowane krzywymi F; `thick` 0,02; `in_max` 0,01 m (tkanina poniżej pasa nie cofa się do osi miednicy: stopa nie wychodzi przez rąbek w biegu); rękawy z `uo_region` przedmiotu `conform`; `bpy_compat.action_fcurves`.
+- `uo_import_item.py`: `OUTER_SHELL` (warstwa zewnętrzna zamkniętej bryły ubrania), `OUTER_REMESH` (remesh wokselowy: 284 panele -> 1 powłoka, szwy nie pękają), `BAKE_TEXTURE` (nowe UV + tekstura wypalona z oryginału), `WELD` 1e-6 przed decymacją (domyślnie).
+- `uo_prepare_item.py` `HEM` (skrócenie szaty dłuższej od ciała), `uo_conform_item.py` `SPACE_SMOOTH` (przesunięcie owinięcia uśrednione w przestrzeni) i `FINAL_ITERS` 40 (wypchnięcie także z ręki od kości), `uo_bind_item.py` `CLOTH_*` w osobnych liniach, `item_skin_check.py` liczy też nogi.
+- `model/UO_Body_0x190.blend`: wgrane tylko `uo_bind_item.py`, `uo_import_item.py`, `uo_prepare_item.py` (bpy 4.2).
+Wynik (35 akcji, 1050 klatek): skóra tułowia przez szatę 0 px; ręce 1,8 px na klatkę (nadgarstki przy mankiecie); nogi: tylko stopy pod rąbkiem (0,15 m) i nogi jeźdźca; `item_clearance` 0,012% / 0,18% / 13 mm. `test_items` 0,719, `run_qa.py` bez zmian.
+Pułapki: `os._exit(0)` bez `sys.stdout.flush()` gubi wydruk; Cloth pin nie widzi zmian siatki z handlera klatki (tylko deformację z animacji / modyfikatorów); model z symulatora bywa zestawem stykających się paneli: każda deformacja liczona po siatce rozsuwa szwy.
+Otwarte: szeroki rozkloszowany dół w biegu z profilu (cena zakrycia wykroku), symulacja 0,7 s/klatkę.

@@ -230,8 +230,10 @@ def bind(ob, allowed):
 CLOTH_PARTS = ("robe", "skirt", "cloak")
 LEG_BONES = ("thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R")
 CLOTH_DROP = 1.0                           # m of radius the hem may narrow per m of height below a push (0 = hangs straight down from it, larger = tapers back in sooner)
-CLOTH_MARGIN_SHORT, CLOTH_KAPPA_SHORT = 0.02, 0.5   # a garment that ends at the knee or above (kilt, short skirt): only the thighs push it, and less (robe_calib.py on the originals 455, 971)
-CLOTH_MARGIN, CLOTH_KAPPA = 0.05, 0.8      # a long robe (hem below 0.15 m); between 0.15 and 0.30 m of hem height the values blend into the short ones; how far past the legs the hem goes, how much of the way to the legs the cloth is pushed (robe_calib.py: best of the sweep on robe 469)
+CLOTH_MARGIN_SHORT = 0.02
+CLOTH_KAPPA_SHORT = 0.5                    # a garment that ends at the knee or above (kilt, short skirt): only the thighs push it, and less (robe_calib.py on the originals 455, 971)
+CLOTH_MARGIN = 0.05                        # a long robe (settings on separate lines: a recipe overrides them by name, "tune": {"uo_bind_item.py": {"CLOTH_KAPPA": 1.0}})
+CLOTH_KAPPA = 0.8                          # a long robe (hem below 0.15 m); between 0.15 and 0.30 m of hem height the values blend into the short ones; how far past the legs the hem goes, how much of the way to the legs the cloth is pushed (robe_calib.py: best of the sweep on robe 469)
 
 
 def mark_cloak(ob):

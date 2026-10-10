@@ -54,6 +54,10 @@ SETTLE_ITERS = 200    # passes after the wrap that only keep the item out of the
 STRETCH = 1.25        # the most an edge may be stretched against the model while it is wrapped
 WRAP_FLATTEN = 0.2    # share of the smoothing across the surface (0 = only along it)
 WRAP_STEP = 0.01      # m: the most a vertex moves in one pass (the smoothing keeps up: no vertex flies off on its own)
+SPACE_SMOOTH = 0.0    # m: > 0 = the move of the wrap is averaged over everything within this distance in SPACE (not along the mesh): a model of separate overlapping panels (a closure of two
+                      # flaps, knots on it, a stand-up collar: the robe of docs/qa/robe_black.md) moves as one piece, its panels do not cut through each other and open holes
+SPACE_PASSES = 2      # passes of that averaging
+FINAL_ITERS = 40      # passes of the last push out of the skin (to 0.9 GAP; inside an arm away from its bone)
 REGIONS = ("torso", "arm.L", "arm.R", "leg.L", "leg.R")
 CLOTH_MARGIN_SHORT, CLOTH_KAPPA_SHORT, CLOTH_MARGIN, CLOTH_KAPPA, CLOTH_DROP = 0.02, 0.5, 0.05, 0.8, 1.0   # uo_bind_item.py mark_cloth
 
@@ -344,12 +348,27 @@ def main():
         sd = nearest(bvh_col, Xs, 0.5)[3]
         print("uo_conform_item: %s: wrapped (%d passes): stand-off minus target p50 %.1f p90 %.1f max %.1f mm; edge length / model's p01 %.2f p99 %.2f max %.2f" % (
             o.name, WRAP_ITERS, *(1000 * np.percentile(sd - h, [50, 90, 100])), *np.percentile(r1, [1, 99, 100])), flush=True)
-        for it in range(10):                                            # what the blend or a concave spot (armpit, crotch) brought too close: out to GAP
+        if SPACE_SMOOTH > 0:                                            # the move of the wrap averaged in space: overlapping panels (flaps, knots, collar) move together
+            from scipy.spatial import cKDTree
+            from scipy.sparse import coo_matrix
+            pr = cKDTree(X).query_pairs(SPACE_SMOOTH, output_type="ndarray")
+            dd = np.linalg.norm(X[pr[:, 0]] - X[pr[:, 1]], axis=1); wk = np.exp(-(dd / (0.5 * SPACE_SMOOTH)) ** 2)
+            K = coo_matrix((np.r_[wk, wk, np.ones(n)], (np.r_[pr[:, 0], pr[:, 1], np.arange(n)], np.r_[pr[:, 1], pr[:, 0], np.arange(n)])), shape=(n, n)).tocsr()
+            ks = np.asarray(K.sum(1)).ravel()
+            D = Xs - X
+            for _ in range(SPACE_PASSES):
+                D = (K @ D) / ks[:, None]
+            Xs = X + D
+            print("uo_conform_item: %s: the wrap's move averaged over %.0f mm in space (%d passes, %.0f neighbours per vertex)" % (o.name, 1000 * SPACE_SMOOTH, SPACE_PASSES, 2 * len(pr) / n), flush=True)
+        for it in range(FINAL_ITERS):                                   # what the blend or a concave spot (armpit, crotch) brought too close: out to GAP
             _, nr2, _, S1 = nearest(bvh_any, Xs, 0.3)
+            nr2 = np.where((S1 < 0)[:, None], limb_out(Xs, nr2), nr2)    # inside an arm: straight away from its bone
             need = np.clip(GAP * 0.9 - S1, 0, None)
             if need.max() < 5e-4:
                 break
             Xs = Xs + G.smooth(need[:, None] * nr2, 2) + need[:, None] * nr2
+        S1 = nearest(bvh_any, Xs, 0.3)[3]
+        print("uo_conform_item: %s: after the last push (%d passes): %d vertices inside the skin, deepest %.1f mm" % (o.name, it + 1, int((S1 < 0).sum()), -1000 * min(S1.min(), 0)), flush=True)
         X1 = Xs
         S1 = nearest(bvh_any, X1, 0.3)[3]
         print("uo_conform_item: %s: %d vertices; shell %.0f mm + looseness / folds: stand-off p50 %.1f / p90 %.1f / max %.1f cm (model %.1f / %.1f / %.1f), min %.1f mm%s" % (
