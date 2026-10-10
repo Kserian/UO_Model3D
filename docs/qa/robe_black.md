@@ -66,6 +66,10 @@ Skąd dziury (13 zgłoszonych akcji, 395 klatek, przed: ręka 303, tułów 163, 
 - **rękaw zasłaniał dłoń** (Stand kier. 0): oba rękawy kończyły się 9 cm za nadgarstkiem. `uo_conform_item.py` **`SLEEVE_END`** 0,02 m (ostatnie 25 cm rękawu ściśnięte wzdłuż ręki): dłonie widać.
 - **złoty haft rąbka niepełny**: haft w kwiaty na ciemnym tle; na szarej tkaninie przerwy rozbijają pas. `uo_materials.py` **`GREY_CLOTH`** z `fill` 0,04 m (przerwy w złocie domknięte złotem w przestrzeni tekstury).
 Na 6 akcjach podglądu (205 klatek): ręka 164 -> 39, tułów 65 -> 11, nogi 520 -> 34 px.
+**Wszystkie 35 akcji (1050 klatek), `item_body_holes.py`, przed -> po: ręka 753 -> 152, tułów 300 -> 64, nogi 1447 -> 423 px, klatek z wadą 636 -> 317.** Reszta: stopy pod rąbkiem
+(na koniu 49-50 px na akcję, zgodnie z modelem: szata kończy się nad stopą) i 1-3 px nadgarstka przy dłoni na wodzach. Zgłoszone klatki po zmianie: nogi 0 we wszystkich (zgłoszenia 2-6, 12, 15),
+ręka / tułów 0-2 px. `item_clearance.py`: 0,011% / 0,11% / 13 mm (było 0,012% / 0,18%). Przebudowa na aktualnym modelu (`5127dec`, nowe pozy rąk 23 klatek innej sesji).
+Ciemne piksele przy dłoniach to wnętrze rękawa dzwonowego widoczne przez mankiet (cień w środku tkaniny), nie obrys: osobny obrys dla wewnętrznych brzegów nic nie zmienił, nie wdrożony.
 
 ## Kolor: szarość jak zwykła szata UO, złoto zostaje
 Oryginał 469 (akcje 0, 1, 2, 4, 9, 16): tkanina nasycenie 0, jasność p5 / p25 / p50 / p75 / p95 = 74 / 115 / 139 / 156 / 180, krawędź / wnętrze 0,29. Szata była czarna (mediana 32).
