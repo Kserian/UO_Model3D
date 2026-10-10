@@ -133,6 +133,8 @@ Przyczyny i zmiany (domyślnie wyłączone, przepis szaty je włącza): `render_
 Wynik (35 akcji): ręka 753 -> 152, tułów 300 -> 64, nogi 1447 -> 423 px (reszta: stopy pod rąbkiem i nadgarstki na koniu). QA (bpy 4.2): `test_items` 0,719, `run_qa` OK. Model: wgrane `render_uo_layer.py`, `uo_materials.py`. Szata nie jest w repo.
 Otwarte: wnętrze rękawa dzwonowego ciemne przy dłoniach; nadgarstek 1-3 px w jeździe; pełne `.vd` ok. 40 min (symulacja 22 min).
 
+Runda 3 (`EDGE_W`, `--torso 2` dla akcji 21): 26 klatek, ciało 0,8958, błędy ≥ 2 px 2888 (start 3746), `test_items` 0,721, `test_canvas` OK; 25/0 wycofana (1 px cieniowania w `test_canvas`). Pozostało 20 klatek z ≥ 40 px błędu (w tym 17 kl. 3-5, symetria). Szczegóły: `docs/qa/arm_poses.md`, „Runda 3”.
+
 ## Sesja 21, trzecia runda (2026-10-10): złoty pas rąbka (`docs/qa/robe_black.md`, „Złoty pas rąbka”)
 Złoto na dole znikało przy nogach: środkowe panele modelu (tył, przód w rozcięciu) nie mają haftu. `uo_prepare_item.py` `HEM_BAND`: pas złota nad lokalnym rąbkiem dookoła, bez wycięcia z przodu (decyzja użytkownika),
 atrybut `uo_hem_band` + mieszanie w materiale. Złoto w dolnych 3 px sylwetki 0,727 -> 0,811, dziury bez zmian. `uo_make_item.py` przepuszcza słownikowe ustawienia `prepare`. Model: wgrany `uo_prepare_item.py`. QA (bpy 4.2): `run_qa` OK, `test_items` 0,720.
