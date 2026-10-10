@@ -5,7 +5,7 @@ i złotym haftem; pod spodem panel tuniki. Jedna siatka: 616 278 wierzchołków,
 Zlecenie: zbudować środowisko na Blenderze 5.2+, dopasować szatę do postaci i zanimować; żadnych przebić ciała, materiał ma się ruszać naturalnie, nogi nie mogą przebijać szaty.
 Po pierwszej wersji (uwagi użytkownika): szata za duża, nie widać dłoni, stopy przebijają w biegu, rękawy rozdarte przy pachach. Wolno częściowo skalować elementy szaty.
 
-Przepis (`--preview` = 6 akcji, `--vd` = wszystkie 35):
+Przepis `docs/qa/robe_black_recipe.json` (z katalogu z `robe_black.glb`; `--preview` = 6 akcji ok. 19 min, `--vd` = wszystkie 35 ok. 44 min: symulacja 177 klatek 26 min w 4 procesach, render):
 ```
 {"name": "robe_black", "file": "robe_black.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000,
  "prepare": {"HEM": 0.15},
@@ -40,4 +40,24 @@ Plik `model/UO_Body_0x190.blend` nadal zapisujemy `bpy 4.2` (`sync_blend_scripts
 | fit + `stretch`, symulacja naprawiona, `HEM` | 157 | 36 | 930 |
 | `conform` na ciągłej powłoce (t4), symulacja bez `in_max` | 478 | 0 | 1108 |
 
-(końcowe liczby: niżej)
+| **końcowa** (`outer_shell` 0,006 + `conform` + `SPACE_SMOOTH` + symulacja z `in_max`), te same 6 akcji | 395 | **0** | 863 |
+| **końcowa, wszystkie 35 akcji (1050 klatek)** | 1845 (1,8 px na klatkę) | **0** | 4353 |
+
+Gdzie są te piksele (arkusze `--sheet`): ręce = nadgarstek przy mankiecie obok dłoni (rękaw kończy się nad dłonią, dłonie widać); nogi = stopy pod rąbkiem (rąbek na 0,15 m, jak w oryginałach),
+nogi jeźdźca w akcjach konnych (szata leży na udach, stopy wystają) i nogi w upadkach. Stopy przez spódnicę w biegu (widoczne w pierwszej wersji): brak.
+`item_clearance.py` (35 akcji, 210 klatek, po pchnięciu renderu): materiał w skórze własnej strefy średnio 0,012% wierzchołków, najgorsza klatka 0,18%, najgłębiej 13 mm; w nogach 0,00%;
+dłonie / głowa 0,01%; rozciągnięcie krawędzi p99 3,72 (skóra 2,83). Dla porównania tunika Jedi: 0,03% / 0,33% / 29 mm.
+Owinięcie w spoczynku: po nim 0 wierzchołków w skórze (było 23, najgłębiej 64,8 mm przy 284 panelach), odstęp od skóry p50 / p90 5,7 / 15,3 cm (model 6,6 / 15,3).
+Regresja repo (bpy 4.2): `test_items` 0,719, `run_qa.py` (canvas 16/16, autofit 13,6 mm, szata 0,757, peleryna 0,508, materiały, import) bez zmian.
+
+## Odrzucone (zmierzone, nie powtarzać)
+- Zwykły `fit` z `stretch` 1,2 / 1,15: zakrywa ciało, ale szata wychodzi za duża (bufiaste barki), rękawy zasłaniają dłonie; użytkownik odrzucił.
+- `CLOTH_KAPPA` 1,0 bez ograniczenia `in_max`: kinematycznie nogi zakryte, ale symulowany rąbek zostaje w tyle i stopa wychodzi przez spódnicę w biegu.
+- `arm_goal` 0,7 dla rękawów `conform`: rękawy dzwonowe marszczą się na ręce w biegu; 0,95 gładkie.
+- Sklejanie szwów po odległości (`remove_doubles` 0,5-4 mm): szczeliny między panelami mają medianę ok. 1 cm, sklejanie zjada gęstą siatkę zanim zszyje panele; remesh wokselowy zlewa je w 2 s.
+- Grubsza kolizja z `dist` 0,02 (nie tylko `thick`): bieg 147 zamiast 196 px nóg, ale symulacja 3 razy wolniejsza.
+
+## Otwarte
+- W biegu z profilu szata rozkłada się szeroko (powłoka nóg `kappa` 1,0 pokrywa cały wykrok); węższa = stopy przez materiał.
+- Tekstura po remeshu jest wypalona 2048 px: haft rozmyty (przy 36 px/m niewidoczny).
+- Symulacja kosztuje ok. 0,7 s na klatkę na 24 tys. wierzchołków (pełne `.vd` ok. 44 min).
