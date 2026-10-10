@@ -81,6 +81,17 @@ krawędź / wnętrze 0,43 przy `uo_outline` 0,6 (469: 0,29).
 Obrys: **`uo_outline`** 0,6 (właściwość sceny, zamiast `OUTLINE` 0,38) zmiękcza czarne piksele brzegu; pojedyncze czarne piksele w środku (cienie fałd z tekstury) usuwa `uo_despeckle` 28 (dla tkanin było 0).
 Przepis: nowa sekcja **`"scene"`** w `uo_make_item.py` ustawia właściwości sceny przedmiotu, które czyta renderer.
 
+## Złoty pas rąbka (trzecia runda)
+Uwaga użytkownika: złote zdobienie na dole w wielu miejscach znika przy nogach (Walk Armed kier. 4 kl. 1: środek tyłu). Przyczyna w modelu: **środkowe panele nie mają haftu na dole**
+(z tyłu pas adamaszku ok. 13 cm, z przodu panel tuniki w rozcięciu), a reszta pasa to haft w kwiaty z przerwami; środek wypada między nogami. `fill` domyka tylko przerwy w hafcie.
+Decyzja użytkownika: pas jak obecny haft, na całym obwodzie, **oprócz wycięcia z przodu**.
+Zmiana: `uo_prepare_item.py` **`HEM_BAND`** (przepis `"prepare": {"HEM_BAND": {"height": 0.15, "fade": 0.02, "skip_front": 20, "edge": 5}}`): po `HEM` wysokość każdego wierzchołka nad
+**lokalnym** rąbkiem (najniższy punkt w 36 przedziałach kąta wokół osi spódnicy, wygładzony), waga 1 do `height`, zanik przez `fade`, 0 w ±`skip_front`° od przodu (−Y; krawędzie klap
+ze złotymi listwami leżą przy ±25°); atrybut punktu `uo_hem_band`, w materiale mieszanie ze złotem własnej tekstury (jasne / ciemne złoto p20 / p80, plamki szumem jak haft; tekstele już złote zostają).
+Wysokość z podglądu 3D w spoczynku: obecny haft sięga ok. 0,15-0,18 m nad rąbek (po `HEM` x0,64). `uo_make_item.py` przepuszcza teraz ustawienia `prepare` będące słownikiem (`HEM_BAND`).
+Pomiar (35 akcji, udział złotych pikseli w dolnych 3 px każdej kolumny sylwetki sięgającej rąbka): **0,727 -> 0,811** (np. marsz 0,75 -> 0,87, bieg 0,66 -> 0,77; reszta to celowo szary panel
+w wycięciu, obrys i stopy). `item_body_holes.py` bez zmian: ręka 152, tułów 64, nogi 423 px, klatek z wadą 317.
+
 ## Odrzucone (zmierzone, nie powtarzać)
 - Zwykły `fit` z `stretch` 1,2 / 1,15: zakrywa ciało, ale szata wychodzi za duża (bufiaste barki), rękawy zasłaniają dłonie; użytkownik odrzucił.
 - `CLOTH_KAPPA` 1,0 bez ograniczenia `in_max`: kinematycznie nogi zakryte, ale symulowany rąbek zostaje w tyle i stopa wychodzi przez spódnicę w biegu.
