@@ -309,7 +309,7 @@ def run(script, **over):
 run("uo_import_item.py", **%(imp)r)
 run("uo_materials.py", **%(mat)r)
 prep = %(prep)r
-flat = {k: v for k, v in prep.items() if not isinstance(v, dict)}
+flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}      # settings of uo_prepare_item.py (a dict setting too: HEM_BAND)
 wp = %(weapon)r
 if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))

@@ -8,8 +8,8 @@ Po pierwszej wersji (uwagi użytkownika): szata za duża, nie widać dłoni, sto
 Przepis `docs/qa/robe_black_recipe.json` (z katalogu z `robe_black.glb`; `--preview` = 6 akcji ok. 19 min, `--vd` = wszystkie 35 ok. 44 min: symulacja 177 klatek 26 min w 4 procesach, render):
 ```
 {"name": "robe_black", "file": "robe_black.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000,
- "materials": {"GREY_CLOTH": {"value": 0.6, "contrast": 1.0, "fill": 0.04}},
- "prepare": {"HEM": 0.15},
+ "materials": {"GREY_CLOTH": {"value": 0.6, "contrast": 0.5, "fill": 0.04, "flatten": 0.05}},
+ "prepare": {"HEM": 0.15, "HEM_BAND": {"height": 0.15, "fade": 0.02, "skip_front": 20, "edge": 5}},
  "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02},
  "sim": {"arm_goal": 0.95, "smooth": 0.04},
  "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 28}}
