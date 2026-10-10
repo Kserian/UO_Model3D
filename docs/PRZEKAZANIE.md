@@ -135,4 +135,4 @@ Otwarte: wnętrze rękawa dzwonowego ciemne przy dłoniach; nadgarstek 1-3 px w 
 
 ## Sesja 21, trzecia runda (2026-10-10): złoty pas rąbka (`docs/qa/robe_black.md`, „Złoty pas rąbka”)
 Złoto na dole znikało przy nogach: środkowe panele modelu (tył, przód w rozcięciu) nie mają haftu. `uo_prepare_item.py` `HEM_BAND`: pas złota nad lokalnym rąbkiem dookoła, bez wycięcia z przodu (decyzja użytkownika),
-atrybut `uo_hem_band` + mieszanie w materiale. Złoto w dolnych 3 px sylwetki 0,727 -> 0,811, dziury bez zmian. `uo_make_item.py` przepuszcza słownikowe ustawienia `prepare`. Model: wgrany `uo_prepare_item.py`.
+atrybut `uo_hem_band` + mieszanie w materiale. Złoto w dolnych 3 px sylwetki 0,727 -> 0,811, dziury bez zmian. `uo_make_item.py` przepuszcza słownikowe ustawienia `prepare`. Model: wgrany `uo_prepare_item.py`. QA (bpy 4.2): `run_qa` OK, `test_items` 0,720.
