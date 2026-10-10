@@ -125,4 +125,12 @@ Pułapki: `os._exit(0)` bez `sys.stdout.flush()` gubi wydruk; Cloth pin nie widz
 Otwarte: szeroki rozkloszowany dół w biegu z profilu (cena zakrycia wykroku), symulacja 0,7 s/klatkę.
 
 Sesja 20, ciąg dalszy (2026-10-10, „ma się pokrywać idealnie”): skala zmierzona i optymalna (każde skalowanie pogarsza), 91% różnic to obwódka 1 px; druga runda dopasowania rąk (31 klatek, 23 wgrane, w tym jazda z maską konia): ciało 0,8934 -> 0,8947, błędy ≥ 2 px 3746 -> 3282, `test_items` 0,720. Szczegóły: `docs/qa/arm_poses.md`, „Runda 2”. Kolejne rundy w toku (`EDGE_W`).
+
+## Sesja 21, druga runda (2026-10-10): 21 zgłoszonych klatek, szarość, obrys (`docs/qa/robe_black.md`, „Zgłoszenia użytkownika z klatek”)
+Użytkownik ogląda `clothing.vd` na **oryginalnym `body400.vd`**: przez dziury warstwy widać oryginalne ciało. Nowa miara: `pipeline/item_body_holes.py` (warstwa na oryginalnych klatkach, dziury z etykietą części ciała, arkusze jak w viewerze).
+Przyczyny i zmiany (domyślnie wyłączone, przepis szaty je włącza): `render_uo_layer.py` `HIDE_ERODE` (dłoń / głowa 3D obok oryginału wycinały rękaw i kołnierz), `LEGS_UNDER` (nogi nie zasłaniają długiej szaty; upadki), `uo_outline`;
+`uo_cloth_sim.py` `smooth` (fałdy przechodziły przez siebie -> szczeliny na nogi); `uo_conform_item.py` `SLEEVE_END` (rękawy 9 cm za nadgarstek); `uo_materials.py` `GREY_CLOTH` (szarość jak szata 469, złoto zostaje, `fill`, `flatten` + `contrast` 0,5: bez jaśniejszego pasa z tyłu); `uo_make_item.py` sekcja `"scene"`.
+Wynik (35 akcji): ręka 753 -> 152, tułów 300 -> 64, nogi 1447 -> 423 px (reszta: stopy pod rąbkiem i nadgarstki na koniu). QA (bpy 4.2): `test_items` 0,719, `run_qa` OK. Model: wgrane `render_uo_layer.py`, `uo_materials.py`. Szata nie jest w repo.
+Otwarte: wnętrze rękawa dzwonowego ciemne przy dłoniach; nadgarstek 1-3 px w jeździe; pełne `.vd` ok. 40 min (symulacja 22 min).
+
 Runda 3 (`EDGE_W`, `--torso 2` dla akcji 21): 26 klatek, ciało 0,8958, błędy ≥ 2 px 2888 (start 3746), `test_items` 0,721, `test_canvas` OK; 25/0 wycofana (1 px cieniowania w `test_canvas`). Pozostało 20 klatek z ≥ 40 px błędu (w tym 17 kl. 3-5, symetria). Szczegóły: `docs/qa/arm_poses.md`, „Runda 3”.

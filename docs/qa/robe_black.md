@@ -8,9 +8,11 @@ Po pierwszej wersji (uwagi użytkownika): szata za duża, nie widać dłoni, sto
 Przepis `docs/qa/robe_black_recipe.json` (z katalogu z `robe_black.glb`; `--preview` = 6 akcji ok. 19 min, `--vd` = wszystkie 35 ok. 44 min: symulacja 177 klatek 26 min w 4 procesach, render):
 ```
 {"name": "robe_black", "file": "robe_black.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000,
+ "materials": {"GREY_CLOTH": {"value": 0.6, "contrast": 1.0, "fill": 0.04}},
  "prepare": {"HEM": 0.15},
- "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04},
- "sim": {"arm_goal": 0.95}}
+ "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02},
+ "sim": {"arm_goal": 0.95, "smooth": 0.04},
+ "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 28}}
 ```
 
 ## Środowisko: Blender 5.2
@@ -49,6 +51,35 @@ nogi jeźdźca w akcjach konnych (szata leży na udach, stopy wystają) i nogi w
 dłonie / głowa 0,01%; rozciągnięcie krawędzi p99 3,72 (skóra 2,83). Dla porównania tunika Jedi: 0,03% / 0,33% / 29 mm.
 Owinięcie w spoczynku: po nim 0 wierzchołków w skórze (było 23, najgłębiej 64,8 mm przy 284 panelach), odstęp od skóry p50 / p90 5,7 / 15,3 cm (model 6,6 / 15,3).
 Regresja repo (bpy 4.2): `test_items` 0,719, `run_qa.py` (canvas 16/16, autofit 13,6 mm, szata 0,757, peleryna 0,508, materiały, import) bez zmian.
+
+## Zgłoszenia użytkownika z klatek (21 zgłoszeń, druga runda)
+Użytkownik ogląda `clothing.vd` nałożone na **oryginalne `body400.vd`** (VD Animation Viewer). Tam przez dziury warstwy ubrania widać oryginalne ciało, czego `item_skin_check.py`
+(podgląd 3D) nie łapie. Nowa miara: **`pipeline/item_body_holes.py`**: warstwa `clothing` na oryginalnych klatkach (`client/body_0x190_frames`, zaczepy wyrównane),
+dziura = piksel ciała wewnątrz zamkniętego (2 px) i wypełnionego obrysu przedmiotu, z etykietą części ciała z renderu 3D (dłonie i głowa osobno: dłoń przed szatą
+jest rysowana celowo); arkusz `--sheet akcja:kierunek` jak w viewerze. Odtwarza zgłoszenia (np. Walk Armed kier. 1 kl. 1, 5, 10: noga na dole przodu).
+Skąd dziury (13 zgłoszonych akcji, 395 klatek, przed: ręka 303, tułów 163, nogi 402 px):
+- **ręce i barki: zasłanianie przez dłoń i głowę** (bez dłoni wśród zasłaniających ręka 96, bez głowy tułów 92). Dłoń / głowa 3D stoją 1-2 px obok oryginalnego sprite'a: tam, gdzie wycinają rękaw lub kołnierz, w oryginale jest przedramię lub bark.
+  Zmiana: `render_uo_layer.py` **`HIDE_ERODE`** (właściwość sceny `uo_hide_erode`): obszar, w którym dłoń / głowa zasłania przedmiot, zwężony o 1 px (dłoń tylko przy rękawie, gdy przedmiot ma `uo_region`). 1 px: ręka 303 -> 109, tułów 163 -> 61; 2 px chowało krawędzie dłoni przed szatą.
+- **nogi: szczeliny w spódnicy z symulacji** (bez zasłaniania przez nogi nadal 380 px; bez symulacji Walk Armed 21 zamiast 44): sąsiednie fałdy przesuwają się w symulacji różnie i przechodzą przez siebie.
+  Zmiana: `uo_cloth_sim.py` **`smooth`** 0,04 m (przesunięcie symulacji uśrednione w przestrzeni, 2 przejścia): marsz 44 -> 12, bieg 25 -> 10, czar 51 -> 3 px. `goal` 0,7 (54 px) i samokolizja (77 px, 2x wolniej) gorsze.
+- **nogi w upadkach** (21, 22: 314 / 237 px także bez symulacji): leżąca postać ma nogi skierowane do widza, stopa / goleń 3D przed tkaniną wycina dziurę. Zmiana: **`LEGS_UNDER`** (`uo_legs_under`): nogi nie zasłaniają przedmiotu (długa szata zawsze je kryje): 314 -> 9, 237 -> 5; stopy pod rąbkiem nadal widać.
+- **rękaw zasłaniał dłoń** (Stand kier. 0): oba rękawy kończyły się 9 cm za nadgarstkiem. `uo_conform_item.py` **`SLEEVE_END`** 0,02 m (ostatnie 25 cm rękawu ściśnięte wzdłuż ręki): dłonie widać.
+- **złoty haft rąbka niepełny**: haft w kwiaty na ciemnym tle; na szarej tkaninie przerwy rozbijają pas. `uo_materials.py` **`GREY_CLOTH`** z `fill` 0,04 m (przerwy w złocie domknięte złotem w przestrzeni tekstury).
+Na 6 akcjach podglądu (205 klatek): ręka 164 -> 39, tułów 65 -> 11, nogi 520 -> 34 px.
+**Wszystkie 35 akcji (1050 klatek), `item_body_holes.py`, przed -> po: ręka 753 -> 152, tułów 300 -> 64, nogi 1447 -> 423 px, klatek z wadą 636 -> 317.** Reszta: stopy pod rąbkiem
+(na koniu 49-50 px na akcję, zgodnie z modelem: szata kończy się nad stopą) i 1-3 px nadgarstka przy dłoni na wodzach. Zgłoszone klatki po zmianie: nogi 0 we wszystkich (zgłoszenia 2-6, 12, 15),
+ręka / tułów 0-2 px. `item_clearance.py`: 0,011% / 0,11% / 13 mm (było 0,012% / 0,18%). Przebudowa na aktualnym modelu (`5127dec`, nowe pozy rąk 23 klatek innej sesji).
+Ciemne piksele przy dłoniach to wnętrze rękawa dzwonowego widoczne przez mankiet (cień w środku tkaniny), nie obrys: osobny obrys dla wewnętrznych brzegów nic nie zmienił, nie wdrożony.
+
+## Kolor: szarość jak zwykła szata UO, złoto zostaje
+Oryginał 469 (akcje 0, 1, 2, 4, 9, 16): tkanina nasycenie 0, jasność p5 / p25 / p50 / p75 / p95 = 74 / 115 / 139 / 156 / 180, krawędź / wnętrze 0,29. Szata była czarna (mediana 32).
+`uo_materials.py` **`GREY_CLOTH`** (przepis `"materials"`): piksele tekstury o nasyceniu < 0,25 lub poza odcieniem złota (18-72°) -> szarość, mediana tkaniny na `value`, kontrast tekstury zachowany
+(stosunek do mediany), złoto bez zmian, łagodne przejście; tekstele poza wyspami UV (czarne tło wypalenia) nie liczą się do mediany. Render liniowo zależny od `value`; `value` 0,6 na teksturze 2048 px.
+Uwaga użytkownika: z tyłu (i z przodu) wyróżniał się jaśniejszy pasek, czyli środkowy panel z innej tkaniny (czarny adamaszek na czarnym). Zmiana: `flatten` 0,05 m (szarość liczona względem tkaniny
+dookoła, Gauss w teksturze, zamiast jednej mediany) i `contrast` 0,5 (wzór tkaniny słabszy; fałdy cieniuje światło): pasek znika. Tkanina w renderze (marsz + stanie) p5 / p50 / p95 = 108 / 141 / 160 (469: 74 / 139 / 180),
+krawędź / wnętrze 0,43 przy `uo_outline` 0,6 (469: 0,29).
+Obrys: **`uo_outline`** 0,6 (właściwość sceny, zamiast `OUTLINE` 0,38) zmiękcza czarne piksele brzegu; pojedyncze czarne piksele w środku (cienie fałd z tekstury) usuwa `uo_despeckle` 28 (dla tkanin było 0).
+Przepis: nowa sekcja **`"scene"`** w `uo_make_item.py` ustawia właściwości sceny przedmiotu, które czyta renderer.
 
 ## Odrzucone (zmierzone, nie powtarzać)
 - Zwykły `fit` z `stretch` 1,2 / 1,15: zakrywa ciało, ale szata wychodzi za duża (bufiaste barki), rękawy zasłaniają dłonie; użytkownik odrzucił.
