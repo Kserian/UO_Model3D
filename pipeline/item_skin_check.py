@@ -5,7 +5,7 @@ read as magenta and are left out). The clothing layer cannot show this: there th
     python item_skin_check.py ITEM.blend OUT_DIR [--actions 04_stand,17_spell_area,...] [--sheet 17_spell_area]
 
 Prints per action the arm / torso pixels and the frames with any; --sheet writes OUT_DIR/marked_<action>.png (5 directions x frames, the counted pixels circled:
-black = arm, orange = torso). Torso pixels next to the head (the neck above a collar) do not count; the pelvis under a short hem does (look at the sheet).
+black = arm, orange = torso, blue = leg). Torso pixels next to the head (the neck above a collar) do not count; the pelvis under a short hem does (look at the sheet).
 Runs the render (about 7 min for all actions); OUT_DIR/all/frames is reused when it is there.
 """
 import os, sys, glob, subprocess
@@ -57,6 +57,12 @@ def masks(a):
     return arm, tor
 
 
+def leg_mask(a):
+    """legs (cyan): a robe / skirt hem that ends above the feet shows them legitimately below it, so this is reported apart (arm / torso are what must stay covered)"""
+    r, g, b, al = a[..., 0], a[..., 1], a[..., 2], a[..., 3] > 0
+    return al & (r < 110) & (g > 200) & (b > 200)
+
+
 def main():
     from PIL import Image, ImageDraw
     args = sys.argv[1:]
@@ -72,17 +78,17 @@ def main():
     if not os.path.isdir(os.path.join(out, "all", "frames")):
         subprocess.run([sys.executable, os.path.join(here, "run_render_headless.py"), blend, out, "--pre", os.path.abspath(__file__), 'LAYER="all"', "EXACT_COLORS=False",
                         "EXACT_BODY=False", "ONLY=%r" % (acts,), "CANVAS=(256,256)", "ANCHOR=(128,192)"], check=True, capture_output=True)
-    tot = [0, 0, 0, 0]
+    tot = [0, 0, 0, 0, 0]
     for act in sorted(os.listdir(os.path.join(out, "all", "frames"))):
         if acts and act not in acts:
             continue
-        arm = tor = fr = bad = 0
+        arm = tor = leg = fr = bad = 0
         for f in sorted(glob.glob(os.path.join(out, "all", "frames", act, "dir*", "*.png"))):
-            m1, m2 = masks(np.array(Image.open(f).convert("RGBA")).astype(int))
-            arm += int(m1.sum()); tor += int(m2.sum()); fr += 1; bad += int((m1.sum() + m2.sum()) > 0)
-        tot = [tot[0] + fr, tot[1] + arm, tot[2] + tor, tot[3] + bad]
-        print("%-26s frames %4d  arm px %4d  torso px %4d  frames with any %d" % (act, fr, arm, tor, bad))
-    print("ITEM_SKIN frames %d, arm px %d, torso px %d, frames with any %d" % tuple(tot))
+            im = np.array(Image.open(f).convert("RGBA")).astype(int); m1, m2 = masks(im)
+            leg += int(leg_mask(im).sum()); arm += int(m1.sum()); tor += int(m2.sum()); fr += 1; bad += int((m1.sum() + m2.sum()) > 0)
+        tot = [tot[0] + fr, tot[1] + arm, tot[2] + tor, tot[3] + bad, tot[4] + leg]
+        print("%-26s frames %4d  arm px %4d  torso px %4d  frames with any %d  (leg px %d)" % (act, fr, arm, tor, bad, leg))
+    print("ITEM_SKIN frames %d, arm px %d, torso px %d, frames with any %d, leg px %d" % tuple(tot))
     for act in sheets:
         rows = []
         for d in range(5):
@@ -92,7 +98,7 @@ def main():
                 crop = (88, 90, 168, 200)
                 im = Image.new("RGBA", a.shape[1::-1], (255, 255, 255, 255)); im.alpha_composite(Image.fromarray(a.astype(np.uint8)))
                 im = im.crop(crop).resize(((crop[2] - crop[0]) * 4, (crop[3] - crop[1]) * 4), Image.NEAREST); dr = ImageDraw.Draw(im)
-                for m, c in ((m1, (0, 0, 0)), (m2, (255, 120, 0))):
+                for m, c in ((m1, (0, 0, 0)), (m2, (255, 120, 0)), (leg_mask(a), (0, 160, 255))):
                     for y, x in zip(*np.nonzero(m)):
                         X = (x - crop[0]) * 4 + 2; Y = (y - crop[1]) * 4 + 2; dr.ellipse((X - 5, Y - 5, X + 5, Y + 5), outline=c, width=2)
                 row.append(im)
