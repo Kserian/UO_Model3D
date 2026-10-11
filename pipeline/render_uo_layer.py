@@ -38,9 +38,6 @@ CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom propert
 CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share in which the hanging part follows the legs as in riding (CLOTH_MOUNTED) instead of hanging from the pelvis
                                    # pushed out by the legs: a robe lying on the ground lies along the legs (the original robe 469 is a narrow shape with a notch between them, the hull and
                                    # the simulation made one wide lump; docs/qa/robe_black.md). 0 = off; scene property uo_cloth_lie (uo_cloth_sim.py does not simulate these actions then)
-HAND_OVER = 0.0                    # m: a HAND hides the item also where it is at most this much BEHIND it (0 = only where it is in front, as any body part). A hand hanging at the hip is
-                                   # inside the flare of a robe or a bell cuff and the item covered it, while the original robes draw the hand on top (docs/qa/robe_black.md); a hand on the
-                                   # far side of the body is much farther behind and stays hidden. Scene property uo_hand_over
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
@@ -83,10 +80,8 @@ DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original
 sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
-HIDE_ERODE_EDGE = bool(sc.get("uo_hide_erode_edge", 1))  # 1 = a hand is shrunk only on the side of its cuff, 0 = all round within a pixel or two of the cuff (before)
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
-CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))
-HAND_OVER = float(sc.get("uo_hand_over", HAND_OVER))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
+CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
 rig = bpy.data.objects["UO_Rig"]
@@ -690,22 +685,16 @@ def body_occlusion(free, margin):
         vis = [o for o in clothes if not o.hide_render]
         for part_tris, near_sleeve in ((HIDER_TRIS & HEAD_TRIS, False), (HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS, True)):
             occh, zh = raster([body], part_tris)
-            hh = occh & (zh < zi + (HAND_OVER if near_sleeve and HAND_OVER > 0 else -margin))
+            hh = occh & (zh < zi - margin)
             shrunk = ~binary_dilation(~hh, HIDE_ERODE)
             if near_sleeve and len(vis) == 1 and "uo_region" in vis[0].data.attributes:   # a hand: only next to its sleeve (the wrist at the cuff), a hand in front of the robe keeps its size
                 me = vis[0].data; me.calc_loop_triangles()
                 rv = np.empty(len(me.vertices), np.int32); me.attributes["uo_region"].data.foreach_get("value", rv)
                 tv = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tv)
                 sl, zs = raster(vis, rv[tv.reshape(-1, 3)].max(1) > 0)
-                cuff = sl & (zs <= zi + 0.005) & ~hh                 # the visible sleeve next to the hand
-                if HIDE_ERODE_EDGE:
-                    shrunk = hh & ~binary_dilation(cuff, HIDE_ERODE)     # shrunk only on the side of the cuff (the wrist): all round, a small hand on the reins nearly vanished
-                else:
-                    shrunk = np.where(binary_dilation(cuff, HIDE_ERODE + 1), shrunk, hh)
+                near = binary_dilation(sl & (zs <= zi + 0.005), HIDE_ERODE + 1)
+                shrunk = np.where(near, shrunk, hh)
             hold[shrunk] = 0.0
-    elif HAND_OVER > 0:                                  # hands on top of the item unless clearly behind it
-        occh, zh = raster([body], HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS)
-        hold[occh & (zh < zi + HAND_OVER)] = 0.0
     if TORSO_TRIS is not None:                           # items behind the torso (on the back): clearly behind = hidden
         occt, zt = raster([body], TORSO_TRIS)
         hold[occt & (zt < zi - TORSO_HIDE_MARGIN)] = 0.0
