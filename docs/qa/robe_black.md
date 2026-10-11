@@ -10,9 +10,9 @@ Przepis `docs/qa/robe_black_recipe.json` (z katalogu z `robe_black.glb`; `--prev
 {"name": "robe_black", "file": "robe_black.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000,
  "materials": {"GREY_CLOTH": {"value": 0.6, "contrast": 0.5, "fill": 0.04, "flatten": 0.05}},
  "prepare": {"HEM": 0.15, "HEM_BAND": {"height": 0.15, "fade": 0.02, "skip_front": 20, "edge": 5}},
- "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02, "CLOTH_DROP": 0.3},
+ "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02, "CLOTH_DROP": 0.3, "SLEEVE_CUFF": 0.05},
  "sim": {"arm_goal": 0.95, "smooth": 0.04},
- "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 28}}
+ "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 28, "uo_cloth_lie": 1.0}}
 ```
 
 ## Środowisko: Blender 5.2
@@ -96,9 +96,22 @@ w wycięciu, obrys i stopy). `item_body_holes.py` bez zmian: ręka 152, tułów 
 Uwaga użytkownika: szata robi „bąbel” w okolicach kolan. W biegu i atakach tkanina opinała uniesione kolano jak kula, a pod nim wracała do goleni. Przyczyna: powłoka nóg (`cloth_lib.hull_push`,
 `kappa` 1,0, `margin` 0,06) wypycha tkaninę do zasięgu kolana, a `tent()` pozwala jej poniżej zwężać się o `drop` = 1,0 m na metr (45°), więc tkanina wraca do nogi tuż pod kolanem.
 Sprawdzone: bez powłoki (`kappa` 0) kuli nie ma, ale kolano przebija; bez symulacji kula zostaje (to kształt docelowy, nie symulacja).
-Zmiana: przepis `"conform": {"CLOTH_DROP": 0.3}` (zapisywane w `uo_cloth`): tkanina zwisa z kolana i zwęża się najwyżej o 0,3 m na metr. Podgląd 3D biegu: przy 1,0 kula, przy 0,5 jeszcze zaokrąglenie,
+Zmiana: przepis `"conform": {"CLOTH_DROP": 0.3, "SLEEVE_CUFF": 0.05}` (zapisywane w `uo_cloth`): tkanina zwisa z kolana i zwęża się najwyżej o 0,3 m na metr. Podgląd 3D biegu: przy 1,0 kula, przy 0,5 jeszcze zaokrąglenie,
 przy 0,3 tkanina opada z kolana do rąbka, przy 0,15 przód jak beczka. Dziury (7 akcji, 260 klatek): nogi 31 (1,0) / 32 (0,3) / 34 (0,5) / 28 (0,15) px, ręka i tułów bez zmian.
 Pełne 35 akcji przed -> po: ręka 150 -> 141, tułów 66 -> 64, nogi 428 -> 428 px, klatek z wadą 314 -> 305. Inne szaty bez zmian (domyślne `CLOTH_DROP` 1,0 skalibrowane na oryginale 469).
+
+## Upadki i dłonie (piąta runda)
+Zgłoszenia: Die Backward kier. 0 kl. 6 i Die Forward kier. 4 kl. 6 („nie widać nóg, nie ma wycięć w szacie na nie”), Walk kier. 2 kl. 1 („dłoń znika w materiale”), Mount Run kier. 0 kl. 2 („bugi z dłonią”).
+- **Upadki**: szata dalej „wisiała od miednicy” wypychana powłoką nóg i symulacją: jedna szeroka bryła (ok. 40 px), oryginał 469 leży wzdłuż nóg (ok. 17 px, wcięcie między nogami).
+  `render_uo_layer.py` **`CLOTH_LIE`** (właściwość sceny `uo_cloth_lie`, akcje 21, 22): dolna część idzie za nogami jak w jeździe (`CLOTH_MOUNTED`, wagi `uo_leg_*`), bez symulacji
+  (`uo_cloth_sim.py` pomija te akcje, gdy scena ma `uo_cloth_lie`). IoU sylwetki z 469: upadek do przodu 0,682 -> 0,694, do tyłu 0,695 -> 0,725; wcięcia między nogami widać (dziury nóg w 21 / 22: 8 / 6 -> 42 / 22 px, to te wcięcia).
+- **Dłonie**: miara „piksele dłoni oryginału przykryte warstwą” (etykiety części z renderu 3D), nasza vs 469: piesze akcje 22 494 vs 19 968, jazda 4 527 vs 3 902. Przyczyna w jeździe: dzwonowy rękaw
+  (promień końca 15 cm) widziany od przodu to pierścień ze złotym brzegiem wokół dłoni; w marszu mankiet i spódnica przykrywają dłoń przy biodrze.
+  `uo_conform_item.py` **`SLEEVE_CUFF`** 0,05 m (koniec rękawu zwężony do 5 cm od osi przedramienia, przez `CUFF_SPAN` 0,20 m): piesze 22 494 -> 20 092, jazda 4 527 -> 4 050 (oryginał 19 968 / 3 902).
+  Mankiet 0,07 / 0,09 / 0,12: dłoń w marszu kier. 2 nadal schowana, mniej odsłoniętych dłoni (na 9 akcjach przykryte 7 579 / 7 865 / 8 276 vs 469: 7 597, bez zwężenia 8 581).
+- Odrzucone (zmierzone): `HAND_OVER` (dłoń nad przedmiotem, gdy jest za nim najwyżej 3-10 cm) i zwężanie dłoni tylko od strony mankietu: po zwężeniu rękawu nie dają już nic, a dokładają dziury nadgarstka (ręka 9 akcji 95 -> 106-120 px).
+- Pełne 35 akcji przed -> po: ręka 143 -> 234, tułów 68 -> 81, nogi 445 -> 492 px. Ręka to 1-2 px nadgarstka między węższym mankietem a dłonią (oryginał też go pokazuje), nogi to wcięcia w upadkach.
+  QA (bpy 4.2): `run_qa` OK, `test_items` 0,723.
 
 ## Odrzucone (zmierzone, nie powtarzać)
 - Zwykły `fit` z `stretch` 1,2 / 1,15: zakrywa ciało, ale szata wychodzi za duża (bufiaste barki), rękawy zasłaniają dłonie; użytkownik odrzucił.

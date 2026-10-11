@@ -146,3 +146,8 @@ Runda 6 (koniec): 19 klatek, ciało **0,9001**, błędy ≥ 2 px 2154 (start 374
 ## Sesja 21, czwarta runda (2026-10-11): bąbel przy kolanach (`docs/qa/robe_black.md`, „Bąbel przy kolanach”)
 Kula tkaniny na uniesionym kolanie: powłoka nóg + `drop` 1,0 (tkanina wracała do goleni pod 45°). Przepis szaty: `"conform": {"CLOTH_DROP": 0.3}` (zwisa z kolana). Dziury 35 akcji: ręka 150 -> 141, tułów 66 -> 64, nogi 428 -> 428. Bez zmian w kodzie.
 
+## Sesja 21, piąta runda (2026-10-11): upadki i dłonie (`docs/qa/robe_black.md`, „Upadki i dłonie”)
+`render_uo_layer.py` `CLOTH_LIE` (upadki 21, 22: szata wzdłuż nóg jak w jeździe, bez symulacji; IoU z 469 0,682 / 0,695 -> 0,694 / 0,725), `uo_conform_item.py` `SLEEVE_CUFF` (zwężony koniec dzwonowego rękawu:
+dłonie widać jak w oryginale, w jeździe bez pierścienia mankietu). Dziury 35 akcji: ręka 143 -> 234 (nadgarstek 1-2 px), tułów 68 -> 81, nogi 445 -> 492 (wcięcia w upadkach). Odrzucone: `HAND_OVER`, zwężanie dłoni od strony mankietu.
+Model: wgrany `render_uo_layer.py`. QA OK, `test_items` 0,723.
+
