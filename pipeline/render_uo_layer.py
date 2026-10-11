@@ -83,6 +83,7 @@ DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original
 sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
+HIDE_ERODE_EDGE = bool(sc.get("uo_hide_erode_edge", 1))  # 1 = a hand is shrunk only on the side of its cuff, 0 = all round within a pixel or two of the cuff (before)
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))
 HAND_OVER = float(sc.get("uo_hand_over", HAND_OVER))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
@@ -697,7 +698,10 @@ def body_occlusion(free, margin):
                 tv = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tv)
                 sl, zs = raster(vis, rv[tv.reshape(-1, 3)].max(1) > 0)
                 cuff = sl & (zs <= zi + 0.005) & ~hh                 # the visible sleeve next to the hand
-                shrunk = hh & ~binary_dilation(cuff, HIDE_ERODE)     # shrunk only on the side of the cuff (the wrist): all round, a small hand on the reins nearly vanished
+                if HIDE_ERODE_EDGE:
+                    shrunk = hh & ~binary_dilation(cuff, HIDE_ERODE)     # shrunk only on the side of the cuff (the wrist): all round, a small hand on the reins nearly vanished
+                else:
+                    shrunk = np.where(binary_dilation(cuff, HIDE_ERODE + 1), shrunk, hh)
             hold[shrunk] = 0.0
     elif HAND_OVER > 0:                                  # hands on top of the item unless clearly behind it
         occh, zh = raster([body], HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS)
