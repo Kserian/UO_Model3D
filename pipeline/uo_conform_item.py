@@ -284,13 +284,13 @@ def main():
 
         if SLEEVE_CUFF >= 0:                                             # the mouth of the sleeve narrowed round the forearm
             for sd, sg in (("L", 1.0), ("R", -1.0)):
-                E = np.array(rig.matrix_world @ rig.data.bones["forearm." + sd].head_local); Hd = np.array(rig.matrix_world @ rig.data.bones["hand." + sd].head_local)
-                ax = (Hd - E) / np.linalg.norm(Hd - E)
+                El = np.array(rig.matrix_world @ rig.data.bones["forearm." + sd].head_local); Hd = np.array(rig.matrix_world @ rig.data.bones["hand." + sd].head_local)
+                ax = (Hd - El) / np.linalg.norm(Hd - El)
                 m = (sleeve > 0.5) & (X[:, 0] * sg > 0)
                 if m.sum() < 20:
                     continue
-                t = (X - E) @ ax; tend = float(np.percentile(t[m], 99.5))
-                R = (X - E) - t[:, None] * ax; r = np.linalg.norm(R, axis=1)
+                t = (X - El) @ ax; tend = float(np.percentile(t[m], 99.5))
+                R = (X - El) - t[:, None] * ax; r = np.linalg.norm(R, axis=1)
                 w = np.clip(sleeve, 0, 1) * (X[:, 0] * sg > 0) * np.clip((t - (tend - CUFF_SPAN)) / CUFF_SPAN, 0, 1)
                 w = w * w * (3 - 2 * w)
                 rn = np.where(r > SLEEVE_CUFF, SLEEVE_CUFF + (r - SLEEVE_CUFF) * 0.15, r)          # beyond the limit only a little of the flare stays (folds keep their order)
