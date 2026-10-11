@@ -35,6 +35,12 @@ CLOTH_SIM = 1                      # 1 = add the cloth simulation of uo_cloth_si
 CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom property uo_cloth) in the mounted actions 23-29: share in which the hanging part follows the legs (thighs above the
                                    # knee, shins below it, like skin) instead of hanging from the pelvis with the hull of the legs. A rider sits with the thighs forward and a robe that hangs from
                                    # the pelvis would leave them bare; the original robes lie along the legs. 0 = hang and push like on foot.
+CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share in which the hanging part follows the legs as in riding (CLOTH_MOUNTED) instead of hanging from the pelvis
+                                   # pushed out by the legs: a robe lying on the ground lies along the legs (the original robe 469 is a narrow shape with a notch between them, the hull and
+                                   # the simulation made one wide lump; docs/qa/robe_black.md). 0 = off; scene property uo_cloth_lie (uo_cloth_sim.py does not simulate these actions then)
+HAND_OVER = 0.0                    # m: a HAND hides the item also where it is at most this much BEHIND it (0 = only where it is in front, as any body part). A hand hanging at the hip is
+                                   # inside the flare of a robe or a bell cuff and the item covered it, while the original robes draw the hand on top (docs/qa/robe_black.md); a hand on the
+                                   # far side of the body is much farther behind and stays hidden. Scene property uo_hand_over
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
@@ -77,7 +83,9 @@ DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original
 sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
-LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
+LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
+CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))
+HAND_OVER = float(sc.get("uo_hand_over", HAND_OVER))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
 rig = bpy.data.objects["UO_Rig"]
@@ -182,7 +190,8 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
         d0, d1 = (np.radians(x) * CLOAK_SWING for x in rows[min(i, len(rows) - 1)])
         d = cl.cloak_bend(Vr, prm["z_top"], prm["z_hem"], prm["y_top"], d0, d1)
         return ((d @ skin["chest"][:3, :3].T) @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
-    if 23 <= a <= 29 and CLOTH_MOUNTED > 0:                                  # riding: the hanging part lies along the legs, as the skin under it would move it
+    share = CLOTH_MOUNTED if 23 <= a <= 29 else CLOTH_LIE if a in (21, 22) else 0.0
+    if share > 0:                                                             # riding (and lying, CLOTH_LIE): the hanging part lies along the legs, as the skin under it would move it
         Vh = np.c_[Vr, np.ones(len(Vr))]
         nv = len(o.data.vertices); Pp = (Vh @ skin["pelvis"].T)[:, :3]; d0 = np.zeros_like(Vr)
         have = all(("uo_leg_" + nm) in o.data.attributes for nm in cl.Capsules.NAMES)
@@ -194,7 +203,7 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
             side = np.clip(Vr[:, 0] / 0.06, -1, 1) * 0.5 + 0.5; ws = np.clip((0.58 - Vr[:, 2]) / 0.15, 0, 1)[:, None]
             leg = lambda sd: (1 - ws) * (Vh @ skin["thigh." + sd].T)[:, :3] + ws * (Vh @ skin["shin." + sd].T)[:, :3]
             d0 = np.clip((prm["z_top"] - Vr[:, 2]) / 0.2, 0, 1)[:, None] * ((1 - side)[:, None] * leg("L") + side[:, None] * leg("R") - Pp)
-        d0 = d0 * CLOTH_MOUNTED
+        d0 = d0 * share
         return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     d0 = cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
                       z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
@@ -680,7 +689,7 @@ def body_occlusion(free, margin):
         vis = [o for o in clothes if not o.hide_render]
         for part_tris, near_sleeve in ((HIDER_TRIS & HEAD_TRIS, False), (HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS, True)):
             occh, zh = raster([body], part_tris)
-            hh = occh & (zh < zi - margin)
+            hh = occh & (zh < zi + (HAND_OVER if near_sleeve and HAND_OVER > 0 else -margin))
             shrunk = ~binary_dilation(~hh, HIDE_ERODE)
             if near_sleeve and len(vis) == 1 and "uo_region" in vis[0].data.attributes:   # a hand: only next to its sleeve (the wrist at the cuff), a hand in front of the robe keeps its size
                 me = vis[0].data; me.calc_loop_triangles()
@@ -690,6 +699,9 @@ def body_occlusion(free, margin):
                 near = binary_dilation(sl & (zs <= zi + 0.005), HIDE_ERODE + 1)
                 shrunk = np.where(near, shrunk, hh)
             hold[shrunk] = 0.0
+    elif HAND_OVER > 0:                                  # hands on top of the item unless clearly behind it
+        occh, zh = raster([body], HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS)
+        hold[occh & (zh < zi + HAND_OVER)] = 0.0
     if TORSO_TRIS is not None:                           # items behind the torso (on the back): clearly behind = hidden
         occt, zt = raster([body], TORSO_TRIS)
         hold[occt & (zt < zi - TORSO_HIDE_MARGIN)] = 0.0

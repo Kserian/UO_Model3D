@@ -7,7 +7,7 @@ would draw without a simulation: the item as the skeleton skins it + the push of
 (a plain mesh) is simulated with Blender's Cloth: every vertex is held by a spring ("goal", the pin weight) to the target of the current frame, 1 at the waist and above (the cloth follows
 the body there), falling to GOAL at the hem (the hanging part is free to swing and fold), and the cloth collides with the posed UO_Body (legs, arms, hands). The result is saved as the
 DIFFERENCE between the simulation and the target (cloth_sim.npz next to the item, keys "<action>_<frame>"): render_uo_layer.py adds it to the leg push (CLOTH_SIM = 1), then BODY_GAP
-pushes whatever is still inside the body out, as before. Mounted actions (23-29) are not simulated (the hem follows the legs there).
+pushes whatever is still inside the body out, as before. Mounted actions (23-29) are not simulated (the hem follows the legs there), nor the falls 21, 22 when the scene has uo_cloth_lie > 0.
 
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the pose of the loop), looping actions (walk, run, stand, combat idle) CYCLES cycles and the last one is
 kept, so the loop closes without a jump. Settings (key=value): goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3), tension / compression (15), shear (5), bending (0.5),
@@ -30,11 +30,16 @@ CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, co
            self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
 
+def skip(a):
+    """actions not simulated: riding (the hem follows the legs there) and the falls when the item lies along the legs (render_uo_layer.py CLOTH_LIE, scene property uo_cloth_lie)"""
+    return 23 <= a <= 29 or (a in (21, 22) and float(bpy.context.scene.get("uo_cloth_lie", 0)) > 0)
+
+
 def run_parallel(blend, out, only, jobs, extra):
     """the actions are independent: split them over `jobs` processes (the same script) and merge the results"""
     import subprocess, tempfile
     bpy.ops.wm.open_mainfile(filepath=blend)
-    names = [a.name for a in sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"])) if not 23 <= int(a["uo_action"]) <= 29 and (only is None or a.name in only)]
+    names = [a.name for a in sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"])) if not skip(int(a["uo_action"])) and (only is None or a.name in only)]
     groups = [names[k::jobs] for k in range(jobs)]
     tmp = tempfile.mkdtemp(prefix="uo_cloth_sim_"); procs = []
     for k, g in enumerate(groups):
@@ -155,7 +160,7 @@ def main():
     acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
     for act in acts:
         a = int(act["uo_action"])
-        if 23 <= a <= 29 or (only is not None and act.name not in only):
+        if skip(a) or (only is not None and act.name not in only):
             continue
         t0 = time.time(); rig.animation_data.action = act; rig["uo_direction"] = 0
         nfr = int(act["uo_frames"]); loop = a in LOOP
