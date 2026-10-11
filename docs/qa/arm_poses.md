@@ -63,3 +63,9 @@ Zostaje: 21 kl. 1, 4, 5 (84-92 px; żadna z 4 rund nie zeszła niżej: postać l
 Największe: 27/2 błędy 22 -> 3, 23/0 21 -> 5, 23/3 28 -> 9, 24/3 41 -> 15, 14/5 24 -> 7, 31/6 23 -> 8, 34/1 22 -> 6, 22/4 63 -> 43, 21/1 84 -> 77.
 Wynik: ciało 0,8982 -> **0,8993**, błędy ≥ 2 px 2481 -> **2265** (start 3746, −40%), klatek z ≥ 40 px 12, `test_items` 0,723 (`items_after_arms5.json`), `test_canvas` 16/16 OK (`body_parts_after_arms5.json`).
 Zysk rundy maleje (runda 3: −394 px, 4: −407 px, 5: −216 px).
+
+## Runda 6 (2026-10-11/12) i koniec
+28 klatek z ≥ 15 px błędu (bez klatek, które w rundzie 5 nic nie dały), ustawienia jak w rundzie 5. Wgrane 19: m.in. 29/4 błędy 19 -> 2, 32/2 17 -> 1, 34/4 15 -> 1, 19/6 16 -> 3, 32/1 16 -> 5, 14/2 19 -> 8. Odrzucone 21/4 (90 -> 86, IoU bez zmiany), 24/0, 24/4, 29/2.
+Wynik: ciało 0,8993 -> **0,9001**, błędy ≥ 2 px 2265 -> **2154** (start 3746, −42,5%), IoU po pominięciu obwódki 1 px **0,9974**, `test_items` 0,723, `test_canvas` 16/16 OK (`body_parts_after_arms6.json`, `items_after_arms6.json`).
+Zysk rund: 3: −394 px, 4: −407, 5: −216, 6: −111; koszt dopasowania w rundzie 6 spada już tylko o ok. 0,001 na klatkę. **Dopasowanie z sylwetek doszło do granicy; dalsze rundy nie mają sensu.**
+Zostaje (≥ 40 px na klatkę, suma 5 kierunków): 21 kl. 1 / 4 / 5 (76-92 px: leżąca postać, ręce nakładają się na tułów, sylwetki ich nie wyznaczają), 17 kl. 3-5 (symetria rąk, decyzja użytkownika), 22 kl. 4-5, 29 kl. 0-1 (43-51 px). Te klatki można poprawić tylko ręcznie, wg wskazania użytkownika na arkuszu porównania.
