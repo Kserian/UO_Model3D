@@ -54,6 +54,6 @@ Sprawdzone ruchy dłoni między klatkami: w jeździe lewa dłoń przesunęła si
 
 ## Runda 4 (2026-10-10/11): ręce + tułów + miednica i nogi
 Wszystkie klatki z ≥ 25 px błędu (35, bez 17): `--torso 2`, `TOP_W = 0`, `EDGE_W = 1,5`, łokieć do 145°. Wgrane 33 (odrzucone 21/1 i 21/5: błędy nie spadły).
-Największe zmiany: 23/1 błędy 29 -> 3, 28/2 29 -> 3, 29/2 49 -> ... (96 -> 49 w tej rundzie), 29/3 75 -> 37, 24/4 40 -> 19, 25/0 37 -> 19 (tym razem `test_canvas` OK), 11/1 26 -> 11, 28/4 26 -> 10, 28/5 27 -> 10.
+Największe zmiany: 23/1 błędy 29 -> 3, 28/2 29 -> 3, 29/2 96 -> 49, 29/3 75 -> 37, 24/4 40 -> 19, 25/0 37 -> 19 (tym razem `test_canvas` OK), 11/1 26 -> 11, 28/4 26 -> 10, 28/5 27 -> 10.
 Wynik: ciało 0,8958 -> **0,8982**, błędy ≥ 2 px 2888 -> **2481** (start 3746, −34%), klatek z ≥ 40 px 13 (z czego 3 to akcja 17), `test_items` **0,723** (`items_after_arms4.json`), `test_canvas` 16/16 OK (`body_parts_after_arms4.json`).
 Zostaje: 21 kl. 1, 4, 5 (84-92 px; żadna z 4 rund nie zeszła niżej: postać leży, sylwetka nie rozstrzyga położenia rąk), 17 kl. 3-5 (symetria), 22 kl. 4-5, jazda 29 kl. 0-2 (48-51 px).
