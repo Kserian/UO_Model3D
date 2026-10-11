@@ -37,6 +37,9 @@ SLEEVES = True        # step 1
 SLEEVE_END = -1.0     # m: >= 0 = each sleeve is shortened along its arm (only its last SLEEVE_SPAN before the end is squeezed, the cuff keeps its shape) so that it ends this far past the
                       # wrist (the head of the hand bone): a bell sleeve of a longer-armed mannequin hid the hands (docs/qa/robe_black.md: 9 cm past the wrist -> 0.02). < 0 = as the model
 SLEEVE_SPAN = 0.25    # m
+SLEEVE_CUFF = -1.0    # m: >= 0 = the end of each sleeve is narrowed to at most this far from the axis of the forearm (a bell sleeve: its wide mouth seen from the front, arms forward on
+                      # the reins, was a ring round the hand, docs/qa/robe_black.md; the original robes have narrow sleeves). < 0 = as the model
+CUFF_SPAN = 0.20      # m: along the forearm before the end of the sleeve over which the narrowing grows from none to full
 BLEND = 0.10          # m: along the sleeve from its root, over which it goes from where the model has it to the UO arm
 TUBE_MARGIN = 0.05    # m: beyond the radius of the sleeve tube the move fades out over this (the side of the torso under the arm stays)
 SKIRT = True          # below the crotch: hangs (the model's shape, pushed out of the legs), follows the pelvis, the legs push it in the render
@@ -278,6 +281,22 @@ def main():
                 w = np.clip(sleeve, 0, 1) * (X[:, 0] * sg > 0) * (t > t0)
                 X = X - (w * (t - t0) * (1 - k))[:, None] * ax
                 print("uo_conform_item: sleeve %s shortened: ended %.1f cm past the wrist, now %.1f cm (last %.0f cm squeezed x%.2f)" % (sd, 100 * (tend - tw), 100 * SLEEVE_END, 100 * SLEEVE_SPAN, k), flush=True)
+
+        if SLEEVE_CUFF >= 0:                                             # the mouth of the sleeve narrowed round the forearm
+            for sd, sg in (("L", 1.0), ("R", -1.0)):
+                E = np.array(rig.matrix_world @ rig.data.bones["forearm." + sd].head_local); Hd = np.array(rig.matrix_world @ rig.data.bones["hand." + sd].head_local)
+                ax = (Hd - E) / np.linalg.norm(Hd - E)
+                m = (sleeve > 0.5) & (X[:, 0] * sg > 0)
+                if m.sum() < 20:
+                    continue
+                t = (X - E) @ ax; tend = float(np.percentile(t[m], 99.5))
+                R = (X - E) - t[:, None] * ax; r = np.linalg.norm(R, axis=1)
+                w = np.clip(sleeve, 0, 1) * (X[:, 0] * sg > 0) * np.clip((t - (tend - CUFF_SPAN)) / CUFF_SPAN, 0, 1)
+                w = w * w * (3 - 2 * w)
+                rn = np.where(r > SLEEVE_CUFF, SLEEVE_CUFF + (r - SLEEVE_CUFF) * 0.15, r)          # beyond the limit only a little of the flare stays (folds keep their order)
+                k = 1 - w * (1 - rn / np.maximum(r, 1e-9))
+                X = X - ((1 - k) * 1.0)[:, None] * R
+                print("uo_conform_item: sleeve %s cuff: radius at the end %.1f cm (p90) -> at most ~%.1f cm" % (sd, 100 * float(np.percentile(r[m & (t > tend - 0.03)], 90)), 100 * SLEEVE_CUFF), flush=True)
 
         # 2. wrap: the target stand-off h from the model's own (aligned) stand-off
         l, _, f, _ = nearest(bvh_any, X)

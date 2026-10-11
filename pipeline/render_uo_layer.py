@@ -696,8 +696,8 @@ def body_occlusion(free, margin):
                 rv = np.empty(len(me.vertices), np.int32); me.attributes["uo_region"].data.foreach_get("value", rv)
                 tv = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tv)
                 sl, zs = raster(vis, rv[tv.reshape(-1, 3)].max(1) > 0)
-                near = binary_dilation(sl & (zs <= zi + 0.005), HIDE_ERODE + 1)
-                shrunk = np.where(near, shrunk, hh)
+                cuff = sl & (zs <= zi + 0.005) & ~hh                 # the visible sleeve next to the hand
+                shrunk = hh & ~binary_dilation(cuff, HIDE_ERODE)     # shrunk only on the side of the cuff (the wrist): all round, a small hand on the reins nearly vanished
             hold[shrunk] = 0.0
     elif HAND_OVER > 0:                                  # hands on top of the item unless clearly behind it
         occh, zh = raster([body], HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS)
