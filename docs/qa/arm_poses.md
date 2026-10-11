@@ -51,3 +51,21 @@ Wgrane 26 klatek (to samo kryterium): m.in. 9/4 błędy 34 -> 2, 24/1 51 -> 11, 
 Wycofana 25/0 (błędy 37 -> 30): `test_canvas` (przypadek `all`, `25_mounted_stand`, płótno 200×180) dawał 1 piksel cieniowania różny o 5 poziomów (128 vs 123, sylwetka identyczna; zaokrąglenie na krawędzi trójkąta przy przesuniętym płótnie). Testu nie zmieniano.
 Wynik: ciało 0,8947 -> **0,8958**, błędy ≥ 2 px 3282 -> **2888** (start sesji 3746), klatek z ≥ 40 px 34 -> 20; akcje: 21 0,8637 -> 0,8675, 23 0,8644 -> 0,8719, 29 0,8295 -> 0,8358, 9 0,8875 -> 0,8909 (`body_parts_after_arms3.json`); `test_items` 0,721 (`items_after_arms3.json`), `test_canvas` 16/16 OK.
 Sprawdzone ruchy dłoni między klatkami: w jeździe lewa dłoń przesunęła się bardziej niż przed zmianą (24 kl. 0->1 0,14 -> 0,35 m, 29 kl. 1->2 0,41 -> 0,84 m); na nakładkach to ruch do miejsca dłoni w oryginale (kier. 3 w 24/1, kier. 0 w 29/2), nie przypadkowe położenie za koniem.
+
+## Runda 4 (2026-10-10/11): ręce + tułów + miednica i nogi
+Wszystkie klatki z ≥ 25 px błędu (35, bez 17): `--torso 2`, `TOP_W = 0`, `EDGE_W = 1,5`, łokieć do 145°. Wgrane 33 (odrzucone 21/1 i 21/5: błędy nie spadły).
+Największe zmiany: 23/1 błędy 29 -> 3, 28/2 29 -> 3, 29/2 96 -> 49, 29/3 75 -> 37, 24/4 40 -> 19, 25/0 37 -> 19 (tym razem `test_canvas` OK), 11/1 26 -> 11, 28/4 26 -> 10, 28/5 27 -> 10.
+Wynik: ciało 0,8958 -> **0,8982**, błędy ≥ 2 px 2888 -> **2481** (start 3746, −34%), klatek z ≥ 40 px 13 (z czego 3 to akcja 17), `test_items` **0,723** (`items_after_arms4.json`), `test_canvas` 16/16 OK (`body_parts_after_arms4.json`).
+Zostaje: 21 kl. 1, 4, 5 (84-92 px; żadna z 4 rund nie zeszła niżej: postać leży, sylwetka nie rozstrzyga położenia rąk), 17 kl. 3-5 (symetria), 22 kl. 4-5, jazda 29 kl. 0-2 (48-51 px).
+
+## Runda 5 (2026-10-11)
+33 klatki z ≥ 20 px błędu (bez 17), ustawienia jak w rundzie 4, akcja 21 z 8 losowymi startami. Wgrane 22 (9 klatek bez lepszej pozy, odrzucone 21/5 i 29/3).
+Największe: 27/2 błędy 22 -> 3, 23/0 21 -> 5, 23/3 28 -> 9, 24/3 41 -> 15, 14/5 24 -> 7, 31/6 23 -> 8, 34/1 22 -> 6, 22/4 63 -> 43, 21/1 84 -> 77.
+Wynik: ciało 0,8982 -> **0,8993**, błędy ≥ 2 px 2481 -> **2265** (start 3746, −40%), klatek z ≥ 40 px 12, `test_items` 0,723 (`items_after_arms5.json`), `test_canvas` 16/16 OK (`body_parts_after_arms5.json`).
+Zysk rundy maleje (runda 3: −394 px, 4: −407 px, 5: −216 px).
+
+## Runda 6 (2026-10-11/12) i koniec
+28 klatek z ≥ 15 px błędu (bez klatek, które w rundzie 5 nic nie dały), ustawienia jak w rundzie 5. Wgrane 19: m.in. 29/4 błędy 19 -> 2, 32/2 17 -> 1, 34/4 15 -> 1, 19/6 16 -> 3, 32/1 16 -> 5, 14/2 19 -> 8. Odrzucone 21/4 (90 -> 86, IoU bez zmiany), 24/0, 24/4, 29/2.
+Wynik: ciało 0,8993 -> **0,9001**, błędy ≥ 2 px 2265 -> **2154** (start 3746, −42,5%), IoU po pominięciu obwódki 1 px **0,9974**, `test_items` 0,723, `test_canvas` 16/16 OK (`body_parts_after_arms6.json`, `items_after_arms6.json`).
+Zysk rund: 3: −394 px, 4: −407, 5: −216, 6: −111; koszt dopasowania w rundzie 6 spada już tylko o ok. 0,001 na klatkę. **Dopasowanie z sylwetek doszło do granicy; dalsze rundy nie mają sensu.**
+Zostaje (≥ 40 px na klatkę, suma 5 kierunków): 21 kl. 1 / 4 / 5 (76-92 px: leżąca postać, ręce nakładają się na tułów, sylwetki ich nie wyznaczają), 17 kl. 3-5 (symetria rąk, decyzja użytkownika), 22 kl. 4-5, 29 kl. 0-1 (43-51 px). Te klatki można poprawić tylko ręcznie, wg wskazania użytkownika na arkuszu porównania.

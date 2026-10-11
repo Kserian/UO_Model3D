@@ -138,6 +138,10 @@ Runda 3 (`EDGE_W`, `--torso 2` dla akcji 21): 26 klatek, ciało 0,8958, błędy 
 ## Sesja 21, trzecia runda (2026-10-10): złoty pas rąbka (`docs/qa/robe_black.md`, „Złoty pas rąbka”)
 Złoto na dole znikało przy nogach: środkowe panele modelu (tył, przód w rozcięciu) nie mają haftu. `uo_prepare_item.py` `HEM_BAND`: pas złota nad lokalnym rąbkiem dookoła, bez wycięcia z przodu (decyzja użytkownika),
 atrybut `uo_hem_band` + mieszanie w materiale. Złoto w dolnych 3 px sylwetki 0,727 -> 0,811, dziury bez zmian. `uo_make_item.py` przepuszcza słownikowe ustawienia `prepare`. Model: wgrany `uo_prepare_item.py`. QA (bpy 4.2): `run_qa` OK, `test_items` 0,720.
+Runda 4 (`--torso 2` na 35 klatkach): 33 wgrane, ciało 0,8982, błędy ≥ 2 px 2481 (start 3746), `test_items` 0,723, `test_canvas` OK. Zostaje 13 klatek z ≥ 40 px (21 kl. 1/4/5, 17 kl. 3-5, 22 kl. 4-5, 29 kl. 0-2). `docs/qa/arm_poses.md`, „Runda 4”.
+Runda 5: 22 klatki, ciało 0,8993, błędy ≥ 2 px 2265 (start 3746, −40%), `test_items` 0,723, `test_canvas` OK. `docs/qa/arm_poses.md`, „Runda 5”.
+Runda 6 (koniec): 19 klatek, ciało **0,9001**, błędy ≥ 2 px 2154 (start 3746), bez obwódki 1 px IoU 0,9974, `test_items` 0,723, `test_canvas` OK. Dopasowanie z sylwetek doszło do granicy (runda 6 −111 px). Ręcznie do zrobienia: 21 kl. 1/4/5, ew. 22 kl. 4-5, 29 kl. 0-1. `docs/qa/arm_poses.md`, „Runda 6 i koniec”.
+
 
 ## Sesja 21, czwarta runda (2026-10-11): bąbel przy kolanach (`docs/qa/robe_black.md`, „Bąbel przy kolanach”)
 Kula tkaniny na uniesionym kolanie: powłoka nóg + `drop` 1,0 (tkanina wracała do goleni pod 45°). Przepis szaty: `"conform": {"CLOTH_DROP": 0.3}` (zwisa z kolana). Dziury 35 akcji: ręka 150 -> 141, tułów 66 -> 64, nogi 428 -> 428. Bez zmian w kodzie.
