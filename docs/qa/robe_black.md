@@ -10,7 +10,7 @@ Przepis `docs/qa/robe_black_recipe.json` (z katalogu z `robe_black.glb`; `--prev
 {"name": "robe_black", "file": "robe_black.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000,
  "materials": {"GREY_CLOTH": {"value": 0.6, "contrast": 0.5, "fill": 0.04, "flatten": 0.05}},
  "prepare": {"HEM": 0.15, "HEM_BAND": {"height": 0.15, "fade": 0.02, "skip_front": 20, "edge": 5}},
- "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02},
+ "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02, "CLOTH_DROP": 0.3},
  "sim": {"arm_goal": 0.95, "smooth": 0.04},
  "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 28}}
 ```
@@ -91,6 +91,14 @@ ze złotymi listwami leżą przy ±25°); atrybut punktu `uo_hem_band`, w materi
 Wysokość z podglądu 3D w spoczynku: obecny haft sięga ok. 0,15-0,18 m nad rąbek (po `HEM` x0,64). `uo_make_item.py` przepuszcza teraz ustawienia `prepare` będące słownikiem (`HEM_BAND`).
 Pomiar (35 akcji, udział złotych pikseli w dolnych 3 px każdej kolumny sylwetki sięgającej rąbka): **0,727 -> 0,811** (np. marsz 0,75 -> 0,87, bieg 0,66 -> 0,77; reszta to celowo szary panel
 w wycięciu, obrys i stopy). `item_body_holes.py` bez zmian: ręka 152, tułów 64, nogi 423 px, klatek z wadą 317.
+
+## Bąbel przy kolanach (czwarta runda)
+Uwaga użytkownika: szata robi „bąbel” w okolicach kolan. W biegu i atakach tkanina opinała uniesione kolano jak kula, a pod nim wracała do goleni. Przyczyna: powłoka nóg (`cloth_lib.hull_push`,
+`kappa` 1,0, `margin` 0,06) wypycha tkaninę do zasięgu kolana, a `tent()` pozwala jej poniżej zwężać się o `drop` = 1,0 m na metr (45°), więc tkanina wraca do nogi tuż pod kolanem.
+Sprawdzone: bez powłoki (`kappa` 0) kuli nie ma, ale kolano przebija; bez symulacji kula zostaje (to kształt docelowy, nie symulacja).
+Zmiana: przepis `"conform": {"CLOTH_DROP": 0.3}` (zapisywane w `uo_cloth`): tkanina zwisa z kolana i zwęża się najwyżej o 0,3 m na metr. Podgląd 3D biegu: przy 1,0 kula, przy 0,5 jeszcze zaokrąglenie,
+przy 0,3 tkanina opada z kolana do rąbka, przy 0,15 przód jak beczka. Dziury (7 akcji, 260 klatek): nogi 31 (1,0) / 32 (0,3) / 34 (0,5) / 28 (0,15) px, ręka i tułów bez zmian.
+Pełne 35 akcji przed -> po: ręka 150 -> 141, tułów 66 -> 64, nogi 428 -> 428 px, klatek z wadą 314 -> 305. Inne szaty bez zmian (domyślne `CLOTH_DROP` 1,0 skalibrowane na oryginale 469).
 
 ## Odrzucone (zmierzone, nie powtarzać)
 - Zwykły `fit` z `stretch` 1,2 / 1,15: zakrywa ciało, ale szata wychodzi za duża (bufiaste barki), rękawy zasłaniają dłonie; użytkownik odrzucił.
