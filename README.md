@@ -179,7 +179,8 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"gloves"` | rękawice, karwasze | forearm, hand |
       | `"legs"` | spodnie, nagolenniki do pasa | pelvis, thigh, shin |
       | `"boots"` | buty, nagolenniki | shin, foot |
-      | `"helm"` | hełm, kaptur, maska | head |
+      | `"helm"` | hełm, maska, sztywny kaptur | head |
+      | `"hood"` | kaptur z kołnierzem na szyję | kaptur za głową, kołnierz za szyją i klatką (wagi skóry); dopasowanie do głowy i szyi (`docs/qa/autofit.md`, „Kaptur”) |
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
       | `"all"` | cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
       | `"cloak"` | peleryna | wisi od klatki piersiowej i **odchyla się do tyłu wokół ramion** zależnie od akcji (bieg, jazda: leci za plecami; tabela z oryginału 468, `docs/qa/cloak_physics.md`) |

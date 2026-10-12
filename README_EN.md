@@ -181,7 +181,8 @@ items into it, not the other way round.
       | `"gloves"` | gloves, gauntlets, bracers | forearm, hand |
       | `"legs"` | trousers, leg armour up to the waist | pelvis, thigh, shin |
       | `"boots"` | boots, greaves | shin, foot |
-      | `"helm"` | helmet, hood, mask | head |
+      | `"helm"` | helmet, mask, stiff hood | head |
+      | `"hood"` | hood with a cowl round the neck | the hood follows the head, the cowl the neck and chest (skin weights); fitted to the head and neck (`docs/qa/autofit.md`, "Hood") |
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | full suit in one object | skin under it, every bone |
       | `"cloak"` | cloak | hangs from the chest and **swings back about the shoulders** per action (run, riding: streams out behind; table from the original 468, `docs/qa/cloak_physics.md`) |

@@ -68,3 +68,11 @@ Miara: odległość pikseli przedmiotu od sylwetki oryginalnego ciała, p90, w c
 Zmiana: `LIMIT_K` 0,35 -> 0,30 i `LIMIT_BY_KIND["plate"]` 0,08 -> 0,05. Wynik (p90 przed -> po): Void Knight 11,5 -> 8,8 (p50 bez zmian 5,6: model ma duże naramienniki i wypukły napierśnik), Dread Dragon 8,8 -> 8,3, gambeson 5,6 -> 5,6.
 Przenikanie ciała przez przedmiot bez zmian (3,6-3,7 % / 3,0 %). Ostrzejsze limity (3 cm K 0,5; 4 cm K 0,3) dają niemal to samo przy gorszym zachowaniu detali. `test_items`: 0,718 (bez zmian).
 Ręczne strojenie: pole `"tune": {"uo_fit_item.py": {"LIMIT": 0.04}}` w przepisie `uo_make_item.py`.
+
+## Kaptur (slot `hood`, 2026-10-12)
+Model z Meshy AI („kaptur na głowę”, 327 tys. wierzchołków, bez tekstury, znormalizowany do ok. 1,9 jednostki wysokości): kaptur z głębokim otworem na twarz i kołnierzem na szyi.
+Nowy slot `hood` (strefa 1,40-1,97 m, górna krawędź 1,97 m nad czubkiem głowy, części ciała do dopasowania: głowa i szyja, odstęp 3 cm, miękki limit grubości 12 cm, klasa „hard”: trzyma kształt;
+wagi: głowa, szyja, klatka). Próby: z klatką i obojczykami w dopasowaniu kaptur wychodził za duży (×0,50, 0,95 m: kołnierz dopasowany do piersi), samo `head`+`neck` z przyciąganiem
+do rozmiaru pliku nadal ×0,47. Model znormalizowany (Meshy, część generatorów AI) nie ma realnej skali: przepis podaje jednostkę z wymiarów głowy (twarz UO ok. 0,23 m, otwór kaptura
+ok. 1 jednostka): `"tune": {"uo_autofit_item.py": {"UNIT": 0.3, "SCALE_RANGE": [0.8, 1.3]}}` -> skala 0,336, pokrycie skóry głowy 98 %. `uo_conform_item.py` (owinięcie) nie pasuje do kaptura:
+przenosił brzegi kołnierza na ręce jak rękawy i zgniatał czubek kaptura.
