@@ -166,3 +166,8 @@ Potem: kaptur niżej na czole (`TILT_BACK` 18) i krótki kołnierz do linii bark
 Nowe w `uo_hood_cover.py`: `BROW_Z` (czoło pod dziobem kaptura), `TILT_FADE` (obrót tylko kaptura, nie kołnierza), `SYMMETRIZE` / `SYM_SIGMA` (płaszczyzna lustra + gładka symetryzacja), `HEAD_NEAR` (brzeg kołnierza nie idzie z głową), `BIND_SMOOTH` / `BIND_ARM`, `INNER_SHADE` (wnętrze ciemniejsze).
 `uo_bind_item.py` PART `hood`: także `upper_arm` (0,5). Model: wgrany `uo_bind_item.py`. Przepis: `docs/qa/hood_assassin_recipe.json` (model poza repo). Narzędzia zbliżeń 3D i pomiaru twarzy były w scratchpadzie (nie w repo).
 Uwaga: nowe ustawienia domyślne zmieniają też wynik starego kaptura Meshy (sesja 22, nie przeliczony).
+
+## Sesja 23, cep z łańcuchem (`docs/qa/flail.md`)
+Prośba użytkownika: łańcuch maczugi ma poddawać się fizyce. Wzorzec: oryginalna animacja cepa od użytkownika (`.vd`, poza repo). Model z Meshy według promptu z proporcjami oryginału.
+Nowe: `pipeline/uo_flail.py` (podział trzonek / łańcuch / kula, symulacja Verleta per akcja -> `flail_sim.npz`), `render_uo_layer.py` `flail_fix`, `pipeline/flail_fit.py` (pomiar wobec oryginału), `uo_place_weapon.py` `BUTT` (miejsce chwytu; przepis `"weapon": {"butt": -0.06}`), przepis `"flail"` w `uo_make_item.py`.
+Wynik: kula od oryginału 22,0 px (sztywny) -> 13,7 px, przedmiot 9,3 -> 6,4 px. Model: wgrane `render_uo_layer.py` i `uo_place_weapon.py`. Przepis: `docs/qa/flail_recipe.json`.

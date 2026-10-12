@@ -20,10 +20,11 @@ RECIPE.json (only "file" and "kind" are required):
    "tune": {"uo_fit_item.py": {"MIN_GAP": 0.02, "LIMIT": 0.05}, "uo_autofit_item.py": {"GAP": 0.02}},   # settings of the steps it runs (autofit, densify, fit, bind)
    "conform": {"MOVE": [0, 0, -0.07]},   # shirt / tunic / coat made on another mannequin: rebuilt as a shell of the body (uo_conform_item.py: sleeves onto the arms, wrapped GAP off the skin,
                                     # weights of the skin under it; the render keeps it out of the skin of its region in every frame); its settings, true = the defaults
+   "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings; docs/qa/flail.md)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
-                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...)
+                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
@@ -314,7 +315,7 @@ flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}
 wp = %(weapon)r
 if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
-    run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}))
+    run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
@@ -413,6 +414,17 @@ if __name__ == "__main__":
             sys.exit("uo_hood_cover failed:\n%s\n%s" % (r.stdout[-3000:], r.stderr[-2000:]))
         for l in lines:
             print(l[:260])
+    if recipe.get("flail"):                                  # a flail: haft rigid in the hand, the chain and the ball simulated per action (uo_flail.py -> flail_sim.npz next to item.blend)
+        t = time.time(); cfg = recipe["flail"] if isinstance(recipe["flail"], dict) else {}
+        sets = sum([["--set", "%s=%s" % kv] for kv in cfg.items()], [])
+        r = subprocess.run([sys.executable, os.path.join(HERE, "uo_flail.py"), blend, blend, "--out", os.path.join(out, "flail_sim.npz")] + sets, capture_output=True, text=True)
+        lines = [l for l in r.stdout.splitlines() if l.startswith("uo_flail")]
+        open(os.path.join(out, "report.txt"), "a").write("\n".join(lines) + "\n")
+        if r.returncode or not any("wrote" in l for l in lines):
+            sys.exit("uo_flail failed:\n%s\n%s" % (r.stdout[-3000:], r.stderr[-2000:]))
+        for l in lines:
+            print(l[:260])
+        print("flail simulated in %.0f s" % (time.time() - t))
     sim = recipe.get("sim", recipe.get("kind") in ("robe", "skirt")) and not recipe.get("weapon")      # loose garments: cloth simulation on top of the leg push (uo_cloth_sim.py), on by default
     if sim and a.no_sim is False:
         t = time.time(); cfg = ["%s=%s" % kv for kv in (recipe["sim"].items() if isinstance(recipe.get("sim"), dict) else [])]

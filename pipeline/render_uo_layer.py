@@ -272,6 +272,50 @@ def evaluated_co(ob, dg):
     return ev, me, co.reshape(-1, 3).astype(np.float64)
 
 
+FLAIL = {}
+
+
+def flail_fix(a, i):
+    """flails (custom property uo_flail, uo_flail.py): the chain and the ball moved to the simulated nodes of this frame (flail_sim.npz next to the .blend), the haft as bound"""
+    obs = [o for o in clothes if not o.hide_render and o.get("uo_flail")]
+    if not obs:
+        return
+    if "sim" not in FLAIL:
+        path = os.path.join(os.path.dirname(bpy.data.filepath), "flail_sim.npz") if bpy.data.filepath else ""
+        FLAIL["sim"] = dict(np.load(path)) if path and os.path.exists(path) else {}
+        print("render_uo_layer: flail simulation %s (%d frames)" % (path, len(FLAIL["sim"])))
+    X = FLAIL["sim"].get("%d_%d" % (a, i))
+    for o in obs:
+        fix_off(o)
+    if X is None:
+        return
+    bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+    Mrig = np.array(rig.matrix_world)
+    for o in obs:
+        prm = json.loads(o["uo_flail"]); R = np.array(prm["nodes"]); n = len(R)
+        if (o.name, a, i) not in FIX_CACHE:
+            nv = len(o.data.vertices)
+            s = np.empty(nv, np.float32); o.data.attributes["uo_flail_s"].data.foreach_get("value", s)
+            part = np.empty(nv, np.int32); o.data.attributes["uo_flail_part"].data.foreach_get("value", part)
+            co = np.empty(nv * 3, np.float32); o.data.vertices.foreach_get("co", co); co = co.reshape(-1, 3).astype(np.float64)
+            Mo = np.linalg.inv(Mrig) @ np.array(o.matrix_world)                      # object -> armature (does not change with the direction)
+            Vr = co @ Mo[:3, :3].T + Mo[:3, 3]
+            pb = rig.pose.bones[prm["bone"]]; F = (np.array(pb.matrix) @ np.linalg.inv(np.array(pb.bone.matrix_local)))[:3, :3]
+            seg = (prm["ball_start"] - prm["haft_end"]) / (n - 2)
+            piece = np.where(part == 2, n - 2, np.clip(((s - prm["haft_end"]) / seg).astype(int), 0, n - 3))
+            ev, me, cur = evaluated_co(o, dg); Mw = np.array(ev.matrix_world); ev.to_mesh_clear()
+            pos = cur.copy(); Mi = np.linalg.inv(Mw) @ Mrig
+            for k in range(n - 1):                                                    # each piece turned like its segment, the turn carried down from the haft (no twist jumps)
+                c = F @ (R[k + 1] - R[k]); x = X[k + 1] - X[k]
+                F = np.array(Vector(c.tolist()).rotation_difference(Vector(x.tolist())).to_matrix()) @ F
+                m = (piece == k) & (part > 0)
+                if m.any():
+                    P = X[k] + (Vr[m] - R[k]) @ F.T
+                    pos[m] = P @ Mi[:3, :3].T + Mi[:3, 3]
+            FIX_CACHE[(o.name, a, i)] = pos.astype(np.float32)
+        fix_on(o, FIX_CACHE[(o.name, a, i)].astype(np.float64))
+
+
 def body_fix(a, i):
     """BODY_GAP for UO frame i of action a: the pose does not depend on the direction, so each frame is solved once"""
     items = [o for o in clothes if not o.hide_render and not o.get("uo_no_body_gap")]   # uo_no_body_gap: a rigid item (sword, shield) is never bent
@@ -883,6 +927,8 @@ def frame_job():
                     sc.frame_set(1 + i * STEP)
                     if (BODY_GAP > 0 or HAS_CLOTH) and LAYER != "body":
                         body_fix(a, i)
+                    if LAYER != "body":
+                        flail_fix(a, i)
                     orig = original(a, i, d) if EXACT_ANY else None
                     orig_m = orig[..., 3] > 0 if orig is not None else None
                     if LAYER == "body" and EXACT_BODY and orig is not None:
