@@ -83,6 +83,8 @@ sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
+OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
+                                   # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
 HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
@@ -300,11 +302,14 @@ def flail_fix(a, i):
             co = np.empty(nv * 3, np.float32); o.data.vertices.foreach_get("co", co); co = co.reshape(-1, 3).astype(np.float64)
             Mo = np.linalg.inv(Mrig) @ np.array(o.matrix_world)                      # object -> armature (does not change with the direction)
             Vr = co @ Mo[:3, :3].T + Mo[:3, 3]
-            pb = rig.pose.bones[prm["bone"]]; F = (np.array(pb.matrix) @ np.linalg.inv(np.array(pb.bone.matrix_local)))[:3, :3]
+            Ms = FLAIL["sim"].get("%d_%d_M" % (a, i))                              # the hand's turn smoothed over the action (uo_flail.py HAND_SMOOTH): the haft drawn with it too
+            pb = rig.pose.bones[prm["bone"]]; F = (np.array(pb.matrix) @ np.linalg.inv(np.array(pb.bone.matrix_local)))[:3, :3] if Ms is None else Ms[:3, :3]
             seg = (prm["ball_start"] - prm["haft_end"]) / (n - 2)
             piece = np.where(part == 2, n - 2, np.clip(((s - prm["haft_end"]) / seg).astype(int), 0, n - 3))
             ev, me, cur = evaluated_co(o, dg); Mw = np.array(ev.matrix_world); ev.to_mesh_clear()
             pos = cur.copy(); Mi = np.linalg.inv(Mw) @ Mrig
+            if Ms is not None:
+                m0 = part == 0; pos[m0] = (Vr[m0] @ Ms[:3, :3].T + Ms[:3, 3]) @ Mi[:3, :3].T + Mi[:3, 3]
             for k in range(n - 1):                                                    # each piece turned like its segment, the turn carried down from the haft (no twist jumps)
                 c = F @ (R[k + 1] - R[k]); x = X[k + 1] - X[k]
                 F = np.array(Vector(c.tolist()).rotation_difference(Vector(x.tolist())).to_matrix()) @ F

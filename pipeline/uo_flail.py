@@ -44,6 +44,12 @@ GAP = 0.02            # m outside the body capsules
 BALL_GAP = 0.0        # m: extra radius of the ball node against the body (0 = from the ball's size x 0.6)
 INELASTIC = True      # the push out of the body does not turn into speed (with it, the ball bounced off the head, the chest and the saddle: 2-5 x faster than the original
                       # in eat, salute, mounted walk, the bow attacks)
+WEAPON_BONE_ACTIONS = ""   # actions ("18,23,26") in which the haft is carried by weapon1h.R (its turn fitted to the original weapons) instead of HOLD; needs HAND_SMOOTH > 0
+                      # (the renderer draws the haft with the stored carrier). Measured: mounted 1H attack (26): with the hand the haft crossed the body, with weapon1h.R it swings outside
+HAND_SMOOTH = 0       # passes of smoothing of the hand's turn over the frames of an action (about the grip; loops wrap): the turn of our wrist is fitted to silhouettes and
+                      # shakes in some actions (mounted walk: the end of the haft jumped 0.3-0.5 m a frame); the haft is drawn with the smoothed turn too
+RIGID = ""            # actions (numbers, "9,23") in which the flail is held gathered: the chain hangs settled in the first pose and then moves rigidly with the hand
+                      # (the original draws the ball by the haft in riding, salute, eat, spells; a free chain there whirled); "all" = every action
 PREROLL = 1.5         # s hanging in the first pose before a one-shot action
 CYCLES = 3
 STEP = 3
@@ -52,6 +58,9 @@ BONE = "weapon1h.R"    # the weapon line the haft was laid on (uo_place_weapon.p
 HOLD = "weapon1h.R"    # the bone the haft is bound to (and carried by): "hand.R" rebinds it rigidly to the hand. On weapon1h.R the far end of a long haft jumped 0.4-0.8 m
                        # between frames in some actions (mounted walk, eat): that bone is fitted per frame to short original weapons, its small turns are big at 0.5 m
 CAPSULES = ("pelvis", "spine", "chest", "neck", "head", "thigh.L", "shin.L", "thigh.R", "shin.R", "upper_arm.L", "forearm.L")
+
+
+GRIP = []
 
 
 def rest_axis(rig):
@@ -65,7 +74,7 @@ def rest_axis(rig):
 def prepare(ob, rig):
     Mo = np.linalg.inv(np.array(rig.matrix_world)) @ np.array(ob.matrix_world)         # object -> armature
     co = np.array([v.co for v in ob.data.vertices]); V = co @ Mo[:3, :3].T + Mo[:3, 3]
-    piv, d = rest_axis(rig)
+    piv, d = rest_axis(rig); GRIP[:] = [piv]
     s0 = (V - piv) @ d; butt = piv + d * s0.min(); s = (V - butt) @ d
     radial = np.linalg.norm((V - butt) - np.outer(s, d), axis=1)
     L = s.max(); nb = 60; edges = np.linspace(0, L, nb + 1); k = np.clip((s / L * nb).astype(int), 0, nb - 1)
@@ -109,7 +118,7 @@ def prepare(ob, rig):
         a = ob.data.attributes.get(name) or ob.data.attributes.new(name, typ, "POINT")
         a.data.foreach_set("value", val.astype(np.float32 if typ == "FLOAT" else np.int32))
     br = float(np.percentile(np.linalg.norm(V[part == 2] - bc, axis=1), 70)) if (part == 2).any() else 0.05
-    ob["uo_flail"] = json.dumps(dict(nodes=np.round(nodes, 6).tolist(), haft_end=float(sh), ball_start=float(sb), ball_r=br, bone=HOLD))
+    ob["uo_flail"] = json.dumps(dict(nodes=np.round(nodes, 6).tolist(), haft_end=float(sh), ball_start=float(sb), ball_r=br, bone=HOLD, grip=np.round(piv, 6).tolist()))
     if HOLD != BONE:                                  # rebind rigidly to HOLD
         for gname in [g.name for g in ob.vertex_groups]:
             ob.vertex_groups.remove(ob.vertex_groups[gname])
@@ -175,11 +184,31 @@ def simulate(rig, act, nodes, br, caps):
     sc = bpy.context.scene
     a = int(act["uo_action"]); nf = int(act["uo_frames"])
     rig.animation_data.action = act; rig["uo_direction"] = 0
-    names = [HOLD] + [c[0] for c in caps]
+    names = [HOLD, BONE] + [c[0] for c in caps]
     keys = []
+    use_w = HAND_SMOOTH > 0 and a in {int(x) for x in WEAPON_BONE_ACTIONS.split(",") if x.strip()}
     for i in range(nf):
-        sc.frame_set(1 + i * STEP); keys.append(pose_mats(rig, names))
+        sc.frame_set(1 + i * STEP); k = pose_mats(rig, names)
+        if use_w:
+            k[HOLD] = k[BONE]                                                # the carrier of the haft in this action
+        keys.append(k)
     loop = a in LOOP and nf > 1
+    if HAND_SMOOTH > 0 and nf > 2:                                          # the hand's turn smoothed over the frames, about the grip
+        grip = GRIP[0]
+        Q = [Matrix(k[HOLD][:3, :3].tolist()).to_quaternion() for k in keys]
+        for j in range(1, nf):
+            if Q[j].dot(Q[j - 1]) < 0:
+                Q[j] = -Q[j]
+        Qv = np.array([[q.w, q.x, q.y, q.z] for q in Q])
+        for _ in range(HAND_SMOOTH):
+            prv = np.roll(Qv, 1, 0); nxt = np.roll(Qv, -1, 0)
+            if not loop:
+                prv[0] = Qv[0]; nxt[-1] = Qv[-1]
+            prv *= np.sign((prv * Qv).sum(1))[:, None]; nxt *= np.sign((nxt * Qv).sum(1))[:, None]
+            Qv = 0.25 * prv + 0.5 * Qv + 0.25 * nxt; Qv /= np.linalg.norm(Qv, axis=1)[:, None]
+        for j in range(nf):
+            M = keys[j][HOLD]; R = np.array(Quaternion(Qv[j]).to_matrix()); g = M[:3, :3] @ grip + M[:3, 3]
+            Ms = np.eye(4); Ms[:3, :3] = R; Ms[:3, 3] = g - R @ grip; keys[j] = dict(keys[j]); keys[j][HOLD] = Ms
     n = len(nodes)
     w = np.ones(n); w[0] = 0.0; w[-1] = 1.0 / MASS                          # inverse masses: node 0 is carried by the haft
     rest = np.linalg.norm(np.diff(nodes, axis=0), axis=1)
@@ -215,11 +244,23 @@ def simulate(rig, act, nodes, br, caps):
         for _ in range(int(PREROLL / dt)):
             X, Xp = step(M0, X, Xp, keys[0])
     out = {}
+    rig_set = set(range(35)) if RIGID == "all" else {int(x) for x in RIGID.split(",") if x.strip()}
+    if a in rig_set:                                                         # gathered: settled in the first pose, then rigid on the hand
+        for _ in range(int(PREROLL / dt)):
+            X, Xp = step(M0, X, Xp, keys[0])
+        L = np.linalg.inv(M0); Xl = (L[:3, :3] @ X.T).T + L[:3, 3]
+        for i in range(nf):
+            M = keys[i][HOLD]; out["%d_%d" % (a, i)] = (M[:3, :3] @ Xl.T).T + M[:3, 3]
+            if HAND_SMOOTH > 0:
+                out["%d_%d_M" % (a, i)] = M
+        return out
     cycles = CYCLES if loop else 1
     for c in range(cycles):
         for i in range(nf):
             if c == cycles - 1:
                 out["%d_%d" % (a, i)] = X.copy()
+                if HAND_SMOOTH > 0:
+                    out["%d_%d_M" % (a, i)] = keys[i][HOLD]
             if i == nf - 1 and not loop:
                 break
             j = (i + 1) % nf
@@ -238,7 +279,7 @@ def main(src, dst, npz, only, sets):
     rig.data.pose_position = "REST"; bpy.context.view_layer.update()
     ob = next(o for o in bpy.data.collections["Clothing"].all_objects if o.type == "MESH" and not o.hide_render)
     if "uo_flail" in ob and dst is None:
-        prm = json.loads(ob["uo_flail"]); nodes = np.array(prm["nodes"]); br = prm["ball_r"]
+        prm = json.loads(ob["uo_flail"]); nodes = np.array(prm["nodes"]); br = prm["ball_r"]; GRIP[:] = [np.array(prm["grip"])]
     else:
         nodes, br = prepare(ob, rig)
     caps = capsules(rig, body)

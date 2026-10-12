@@ -35,3 +35,28 @@ Kolor: `BRIGHTNESS` 2,5 i obrys 0,7 (łańcuch ma ok. 1 px, przy obrysie 0,38 ca
 
 ## Czego model nie robi
 Brak zderzeń kuli z prawą ręką i dłonią (trzyma broń); łańcuch nie zderza się sam ze sobą; ruch nie zależy od kierunku (oryginał bywa rysowany inaczej w różnych kierunkach); `item_qa` liczy kształt związany, bez symulacji.
+
+## Druga runda (uwagi użytkownika: trzonek za krótki, kula lata jak oszalała, broń wycinana przez ciało)
+**Trzonek.** Zmierzone na stojących klatkach oryginału (8× powiększenie, kierunki 1-3, chód): trzonek wystaje z dłoni o 18-19 px (ok. 0,5 m), poziomo do przodu; łańcuch do środka kuli ok. 14 px, kula ok. 8 px.
+Było: trzonek 0,27 m, z dłoni ok. 7 px. Teraz `HAFT_SCALE` 2,07 (0,56 m, chwyt 6 cm od końca), `CHAIN_SCALE` 0,48 (łańcuch 0,30 m), `BALL_SCALE` 0,65. Wcześniejszy wybór długości pod średnią z pomiaru był błędem (patrz wyżej: krótszy łańcuch obniża średnią, bo mniej karze ruch nie w fazie).
+**Szalejąca kula.** Nowa miara w `flail_fit.py`: przesunięcie kuli między klatkami (px/klatkę), nasze i oryginału. Pierwsza wersja: średnio 14,6 wobec 10,9; jazda stępa 16,8 / 3,2, jedzenie 23,1 / 6,6, salut 20,9 / 7,6, kusza konno 28,6 / 7,7, czar 22,0 / 10,0.
+Przyczyny (zmierzone na węzłach symulacji): (1) koniec trzonka skakał 0,4-0,8 m między klatkami: kość `weapon1h.R` jest dopasowana per klatka do krótkich oryginalnych broni i jej drobne obroty na końcu 0,5 m trzonka są ogromne; (2) obrót naszego nadgarstka też się trzęsie (z sylwetek słabo określony); (3) wypchnięcie z ciała zamieniało się w prędkość (kula odbijała się od głowy, piersi, siodła).
+Zmiany: `HOLD` hand.R (trzonek sztywno na dłoni), `HAND_SMOOTH` 2 (obrót dłoni wygładzony w czasie wokół chwytu; render rysuje trzonek z tym samym obrotem: klucze `<a>_<i>_M` w npz), `INELASTIC` (zderzenie zabiera prędkość), `DAMP` 6.
+W oryginale część akcji ma cep zebrany (kula przy trzonku): jazda, salut, jedzenie, czary. Na prośbę użytkownika sztywno tylko tam, gdzie konieczne: `RIGID` (łańcuch ułożony w pierwszej pozie, potem sztywno w dłoni) wybrany pomiarem: tylko akcje, w których swobodna kula jest > 1,4-1,6× szybsza od oryginału, a sztywna bliżej:
+17 czar obszarowy (kula 17,8 -> 13,6 px, szybkość 19,7 -> 14,6, oryginał 13,0), 18 łuk (13,3 -> 9,9; 19,0 -> 11,7, oryginał 9,3). Kusza konno (28) i jedzenie (34): sztywny tryb nic nie daje, zostaje fizyka.
+
+| wariant (wszystkie 35 akcji) | kula px | przedmiot px | szybkość kuli (oryginał 10,9) |
+|---|---|---|---|
+| pierwsza wersja | 13,5 | 5,8 | 14,6 |
+| nowe wymiary, `DAMP` 6, weapon1h.R | 13,4 | 6,1 | 14,3 |
+| + `HOLD` hand.R | 12,1 | 5,6 | 13,5 |
+| + `HAND_SMOOTH` 2 (4: 11,7 / 5,5 / 9,2) | 11,6 | 5,4 | 10,1 |
+| + `RIGID` 17,18 | 11,4 | 5,3 | 9,7 |
+| sztywno wszędzie (dla porównania) | 10,8 | 5,1 | 11,7 |
+
+**Wycinanie przez ciało.** Liczba pikseli cepa nasza / oryginału: mediana 0,72, w 134 z 1031 klatek < 0,5 (ręka i dłoń, które trzymają cep, zasłaniały go). Bez zasłaniania przez ręce i dłonie (`uo_occluders` = head, thigh, shin, foot; nowa własność sceny czytana przez `render_uo_layer.py`): 0,85 i 39 klatek, przedmiot 5,3 -> 4,6 px;
+bez zasłaniania w ogóle 0,89, 17 klatek, 4,5 px. Wybrane: bez rąk (głowa i nogi zasłaniają kulę za nimi). Wynik końcowy: kula 11,1 px, przedmiot 4,6 px, szybkość 9,8 px/klatkę.
+**Atak jednoręczny konno (26), uwaga użytkownika: cep leci przez ciało, powinien po zewnętrznej.** Z dłonią (`hand.R`) trzonek przecinał tułów w klatkach 3-4 (dłoń skręcona do środka), w oryginale cep schodzi łukiem z boku konia.
+`weapon1h.R` ma kierunek dopasowany do oryginalnych broni per klatka (też w tej akcji); z wygładzeniem (`HAND_SMOOTH` 2) już nie drga. Porównanie akcja po akcji (dłoń / kość broni, kula px): kość broni wyraźnie lepsza (kula ≥ 1,5 px i przedmiot ≥ 0,5 px bliżej)
+tylko w 18 (10,4 -> 8,8), 23 jazda stępa (14,8 -> 11,7), 26 (24,6 -> 19,9); wszędzie poza tym dłoń lepsza lub równa (sama kość broni w sumie 12,1 px wobec 11,1). Nowe `WEAPON_BONE_ACTIONS` "18,23,26" (render rysuje trzonek z zapisanym nośnikiem).
+Wynik końcowy (35 akcji): kula 10,9 px, przedmiot 4,5 px, szybkość kuli 9,8 px/klatkę (oryginał 10,9), piksele cepa nasze / oryginału mediana 0,85, klatki < 0,5: 32 z 1031.
