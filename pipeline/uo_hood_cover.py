@@ -38,6 +38,10 @@ FIELD_SIGMA = 0.03    # m: the push out of the body is a smooth field in space (
 BODY_ROUNDS = 20      # rounds of that push
 REBIND = True         # bind again after the moves (uo_bind_item.py)
 TILT_BACK = 0.0       # deg: the hood is first turned back about the x axis through C (the brim goes up and back, the face is framed, not shaded)
+FILL_NECK = 0.006     # m: the V of the cowl under the chin (neck, upper chest seen through it: a second opening under the face) is closed by an inner panel of the hood's
+                      # cloth this far off the skin: a copy of the skin seen through it (from the front and from above), widened by FILL_RINGS rings so its edges tuck under the cowl; 0 = off
+FILL_RINGS = 4
+FILL_ZMIN = 1.25      # m: the panel does not go below this
 HEAD_RIGID = 0.0      # m above the head bone head: from here up the hood follows the head only (the face opening, chin to crown, keeps to the face)
 HEAD_BLEND = 0.07     # m: below that, over this height, the head weight fades into the skin weights (neck, chest) of the cowl
 
@@ -77,6 +81,46 @@ def body_push(VI, it, bvh):
         print("uo_hood_cover: %s: body push round %d: %d vertices closer than %.0f mm to the body (at most %.1f mm in), moved at most %.1f mm"
               % (it.name, rnd + 1, len(k), BODY_GAP * 1e3, need.max() * 1e3, np.linalg.norm(D, axis=1).max() * 1e3))
     return VI
+
+
+def fill_neck(it, body, m, VB, whead, c):
+    """an inner panel over the skin of the neck / upper chest that is seen through the front of the hood (the V of the cowl)"""
+    import bmesh
+    from mathutils import Vector
+    from mathutils.bvhtree import BVHTree
+    dg = bpy.context.evaluated_depsgraph_get()
+    mi = it.evaluated_get(dg).to_mesh(); Mi = it.matrix_world
+    bh = BVHTree.FromPolygons([Mi @ v.co for v in mi.vertices], [tuple(p.vertices) for p in mi.polygons])
+    NB = np.array([(body.matrix_world.to_3x3() @ v.normal).normalized() for v in m.vertices])
+    cand = (whead < 0.5) & (VB[:, 1] < c[1] + 0.02) & (VB[:, 2] > FILL_ZMIN) & (VB[:, 2] < c[2]) & (np.abs(VB[:, 0]) < 0.15) & (NB[:, 1] < -0.2)
+    seen = np.zeros(len(VB), bool)
+    for i in np.nonzero(cand)[0]:
+        for d in ((0, -1, 0), (0, -0.866, 0.5)):
+            if bh.ray_cast(Vector(VB[i] + NB[i] * 0.004), Vector(d), 1.0)[0] is None:
+                seen[i] = True; break
+    if not seen.any():
+        print("uo_hood_cover: %s: no skin seen through the front of the hood" % it.name); return
+    m.calc_loop_triangles()
+    tri = np.array([t.vertices[:] for t in m.loop_triangles])
+    E = np.vstack([tri[:, [0, 1]], tri[:, [1, 2]], tri[:, [2, 0]]])
+    sel = seen.copy()
+    for _ in range(FILL_RINGS):                                 # widen over the skin (not onto the head)
+        grow = np.zeros(len(VB), bool); grow[E[sel[E[:, 0]], 1]] = True; grow[E[sel[E[:, 1]], 0]] = True
+        sel |= grow & (whead < 0.5) & (VB[:, 2] > FILL_ZMIN - 0.03)
+    T = tri[sel[tri].all(1)]
+    used = np.unique(T); idx = {int(v): k for k, v in enumerate(used)}
+    P = VB[used] + NB[used] * FILL_NECK
+    bm = bmesh.new(); bm.from_mesh(it.data)
+    Minv = np.array(Mi.inverted())
+    nv = [bm.verts.new(tuple((Minv @ np.append(p, 1.0))[:3])) for p in P]
+    bm.verts.ensure_lookup_table()
+    for a, b, cc in T:
+        try:
+            f = bm.faces.new((nv[idx[int(a)]], nv[idx[int(b)]], nv[idx[int(cc)]])); f.material_index = 0; f.smooth = True
+        except ValueError:
+            pass
+    bm.to_mesh(it.data); bm.free(); it.data.update()
+    print("uo_hood_cover: %s: neck panel %d skin vertices seen through the hood, %d faces, %.0f mm off the skin" % (it.name, int(seen.sum()), len(T), FILL_NECK * 1e3))
 
 
 def cover(VI, it, c, ts, rs, cone, sig, bvh, F):
@@ -160,6 +204,8 @@ def main(src, dst, sets):
                 co = np.zeros(len(Vl) * 3, np.float32); k.data.foreach_get("co", co)
                 k.data.foreach_set("co", (co.reshape(-1, 3) + delta).astype(np.float32).ravel())
         it.data.update()
+    if FILL_NECK > 0:
+        fill_neck(items[0], body, m, VB, w, c)
     if REBIND:
         import os, re
         here = os.path.dirname(os.path.abspath(__file__))

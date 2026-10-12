@@ -104,3 +104,8 @@ Z boku ramię zasłania brzeg kołnierza, który wisi między ramieniem a tułow
 Na sprite'ach twarz nadal była zakryta: w warstwie `clothing` przez otwór widać wnętrze tylnej ściany kaptura, a głowa (kość, na której kaptur jest skórowany) według `OWN_PARTS_NEVER_HIDE`
 nigdy nie zasłania przedmiotu, więc wnętrze rysowało się na twarzy. Nowe: `render_uo_layer.py` `HEAD_HIDES` (właściwość sceny `uo_head_hides`, domyślnie wyłączona; `uo_hood_cover.py` ją ustawia):
 głowa może zasłaniać przedmiot, który na niej siedzi (kaptur stoi ≥ 12 mm od głowy, więc przód kaptura nie jest wycinany). Wynik (11 akcji, 350 klatek, `item_body_holes`): piksele twarzy widoczne w otworze 163 -> 3320; `run_qa` PASSED (items 0,723, canvas 16/16).
+Uwaga użytkownika: czasem dwa otwory w kapturze. Zbliżenia klatek z etykietą części ciała: pod otworem twarzy pas kaptura w poprzek szyi, pod nim dekolt w V kołnierza (pierś); w 3D tak samo
+(po obniżeniu i odchyleniu dolny brzeg otworu twarzy idzie w poprzek szyi, poły kołnierza krzyżują się dopiero na piersi). Szyja jako zasłaniająca (jak `HEAD_HIDES`) nic nie zmieniła (pas to przód
+kaptura, nie wnętrze) i została cofnięta. Zmiana: `uo_hood_cover.py` `FILL_NECK` 6 mm: wewnętrzna wstawka z tkaniny kaptura nad skórą szyi i piersi widoczną przez przód kaptura (z przodu i z góry 30°),
+poszerzona o 4 pierścienie siatki skóry, wagi jak skóra. Wynik (11 akcji): dziury tułowia 1736 -> 228 px, twarz 3320 -> 3331 px. 35 akcji (1050 klatek): klatki z ≥ 2 otworami ≥ 3 px w warstwie: 24, z tego 18 to ramię / dłoń przed kołnierzem (zasłanianie, nie otwór w materiale),
+6 to szczeliny 3 px (tułów 4, głowa 2); dziury tułowia 655 px, twarz w otworze 8961 px.
