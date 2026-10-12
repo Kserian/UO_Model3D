@@ -95,3 +95,12 @@ wypchnięcie z całego ciała do `BODY_GAP` 8 mm wzdłuż normalnej skóry jako 
 Wynik: kaptur niżej o 126 mm, wnętrze szczytu 25 mm nad czaszką (z przodu 23, z tyłu u góry 23; boki 37-43), kołnierz leży na barkach i klatce, symetria p90 5,0 mm. `item_qa` 11,4 -> 3,7 % (kaptur w ciele w ruchu). `item_body_holes` (9 akcji, 290 klatek): tułów 2969 px, prawie całość to dekolt w V kołnierza, który po obniżeniu sięga niżej na pierś (kształt modelu), ręce 393, nogi 19.
 Odrzucone: ściśnięcie samej góry w pionie (użytkownik: obniżyć całość), opadanie per wierzchołek z zatrzymaniem na ciele i pchnięcie per wierzchołek wygładzane po siatce
 (pogniecione: warstwa wewnętrzna i zewnętrzna tkaniny rozjeżdżały się).
+Uwaga użytkownika: otwór kaptura nie trzyma się twarzy, przy odchyleniu głowy nie widać twarzy. Zmierzone: (1) brzeg otworu przy brodzie (z 1,52-1,58 m) miał średnio 0,64 wagi głowy (min 0),
+zostawał z szyją; (2) po obniżeniu brzeg kaptura zszedł do brwi (najniższy punkt nad czołem z 1,872 -> 1,728 m): z przodu widać 72 % punktów twarzy, z góry (30°, jak kamera UO) 45 %
+(przed obniżeniem 100 / 100 %), na sprite'ach piksele twarzy w otworze 528 -> 131. Zmiany w `uo_hood_cover.py`: `HEAD_RIGID` / `HEAD_BLEND` (od wysokości kości głowy w górę kaptur tylko na głowie,
+7 cm przejścia do wag kołnierza; brzeg przy brodzie 0,64 -> 0,96) i `TILT_BACK` (kaptur obrócony do tyłu wokół C przed obniżeniem). Kąt z pomiaru: 10° -> 84 / 73 %, **20° -> 100 / 100 %**
+(brzeg z 1,815 m, szczyt 26 mm nad czaszką), 30° -> 100 / 100 % (szczyt 34 mm). Przepis: `"hood_cover": {"TILT_BACK": 20}`. `BODY_ROUNDS` 8 -> 20 (po obrocie 8 rund zostawiało 115 wierzchołków do 29 mm w barku).
+Z boku ramię zasłania brzeg kołnierza, który wisi między ramieniem a tułowiem (promienie z kamery: skóra 2-3 cm przed kapturem, kaptur nie jest w ciele).
+Na sprite'ach twarz nadal była zakryta: w warstwie `clothing` przez otwór widać wnętrze tylnej ściany kaptura, a głowa (kość, na której kaptur jest skórowany) według `OWN_PARTS_NEVER_HIDE`
+nigdy nie zasłania przedmiotu, więc wnętrze rysowało się na twarzy. Nowe: `render_uo_layer.py` `HEAD_HIDES` (właściwość sceny `uo_head_hides`, domyślnie wyłączona; `uo_hood_cover.py` ją ustawia):
+głowa może zasłaniać przedmiot, który na niej siedzi (kaptur stoi ≥ 12 mm od głowy, więc przód kaptura nie jest wycinany). Wynik (11 akcji, 350 klatek, `item_body_holes`): piksele twarzy widoczne w otworze 163 -> 3320; `run_qa` PASSED (items 0,723, canvas 16/16).

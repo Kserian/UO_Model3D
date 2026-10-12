@@ -54,6 +54,8 @@ HIDE_ERODE = 0                     # px: the area where a HAND or the HEAD hides
                                    # original in a hole of a sleeve or a collar (docs/qa/robe_black.md). 0 = off; scene property uo_hide_erode
 LEGS_UNDER = False                 # the legs (thighs, shins, feet) never hide the item: a long robe covers them in the client, and a leg that comes out in front of it in 3D (a foot
                                    # lifted in a fall, a knee through the front slit) cut a hole that showed the ORIGINAL legs (docs/qa/robe_black.md). Scene property uo_legs_under
+HEAD_HIDES = False                 # the head hides the item even when the item is skinned to it: a hood stands off the head, and through its face opening the inside of its back
+                                   # wall is behind the face (with the head "worn" it was drawn over the face; docs/qa/autofit.md "Kaptur"). Scene property uo_head_hides
 OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs item: thighs, shins, pelvis) never hide it: the item
                                    # wraps them, so their skin in front of the item shell is the item's own edge, not an occluder
                                    # (it cut 1-px strips off the sides of trousers). False = every OCCLUDERS part may hide it
@@ -81,6 +83,7 @@ sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
+HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
@@ -612,6 +615,8 @@ def worn_parts(share=0.04):
 WORN = worn_parts() if (LAYER == "clothing" and OWN_PARTS_NEVER_HIDE) else set()
 if LAYER == "clothing" and LEGS_UNDER:
     WORN |= {"thigh", "shin", "foot"}
+if HEAD_HIDES:
+    WORN.discard("head")
 OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP keeps the items away from
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
 HANDHEAD_TRIS = body_part_mask({"hand", "head"})                # HIDE_ERODE shrinks what these hide (a hand only next to its sleeve)

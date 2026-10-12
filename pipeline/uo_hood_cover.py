@@ -15,7 +15,9 @@ Before that (TOP_GAP > 0) the whole hood comes down until the inside of its top,
 118 mm, it looked too high and its cowl did not lie on the shoulders; user, 2026-10-12), rigidly; the drop is corrected until the top lands at TOP_GAP after the
 pushes below (they lift the top a little). After the ears, the hood (the cowl now in the shoulders and chest) is pushed out of the whole body to BODY_GAP along
 the skin normal (BODY_ROUNDS rounds; the moves form a smooth field in space, FIELD_SIGMA, mirrored): the cowl lies on the shoulders. Rejected: a per-vertex
-vertical drop stopping on the body and a per-vertex push smoothed over the mesh (both crumpled the cloth: the inner and outer layer moved apart). Then the hood is bound again (uo_bind_item.py, PART hood): its weights were taken where it stood before.
+vertical drop stopping on the body and a per-vertex push smoothed over the mesh (both crumpled the cloth: the inner and outer layer moved apart). Then the hood is bound again (uo_bind_item.py, PART hood): its weights were taken where it stood before; and from the chin up (HEAD_RIGID above the head bone)
+it follows the head only, blended into the skin weights over HEAD_BLEND below: with skin weights the rim round the chin and cheeks (head weight 0.64 on average at
+z 1.52-1.58 m, some 0) stayed with the neck when the head tilted, the opening slid over the face (user, 2026-10-12).
 Check: the closeups of the head and item_body_holes.py (the layer on the original body).
 """
 import sys
@@ -33,8 +35,11 @@ GROUP_MIN = 0.3       # head skin: the weight of the head bone at least this
 TOP_GAP = 0.012       # m: the whole hood moved down until the inside of its top is this far above the skull (0 = leave it where the autofit put it)
 BODY_GAP = 0.008      # m: the hood at least this far out of the body skin (cowl on the shoulders), along the skin normal; 0 = off
 FIELD_SIGMA = 0.03    # m: the push out of the body is a smooth field in space (gaussian): the inner and outer layer of the cloth move together, nothing crumples
-BODY_ROUNDS = 8       # rounds of that push
+BODY_ROUNDS = 20      # rounds of that push
 REBIND = True         # bind again after the moves (uo_bind_item.py)
+TILT_BACK = 0.0       # deg: the hood is first turned back about the x axis through C (the brim goes up and back, the face is framed, not shaded)
+HEAD_RIGID = 0.0      # m above the head bone head: from here up the hood follows the head only (the face opening, chin to crown, keeps to the face)
+HEAD_BLEND = 0.07     # m: below that, over this height, the head weight fades into the skin weights (neck, chest) of the cowl
 
 
 def ray_up(V, F, c):
@@ -133,6 +138,10 @@ def main(src, dst, sets):
         Mi = np.array(it.matrix_world); Vl = np.array([v.co for v in it.data.vertices]); VI = Vl @ Mi[:3, :3].T + Mi[:3, 3]
         F = [tuple(p.vertices) for p in it.data.polygons]
         top0 = ray_up(VI, F, c)
+        if TILT_BACK:
+            a = np.radians(TILT_BACK); R = np.array([[1, 0, 0], [0, np.cos(a), np.sin(a)], [0, -np.sin(a), np.cos(a)]])
+            VI = (VI - c) @ R.T + c
+            print("uo_hood_cover: %s: turned back %.0f deg about C" % (it.name, TILT_BACK))
         V0 = VI; _, twin = cKDTree(V0 * [-1, 1, 1]).query(V0)
         dz = top0 - (skin_top + TOP_GAP) if (TOP_GAP > 0 and top0 is not None and skin_top is not None) else 0.0
         for attempt in range(3 if dz > 0 else 1):
@@ -161,6 +170,29 @@ def main(src, dst, sets):
             o.select_set(o in items)
         bpy.context.view_layer.objects.active = items[0]
         exec(compile(text, "uo_bind_item.py", "exec"), {"__name__": "__main__"})
+    if HEAD_BLEND >= 0:
+        zh = (rig.matrix_world @ rig.data.bones["head"].head_local).z + HEAD_RIGID
+        for it in items:
+            hg = it.vertex_groups.get("head") or it.vertex_groups.new(name="head")
+            others = [g for g in it.vertex_groups if g.name != "head"]
+            n = len(it.data.vertices); W = np.zeros((n, len(it.vertex_groups)))
+            for v in it.data.vertices:
+                for gr in v.groups:
+                    W[v.index, gr.group] = gr.weight
+            s = W.sum(1, keepdims=True); W = np.where(s > 0, W / np.maximum(s, 1e-9), 0)
+            z = np.array([(it.matrix_world @ v.co).z for v in it.data.vertices])
+            x = np.clip((z - (zh - HEAD_BLEND)) / max(HEAD_BLEND, 1e-6), 0, 1); tt = x * x * (3 - 2 * x)
+            W = W * (1 - tt)[:, None]; W[:, hg.index] += tt
+            for g in it.vertex_groups:
+                col = W[:, g.index]
+                for val in np.unique(np.round(col, 4)):
+                    idx = np.nonzero(np.round(col, 4) == val)[0].tolist()
+                    if val > 0:
+                        g.add(idx, float(val), "REPLACE")
+                    else:
+                        g.remove(idx)
+            print("uo_hood_cover: %s: rigid on the head above z %.3f m (%d vertices), blended over %.0f mm below" % (it.name, zh, int((tt >= 1).sum()), HEAD_BLEND * 1e3))
+    bpy.context.scene["uo_head_hides"] = 1                       # the face hides the inside of the hood (render_uo_layer.py HEAD_HIDES)
     bpy.ops.wm.save_as_mainfile(filepath=dst)
     print("uo_hood_cover: saved", dst)
 
