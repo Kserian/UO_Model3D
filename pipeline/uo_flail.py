@@ -42,11 +42,15 @@ MASS = 6.0            # the ball's mass in links
 ITER = 20
 GAP = 0.02            # m outside the body capsules
 BALL_GAP = 0.0        # m: extra radius of the ball node against the body (0 = from the ball's size x 0.6)
+INELASTIC = True      # the push out of the body does not turn into speed (with it, the ball bounced off the head, the chest and the saddle: 2-5 x faster than the original
+                      # in eat, salute, mounted walk, the bow attacks)
 PREROLL = 1.5         # s hanging in the first pose before a one-shot action
 CYCLES = 3
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8, 15, 23, 24, 25}
-BONE = "weapon1h.R"
+BONE = "weapon1h.R"    # the weapon line the haft was laid on (uo_place_weapon.py, weapon_motion.json)
+HOLD = "weapon1h.R"    # the bone the haft is bound to (and carried by): "hand.R" rebinds it rigidly to the hand. On weapon1h.R the far end of a long haft jumped 0.4-0.8 m
+                       # between frames in some actions (mounted walk, eat): that bone is fitted per frame to short original weapons, its small turns are big at 0.5 m
 CAPSULES = ("pelvis", "spine", "chest", "neck", "head", "thigh.L", "shin.L", "thigh.R", "shin.R", "upper_arm.L", "forearm.L")
 
 
@@ -105,7 +109,11 @@ def prepare(ob, rig):
         a = ob.data.attributes.get(name) or ob.data.attributes.new(name, typ, "POINT")
         a.data.foreach_set("value", val.astype(np.float32 if typ == "FLOAT" else np.int32))
     br = float(np.percentile(np.linalg.norm(V[part == 2] - bc, axis=1), 70)) if (part == 2).any() else 0.05
-    ob["uo_flail"] = json.dumps(dict(nodes=np.round(nodes, 6).tolist(), haft_end=float(sh), ball_start=float(sb), ball_r=br, bone=BONE))
+    ob["uo_flail"] = json.dumps(dict(nodes=np.round(nodes, 6).tolist(), haft_end=float(sh), ball_start=float(sb), ball_r=br, bone=HOLD))
+    if HOLD != BONE:                                  # rebind rigidly to HOLD
+        for gname in [g.name for g in ob.vertex_groups]:
+            ob.vertex_groups.remove(ob.vertex_groups[gname])
+        ob.vertex_groups.new(name=HOLD).add(list(range(len(ob.data.vertices))), 1.0, "REPLACE")
     ob["uo_no_body_gap"] = 1                                                # rigid pieces: the renderer must not bend them round the limbs
     print("uo_flail: %s: haft 0-%.3f m, chain %.3f-%.3f m (%d pieces), ball %.3f-%.3f m (radius %.3f m, x%.2f), %d / %d / %d vertices"
           % (ob.name, sh, sh, sb, SEGMENTS, sb, s.max(), br, BALL_SCALE, (part == 0).sum(), (part == 1).sum(), (part == 2).sum()))
@@ -167,7 +175,7 @@ def simulate(rig, act, nodes, br, caps):
     sc = bpy.context.scene
     a = int(act["uo_action"]); nf = int(act["uo_frames"])
     rig.animation_data.action = act; rig["uo_direction"] = 0
-    names = [BONE] + [c[0] for c in caps]
+    names = [HOLD] + [c[0] for c in caps]
     keys = []
     for i in range(nf):
         sc.frame_set(1 + i * STEP); keys.append(pose_mats(rig, names))
@@ -182,6 +190,7 @@ def simulate(rig, act, nodes, br, caps):
     def step(M, X, Xp, mats):
         Xn = X + (X - Xp) * keep + g * dt * dt * (w > 0)[:, None]
         Xn[0] = M[:3, :3] @ nodes[0] + M[:3, 3]
+        hit = np.zeros_like(Xn)
         for _ in range(ITER):
             for k in range(n - 1):
                 dv = Xn[k + 1] - Xn[k]; dist = np.linalg.norm(dv); ws = w[k] + w[k + 1]
@@ -189,7 +198,7 @@ def simulate(rig, act, nodes, br, caps):
                     continue
                 corr = (dist - rest[k]) / dist / ws * dv
                 Xn[k] += w[k] * corr; Xn[k + 1] -= w[k + 1] * corr
-            Xn[1:] = seg_push(Xn[1:], caps, mats, rad[1:] + GAP)
+            before = Xn[1:].copy(); Xn[1:] = seg_push(Xn[1:], caps, mats, rad[1:] + GAP); hit[1:] += Xn[1:] - before
         if STIFF > 0:                                                        # bending: each piece pulled towards the line of the one before (the first: the haft)
             prev = M[:3, :3] @ hd
             for k in range(n - 1):
@@ -197,9 +206,11 @@ def simulate(rig, act, nodes, br, caps):
                 Xn[k + 1] += kb * (tgt - Xn[k + 1])
                 dv = Xn[k + 1] - Xn[k]; Xn[k + 1] = Xn[k] + dv / max(np.linalg.norm(dv), 1e-9) * rest[k]
                 prev = (Xn[k + 1] - Xn[k]) / rest[k]
+        if INELASTIC:                                                        # a push out of the body takes the speed into the body away instead of adding a bounce
+            return Xn, X + hit
         return Xn, X
 
-    M0 = keys[0][BONE]; X = (M0[:3, :3] @ nodes.T).T + M0[:3, 3]; Xp = X.copy()
+    M0 = keys[0][HOLD]; X = (M0[:3, :3] @ nodes.T).T + M0[:3, 3]; Xp = X.copy()
     if not loop:                                                             # settle: hanging still in the first pose
         for _ in range(int(PREROLL / dt)):
             X, Xp = step(M0, X, Xp, keys[0])
@@ -213,7 +224,7 @@ def simulate(rig, act, nodes, br, caps):
                 break
             j = (i + 1) % nf
             for s_ in range(sub):
-                M = interp(keys[i][BONE], keys[j][BONE], s_ / sub)
+                M = interp(keys[i][HOLD], keys[j][HOLD], s_ / sub)
                 X, Xp = step(M, X, Xp, keys[i] if s_ < sub / 2 else keys[j])
     return out
 

@@ -34,9 +34,22 @@ def main():
     ap.add_argument("--actions", default=""); ap.add_argument("--json", default="")
     a = ap.parse_args(); oa = tuple(map(int, a.oa.split(","))); ra = tuple(map(int, a.ra.split(",")))
     acts = a.actions.split(",") if a.actions else sorted(os.listdir(a.ours))
-    res = {}; allb = []; alli = []
+    res = {}; allb = []; alli = []; allso = []; allsr = []
     for act in acts:
-        bs, its = [], []
+        bs, its, so, sr = [], [], [], []
+        for dd in sorted(glob.glob(os.path.join(a.ours, act, "dir*"))):        # ball speed: px between consecutive frames, ours and the original
+            fs = sorted(glob.glob(os.path.join(dd, "*.png")))
+            pb = pc = None
+            for f in fs:
+                g = os.path.join(a.orig, act, os.path.basename(dd), os.path.basename(f))
+                if not os.path.exists(g):
+                    continue
+                b = load(f, oa)[1]; c = load(g, ra)[1]
+                if b is not None and pb is not None:
+                    so.append(float(np.linalg.norm(b - pb)))
+                if c is not None and pc is not None:
+                    sr.append(float(np.linalg.norm(c - pc)))
+                pb, pc = b, c
         for f in sorted(glob.glob(os.path.join(a.ours, act, "dir*", "*.png"))):
             g = os.path.join(a.orig, act, os.path.basename(os.path.dirname(f)), os.path.basename(f))
             if not os.path.exists(g):
@@ -48,10 +61,11 @@ def main():
             if b is not None and c is not None:
                 bs.append(float(np.linalg.norm(b - c)))
         if its:
-            res[act] = dict(frames=len(its), ball=float(np.mean(bs)) if bs else None, item=float(np.mean(its)))
-            allb += bs; alli += its
-            print("%-22s frames %3d  ball %5.1f px  item %5.1f px" % (act, len(its), res[act]["ball"] or -1, res[act]["item"]))
-    print("FLAIL_FIT ball %.2f px  item %.2f px  (%d frames)" % (np.mean(allb), np.mean(alli), len(alli)))
+            res[act] = dict(frames=len(its), ball=float(np.mean(bs)) if bs else None, item=float(np.mean(its)),
+                            speed=float(np.mean(so)) if so else None, speed_orig=float(np.mean(sr)) if sr else None)
+            allb += bs; alli += its; allso += so; allsr += sr
+            print("%-22s frames %3d  ball %5.1f px  item %5.1f px  ball speed %5.1f px/frame (original %5.1f)" % (act, len(its), res[act]["ball"] or -1, res[act]["item"], res[act]["speed"] or -1, res[act]["speed_orig"] or -1))
+    print("FLAIL_FIT ball %.2f px  item %.2f px  ball speed %.2f px/frame (original %.2f)  (%d frames)" % (np.mean(allb), np.mean(alli), np.mean(allso), np.mean(allsr), len(alli)))
     if a.json:
         json.dump(dict(actions=res, ball=float(np.mean(allb)), item=float(np.mean(alli))), open(a.json, "w"), indent=1)
 
