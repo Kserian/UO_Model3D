@@ -62,6 +62,12 @@ INNER_SHADE = 0.0     # 0..1: > 0 = the inside of the hood (cloth facing the hea
                       # (user: "no depth", 2026-10-12). 0 = off
 INNER_DIST = 0.10     # m: cloth whose normal hits the body within this distance is the inside (the hood round the head, the cowl lining over the neck)
 INNER_SMOOTH = 3      # passes of smoothing of the darkening over the mesh
+OCCLUSION = 0.0       # 0..1: > 0 = also darker where the hood's own folds and layers (and the body) close the view around a point: under the pointed brow, between the layers of the
+                      # cowl, in the folds (OCC_RAYS rays over the half sphere of the normal, hits within OCC_DIST); colour x (1 - OCCLUSION x share of rays hit). Asked for by the user
+                      # for this item ("give the hood shading, depth", 2026-10-12); the UO light itself stays as measured (no AO in the renderer). 0 = off
+SHADE_MIN = 0.35      # the darkening (inside x occlusion) never takes the colour below this share: deep shade, never black (user, 2026-10-12: "no true black")
+OCC_RAYS = 24
+OCC_DIST = 0.06       # m
 HEAD_RIGID = 0.0      # m above the head bone head: from here up the hood follows the head only (the face opening, chin to crown, keeps to the face)
 HEAD_BLEND = 0.07     # m: below that, over this height, the head weight fades into the skin weights (neck, chest) of the cowl
 HEAD_NEAR = 0.03      # m: > 0 = the head weight also fades where the hood is nearer the skin of the shoulders / chest than that of the head (over this difference of distance):
@@ -123,6 +129,7 @@ def symmetrize(VI, F, c, name):
 
 
 BVHTree_body = []
+BVH_BODY_V, BVH_BODY_F = [], []
 
 
 def inner_shade(it, c, n_panel):
@@ -137,7 +144,26 @@ def inner_shade(it, c, n_panel):
     for _ in range(INNER_SMOOTH):                                        # a soft edge round the opening
         x = 0.5 * x + 0.5 * (np.bincount(E[:, 0], x[E[:, 1]], len(P)) + np.bincount(E[:, 1], x[E[:, 0]], len(P))) / cnt
     f = 1 - (1 - INNER_SHADE) * x
-    f[n_panel:] = INNER_SHADE
+    if OCCLUSION > 0:
+        from mathutils.bvhtree import BVHTree as _B
+        tri = [tuple(p.vertices) for p in me.polygons]
+        bv = [tuple(v) for v in BVH_BODY_V[0]]; nb = len(bv)
+        both = _B.FromPolygons([tuple(p) for p in P] + bv, tri + [tuple(i + len(P) for i in f_) for f_ in BVH_BODY_F[0]])
+        rng = np.random.default_rng(0); u = rng.random((OCC_RAYS, 2))
+        loc = np.c_[np.sqrt(u[:, 0]) * np.cos(2 * np.pi * u[:, 1]), np.sqrt(u[:, 0]) * np.sin(2 * np.pi * u[:, 1]), np.sqrt(1 - u[:, 0])]   # cosine-weighted
+        occ = np.zeros(len(P))
+        for i, (p, n) in enumerate(zip(P, Nn)):
+            a = np.array([1.0, 0, 0]) if abs(n[0]) < 0.9 else np.array([0, 1.0, 0])
+            t1 = np.cross(n, a); t1 /= np.linalg.norm(t1); t2 = np.cross(n, t1)
+            D = loc[:, :1] * t1 + loc[:, 1:2] * t2 + loc[:, 2:] * n
+            o = Vector(p + 0.002 * n)
+            occ[i] = sum(both.ray_cast(o, Vector(d), OCC_DIST)[0] is not None for d in D) / OCC_RAYS
+        for _ in range(2):
+            occ = 0.5 * occ + 0.5 * (np.bincount(E[:, 0], occ[E[:, 1]], len(P)) + np.bincount(E[:, 1], occ[E[:, 0]], len(P))) / cnt
+        f = f * (1 - OCCLUSION * occ)
+        print("uo_hood_cover: %s: occlusion x%.2f: share of rays hit p50 %.2f p90 %.2f" % (it.name, OCCLUSION, np.percentile(occ, 50), np.percentile(occ, 90)))
+    f[n_panel:] = np.minimum(f[n_panel:], INNER_SHADE)
+    f = np.maximum(f, SHADE_MIN)
     a = me.attributes.get("uo_shade") or me.attributes.new("uo_shade", "FLOAT", "POINT")
     a.data.foreach_set("value", f.astype(np.float32))
     for m in me.materials:
@@ -304,7 +330,7 @@ def main(src, dst, sets):
     global SBACK, SFRONT
     SBACK = S; SFRONT = VB[(w > GROUP_MIN) & (VB[:, 1] <= c[1] - FACE_Y) & (VB[:, 2] > c[2] + BROW_Z)]
     from mathutils.bvhtree import BVHTree
-    bvh_body = BVHTree.FromPolygons([tuple(v) for v in VB], [tuple(p.vertices) for p in m.polygons]); BVHTree_body[:] = [bvh_body]
+    bvh_body = BVHTree.FromPolygons([tuple(v) for v in VB], [tuple(p.vertices) for p in m.polygons]); BVHTree_body[:] = [bvh_body]; BVH_BODY_V[:] = [VB]; BVH_BODY_F[:] = [[tuple(p.vertices) for p in m.polygons]]
     skin_top = ray_up(VB, [tuple(p.vertices) for p in m.polygons], c)
     ds = S - c; rs = np.linalg.norm(ds, axis=1); ts = cKDTree(ds / rs[:, None])
     cone, sig = np.radians(CONE), np.radians(SIGMA)

@@ -129,3 +129,9 @@ Uwaga użytkownika (ta sama sesja): kaptur bardziej na czoło, dół krótszy, m
 Nowe `SHORTEN` 0,35 (`SHORTEN_Z` 1,55 m, linia barków): to, co wisi niżej, jest ściskane w pionie ku tej linii, brzeg zachowuje kształt; najniższy punkt kołnierza 1,217 -> 1,433 m.
 Odrzucone: ściąganie kołnierza promieniowo do nasady szyi (przód nadal długi, kołnierz obciskał tors jak kamizelka). Wstawka dekoltu (`FILL_NECK`) zaczyna się teraz najniżej tam, gdzie schodzą się poły kołnierza
 (przy krótkim kołnierzu obejmowała całą odsłoniętą pierś jako ciemny „śliniak”). `item_qa` 4,6 %; w czarze ramiona przechodzą przez skrzydła kołnierza (render je wypycha). `item_look` shade 16,2, średnia 149.
+Uwaga użytkownika: kołnierz nieco dłuższy, cieniowanie, kaptur bardziej na oczy, szpic z przodu jak w oryginale; łagodne krawędzie, bez czystej czerni.
+Szpic i spiczasty czubek ginęły przy obniżeniu o 126 mm (`TOP_GAP` 12 mm): czaszka wypychała czubek w kopułę (pchnięcia do 77-97 mm). `TOP_GAP` 50 mm i `TILT_BACK` 0: pchnięcia do 19 mm, kształt modelu zostaje,
+brzeg z 1,717 m (oczy: z przodu 94 %, z kamery UO 22 %, zasłania je dziób), `TILT_BACK` 8 -> brzeg 1,746 m, oczy z góry 94 %. `SHORTEN` 0,35 -> 0,5 (dół 1,433 -> 1,414 m).
+Nowe `OCCLUSION` (0,8; 24 promienie po półsferze normalnej, 6 cm, kaptur + ciało; na prośbę użytkownika tylko dla tego przedmiotu, światło UO bez zmian) i `SHADE_MIN` 0,35 (cień nigdy czarny); obrys `uo_outline` 0,65.
+`item_look` (stand + walk, ten sam model bez / z): 14,6 -> 16,0 przy 0,8 (0,5: 15,3); w przepisie z progiem 0,35 i obrysem 0,65: 13,8, średnia 143. Piksele obrysu p5/p50 25/49 -> 41/82, najciemniejszy piksel 17 (8 z 51 tys. <= 20).
+`item_qa` 4,4 %, wierzchołki w ciele: atak 242, bieg 43, czar 6882 (ramiona przez skrzydła kołnierza, render wypycha). Symetria p90 8,0 mm.
