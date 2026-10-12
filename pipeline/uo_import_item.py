@@ -55,7 +55,8 @@ EXTENTS = {"shirt": (0.999, 1.656, "chest"), "plate": (0.651, 1.643, "chest"), "
            # medians over the original animations of the layer (docs/qa/layer_analysis.md, pipeline/layer_analysis.py).
            # hair / beard / hat: the TOP is reliable (hair 1.88-1.93 m for 80 % of the 37 hairstyles), the bottom depends on the style (hair 1.34-1.64):
            # for a long hairstyle give SCALE yourself instead of letting the height decide
-           "hair": (1.52, 1.89, "hair"), "beard": (1.52, 1.72, "beard"), "hat": (1.52, 1.92, "hat"), "neck": (1.48, 1.64, "neck")}
+           "hair": (1.52, 1.89, "hair"), "beard": (1.52, 1.72, "beard"), "hat": (1.52, 1.92, "hat"), "neck": (1.48, 1.64, "neck"),
+           "hood": (1.28, 1.95, "hood")}   # a hood with a short cape over the shoulders (chaperon): from the shoulders to the top of the hood, set from the body, not measured
 
 body = bpy.data.objects["UO_Body"]
 UO_NAMES = {"UO_Body", "UO_Rig", "UO_Camera", "UO_Sun"}
