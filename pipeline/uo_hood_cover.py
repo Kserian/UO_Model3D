@@ -30,6 +30,8 @@ CONE = 4.0            # deg: a hood vertex and a skin point in the same directio
 SIGMA = 14.0          # deg: spread of the push over directions (7 left lumps on the side of the hood)
 SMOOTH = 30           # passes of smoothing of the push over the mesh
 FACE_Y = 0.02         # m: skin in front of C - FACE_Y is the face (left open)
+BROW_Z = 0.06         # m above C: front skin higher than this (the forehead) that the hood covers (a ray from C through it hits the hood) is pushed out too: the pointed brow
+                      # of an Assassin-style hood went into the forehead and the skin showed through it as a strip (2026-10-12); 0 = off (the whole front is the face)
 CENTRE_UP = 0.08      # m: C above the head bone head
 GROUP_MIN = 0.3       # head skin: the weight of the head bone at least this
 TOP_GAP = 0.012       # m: the whole hood moved down until the inside of its top is this far above the skull (0 = leave it where the autofit put it)
@@ -38,6 +40,8 @@ FIELD_SIGMA = 0.03    # m: the push out of the body is a smooth field in space (
 BODY_ROUNDS = 20      # rounds of that push
 REBIND = True         # bind again after the moves (uo_bind_item.py)
 TILT_BACK = 0.0       # deg: the hood is first turned back about the x axis through C (the brim goes up and back, the face is framed, not shaded)
+TILT_FADE = 0.0       # m: > 0 = the turn is full above the head bone head and fades to none over this height below it (smoothstep): the hood turns, the cowl stays on the
+                      # shoulders as the model made it (a whole-hood turn of 25 deg lifted the front flaps of the cowl off the chest, Assassin-style hood, 2026-10-12)
 FILL_NECK = 0.006     # m: the V of the cowl under the chin (neck, upper chest seen through it: a second opening under the face) is closed by an inner panel of the hood's
                       # cloth this far off the skin: a copy of the skin seen through it (from the front and from above), widened by FILL_RINGS rings so its edges tuck under the cowl; 0 = off
 FILL_RINGS = 4
@@ -123,8 +127,23 @@ def fill_neck(it, body, m, VB, whead, c):
     print("uo_hood_cover: %s: neck panel %d skin vertices seen through the hood, %d faces, %.0f mm off the skin" % (it.name, int(seen.sum()), len(T), FILL_NECK * 1e3))
 
 
+def forehead(VI, F, c, SF):
+    """the front skin over the brows that the hood covers: a ray from C through it hits the hood (inside or outside the skin)"""
+    from mathutils import Vector
+    from mathutils.bvhtree import BVHTree
+    if BROW_Z <= 0 or not len(SF):
+        return SF[:0]
+    bh = BVHTree.FromPolygons([tuple(v) for v in VI], F)
+    hit = np.array([bh.ray_cast(Vector(c), Vector(p - c), 0.4)[0] is not None for p in SF])
+    out = SF[hit]
+    return np.vstack([out, out * [-1, 1, 1]])
+
+
 def cover(VI, it, c, ts, rs, cone, sig, bvh, F):
     """the hood out of the head skin behind the face (radially from c, symmetric, smooth), then out of the whole body (body_push)"""
+    if len(SF := forehead(VI, F, c, SFRONT)):
+        S2 = np.vstack([SBACK, SF]); ds = S2 - c; rs = np.linalg.norm(ds, axis=1); ts = cKDTree(ds / rs[:, None])
+        print("uo_hood_cover: %s: %d forehead skin points under the hood pushed out too" % (it.name, len(SF) // 2))
     di = VI - c; ri = np.linalg.norm(di, axis=1); ui = di / np.maximum(ri, 1e-9)[:, None]
     need = np.zeros(len(VI))
     for i, nb in enumerate(ts.query_ball_point(ui, 2 * np.sin(cone / 2))):
@@ -173,6 +192,8 @@ def main(src, dst, sets):
     c = np.array(rig.matrix_world @ rig.data.bones["head"].head_local) + np.array([0, 0, CENTRE_UP])
     S = VB[(w > GROUP_MIN) & (VB[:, 1] > c[1] - FACE_Y)]          # the front of the body is -y
     S = np.vstack([S, S * [-1, 1, 1]])
+    global SBACK, SFRONT
+    SBACK = S; SFRONT = VB[(w > GROUP_MIN) & (VB[:, 1] <= c[1] - FACE_Y) & (VB[:, 2] > c[2] + BROW_Z)]
     from mathutils.bvhtree import BVHTree
     bvh_body = BVHTree.FromPolygons([tuple(v) for v in VB], [tuple(p.vertices) for p in m.polygons])
     skin_top = ray_up(VB, [tuple(p.vertices) for p in m.polygons], c)
@@ -183,8 +204,11 @@ def main(src, dst, sets):
         F = [tuple(p.vertices) for p in it.data.polygons]
         top0 = ray_up(VI, F, c)
         if TILT_BACK:
-            a = np.radians(TILT_BACK); R = np.array([[1, 0, 0], [0, np.cos(a), np.sin(a)], [0, -np.sin(a), np.cos(a)]])
-            VI = (VI - c) @ R.T + c
+            zh = (rig.matrix_world @ rig.data.bones["head"].head_local).z
+            x = np.clip((VI[:, 2] - (zh - TILT_FADE)) / TILT_FADE, 0, 1) if TILT_FADE > 0 else np.ones(len(VI))
+            a = np.radians(TILT_BACK) * x * x * (3 - 2 * x)
+            d = VI - c; ca, sa = np.cos(a), np.sin(a)
+            VI = c + np.c_[d[:, 0], ca * d[:, 1] + sa * d[:, 2], -sa * d[:, 1] + ca * d[:, 2]]
             print("uo_hood_cover: %s: turned back %.0f deg about C" % (it.name, TILT_BACK))
         V0 = VI; _, twin = cKDTree(V0 * [-1, 1, 1]).query(V0)
         dz = top0 - (skin_top + TOP_GAP) if (TOP_GAP > 0 and top0 is not None and skin_top is not None) else 0.0
