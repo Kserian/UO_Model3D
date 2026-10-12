@@ -36,7 +36,8 @@ PARTS = {
     "boots":     (["shin.L", "foot.L", "shin.R", "foot.R"], {}),               # boots, greaves
     "helm":      (["head"], {}),                                               # helmet, hat, mask
     "neck":      (["neck", "chest", "head"], {}),                              # gorget, collar
-    "hood":      (["head", "neck", "chest"], {}),                              # hood with a cowl round the neck: the hood on the head, the cowl on the neck and chest
+    "hood":      (["head", "neck", "chest", "upper_arm.L", "upper_arm.R"], {"upper_arm": 0.5}),   # hood with a cowl round the neck: the hood on the head, the cowl on the neck and chest; a cowl
+                                                                               # over the shoulders takes half the shoulder's motion (on the chest only, the shoulders came through it in the attacks and spells)
     "belt":      (["pelvis", "spine", "chest", "thigh.L", "thigh.R"], {}),     # belt with straps and hangers that reach down over the hips: what hangs below the waist follows the thigh under it
     # loose garments (robe, dress, skirt, kilt): above the hips like "all"; the hanging part follows the PELVIS only (it does not stick to the legs like trousers): the weight
     # of thighs, shins and feet goes to the pelvis. The legs push it out when they reach it: render_uo_layer.py does that per frame (custom property `uo_cloth`, set below;

@@ -39,15 +39,117 @@ BODY_GAP = 0.008      # m: the hood at least this far out of the body skin (cowl
 FIELD_SIGMA = 0.03    # m: the push out of the body is a smooth field in space (gaussian): the inner and outer layer of the cloth move together, nothing crumples
 BODY_ROUNDS = 20      # rounds of that push
 REBIND = True         # bind again after the moves (uo_bind_item.py)
+BIND_SMOOTH = 12      # uo_bind_item.py SMOOTH (passes of smoothing of the weights over the hood)
+BIND_ARM = -1.0       # share of the shoulder (upper arm) motion the cowl takes (uo_bind_item.py PARTS "hood" FOLLOW upper_arm); -1 = as in uo_bind_item.py, 0 = the cowl on the chest only
 TILT_BACK = 0.0       # deg: the hood is first turned back about the x axis through C (the brim goes up and back, the face is framed, not shaded)
+SYMMETRIZE = 4        # passes: the hood is first turned and shifted onto its own best mirror plane (yaw, roll, x), which is put on the body's midplane, then each vertex goes
+                      # half way to the nearest point of the mirrored surface (same side of the cloth, at most SYM_MAX away). A free AI model is not symmetric: the Assassin-style
+                      # hood was turned 3 deg and its mirror p90 was 21.6 mm, it looked crooked (user, 2026-10-12). 0 = off
+SYM_MAX = 0.03        # m
+SYM_SIGMA = 0.02      # m: the symmetrizing moves form a smooth field in space (gaussian); a per-vertex snap tore the thin brim (layers matched across)
 TILT_FADE = 0.0       # m: > 0 = the turn is full above the head bone head and fades to none over this height below it (smoothstep): the hood turns, the cowl stays on the
                       # shoulders as the model made it (a whole-hood turn of 25 deg lifted the front flaps of the cowl off the chest, Assassin-style hood, 2026-10-12)
 FILL_NECK = 0.006     # m: the V of the cowl under the chin (neck, upper chest seen through it: a second opening under the face) is closed by an inner panel of the hood's
                       # cloth this far off the skin: a copy of the skin seen through it (from the front and from above), widened by FILL_RINGS rings so its edges tuck under the cowl; 0 = off
 FILL_RINGS = 4
 FILL_ZMIN = 1.25      # m: the panel does not go below this
+INNER_SHADE = 0.0     # 0..1: > 0 = the inside of the hood (cloth facing the head centre) and the neck panel get this share of their colour (attribute uo_shade x albedo):
+                      # the UO light comes almost from the camera and has no occlusion, so the inside of a hood was as light as its outside, a flat grey blob round the face
+                      # (user: "no depth", 2026-10-12). 0 = off
+INNER_DIST = 0.10     # m: cloth whose normal hits the body within this distance is the inside (the hood round the head, the cowl lining over the neck)
+INNER_SMOOTH = 3      # passes of smoothing of the darkening over the mesh
 HEAD_RIGID = 0.0      # m above the head bone head: from here up the hood follows the head only (the face opening, chin to crown, keeps to the face)
 HEAD_BLEND = 0.07     # m: below that, over this height, the head weight fades into the skin weights (neck, chest) of the cowl
+HEAD_NEAR = 0.03      # m: > 0 = the head weight also fades where the hood is nearer the skin of the shoulders / chest than that of the head (over this difference of distance):
+                      # the lower rim of a cowl round the neck and shoulders (z 1.48-1.55 m, 40-70 % on the head by height alone) went into the shoulders when the head moved
+                      # (attack, spell, run: 1300-3800 hood vertices > 5 mm in the body, Assassin-style hood, 2026-10-12); the rim round the chin stays on the head. 0 = by height only
+
+
+def symmetrize(VI, F, c, name):
+    """onto the best mirror plane, then symmetric (see SYMMETRIZE)"""
+    from mathutils import Vector
+    from mathutils.bvhtree import BVHTree
+    sub = VI[::max(1, len(VI) // 6000)]
+
+    def tr(V, yaw, roll, dx):
+        a, b = np.radians(yaw), np.radians(roll)
+        Rz = np.array([[np.cos(a), -np.sin(a), 0], [np.sin(a), np.cos(a), 0], [0, 0, 1]])
+        Ry = np.array([[np.cos(b), 0, np.sin(b)], [0, 1, 0], [-np.sin(b), 0, np.cos(b)]])
+        return (V - c) @ (Ry @ Rz).T + c + [dx, 0, 0]
+
+    def score(p):
+        U = tr(sub, *p); return np.percentile(cKDTree(U * [-1, 1, 1]).query(U)[0], 90)
+    s0 = score((0.0, 0.0, 0.0)); best = ((0.0, 0.0, 0.0), s0)
+    for step in (2.0, 1.0, 0.5, 0.25):                            # coordinate search (deg, deg, m)
+        moved = True
+        while moved:
+            moved = False
+            for k, dlt in ((0, step), (1, step), (2, step / 200)):
+                for sg in (-1, 1):
+                    q = list(best[0]); q[k] += sg * dlt; s = score(tuple(q))
+                    if s < best[1] - 1e-5:
+                        best = (tuple(q), s); moved = True
+    VI = tr(VI, *best[0])
+    print("uo_hood_cover: %s: onto its mirror plane: yaw %.2f deg, roll %.2f deg, x %+.1f mm (mirror p90 %.1f -> %.1f mm)"
+          % (name, best[0][0], best[0][1], best[0][2] * 1e3, s0 * 1e3, best[1] * 1e3))
+    tri = np.array([(f[0], f[k], f[k + 1]) for f in F for k in range(1, len(f) - 1)])
+    for _ in range(SYMMETRIZE):
+        Mv = VI * [-1, 1, 1]
+        bh = BVHTree.FromPolygons([tuple(v) for v in Mv], [tuple(f[::-1]) for f in tri])     # mirrored: reversed winding keeps the normals outward
+        fn = np.cross(VI[tri[:, 1]] - VI[tri[:, 0]], VI[tri[:, 2]] - VI[tri[:, 0]])
+        vn = np.zeros_like(VI)
+        for k in range(3):
+            np.add.at(vn, tri[:, k], fn)
+        vn /= np.maximum(np.linalg.norm(vn, axis=1, keepdims=True), 1e-12)
+        D = np.zeros_like(VI); ok = np.zeros(len(VI), bool)
+        for i, p in enumerate(VI):
+            loc, nor, _, d = bh.find_nearest(Vector(p), SYM_MAX)
+            if loc is not None and np.dot(np.array(nor), vn[i]) > 0.5:
+                D[i] = 0.5 * (np.array(loc) - p); ok[i] = True
+        n_ok = int(ok.sum())
+        P = VI[ok]; Dk = D[ok]; tp = cKDTree(P); Ds = np.zeros_like(VI)          # a smooth field in space: both layers of the cloth and the thin brim move together
+        for i, nb in enumerate(tp.query_ball_point(VI, 3 * SYM_SIGMA)):
+            if nb:
+                wgt = np.exp(-0.5 * (np.linalg.norm(P[nb] - VI[i], axis=1) / SYM_SIGMA) ** 2)
+                Ds[i] = (wgt[:, None] * Dk[nb]).sum(0) / wgt.sum()
+        VI = VI + Ds
+    d = cKDTree(VI * [-1, 1, 1]).query(VI)[0]
+    print("uo_hood_cover: %s: symmetrized (%d passes, %d of %d vertices), mirror p90 %.1f mm" % (name, SYMMETRIZE, n_ok, len(VI), np.percentile(d, 90) * 1e3))
+    return VI
+
+
+BVHTree_body = []
+
+
+def inner_shade(it, c, n_panel):
+    """uo_shade per vertex (1 outside, INNER_SHADE inside the hood and on the neck panel) and the albedo of the hood's materials scaled by it"""
+    me = it.data; Mw = it.matrix_world; R = Mw.to_3x3()
+    P = np.array([Mw @ v.co for v in me.vertices]); Nn = np.array([(R @ v.normal).normalized() for v in me.vertices])
+    from mathutils import Vector
+    bh = BVHTree_body[0]
+    hit = np.array([bh.ray_cast(Vector(p + 0.002 * n), Vector(n), INNER_DIST)[0] is not None for p, n in zip(P, Nn)], float)   # cloth that faces the head / neck (the inside)
+    E = np.array([e.vertices[:] for e in me.edges]); cnt = np.maximum(np.bincount(E.ravel(), minlength=len(P)), 1)
+    x = hit
+    for _ in range(INNER_SMOOTH):                                        # a soft edge round the opening
+        x = 0.5 * x + 0.5 * (np.bincount(E[:, 0], x[E[:, 1]], len(P)) + np.bincount(E[:, 1], x[E[:, 0]], len(P))) / cnt
+    f = 1 - (1 - INNER_SHADE) * x
+    f[n_panel:] = INNER_SHADE
+    a = me.attributes.get("uo_shade") or me.attributes.new("uo_shade", "FLOAT", "POINT")
+    a.data.foreach_set("value", f.astype(np.float32))
+    for m in me.materials:
+        nt = m.node_tree if m else None
+        grp = next((n for n in nt.nodes if n.type == "GROUP" and n.node_tree and n.node_tree.name.startswith("UO_Look")), None) if nt else None
+        if grp is None or any(n.name == "uo_shade" for n in nt.nodes):
+            continue
+        at = nt.nodes.new("ShaderNodeAttribute"); at.name = "uo_shade"; at.attribute_type = "GEOMETRY"; at.attribute_name = "uo_shade"
+        sc_ = nt.nodes.new("ShaderNodeVectorMath"); sc_.operation = "MULTIPLY"
+        at.location = (grp.location.x - 420, grp.location.y - 300); sc_.location = (grp.location.x - 200, grp.location.y - 300)
+        if grp.inputs["Albedo"].links:
+            nt.links.new(grp.inputs["Albedo"].links[0].from_socket, sc_.inputs[0])
+        else:
+            sc_.inputs[0].default_value = grp.inputs["Albedo"].default_value[:3]
+        nt.links.new(at.outputs["Fac"], sc_.inputs[1]); nt.links.new(sc_.outputs[0], grp.inputs["Albedo"])
+    print("uo_hood_cover: %s: inside shaded x%.2f (%d of %d vertices darker than 0.9, %d panel vertices)" % (it.name, INNER_SHADE, int((f < 0.9).sum()), len(f), len(f) - n_panel))
 
 
 def ray_up(V, F, c):
@@ -195,13 +297,15 @@ def main(src, dst, sets):
     global SBACK, SFRONT
     SBACK = S; SFRONT = VB[(w > GROUP_MIN) & (VB[:, 1] <= c[1] - FACE_Y) & (VB[:, 2] > c[2] + BROW_Z)]
     from mathutils.bvhtree import BVHTree
-    bvh_body = BVHTree.FromPolygons([tuple(v) for v in VB], [tuple(p.vertices) for p in m.polygons])
+    bvh_body = BVHTree.FromPolygons([tuple(v) for v in VB], [tuple(p.vertices) for p in m.polygons]); BVHTree_body[:] = [bvh_body]
     skin_top = ray_up(VB, [tuple(p.vertices) for p in m.polygons], c)
     ds = S - c; rs = np.linalg.norm(ds, axis=1); ts = cKDTree(ds / rs[:, None])
     cone, sig = np.radians(CONE), np.radians(SIGMA)
     for it in items:
         Mi = np.array(it.matrix_world); Vl = np.array([v.co for v in it.data.vertices]); VI = Vl @ Mi[:3, :3].T + Mi[:3, 3]
         F = [tuple(p.vertices) for p in it.data.polygons]
+        if SYMMETRIZE:
+            VI = symmetrize(VI, F, c, it.name)
         top0 = ray_up(VI, F, c)
         if TILT_BACK:
             zh = (rig.matrix_world @ rig.data.bones["head"].head_local).z
@@ -228,6 +332,7 @@ def main(src, dst, sets):
                 co = np.zeros(len(Vl) * 3, np.float32); k.data.foreach_get("co", co)
                 k.data.foreach_set("co", (co.reshape(-1, 3) + delta).astype(np.float32).ravel())
         it.data.update()
+    n_before = len(items[0].data.vertices)
     if FILL_NECK > 0:
         fill_neck(items[0], body, m, VB, w, c)
     if REBIND:
@@ -236,6 +341,9 @@ def main(src, dst, sets):
         os.environ.setdefault("UO_SCRIPTS", here)
         text = open(os.path.join(here, "uo_bind_item.py"), encoding="utf-8").read()
         text = re.sub(r"^PART\s*=.*$", "PART = 'hood'", text, count=1, flags=re.M)
+        text = re.sub(r"^SMOOTH\s*=.*$", "SMOOTH = %d" % BIND_SMOOTH, text, count=1, flags=re.M)
+        if BIND_ARM >= 0:
+            text = text.replace('{"upper_arm": 0.5}),   # hood', '{"upper_arm": %r}),   # hood' % BIND_ARM)
         for o in bpy.context.view_layer.objects:
             o.select_set(o in items)
         bpy.context.view_layer.objects.active = items[0]
@@ -252,6 +360,17 @@ def main(src, dst, sets):
             s = W.sum(1, keepdims=True); W = np.where(s > 0, W / np.maximum(s, 1e-9), 0)
             z = np.array([(it.matrix_world @ v.co).z for v in it.data.vertices])
             x = np.clip((z - (zh - HEAD_BLEND)) / max(HEAD_BLEND, 1e-6), 0, 1); tt = x * x * (3 - 2 * x)
+            if HEAD_NEAR > 0:
+                from mathutils import Vector as _V
+                Wb = {g.name: np.zeros(len(VB)) for g in body.vertex_groups}
+                for v in body.data.vertices:
+                    for gr in v.groups:
+                        Wb[body.vertex_groups[gr.group].name][v.index] = gr.weight
+                torso = sum(Wb[k] for k in Wb if k.split(".")[0] in ("chest", "spine", "clavicle", "upper_arm"))
+                th = cKDTree(VB[Wb["head"] > 0.5]); tt_ = cKDTree(VB[torso > 0.5])
+                P = np.array([it.matrix_world @ v.co for v in it.data.vertices])
+                dh, dt = th.query(P)[0], tt_.query(P)[0]
+                y = np.clip((dt - dh) / HEAD_NEAR + 0.5, 0, 1); tt = tt * y * y * (3 - 2 * y)
             W = W * (1 - tt)[:, None]; W[:, hg.index] += tt
             for g in it.vertex_groups:
                 col = W[:, g.index]
@@ -262,6 +381,8 @@ def main(src, dst, sets):
                     else:
                         g.remove(idx)
             print("uo_hood_cover: %s: rigid on the head above z %.3f m (%d vertices), blended over %.0f mm below" % (it.name, zh, int((tt >= 1).sum()), HEAD_BLEND * 1e3))
+    if INNER_SHADE > 0:
+        inner_shade(items[0], c, n_before)
     bpy.context.scene["uo_head_hides"] = 1                       # the face hides the inside of the hood (render_uo_layer.py HEAD_HIDES)
     bpy.ops.wm.save_as_mainfile(filepath=dst)
     print("uo_hood_cover: saved", dst)
