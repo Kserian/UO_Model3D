@@ -182,7 +182,7 @@ items into it, not the other way round.
       | `"legs"` | trousers, leg armour up to the waist | pelvis, thigh, shin |
       | `"boots"` | boots, greaves | shin, foot |
       | `"helm"` | helmet, mask, stiff hood | head |
-      | `"hood"` | hood with a cowl round the neck | the hood follows the head, the cowl the neck and chest (skin weights); fitted to the head and neck (`docs/qa/autofit.md`, "Hood") |
+      | `"hood"` | hood with a cowl round the neck | the hood follows the head, the cowl the neck and chest (skin weights); fitted to the head and neck, then `uo_hood_cover.py` (brought down onto the skull, cowl onto the shoulders, pushed out over the ears, symmetric; recipe `"hood_cover"`; `docs/qa/autofit.md`, "Kaptur") |
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | full suit in one object | skin under it, every bone |
       | `"cloak"` | cloak | hangs from the chest and **swings back about the shoulders** per action (run, riding: streams out behind; table from the original 468, `docs/qa/cloak_physics.md`) |

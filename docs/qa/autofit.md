@@ -80,3 +80,18 @@ Uwaga użytkownika: z przodu kaptur „krzywy i niepełny”. Surowy model jest 
 (1042 wierzchołki w środku, przesunięte prawie wszystkie, do 17 cm) wygięło boki nierówno, przy twarzy zostawały 1-px paski i dziury. Większy kaptur (`UNIT` 0,33 / 0,36 / 0,40) nie pomaga
 (więcej w środku, p90 19-29 mm). Bez dopasowania p90 5,4 mm i równy otwór na twarz; drobne wejście w skórę wyrównuje render (`BODY_GAP`). Zmiana: `uo_prepare_item.py` `FIT = None` = wg slotu,
 dla `hood` bez `uo_fit_item.py` (przepis może włączyć: `"prepare": {"FIT": true}`).
+
+Sesja 22 (2026-10-12, „ma zakrywać głowę z każdej strony, symetrycznie, z dziurą na twarz”): ten sam model. Po autofit (bez fit) **uszy wychodzą przez boki kaptura**:
+promień ze środka głowy C (kość głowy + 8 cm) przez skórę głowy za twarzą nie trafia w kaptur dla 52 wierzchołków (lewe 19, prawe 33; x ±0,118 m, z 1,59-1,72), widać to na zbliżeniu z boku.
+Nowy krok `pipeline/uo_hood_cover.py` (`uo_make_item.py` uruchamia go dla `kind: hood`, przepis `"hood_cover": false | {"GAP": ...}`): każdy wierzchołek kaptura w tym samym kierunku od C
+co skóra głowy (stożek 4°; skóra + jej odbicie lustrzane, twarz z przodu pominięta) ma stać co najmniej `GAP` 12 mm dalej niż ona; potrzeba rozlana po kierunkach (σ 14°) i po siatce
+(30 przejść, nigdy poniżej własnej potrzeby), wierzchołek bierze większe pchnięcie swoje i bliźniaka z odbicia. Wynik: odkryta skóra poza twarzą 52 -> 5 wierzchołków (środek pod brodą, w otworze twarzy),
+symetria kaptura p90 4,7 -> 4,8 mm, przesunięte 18 tys. wierzchołków o maks. 42 mm (gładko). Odrzucone: σ 7° i przesuwanie tylko warstwy przy głowie (guzy na boku kaptura).
+Warstwa na oryginalnym ciele (`item_body_holes.py`, 8 akcji, 240 klatek): „tułów” 624 px i „głowa” 528 px to dekolt w V kołnierza i otwór twarzy modelu (z przodu), ręce 194 px, nogi 44 px.
+`item_qa` 11,1 -> 11,4 % (kołnierz w klatce przy ruchu ramion; render wypycha `BODY_GAP`). Przepis: `docs/qa/hood_recipe.json` (model nie jest w repo).
+Uwaga użytkownika: kaptur za wysoko (wnętrze szczytu powinno prawie dotykać głowy) i dół kaptura nie przylega do barków. Zmierzone (promień z C): wnętrze szczytu 118 mm nad czaszką,
+z przodu u góry 130, boki 25-31. Zmiana w `uo_hood_cover.py`: cały kaptur w dół (`TOP_GAP` 12 mm; spadek poprawiany 3 razy, bo wypchnięcia podnoszą szczyt), potem uszy, potem
+wypchnięcie z całego ciała do `BODY_GAP` 8 mm wzdłuż normalnej skóry jako gładkie pole w przestrzeni (`FIELD_SIGMA` 3 cm, odbite lustrzanie, 8 rund), na koniec ponowne wiązanie.
+Wynik: kaptur niżej o 126 mm, wnętrze szczytu 25 mm nad czaszką (z przodu 23, z tyłu u góry 23; boki 37-43), kołnierz leży na barkach i klatce, symetria p90 5,0 mm. `item_qa` 11,4 -> 3,7 % (kaptur w ciele w ruchu). `item_body_holes` (9 akcji, 290 klatek): tułów 2969 px, prawie całość to dekolt w V kołnierza, który po obniżeniu sięga niżej na pierś (kształt modelu), ręce 393, nogi 19.
+Odrzucone: ściśnięcie samej góry w pionie (użytkownik: obniżyć całość), opadanie per wierzchołek z zatrzymaniem na ciele i pchnięcie per wierzchołek wygładzane po siatce
+(pogniecione: warstwa wewnętrzna i zewnętrzna tkaniny rozjeżdżały się).

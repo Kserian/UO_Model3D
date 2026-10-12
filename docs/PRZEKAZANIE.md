@@ -151,3 +151,10 @@ Kula tkaniny na uniesionym kolanie: powłoka nóg + `drop` 1,0 (tkanina wracała
 dłonie widać jak w oryginale, w jeździe bez pierścienia mankietu). Dziury 35 akcji: ręka 143 -> 234 (nadgarstek 1-2 px), tułów 68 -> 81, nogi 445 -> 492 (wcięcia w upadkach). Odrzucone: `HAND_OVER`, zwężanie dłoni od strony mankietu.
 Model: wgrany `render_uo_layer.py`. QA OK, `test_items` 0,723.
 
+
+## Sesja 22 (2026-10-12): kaptur Meshy AI na głowie (`docs/qa/autofit.md`, „Kaptur”)
+Zlecenie: kaptur z `.glb` użytkownika (Meshy AI, 327 tys. wierzchołków, bez tekstury, poza repo) na głowę, symetrycznie, zakrywa głowę z każdej strony, otwór na twarz; przykładowe klatki.
+Przepis `docs/qa/hood_recipe.json` (szary `FLAT_GREY` 0,5: tkanina pod hue). Nowe: `pipeline/uo_hood_cover.py` (uszy wychodziły przez boki: symetryczne, gładkie wypchnięcie promieniowe ze środka głowy), wywoływany przez `uo_make_item.py` dla slotu `hood`.
+Po uwadze użytkownika (za wysoko, kołnierz nie leży na barkach): cały kaptur w dół o 126 mm (wnętrze szczytu 118 -> 25 mm nad czaszką), kołnierz wypchnięty z barków gładkim polem w przestrzeni, ponowne wiązanie.
+Wynik: odkryta skóra poza twarzą 52 -> 5-8 wierzchołków, symetria p90 5,0 mm. `.blend` bez zmian (nowy krok działa na `item.blend`). `run_qa.py` PASSED (items 0,723).
+Otwarte: kaptur nie ma tekstury; dekolt w V kołnierza pokazuje pierś (kształt modelu); pełny `.vd` nierenderowany.
