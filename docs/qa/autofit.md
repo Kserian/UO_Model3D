@@ -76,3 +76,7 @@ wagi: głowa, szyja, klatka). Próby: z klatką i obojczykami w dopasowaniu kapt
 do rozmiaru pliku nadal ×0,47. Model znormalizowany (Meshy, część generatorów AI) nie ma realnej skali: przepis podaje jednostkę z wymiarów głowy (twarz UO ok. 0,23 m, otwór kaptura
 ok. 1 jednostka): `"tune": {"uo_autofit_item.py": {"UNIT": 0.3, "SCALE_RANGE": [0.8, 1.3]}}` -> skala 0,336, pokrycie skóry głowy 98 %. `uo_conform_item.py` (owinięcie) nie pasuje do kaptura:
 przenosił brzegi kołnierza na ręce jak rękawy i zgniatał czubek kaptura.
+Uwaga użytkownika: z przodu kaptur „krzywy i niepełny”. Surowy model jest symetryczny (odbicie lustrzane p90 2,6 mm), po `uo_fit_item.py` p90 19 mm, maks. 52 mm: wypychanie z głowy
+(1042 wierzchołki w środku, przesunięte prawie wszystkie, do 17 cm) wygięło boki nierówno, przy twarzy zostawały 1-px paski i dziury. Większy kaptur (`UNIT` 0,33 / 0,36 / 0,40) nie pomaga
+(więcej w środku, p90 19-29 mm). Bez dopasowania p90 5,4 mm i równy otwór na twarz; drobne wejście w skórę wyrównuje render (`BODY_GAP`). Zmiana: `uo_prepare_item.py` `FIT = None` = wg slotu,
+dla `hood` bez `uo_fit_item.py` (przepis może włączyć: `"prepare": {"FIT": true}`).

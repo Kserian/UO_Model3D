@@ -15,7 +15,8 @@ import bpy
 KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat, robe, skirt, harness, waist, vest, hood, quiver
 AUTOFIT = True        # first uo_autofit_item.py: units, size and place from the skin the slot covers (False: the item already stands where it should)
 DENSIFY = True        # False: keep the mesh as it is
-FIT = True            # False: skip uo_fit_item.py (the item already sits right)
+FIT = None            # False: skip uo_fit_item.py (the item already sits right); None = by slot: not for a hood (a stiff shell round the head: the push out of the head bent
+                      # its sides unevenly, mirror p90 2.6 -> 19 mm, the hood looked crooked from the front; docs/qa/autofit.md "Kaptur")
 HEM = None            # m: a robe / skirt that is longer than the body (made on a taller mannequin) has its part below HEM_FROM shortened (uniformly, folds and embroidery squeezed) so that the hem lands this high above the ground
                       # (the original robes end at 0.0-0.2 m; a hem below the ground would hang under the feet of the sprite). None = leave. Recipe: "prepare": {"HEM": 0.02}
 HEM_FROM = 0.70       # m: the shortening starts here (the sleeves of the model end above it)
@@ -93,6 +94,8 @@ if HEM is not None:                                   # after the autofit the me
         print("uo_prepare_item: HEM: the part below %.2f m shortened x%.2f, the hem was at %.3f m, now %.3f m" % (HEM_FROM, _k, _zmin, HEM))
 if DENSIFY and _dens:
     run("uo_densify_item.py", KIND=KIND)
+if FIT is None:
+    FIT = KIND not in ("hood",)
 if FIT:
     run("uo_fit_item.py", KIND=KIND)
 run("uo_bind_item.py", PART=_part)
