@@ -162,6 +162,7 @@ Otwarte: kaptur nie ma tekstury; dekolt w V kołnierza pokazuje pierś (kształt
 
 ## Sesja 23 (2026-10-12): kaptur „Assassin” z Google Drive (`docs/qa/autofit.md`, „Kaptur Assassin”)
 Zlecenie: kaptur ma okrywać głowę (nie za wysoko, nie za nisko), twarz widoczna, ruch z głową, cieniowanie z głębią. Potem uwaga użytkownika: „krzywo, jak porozciągana szmata”.
+Potem: kaptur niżej na czole (`TILT_BACK` 18) i krótki kołnierz do linii barków (`SHORTEN` 0,35; wstawka dekoltu tylko powyżej styku pół).
 Nowe w `uo_hood_cover.py`: `BROW_Z` (czoło pod dziobem kaptura), `TILT_FADE` (obrót tylko kaptura, nie kołnierza), `SYMMETRIZE` / `SYM_SIGMA` (płaszczyzna lustra + gładka symetryzacja), `HEAD_NEAR` (brzeg kołnierza nie idzie z głową), `BIND_SMOOTH` / `BIND_ARM`, `INNER_SHADE` (wnętrze ciemniejsze).
 `uo_bind_item.py` PART `hood`: także `upper_arm` (0,5). Model: wgrany `uo_bind_item.py`. Przepis: `docs/qa/hood_assassin_recipe.json` (model poza repo). Narzędzia zbliżeń 3D i pomiaru twarzy były w scratchpadzie (nie w repo).
 Uwaga: nowe ustawienia domyślne zmieniają też wynik starego kaptura Meshy (sesja 22, nie przeliczony).

@@ -1,4 +1,4 @@
 {"name": "hood_assassin", "file": "hood_assassin.glb", "kind": "hood",
  "materials": {"METAL": false, "SATURATION": 0, "BRIGHTNESS": 0.55},
- "hood_cover": {"TILT_BACK": 25, "TILT_FADE": 0.1, "INNER_SHADE": 0.25},
+ "hood_cover": {"TILT_BACK": 18, "TILT_FADE": 0.1, "SHORTEN": 0.35, "INNER_SHADE": 0.25},
  "tune": {"uo_autofit_item.py": {"UNIT": 0.3, "SCALE_RANGE": [0.8, 1.3]}}}

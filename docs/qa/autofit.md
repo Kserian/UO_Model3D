@@ -124,3 +124,8 @@ Przepis `docs/qa/hood_assassin_recipe.json`. Pomiary w spoczynku (promienie ze s
    `item_look` (stand + walk): shade 14,6 (bez) -> 16,5 (0,4) -> 17,7 (0,25); oryginały 21-25. Uwaga: to przyciemnienie zależne od geometrii (wnętrze), nie zmiana światła UO.
 Wynik: twarz z przodu i z kamery UO 100 %, oczy 100 %, wnętrze szczytu 21 mm nad czaszką, brzeg kaptura z = 1,774 m (nad brwiami), symetria p90 9,5 mm.
 Otwarte: w czarze (ręce do przodu) boki kołnierza są wypychane przez ramiona; głębia nadal poniżej oryginałów (gładka powłoka bez fałd).
+Uwaga użytkownika (ta sama sesja): kaptur bardziej na czoło, dół krótszy, ma tylko lekko dotykać ramion.
+`TILT_BACK` 25 -> 18°: brzeg nad czołem z 1,774 -> 1,737 m, odkryte czoło 167 -> 93 z 269 punktów, twarz z kamery UO 90 %, oczy 74 % (z przodu 100 / 100 %).
+Nowe `SHORTEN` 0,35 (`SHORTEN_Z` 1,55 m, linia barków): to, co wisi niżej, jest ściskane w pionie ku tej linii, brzeg zachowuje kształt; najniższy punkt kołnierza 1,217 -> 1,433 m.
+Odrzucone: ściąganie kołnierza promieniowo do nasady szyi (przód nadal długi, kołnierz obciskał tors jak kamizelka). Wstawka dekoltu (`FILL_NECK`) zaczyna się teraz najniżej tam, gdzie schodzą się poły kołnierza
+(przy krótkim kołnierzu obejmowała całą odsłoniętą pierś jako ciemny „śliniak”). `item_qa` 4,6 %; w czarze ramiona przechodzą przez skrzydła kołnierza (render je wypycha). `item_look` shade 16,2, średnia 149.

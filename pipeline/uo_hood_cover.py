@@ -49,6 +49,10 @@ SYM_MAX = 0.03        # m
 SYM_SIGMA = 0.02      # m: the symmetrizing moves form a smooth field in space (gaussian); a per-vertex snap tore the thin brim (layers matched across)
 TILT_FADE = 0.0       # m: > 0 = the turn is full above the head bone head and fades to none over this height below it (smoothstep): the hood turns, the cowl stays on the
                       # shoulders as the model made it (a whole-hood turn of 25 deg lifted the front flaps of the cowl off the chest, Assassin-style hood, 2026-10-12)
+SHORTEN = 1.0         # < 1: a shorter cowl: what hangs below SHORTEN_Z (the top of the shoulders) is squeezed up towards it, heights below it x SHORTEN, so the hem keeps its shape
+                      # and only just reaches over the shoulders (user, 2026-10-12: the Assassin hood's cowl reached mid-chest, z 1.22 m); then the push out of the body puts it back on the
+                      # skin. Drawing it in towards the neck instead left the front long and wrapped the cowl tight round the chest like a vest. 1 = off
+SHORTEN_Z = 1.55
 FILL_NECK = 0.006     # m: the V of the cowl under the chin (neck, upper chest seen through it: a second opening under the face) is closed by an inner panel of the hood's
                       # cloth this far off the skin: a copy of the skin seen through it (from the front and from above), widened by FILL_RINGS rings so its edges tuck under the cowl; 0 = off
 FILL_RINGS = 4
@@ -198,7 +202,10 @@ def fill_neck(it, body, m, VB, whead, c):
     mi = it.evaluated_get(dg).to_mesh(); Mi = it.matrix_world
     bh = BVHTree.FromPolygons([Mi @ v.co for v in mi.vertices], [tuple(p.vertices) for p in mi.polygons])
     NB = np.array([(body.matrix_world.to_3x3() @ v.normal).normalized() for v in m.vertices])
-    cand = (whead < 0.5) & (VB[:, 1] < c[1] + 0.02) & (VB[:, 2] > FILL_ZMIN) & (VB[:, 2] < c[2]) & (np.abs(VB[:, 0]) < 0.15) & (NB[:, 1] < -0.2)
+    VH = np.array([Mi @ v.co for v in mi.vertices])
+    front = VH[(np.abs(VH[:, 0]) < 0.03) & (VH[:, 1] < c[1] - 0.05) & (VH[:, 2] < c[2])]
+    zmin = max(FILL_ZMIN, float(front[:, 2].min())) if len(front) else FILL_ZMIN     # no lower than where the cowl's fronts meet (a short cowl: the bare chest below is not a hole)
+    cand = (whead < 0.5) & (VB[:, 1] < c[1] + 0.02) & (VB[:, 2] > zmin) & (VB[:, 2] < c[2]) & (np.abs(VB[:, 0]) < 0.15) & (NB[:, 1] < -0.2)
     seen = np.zeros(len(VB), bool)
     for i in np.nonzero(cand)[0]:
         for d in ((0, -1, 0), (0, -0.866, 0.5)):
@@ -212,7 +219,7 @@ def fill_neck(it, body, m, VB, whead, c):
     sel = seen.copy()
     for _ in range(FILL_RINGS):                                 # widen over the skin (not onto the head)
         grow = np.zeros(len(VB), bool); grow[E[sel[E[:, 0]], 1]] = True; grow[E[sel[E[:, 1]], 0]] = True
-        sel |= grow & (whead < 0.5) & (VB[:, 2] > FILL_ZMIN - 0.03)
+        sel |= grow & (whead < 0.5) & (VB[:, 2] > zmin - 0.03)
     T = tri[sel[tri].all(1)]
     used = np.unique(T); idx = {int(v): k for k, v in enumerate(used)}
     P = VB[used] + NB[used] * FILL_NECK
@@ -226,7 +233,7 @@ def fill_neck(it, body, m, VB, whead, c):
         except ValueError:
             pass
     bm.to_mesh(it.data); bm.free(); it.data.update()
-    print("uo_hood_cover: %s: neck panel %d skin vertices seen through the hood, %d faces, %.0f mm off the skin" % (it.name, int(seen.sum()), len(T), FILL_NECK * 1e3))
+    print("uo_hood_cover: %s: neck panel from z %.3f m, %d skin vertices seen through the hood, %d faces, %.0f mm off the skin" % (it.name, zmin, int(seen.sum()), len(T), FILL_NECK * 1e3))
 
 
 def forehead(VI, F, c, SF):
@@ -318,6 +325,10 @@ def main(src, dst, sets):
         dz = top0 - (skin_top + TOP_GAP) if (TOP_GAP > 0 and top0 is not None and skin_top is not None) else 0.0
         for attempt in range(3 if dz > 0 else 1):
             VI = V0 - [0, 0, dz]
+            if SHORTEN < 1:                                         # shorter cowl: what hangs below SHORTEN_Z is squeezed up towards it (heights x SHORTEN), the hem keeps its shape
+                zmin0 = VI[:, 2].min(); below = VI[:, 2] < SHORTEN_Z
+                VI = VI.copy(); VI[below, 2] = SHORTEN_Z - (SHORTEN_Z - VI[below, 2]) * SHORTEN
+                print("uo_hood_cover: %s: cowl shortened x%.2f below z %.2f m: lowest point z %.3f -> %.3f m" % (it.name, SHORTEN, SHORTEN_Z, zmin0, VI[:, 2].min()))
             VI = cover(VI, it, c, ts, rs, cone, sig, bvh_body, F)
             top = ray_up(VI, F, c)
             print("uo_hood_cover: %s: inside of the top %.0f mm above the skull (was %.0f)" % (it.name, (top - skin_top) * 1e3, (top0 - skin_top) * 1e3))
