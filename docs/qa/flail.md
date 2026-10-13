@@ -101,6 +101,8 @@ Wzorce z klienta Nelderim (`tiledata.mul`, `art.mul`, `Gumpart.mul`): mace 0xF5C
   Dalej (uwaga użytkownika: „malutka broń jak dla dzieci”, trzonek o 1 px grubszy i o 30% dłuższy, „postać nie musi trzymać samego końca”): przekrój trzonka x0,9 (`THIN`; szerokość 3,8 -> 4,7 px),
   trzonek x1,3 (`HAFT_LEN`: 9 cm z okuciem przy końcu bez zmian, reszta rozciągnięta, łańcuch i kula idą za końcem), chwyt 15 cm nad końcem (`GRIP_AT`; w animacji 6 cm), więc koniec z okuciem
   wystaje pod pięścią jak pierścień mace. Gump męski x 21-53, y 65-127, 574 px; wycięte pod pięścią 51 px (wiersze 109-119), damski 43 px. Art bez zmian.
+  Potem („niech trzyma gdzieś powyżej końca”): przy 15 cm pod pięścią było widać tylko okucie; `GRIP_AT` 0,22 / 0,25 / 0,28 m porównane, wybrane 0,22 (kawałek drewna między pięścią a okuciem;
+  od 0,25 kula sięga pięści). Gump męski x 23-55, y 71-133, 575 px.
 - Art: cep leżący, widziany z góry, trzonek po przekątnej (koniec na dole po lewej, jak mace), łańcuch skręca o 90° (`ART_CURL`; 35 / 60 / 90 porównane, przy 90 kula i łańcuch odstają od trzonka i w skali 1:1 widać cep),
   34 px/m, przekrój trzonka x1,0, łańcucha x0,8, kula x1,4, ciemna obwódka 1 px na zewnątrz (szarość 16, bez czystej czerni; oryginały mają 2-8). Drugi art = odbicie lustrzane (jak pary 0xF5C / 0xF5D). Art 44 x 18, cep 32 x 18 px.
 - Kolory: metal (łańcuch, kula, okucia trzonka) dokładnie szary R = G = B, każda część najpierw sprowadzona do jednej mediany (drewno w renderze miało 2 x jaśniejszą lumę niż metal: biała deska), potem poziomy:

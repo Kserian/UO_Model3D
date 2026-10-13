@@ -31,8 +31,8 @@ THIN = (0.9, 0.8, 0.9)         # gump: the haft's and the chain's cross-section 
                                # 0.7 a 3.8 px haft ("a weapon for children", user: 1 px thicker)
 HAFT_LEN = 1.3                 # gump: the haft x this long (the knob, KNOB m at the butt, kept; the shaft above it stretched; the chain and the ball move with its end): user, +30 %
 KNOB = 0.09
-GRIP_AT = 0.15                 # gump: the hand holds the haft this far (m) above the butt (the animation: 0.06); "it need not hold the very end" (user): the butt shows under the
-                               # fist like the ring of the client's mace (12-14 px under the middle of the fist)
+GRIP_AT = 0.22                 # gump: the hand holds the haft this far (m) above the butt (the animation: 0.06); "it need not hold the very end", "somewhere above the end" (user):
+                               # 0.15 showed only the knob under the fist; 0.22 / 0.25 / 0.28 compared: wood between the fist and the knob, from 0.25 the ball reaches the fist
 ART_THIN = (1.0, 0.8, 1.4)     # art: as THIN (with the rim the haft is 3-4 px like the client's mace / war hammer; 1.5 / 1.6 / 1.3 was a tube; a thinner chain and a bigger ball read as a flail)
 ART_OUTLINE = 1.0              # art: no darkened edge inside, a dark rim outside instead (ART_RIM grey level; the client's arts: 2-8; 16 = no true black)
 ART_RIM = 16.0
