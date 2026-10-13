@@ -174,3 +174,9 @@ Wynik (druga runda, po uwagach użytkownika): trzonek 0,56 m jak w oryginale, ku
 Chód w trybie walki (15): łańcuch ma wisieć na zewnątrz i do tyłu (uwaga użytkownika). Lustro trzonka względem tułowia (v8) nie działało, bo tułów jest w tej akcji skręcony o ok. 70°; v9: trzonek pionowo + `LEAN_OUT` / `LEAN_BACK` w układzie kierunku postaci (`uo_flail.py`), `MIRROR` usunięty.
 Art i gumpy cepa (`docs/qa/flail.md`, ostatnia sekcja): `uo_render_weapon_gump.py` (na razie tylko cepy z `uo_flail.py`), `uo_hue_preview.py`, `uo_grey_metal.py`; klient w `uo_client/` (poza repo): wypakowane `art*.mul`, `Gump*.mul`, `gumpartLegacyMUL.uop`, `hues.mul`, `tiledata.mul`.
 Drewniany trzonek + szary metal: farbuje się tylko metal, jeśli przedmiot ma w tiledata flagę PartialHue (do ustawienia przez użytkownika); animacja v10 ma metal dokładnie szary.
+
+## Sesja 24 (2026-10-13): podarta szata mnicha z dziurami (`docs/qa/robe_ragged.md`)
+Zlecenie: szata z Google Drive (`.glb`, 774 tys. wierzchołków, zamknięta bryła 1,5 cm, poza A, licencja nieznana, poza repo) na model, bez przebić ciała, tkanina ma się ruszać we wszystkich akcjach. **Decyzja użytkownika: dziury modelu są zamierzone, ciało ma przez nie prześwitywać.**
+Przepis `docs/qa/robe_ragged_recipe.json` (przepis czarnej szaty bez złota). Nowe: `uo_prepare_item.py` `HEM_FLARE` (zwężenie rozkloszowanego dołu wokół osi spódnicy; w staniu z przodu 39 -> 29 px, oryginał 469: 22), `item_skin_check.py --split` (skóra przed tkaniną vs w dziurach / pod rąbkiem).
+Wynik (35 akcji, 1050 klatek): tułów przed tkaniną 46 px, ręce 3,2 px na klatkę (nadgarstek przy mankiecie), nogi przed tkaniną to stopy leżącej postaci i jeźdźca; `item_clearance` 0,030 % / 0,43 % / 22,7 mm. Model: wgrany `uo_prepare_item.py` (bpy 4.2). Pełne `.vd` ok. 60 min (Blender 5.2).
+Odrzucone: zaszywanie dziur (`FILL_HOLES`, kod usunięty).
