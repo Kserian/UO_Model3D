@@ -86,3 +86,21 @@ Poprawka (v9): akcja 15 w `UP_ACTIONS` (trzonek pionowo w dłoni, jak w oryginal
 Przegląd `LEAN_OUT` / `LEAN_BACK` 0 / 0, 0,35 / 0,2, 0,5 / 0,3, 0,7 / 0,3: kula 7,6 / 8,3 / 8,7 / 10,0 px, przedmiot 4,2 / 5,0 / 5,3 / 6,2 px względem oryginału (oryginał ma kulę po wewnętrznej, to życzenie użytkownika). Wybrane 0,5 / 0,3 (kula wyraźnie odsunięta od trzonka jak na rysunku);
 w kierunkach 1-2 kula wisi za trzonkiem, w 3-4 (widok z tyłu) na zewnątrz ręki. 35 akcji: kula 10,7 px, przedmiot 5,2 px. `MIRROR` usunięty.
 Pliki v8 i v9 złożone z klatek v7 z podmienioną akcją 15 (`vdtool.py pack`; spakowanie niezmienionych klatek v7 daje plik identyczny bajt w bajt), bez ponownego renderu pozostałych akcji.
+
+## Art przedmiotu i gumpy paperdolla (prośba użytkownika: jasna szarość jak inne bronie UO, ładne farbowanie, rękojeść drewniana)
+Narzędzia: `pipeline/uo_render_weapon_gump.py ITEM.blend OUT` (render z tego samego modelu 3D co animacja: `gump_male.png` / `gump_female.png` 260 x 237, `art.png` / `art_mirror.png`, wpisy mul `*.bin`),
+`pipeline/uo_hue_preview.py` (podgląd farbowania prawdziwymi hue z `hues.mul`, tak jak robi to klient), `pipeline/uo_grey_metal.py` (metal klatek animacji dokładnie szary).
+Wzorce z klienta Nelderim (`tiledata.mul`, `art.mul`, `Gumpart.mul`): mace 0xF5C (anim 631), war mace 0x1406 (642), hammer pick 0x143C (625), war hammer 0x1438 (646), club 0x13B3 (620), maul 0x143A (633).
+- Gumpy broni: 260 x 237 jak ciało 12, broń pionowo w prawej dłoni (na obrazku po lewej), trzonek mace / war mace / maul w kolumnie x 47,5, środek pięści y 114; pięść ciała damskiego 13 jest ok. 1,5 px wyżej.
+  Żadna z 16 sprawdzonych broni nie ma gumpu damskiego (60000 + AnimID nie istnieje, klient bierze męski); damski jest zrobiony mimo to, chwyt na pięści ciała 13.
+- Skala gumpu 90,5 px/m: trzonek animacji (7,5 cm, w animacji musi być gruby) dawał w gumpie deskę 7 px (oryginały 3-5 px). W gumpie przekrój trzonka x0,7, łańcucha x0,8, kula x0,9 (`THIN`; 0,5 dawało linię 2 px).
+  Łańcuch zwisa z końca trzonka łukiem na zewnątrz (`DRAPE`), kula obok trzonka nad pięścią. Gump: x 29-49, y 67-119 (męski), 503 px.
+- Art: cep leżący, widziany z góry, trzonek po przekątnej (koniec na dole po lewej, jak mace), łańcuch skręca o 90° (`ART_CURL`; 35 / 60 / 90 porównane, przy 90 kula i łańcuch odstają od trzonka i w skali 1:1 widać cep),
+  34 px/m, przekrój trzonka x1,0, łańcucha x0,8, kula x1,4, ciemna obwódka 1 px na zewnątrz (szarość 16, bez czystej czerni; oryginały mają 2-8). Drugi art = odbicie lustrzane (jak pary 0xF5C / 0xF5D). Art 44 x 18, cep 32 x 18 px.
+- Kolory: metal (łańcuch, kula, okucia trzonka) dokładnie szary R = G = B, każda część najpierw sprowadzona do jednej mediany (drewno w renderze miało 2 x jaśniejszą lumę niż metal: biała deska), potem poziomy:
+  gump: metal p10 / p50 / p90 / max 15 / 63 / 152 / 207 (z obwódką; mace 24 / 62 / 98 / 186), art 15 / 56 / 159 / 207. Drewno (uwaga użytkownika: „rękojeść ma być drewniana”): kolor jak trzonki klienta
+  (war hammer, hammer pick, club: luma 42-58, R : G : B / luma 1,38-1,52 / 0,84-0,89 / 0,42-0,57; u nas `WOOD_TINT` 1,45 / 0,86 / 0,50), mediana gumpu (64, 40, 16), artu (96, 56, 32).
+- Farbowanie (`uo_hue_preview.py`, hue rud RunUO 2419, 2406, 2413, 2213, 2425, 2219 + 33, 1153): klient wybiera kolor hue po czerwonym kanale piksela. Bez flagi PartialHue (0x00040000 w tiledata; mace, war hammer jej nie mają)
+  farbuje się całość, drewno też (jak war hammer). Z flagą tylko piksele szare: nasz metal farbuje się w całości, drewno zostaje drewnem; mace z flagą ma plamy (6% jego pikseli nie jest dokładnie szare).
+- Animacja: z flagą klient farbuje też klatki animacji, a w v9 tylko 74% pikseli metalu było dokładnie szarych (odcień do 8/255): przy farbowaniu zostawały szare plamki (podgląd). v10 = v9 po `uo_grey_metal.py`
+  (piksel z rozrzutem kanałów <= 0,25 x luma -> szarość tej samej lumy): 99,7% metalu dokładnie szare, kształty klatek identyczne, luma +-9,5/255 (zaokrąglenie do 15 bitów), najwięcej 117 kolorów w bloku (paleta bez kwantyzacji).
