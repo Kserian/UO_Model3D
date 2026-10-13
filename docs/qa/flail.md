@@ -94,7 +94,10 @@ Wzorce z klienta Nelderim (`tiledata.mul`, `art.mul`, `Gumpart.mul`): mace 0xF5C
 - Gumpy broni: 260 x 237 jak ciało 12, broń pionowo w prawej dłoni (na obrazku po lewej), trzonek mace / war mace / maul w kolumnie x 47,5, środek pięści y 114; pięść ciała damskiego 13 jest ok. 1,5 px wyżej.
   Żadna z 16 sprawdzonych broni nie ma gumpu damskiego (60000 + AnimID nie istnieje, klient bierze męski); damski jest zrobiony mimo to, chwyt na pięści ciała 13.
 - Skala gumpu 90,5 px/m: trzonek animacji (7,5 cm, w animacji musi być gruby) dawał w gumpie deskę 7 px (oryginały 3-5 px). W gumpie przekrój trzonka x0,7, łańcucha x0,8, kula x0,9 (`THIN`; 0,5 dawało linię 2 px).
-  Łańcuch zwisa z końca trzonka łukiem na zewnątrz (`DRAPE`), kula obok trzonka nad pięścią. Gump: x 29-49, y 67-119 (męski), 503 px.
+  Uwagi użytkownika: cep pochylony na zewnątrz ciała, łańcuch ma swobodnie zwisać, trzonek wycięty w miejscu chwytu („niby jest w ręce”). `TILT` 20° (porównane 10 / 15 / 20: łańcuch z kulą ma 0,4 m pod
+  trzonkiem 0,5 m, więc kula kończy się na wysokości pięści i przy 10° i 15° leżała na niej; przy 20° wisi obok dłoni), łańcuch pionowo w dół (`DRAPE` puste; wcześniej łuk na zewnątrz przy pionowym trzonku).
+  `HOLD_CUT`: piksele trzonka (tylko trzonek, z przebiegu części) tam, gdzie leży pięść ciała 12 / 13 (okno wokół chwytu), są wycięte: męski 43 px w wierszach 109-117, damski 37 px w 109-116.
+  Oryginalne gumpy broni wycinają trzonek nad palcami (męski wiersze 109-113). Gump: x 23-49, y 72-119 (męski), 452 px.
 - Art: cep leżący, widziany z góry, trzonek po przekątnej (koniec na dole po lewej, jak mace), łańcuch skręca o 90° (`ART_CURL`; 35 / 60 / 90 porównane, przy 90 kula i łańcuch odstają od trzonka i w skali 1:1 widać cep),
   34 px/m, przekrój trzonka x1,0, łańcucha x0,8, kula x1,4, ciemna obwódka 1 px na zewnątrz (szarość 16, bez czystej czerni; oryginały mają 2-8). Drugi art = odbicie lustrzane (jak pary 0xF5C / 0xF5D). Art 44 x 18, cep 32 x 18 px.
 - Kolory: metal (łańcuch, kula, okucia trzonka) dokładnie szary R = G = B, każda część najpierw sprowadzona do jednej mediany (drewno w renderze miało 2 x jaśniejszą lumę niż metal: biała deska), potem poziomy:
