@@ -38,6 +38,9 @@ OUTER_SHELL = False   # a model that is a CLOSED SOLID cloth (a cloth simulator 
 OUTER_REMESH = 0.0    # m: > 0 (0.006) = before OUTER_SHELL the solid is rebuilt by Blender's voxel remesh: a garment exported as separate panels (sewing patterns that only touch, 284 of them
                       # in docs/qa/robe_black.md) becomes ONE continuous sheet, so the seams cannot open when the sleeves are turned onto the arms or the item is wrapped. The UVs are lost:
                       # the texture is baked from the original (BAKE_TEXTURE, 2048 when not given). Recipe: "outer_shell": 0.006
+FILL_HOLES = 0.0      # m: > 0 = after OUTER_SHELL every hole of the sheet whose rim is shorter than this is closed (a torn robe: rips through which the body showed in the sprites; the hem,
+                      # the cuffs, the neck and the hood are far longer). The patch is refined to the mesh's edge length, smoothed with its rim fixed (a soft membrane), and gets the cloth
+                      # colour around it in the baked texture (the bake finds no original there). docs/qa/robe_ragged.md. Recipe: "fill_holes": 0.6
 NAME = ""             # name of the result ("" = file name)
 BAKE_TEXTURE = 0      # > 0 (px, 2048 is plenty): the reduced model gets a NEW UV map and a texture BAKED from the original: a reduction drags the UVs of a model with a sculpted detail / an embroidery into
                       # streaks (the cloth turns into smeared noise). Needs the Cycles engine of Blender. Recipe: "bake_texture": 2048
@@ -221,6 +224,67 @@ def outer_shell(n, rays=8, reach=1.5, partner_max=0.06, smooth=8, min_island=0.0
     print("uo_import_item: OUTER_SHELL %s: %d of %d faces kept (outer layer; %d faces of small pieces removed), %d -> %d vertices, %.0f s" % (n.name, npoly - len(drop) - len(bits), npoly, len(bits), nv0, len(me.vertices), time.time() - t0))
 
 
+def fill_holes(n, max_len, step=0.012, smooth=40):
+    """close the holes of an open sheet whose rim is shorter than max_len m (FILL_HOLES); face attribute uo_filled = 1 on the patches"""
+    import bmesh
+    me = n.data; bm = bmesh.new(); bm.from_mesh(me)
+    bnd = [e for e in bm.edges if e.is_boundary]
+    seen, loops = set(), []
+    for e0 in bnd:
+        if e0 in seen:
+            continue
+        st, loop = [e0], []; seen.add(e0)
+        while st:
+            e = st.pop(); loop.append(e)
+            for v in e.verts:
+                for f in v.link_edges:
+                    if f.is_boundary and f not in seen:
+                        seen.add(f); st.append(f)
+        loops.append((sum(e.calc_length() for e in loop), loop))
+    loops.sort(key=lambda t: -t[0])
+    small = [l for L, l in loops if L < max_len]
+    rim = set(v for l in small for e in l for v in e.verts)
+    lay = bm.faces.layers.int.new("uo_filled")
+    for l in small:
+        for f in bmesh.ops.holes_fill(bm, edges=l, sides=0)["faces"]:
+            f[lay] = 1
+    patch = lambda: [f for f in bm.faces if f[lay]]
+    bmesh.ops.triangulate(bm, faces=patch(), quad_method="BEAUTY", ngon_method="BEAUTY")
+    for _ in range(12):                                       # refine the patches to about the edge length of the sheet (the new faces inherit the mark)
+        long = list(set(e for f in patch() for e in f.edges if e.calc_length() > step))
+        if not long:
+            break
+        bmesh.ops.subdivide_edges(bm, edges=long, cuts=1, use_grid_fill=False)
+        bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3], quad_method="BEAUTY", ngon_method="BEAUTY")
+    inner = [v for v in set(v for f in patch() for v in f.verts) if v not in rim and all(g[lay] for g in v.link_faces)]
+    for _ in range(smooth):                                   # a soft membrane over the hole (the rim stays)
+        co = [sum((e.other_vert(v).co for e in v.link_edges), v.co * 0) / max(len(v.link_edges), 1) for v in inner]
+        for v, c in zip(inner, co):
+            v.co = c
+    nf = len(patch())
+    bm.to_mesh(me); bm.free(); me.update()
+    print("uo_import_item: FILL_HOLES %s: %d holes closed (rim < %.2f m, %.1f m of rim), %d left open (rims %s m), %d patch faces, %d vertices" % (
+        n.name, len(small), max_len, sum(L for L, l in loops if L < max_len), len(loops) - len(small), " ".join("%.2f" % L for L, l in loops if L >= max_len)[:200], nf, len(me.vertices)))
+    return len(small)
+
+
+def inpaint_texture(img, sentinel=(1.0, 0.0, 1.0), iters=400):
+    """texels the bake left at the sentinel colour (a patch of FILL_HOLES: no original there) take the mean of the baked texels around them"""
+    w, h = img.size; px = np.array(img.pixels[:], np.float32).reshape(h, w, 4)
+    miss = (np.abs(px[..., 0] - sentinel[0]) < 0.02) & (np.abs(px[..., 1] - sentinel[1]) < 0.02) & (np.abs(px[..., 2] - sentinel[2]) < 0.02)
+    k0 = int(miss.sum())
+    for _ in range(iters):
+        if not miss.any():
+            break
+        ok = ~miss; acc = np.zeros((h, w, 3), np.float32); cnt = np.zeros((h, w), np.float32)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)):
+            acc += np.roll(px[..., :3] * ok[..., None], (dy, dx), (0, 1)); cnt += np.roll(ok, (dy, dx), (0, 1))
+        grow = miss & (cnt > 0)
+        px[grow, :3] = acc[grow] / cnt[grow][:, None]; miss &= ~grow
+    img.pixels[:] = px.ravel()
+    print("uo_import_item: FILL_HOLES texture: %d texels without the original filled from around (%d left)" % (k0, int(miss.sum())))
+
+
 def bake_texture(lo, hi, px):
     """texture of the original `hi` baked onto the reduced `lo` (new smart-projected UVs, one image `px` x `px`, a Principled material with it)"""
     import math, tempfile, time
@@ -235,6 +299,8 @@ def bake_texture(lo, hi, px):
     bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.003, area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
     bpy.ops.object.mode_set(mode="OBJECT")
     img = bpy.data.images.new("uo_baked_" + lo.name, px, px, alpha=False)
+    if FILL_HOLES > 0:
+        img.generated_color = (1.0, 0.0, 1.0, 1.0)
     mat = bpy.data.materials.new("uo_baked_" + lo.name); mat.use_nodes = True; nt = mat.node_tree
     bsdf = nt.nodes["Principled BSDF"]; tex = nt.nodes.new("ShaderNodeTexImage"); tex.image = img
     nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"]); nt.nodes.active = tex
@@ -247,6 +313,8 @@ def bake_texture(lo, hi, px):
     b.use_pass_direct = False; b.use_pass_indirect = False; b.use_pass_color = True
     hi.select_set(True); lo.select_set(True); bpy.context.view_layer.objects.active = lo
     bpy.ops.object.bake(type="DIFFUSE")
+    if FILL_HOLES > 0:
+        inpaint_texture(img)
     f = os.path.join(tempfile.mkdtemp(prefix="uo_bake_"), "baked.png"); img.filepath_raw = f; img.file_format = "PNG"; img.save(); img.pack()
     print("uo_import_item: BAKE_TEXTURE %s: %d x %d px from %s, %d vertices, %.0f s" % (lo.name, px, px, hi.name, len(lo.data.vertices), time.time() - t0))
 
@@ -318,6 +386,8 @@ def run():
                 me = bpy.data.meshes.new_from_object(n.evaluated_get(dg)); n.modifiers.clear(); old = n.data; n.data = me; bpy.data.meshes.remove(old)
                 print("uo_import_item: OUTER_REMESH %s: voxels %.1f mm, %d -> %d vertices (one continuous solid), %.0f s" % (n.name, 1000 * OUTER_REMESH, k0, len(me.vertices), time.time() - t0))
             outer_shell(n)
+            if FILL_HOLES > 0:
+                fill_holes(n, float(FILL_HOLES))
     if DECIMATE_TO > 0:
         total = sum(len(n.data.vertices) for n in news)
         if total > DECIMATE_TO:
