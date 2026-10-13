@@ -29,7 +29,8 @@ ROLL = 0.0                     # deg: the weapon turned about its haft (which si
 THIN = (0.9, 0.8, 0.9)         # gump: the haft's and the chain's cross-section scaled by the first two, the ball by the third (about where the chain holds it): the animation
                                # needs a thick haft (7.5 cm: 2.7 px at 36 px/m), the gump is 2.5 x larger (6.8 px; the client's maces 3-5 px); 0.5 gave a 2 px line,
                                # 0.7 a 3.8 px haft ("a weapon for children", user: 1 px thicker)
-HAFT_LEN = 1.3                 # gump: the haft x this long (the knob, KNOB m at the butt, kept; the shaft above it stretched; the chain and the ball move with its end): user, +30 %
+HAFT_LEN = 1.56                # gump: the haft x this long (the knob, KNOB m at the butt, kept; the shaft above it stretched; the chain and the ball move with its end): user, +30 %,
+                               # then +20 % more (1.3 x 1.2)
 KNOB = 0.09
 GRIP_AT = 0.22                 # gump: the hand holds the haft this far (m) above the butt (the animation: 0.06); "it need not hold the very end", "somewhere above the end" (user):
                                # 0.15 showed only the knob under the fist; 0.22 / 0.25 / 0.28 compared: wood between the fist and the knob, from 0.25 the ball reaches the fist
