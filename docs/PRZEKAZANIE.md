@@ -174,6 +174,7 @@ Wynik (druga runda, po uwagach użytkownika): trzonek 0,56 m jak w oryginale, ku
 Chód w trybie walki (15): łańcuch ma wisieć na zewnątrz i do tyłu (uwaga użytkownika). Lustro trzonka względem tułowia (v8) nie działało, bo tułów jest w tej akcji skręcony o ok. 70°; v9: trzonek pionowo + `LEAN_OUT` / `LEAN_BACK` w układzie kierunku postaci (`uo_flail.py`), `MIRROR` usunięty.
 Art i gumpy cepa (`docs/qa/flail.md`, ostatnia sekcja): `uo_render_weapon_gump.py` (na razie tylko cepy z `uo_flail.py`), `uo_hue_preview.py`, `uo_grey_metal.py`; klient w `uo_client/` (poza repo): wypakowane `art*.mul`, `Gump*.mul`, `gumpartLegacyMUL.uop`, `hues.mul`, `tiledata.mul`.
 Drewniany trzonek + szary metal: farbuje się tylko metal, jeśli przedmiot ma w tiledata flagę PartialHue (do ustawienia przez użytkownika); animacja v10 ma metal dokładnie szary.
+Model: obrót głowy wygładzony w czasie we wszystkich akcjach (maska kolegi skakała w walk war; `docs/qa/arm_poses.md`, ostatnia sekcja): skok przedmiotu sztywnego na głowie 2,75 -> 1,35 px, IoU ciała 0,9001 -> 0,8991, `test_items` 0,722. Zmieniony plik binarny: `model/UO_Body_0x190.blend` (tylko klucze `head` 31 akcji).
 
 ## Sesja 24 (2026-10-13): podarta szata mnicha z dziurami (`docs/qa/robe_ragged.md`)
 Zlecenie: szata z Google Drive (`.glb`, 774 tys. wierzchołków, zamknięta bryła 1,5 cm, poza A, licencja nieznana, poza repo) na model, bez przebić ciała, tkanina ma się ruszać we wszystkich akcjach. **Decyzja użytkownika: dziury modelu są zamierzone, ciało ma przez nie prześwitywać.**
