@@ -34,8 +34,9 @@ HAFT_LEN = 1.56                # gump: the haft x this long (the knob, KNOB m at
 KNOB = 0.09
 GRIP_AT = 0.22                 # gump: the hand holds the haft this far (m) above the butt (the animation: 0.06); "it need not hold the very end", "somewhere above the end" (user):
                                # 0.15 showed only the knob under the fist; 0.22 / 0.25 / 0.28 compared: wood between the fist and the knob, from 0.25 the ball reaches the fist
-ART_HAFT_LEN = 1.0             # art: as HAFT_LEN (the grip does not matter on the ground)
-ART_THIN = (1.0, 0.8, 1.4)     # art: as THIN (with the rim the haft is 3-4 px like the client's mace / war hammer; 1.5 / 1.6 / 1.3 was a tube; a thinner chain and a bigger ball read as a flail)
+ART_HAFT_LEN = 1.56            # art: as HAFT_LEN (the grip does not matter on the ground); 1.0 / 1.56 shown to the user, the gump's length taken
+ART_THIN = (1.0, 1.6, 1.4)     # art: as THIN (with the rim the haft is 3-4 px like the client's mace / war hammer; 1.5 / 1.6 / 1.3 was a tube); the chain 1.6 with LINK_PX: links seen
+                               # (0.8 was a grey line: "visible links", user)
 ART_OUTLINE = 1.0              # art: no darkened edge inside, a dark rim outside instead (ART_RIM grey level; the client's arts: 2-8; 16 = no true black)
 ART_RIM = 16.0
 TILT = 20.0                    # deg: the gump weapon leans out from the body (its top to the left of the picture), so a flail's chain hangs free beside the haft (user);
@@ -49,7 +50,13 @@ HOLD_ROWS = 5                  # but only in its top HOLD_ROWS rows (the fingers
 CLIENT = os.path.join(HERE, "..", "uo_client", "NelderimServUO")
 BODY = {"male": 12, "female": 13}
 ART_PXM = 34.0                 # art px per m (the client's maces: 0.7-1 m long weapons are 28-38 px along the diagonal)
-ART_CURL = 90.0                # deg: the chain on the ground turns this much from the haft line over its length (35 / 60 / 90 compared: at 90 the chain and the ball stand apart from the haft)
+ART_CURL = 125.0               # deg: the chain on the ground turns this much from the haft line (35 / 60 / 90 compared: at 90 the chain and the ball stand apart from the haft;
+                               # "bent like an A, not an L" (user): 110 / 125 / 140 compared with a sharp bend)
+ART_APEX = 2                   # the turn made over the first ART_APEX pieces of the chain, then straight (0 = spread over the whole chain: a round hook)
+ART_CHAIN_LEN = 1.25           # art: the chain x this long (its links longer; "a little longer", user)
+LINK_PX = 3.0                  # art: draw the chain's links: every LINK_PX px along the chain the last LINK_GAP of it darkened x LINK_DARK (0 = as rendered)
+LINK_GAP = 0.34
+LINK_DARK = 0.45
 PART_GAIN = (1.0, 0.85, 1.1)    # a flail: the grey of the haft / chain / ball relative to each other (each part's median first brought to one level: the wooden haft's luma
                                # was 2 x the metal's, a white board on the gump)
 ART_W = 44
@@ -153,15 +160,21 @@ def tone(a, levels, part=None, wood_levels=None, outline=None, rim=None):
     return out
 
 
-def stretch(V, part, prm, length, grip_at):
-    """the haft lengthened x length (KNOB m at the butt kept, the shaft above stretched), the chain and the ball moved with its end; the grip put grip_at m above the
-    butt (0 = where the animation holds it); rest pose; returns (vertices, prm with the moved nodes and grip)"""
+def stretch(V, part, prm, length, grip_at, chain_len=1.0):
+    """the haft lengthened x length (KNOB m at the butt kept, the shaft above stretched), the chain and the ball moved with its end; the chain x chain_len along the axis
+    (its links longer, the ball moved on); the grip put grip_at m above the butt (0 = where the animation holds it); rest pose; returns (vertices, prm with the moved
+    nodes and grip)"""
     R = np.array(prm["nodes"]); G = np.array(prm["grip"]); hd = (R[0] - G) / np.linalg.norm(R[0] - G)
     t = (V - G) @ hd
     tb = t[part == 0].min(); te = (R[0] - G) @ hd; t0 = tb + KNOB
     k = (length * (te - tb) - KNOB) / (te - t0)
     out = V.copy()
     msk = (part == 0) & (t > t0); out[msk] += np.outer((t[msk] - t0) * (k - 1), hd)
+    if chain_len != 1.0:                                # the chain from the end of the haft (te) stretched, the ball moved by the chain's growth
+        tc = (R[-2] - G) @ hd
+        msk = part == 1; out[msk] += np.outer((np.clip(t[msk], te, tc) - te) * (chain_len - 1), hd)
+        out[part == 2] += (tc - te) * (chain_len - 1) * hd
+        tn = (R - G) @ hd; R = R + np.outer((np.clip(tn, te, tc) - te) * (chain_len - 1) + np.where(tn > tc, (tc - te) * (chain_len - 1), 0), hd)
     dlt = (te - t0) * (k - 1); out[part > 0] += dlt * hd
     p2 = dict(prm); p2["nodes"] = (R + dlt * hd).tolist()
     if grip_at > 0:
@@ -203,6 +216,26 @@ def part_pass(sc, cam, ob, path, w, h, pxm, cx, cy, top):
     return pid
 
 
+POSED = {}                     # the nodes of the last pose_flail (grip at the origin)
+
+
+def links(img, part, nodes, to_px, period, gap, dark):
+    """visible links on a small art: chain pixels (part 1) whose distance along the chain (the polyline of the posed nodes, in pixels) falls in the last `gap` of each
+    `period` px are darkened x dark (at 34 px/m a 5 cm link is ~2 px: the rendered chain was an even grain)"""
+    P = np.array([to_px(x) for x in nodes[:-1]])                       # the chain's nodes (the last piece is the ball)
+    seg = np.diff(P, axis=0); L = np.linalg.norm(seg, axis=1); cum = np.concatenate([[0], np.cumsum(L)])
+    ys, xs = np.nonzero((part == 1) & (img[..., 3] > 0))
+    q = np.stack([xs + 0.5, ys + 0.5], 1)
+    best = np.full(len(q), np.inf); sval = np.zeros(len(q))
+    for k in range(len(seg)):
+        u = np.clip(((q - P[k]) @ seg[k]) / max(L[k] ** 2, 1e-9), 0, 1); d = np.linalg.norm(q - (P[k] + np.outer(u, seg[k])), axis=1)
+        b = d < best; best[b] = d[b]; sval[b] = cum[k] + u[b] * L[k]
+    g = (sval % period) >= period * (1 - gap)
+    out = img.copy(); v = out[ys[g], xs[g], :3].astype(float) * dark
+    out[ys[g], xs[g], :3] = (np.clip(np.round(v), 8, 255).astype(np.int32) >> 3) << 3
+    return out
+
+
 def pose_flail(V, part, s, prm, Q, chain_dirs):
     """vertex positions (grip at the origin): the haft turned by Q, the chain pieces along chain_dirs (one direction per piece), the ball on the last piece"""
     R = np.array(prm["nodes"]); n = len(R); G = np.array(prm["grip"])
@@ -219,6 +252,7 @@ def pose_flail(V, part, s, prm, Q, chain_dirs):
         F = np.array(Vector(c.tolist()).rotation_difference(Vector(x.tolist())).to_matrix()) @ F
         msk = (piece == k) & (part > 0)
         P[msk] = X[k] + (V[msk] - R[k]) @ F.T
+    POSED["nodes"] = X
     return P
 
 
@@ -291,17 +325,21 @@ def main(src, out):
     d45 = Vector((1, 1, 0)).normalized()
     Qa = np.array(Vector(hd.tolist()).rotation_difference(d45).to_matrix())
     Qa = np.array(Matrix.Rotation(np.radians(ROLL), 3, d45)) @ Qa
-    n = len(prm["nodes"]); turn = np.radians(ART_CURL) / max(n - 2, 1)
-    dirs = [tuple(np.array(Matrix.Rotation(-turn * (k + 1), 3, Vector((0, 0, 1)))) @ np.array(d45)) for k in range(n - 1)]
-    Va, pa = stretch(V0, part, prm, ART_HAFT_LEN, 0.0)
+    n = len(prm["nodes"]); ap = ART_APEX if ART_APEX > 0 else n - 2
+    turns = [np.radians(ART_CURL) * min(1.0, (k + 1) / ap) for k in range(n - 1)]
+    dirs = [tuple(np.array(Matrix.Rotation(-a_, 3, Vector((0, 0, 1)))) @ np.array(d45)) for a_ in turns]
+    Va, pa = stretch(V0, part, prm, ART_HAFT_LEN, 0.0, ART_CHAIN_LEN)
     P = pose_flail(thin(Va, part, pa, ART_THIN), part, s, pa, Qa, dirs)
-    P[:, 2] -= P[:, 2].min()                            # on the ground
+    zshift = P[:, 2].min(); P[:, 2] -= zshift            # on the ground
     place(P)
     lo, hi = P[:, :2].min(0), P[:, :2].max(0); c = (lo + hi) / 2
     wpx = int(np.ceil((hi[0] - lo[0]) * ART_PXM)) + 3; hpx = int(np.ceil((hi[1] - lo[1]) * ART_PXM)) + 3
     w = max(ART_W, wpx); h = hpx
     a = box_down(render(sc, cam, tmp, w * SS, h * SS, ART_PXM * SS, c[0], c[1], True), SS)
-    art = tone(a, ART_LEVELS, part_pass(sc, cam, ob, tmp, w * SS, h * SS, ART_PXM * SS, c[0], c[1], True), ART_WOOD_LEVELS, ART_OUTLINE, ART_RIM)
+    pp = part_pass(sc, cam, ob, tmp, w * SS, h * SS, ART_PXM * SS, c[0], c[1], True)
+    art = tone(a, ART_LEVELS, pp, ART_WOOD_LEVELS, ART_OUTLINE, ART_RIM)
+    if LINK_PX > 0:
+        art = links(art, pp, POSED["nodes"], lambda x: (w / 2 + (x[0] - c[0]) * ART_PXM, h / 2 - (x[1] - c[1]) * ART_PXM), LINK_PX, LINK_GAP, LINK_DARK)
     ys, xs = np.nonzero(art[..., 3]); art = art[ys.min():ys.max() + 1]          # the client's arts start at their top row
     for name, im in (("art", art), ("art_mirror", art[:, ::-1].copy())):
         Image.fromarray(im).save(os.path.join(out, name + ".png"))
