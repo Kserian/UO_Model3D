@@ -60,3 +60,11 @@ bez zasłaniania w ogóle 0,89, 17 klatek, 4,5 px. Wybrane: bez rąk (głowa i n
 `weapon1h.R` ma kierunek dopasowany do oryginalnych broni per klatka (też w tej akcji); z wygładzeniem (`HAND_SMOOTH` 2) już nie drga. Porównanie akcja po akcji (dłoń / kość broni, kula px): kość broni wyraźnie lepsza (kula ≥ 1,5 px i przedmiot ≥ 0,5 px bliżej)
 tylko w 18 (10,4 -> 8,8), 23 jazda stępa (14,8 -> 11,7), 26 (24,6 -> 19,9); wszędzie poza tym dłoń lepsza lub równa (sama kość broni w sumie 12,1 px wobec 11,1). Nowe `WEAPON_BONE_ACTIONS` "18,23,26" (render rysuje trzonek z zapisanym nośnikiem).
 Wynik końcowy (35 akcji): kula 10,9 px, przedmiot 4,5 px, szybkość kuli 9,8 px/klatkę (oryginał 10,9), piksele cepa nasze / oryginału mediana 0,85, klatki < 0,5: 32 z 1031.
+
+## Trzecia runda (uwagi użytkownika: broń przebija ciało w chodzie, w ataku konno broń ucieka z ręki)
+**Zasłanianie.** Zasada użytkownika: tam, gdzie ciało zasłania broń, ma ją zasłaniać, nawet jeśli broń będzie prawie niewidoczna. `uo_occluders` = całe ciało, także tułów
+(head, upper_arm, forearm, hand, thigh, shin, foot, pelvis, spine, chest, neck, clavicle). W chodzie z bronią za plecami (kierunki 3, 4) cep prawie znika, jak w oryginale.
+Liczba pikseli cepa nasza / oryginału: mediana 0,85 -> 0,70, klatki < 0,5: 32 -> 193 z 1031 (to celowe: zasłania ciało); przedmiot 4,5 -> 5,3 px.
+**Broń ucieka z ręki (26).** `weapon1h.R` ma per klatka także przesunięcie (dopasowane do oryginalnych broni): chwyt trzonka odjeżdżał od dłoni do 0,62 m (klatka 3). Teraz z kości broni brany jest tylko obrót,
+chwyt zawsze w dłoni (`hand.R`): odległość chwytu od dłoni we wszystkich klatkach 0,0000 m. Wynik (35 akcji): kula 11,0 px, przedmiot 5,3 px, szybkość kuli 9,7 px/klatkę (oryginał 10,9).
+Zostaje: w ataku konno w klatkach 3-4 cep jest teraz w dużej części za tułowiem (zasłonięty), w oryginale kierunek 1 klatka 3 ma kulę daleko na zewnątrz.

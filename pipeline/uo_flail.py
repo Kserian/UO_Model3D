@@ -189,8 +189,9 @@ def simulate(rig, act, nodes, br, caps):
     use_w = HAND_SMOOTH > 0 and a in {int(x) for x in WEAPON_BONE_ACTIONS.split(",") if x.strip()}
     for i in range(nf):
         sc.frame_set(1 + i * STEP); k = pose_mats(rig, names)
-        if use_w:
-            k[HOLD] = k[BONE]                                                # the carrier of the haft in this action
+        if use_w:                                                            # the turn of weapon1h.R, the grip where the hand holds it (the bone also moves away from the hand:
+            g = k[HOLD][:3, :3] @ GRIP[0] + k[HOLD][:3, 3]                   # in the mounted 1H attack the haft left the hand)
+            Mw = k[BONE].copy(); Mw[:3, 3] = g - Mw[:3, :3] @ GRIP[0]; k[HOLD] = Mw
         keys.append(k)
     loop = a in LOOP and nf > 1
     if HAND_SMOOTH > 0 and nf > 2:                                          # the hand's turn smoothed over the frames, about the grip
