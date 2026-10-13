@@ -104,6 +104,8 @@ Wzorce z klienta Nelderim (`tiledata.mul`, `art.mul`, `Gumpart.mul`): mace 0xF5C
   Potem („niech trzyma gdzieś powyżej końca”): przy 15 cm pod pięścią było widać tylko okucie; `GRIP_AT` 0,22 / 0,25 / 0,28 m porównane, wybrane 0,22 (kawałek drewna między pięścią a okuciem;
   od 0,25 kula sięga pięści). Gump męski x 23-55, y 71-133, 575 px.
   Potem („jeszcze dłuższy o 20%”): `HAFT_LEN` 1,56 (1,3 x 1,2), chwyt dalej 22 cm nad końcem, więc przybyło u góry: koniec trzonka na wysokości głowy, kula wisi nad dłonią. Gump męski x 19-55, y 59-133, 637 px.
+  Potem („niech się lekko w dłoni przebija ten kij”): wycięcie tylko w górnych 5 wierszach pięści (`HOLD_ROWS`, palce; jak oryginały: męski 109-113), niżej trzonek prześwituje przez dłoń: męski 28 px wyciętych (wiersze 109-113), damski 27.
+  Art: nowe `ART_HAFT_LEN` (jak `HAFT_LEN`); domyślnie 1,0 (art 32 x 18 px), wariant 1,56 jak w gumpie: 40 x 25 px (do wyboru użytkownika).
 - Art: cep leżący, widziany z góry, trzonek po przekątnej (koniec na dole po lewej, jak mace), łańcuch skręca o 90° (`ART_CURL`; 35 / 60 / 90 porównane, przy 90 kula i łańcuch odstają od trzonka i w skali 1:1 widać cep),
   34 px/m, przekrój trzonka x1,0, łańcucha x0,8, kula x1,4, ciemna obwódka 1 px na zewnątrz (szarość 16, bez czystej czerni; oryginały mają 2-8). Drugi art = odbicie lustrzane (jak pary 0xF5C / 0xF5D). Art 44 x 18, cep 32 x 18 px.
 - Kolory: metal (łańcuch, kula, okucia trzonka) dokładnie szary R = G = B, każda część najpierw sprowadzona do jednej mediany (drewno w renderze miało 2 x jaśniejszą lumę niż metal: biała deska), potem poziomy:
