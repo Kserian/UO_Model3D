@@ -53,7 +53,8 @@ UP_ACTIONS = ""       # actions in which the haft stands upright in the hand (sa
 HANG_ACTIONS = ""     # actions in which the chain does not swing: every frame it hangs straight down from the end of the haft, along the haft when the haft is upright, the ball
                       # beside it on the outer side (salute, eat: "static, the chain hangs along the haft"; the free chain whirled by the head)
 ACTION_SET = ""       # per-action settings of the simulation: "26:STIFF=40,DAMP=2;9:DAMP=3" (STIFF, DAMP, FRAME_TIME, ALIGN_FWD, GRIP_TWIST)
-ALIGN_FWD = 0.0       # ALIGN_ACTIONS: the forearm's line tipped towards the front of the body by this (0 = along the forearm; 1 = half way at right angles)
+ALIGN_FWD = 0.0       # ALIGN_ACTIONS / UP_ACTIONS: the forearm's line (the upright) tipped towards the front of the body by this (0 = none; 1 = half way at right angles).
+                      # Eat (34): upright from the hand at the hip the haft went up through the side of the torso in frame 0 (user, 2026-10-13)
 GRIP_TWIST = 0.0      # deg: the haft turned about the hand's axis through the grip in the actions carried by the hand. Walk (0, 1: ACTION_SET "1:GRIP_TWIST=20"): the original
                       # haft points out to the side, ours pointed forward and in, so seen from behind the ball hung in front of the belly, hidden; in every action it made the
                       # attacks worse (slash ball +4.9 px), so per action only
@@ -220,7 +221,7 @@ def simulate(rig, act, nodes, br, caps):
         elif mode in ("align", "up"):
             dh = Mh[:3, :3] @ hd
             to = k["forearm.R"][:3, :3] @ fy0 if mode == "align" else np.array([0.0, 0.0, 1.0])
-            if mode == "align" and loc["ALIGN_FWD"]:                         # tipped towards the front of the body (where the enemy is)
+            if loc["ALIGN_FWD"]:                                             # tipped towards the front of the body (where the enemy is; eat: off the torso)
                 fw = -(k["spine"][:3, :3] @ np.array([0.0, 1.0, 0.0])); fw[2] = 0; fw /= max(np.linalg.norm(fw), 1e-9)
                 to = to / np.linalg.norm(to) + loc["ALIGN_FWD"] * fw
             R = np.array(Vector(dh.tolist()).rotation_difference(Vector((to / np.linalg.norm(to)).tolist())).to_matrix()) @ Mh[:3, :3]
