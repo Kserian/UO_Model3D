@@ -98,6 +98,9 @@ Wzorce z klienta Nelderim (`tiledata.mul`, `art.mul`, `Gumpart.mul`): mace 0xF5C
   trzonkiem 0,5 m, więc kula kończy się na wysokości pięści i przy 10° i 15° leżała na niej; przy 20° wisi obok dłoni), łańcuch pionowo w dół (`DRAPE` puste; wcześniej łuk na zewnątrz przy pionowym trzonku).
   `HOLD_CUT`: piksele trzonka (tylko trzonek, z przebiegu części) tam, gdzie leży pięść ciała 12 / 13 (okno wokół chwytu), są wycięte: męski 43 px w wierszach 109-117, damski 37 px w 109-116.
   Oryginalne gumpy broni wycinają trzonek nad palcami (męski wiersze 109-113). Gump: x 23-49, y 72-119 (męski), 452 px.
+  Dalej (uwaga użytkownika: „malutka broń jak dla dzieci”, trzonek o 1 px grubszy i o 30% dłuższy, „postać nie musi trzymać samego końca”): przekrój trzonka x0,9 (`THIN`; szerokość 3,8 -> 4,7 px),
+  trzonek x1,3 (`HAFT_LEN`: 9 cm z okuciem przy końcu bez zmian, reszta rozciągnięta, łańcuch i kula idą za końcem), chwyt 15 cm nad końcem (`GRIP_AT`; w animacji 6 cm), więc koniec z okuciem
+  wystaje pod pięścią jak pierścień mace. Gump męski x 21-53, y 65-127, 574 px; wycięte pod pięścią 51 px (wiersze 109-119), damski 43 px. Art bez zmian.
 - Art: cep leżący, widziany z góry, trzonek po przekątnej (koniec na dole po lewej, jak mace), łańcuch skręca o 90° (`ART_CURL`; 35 / 60 / 90 porównane, przy 90 kula i łańcuch odstają od trzonka i w skali 1:1 widać cep),
   34 px/m, przekrój trzonka x1,0, łańcucha x0,8, kula x1,4, ciemna obwódka 1 px na zewnątrz (szarość 16, bez czystej czerni; oryginały mają 2-8). Drugi art = odbicie lustrzane (jak pary 0xF5C / 0xF5D). Art 44 x 18, cep 32 x 18 px.
 - Kolory: metal (łańcuch, kula, okucia trzonka) dokładnie szary R = G = B, każda część najpierw sprowadzona do jednej mediany (drewno w renderze miało 2 x jaśniejszą lumę niż metal: biała deska), potem poziomy:

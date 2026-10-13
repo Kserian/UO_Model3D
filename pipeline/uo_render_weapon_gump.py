@@ -26,8 +26,13 @@ GW, GH = 260, 237
 GRIP = {"male": (48.0, 114.5), "female": (48.0, 113.0)}   # gump pixel (continuous, pixel i spans i..i+1) of the grip: the haft line of the client's maces, the middle of the fist
 SS = 3
 ROLL = 0.0                     # deg: the weapon turned about its haft (which side faces the viewer)
-THIN = (0.7, 0.8, 0.9)         # gump: the haft's and the chain's cross-section scaled by the first two, the ball by the third (about where the chain holds it): the animation
-                               # needs a thick haft (7.5 cm: 2.7 px at 36 px/m), the gump is 2.5 x larger (6.8 px; the client's maces 3-5 px); 0.5 gave a 2 px line
+THIN = (0.9, 0.8, 0.9)         # gump: the haft's and the chain's cross-section scaled by the first two, the ball by the third (about where the chain holds it): the animation
+                               # needs a thick haft (7.5 cm: 2.7 px at 36 px/m), the gump is 2.5 x larger (6.8 px; the client's maces 3-5 px); 0.5 gave a 2 px line,
+                               # 0.7 a 3.8 px haft ("a weapon for children", user: 1 px thicker)
+HAFT_LEN = 1.3                 # gump: the haft x this long (the knob, KNOB m at the butt, kept; the shaft above it stretched; the chain and the ball move with its end): user, +30 %
+KNOB = 0.09
+GRIP_AT = 0.15                 # gump: the hand holds the haft this far (m) above the butt (the animation: 0.06); "it need not hold the very end" (user): the butt shows under the
+                               # fist like the ring of the client's mace (12-14 px under the middle of the fist)
 ART_THIN = (1.0, 0.8, 1.4)     # art: as THIN (with the rim the haft is 3-4 px like the client's mace / war hammer; 1.5 / 1.6 / 1.3 was a tube; a thinner chain and a bigger ball read as a flail)
 ART_OUTLINE = 1.0              # art: no darkened edge inside, a dark rim outside instead (ART_RIM grey level; the client's arts: 2-8; 16 = no true black)
 ART_RIM = 16.0
@@ -144,6 +149,22 @@ def tone(a, levels, part=None, wood_levels=None, outline=None, rim=None):
     return out
 
 
+def stretch(V, part, prm, length, grip_at):
+    """the haft lengthened x length (KNOB m at the butt kept, the shaft above stretched), the chain and the ball moved with its end; the grip put grip_at m above the
+    butt (0 = where the animation holds it); rest pose; returns (vertices, prm with the moved nodes and grip)"""
+    R = np.array(prm["nodes"]); G = np.array(prm["grip"]); hd = (R[0] - G) / np.linalg.norm(R[0] - G)
+    t = (V - G) @ hd
+    tb = t[part == 0].min(); te = (R[0] - G) @ hd; t0 = tb + KNOB
+    k = (length * (te - tb) - KNOB) / (te - t0)
+    out = V.copy()
+    msk = (part == 0) & (t > t0); out[msk] += np.outer((t[msk] - t0) * (k - 1), hd)
+    dlt = (te - t0) * (k - 1); out[part > 0] += dlt * hd
+    p2 = dict(prm); p2["nodes"] = (R + dlt * hd).tolist()
+    if grip_at > 0:
+        p2["grip"] = (G + (tb + grip_at) * hd).tolist()
+    return out, p2
+
+
 def thin(V, part, prm, k3):
     """the cross-sections of the haft and the chain scaled about the weapon axis (k3[0], k3[1]), the ball about where the chain holds it (k3[2]), rest pose"""
     R = np.array(prm["nodes"]); G = np.array(prm["grip"]); hd = (R[0] - G) / np.linalg.norm(R[0] - G)
@@ -234,9 +255,9 @@ def main(src, out):
     up = Vector((0, 0, 1)); Q = np.array(Vector(hd.tolist()).rotation_difference(up).to_matrix())
     Q = np.array(Matrix.Rotation(np.radians(ROLL), 3, up)) @ Q
     Q = np.array(Matrix.Rotation(-np.radians(TILT), 3, Vector((0, 1, 0)))) @ Q   # about the view axis: the top goes to -X (out)
-    V0 = V; V = thin(V0, part, prm, THIN)
+    V0 = V; Vg, pg = stretch(V0, part, prm, HAFT_LEN, GRIP_AT); V = thin(Vg, part, pg, THIN)
     dirs = [(x, 0.0, z) for x, z in DRAPE] + [(0.0, 0.0, -1.0)]          # free: every piece straight down (gravity), the ball below the last
-    place(pose_flail(V, part, s, prm, Q, dirs))
+    place(pose_flail(V, part, s, pg, Q, dirs))
     res = {}
     for gender, (gx, gy) in GRIP.items():
         cx = (GW / 2 - gx) / PXM; cz = (gy - GH / 2) / PXM
