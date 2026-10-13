@@ -6,7 +6,7 @@ of a one-handed weapon, rendered from the same 3D model as its animation (ITEM.b
 Gump: front view, orthographic, 90.5 px/m (body gump 12: head top y 54 .. feet y 221 = 1.855 m), the haft upright in the right hand (on the left of the picture) like the
 client's own weapon gumps: the grip on the haft line of mace / war mace / maul (gumps 50631 / 50642 / 50633: x 47.5) at the middle of the fist (male y 114; the fist of
 the female body 13 is ~1.5 px higher). The weapon leans TILT out from the body; a flail's chain hangs free (straight down) from the top of the haft, the ball beside the haft above the fist.
-The haft is cut out where the fingers of the body gump's fist lie (HOLD_CUT, HOLD_ROWS), so the fist holds it. The weapon gumps of the client have no female version (60000 + AnimID does not exist, the client uses the male one).
+The haft is cut out under the body gump's fist except its bottom rows (HOLD_CUT, HOLD_SHOW), so the fist holds it. The weapon gumps of the client have no female version (60000 + AnimID does not exist, the client uses the male one).
 Art: the weapon lying on the ground seen from above (UO draws items top-down with the map turned 45 deg), the haft along the picture's diagonal (butt bottom left), the
 chain turning ART_CURL from its line, a dark rim around (ART_RIM); the second art is its mirror (the client's weapons come in pairs: mace 0xF5C / 0xF5D).
 Colours: the metal (chain, ball, grey fittings) grey only (R = G = B), the wooden haft brown like the client's wooden hafts (WOOD_TINT, WOOD_LEVELS). The client dyes
@@ -35,8 +35,8 @@ KNOB = 0.09
 GRIP_AT = 0.22                 # gump: the hand holds the haft this far (m) above the butt (the animation: 0.06); "it need not hold the very end", "somewhere above the end" (user):
                                # 0.15 showed only the knob under the fist; 0.22 / 0.25 / 0.28 compared: wood between the fist and the knob, from 0.25 the ball reaches the fist
 ART_HAFT_LEN = 1.56            # art: as HAFT_LEN (the grip does not matter on the ground); 1.0 / 1.56 shown to the user, the gump's length taken
-ART_THIN = (1.0, 1.6, 1.4)     # art: as THIN (with the rim the haft is 3-4 px like the client's mace / war hammer; 1.5 / 1.6 / 1.3 was a tube); the chain 1.6 with LINK_PX: links seen
-                               # (0.8 was a grey line: "visible links", user)
+ART_THIN = (1.0, 0.8, 1.4)     # art: as THIN (with the rim the haft is 3-4 px like the client's mace / war hammer; 1.5 / 1.6 / 1.3 was a tube); the chain with LINK_PX: 1.6 thick
+                               # links, "thinner, so the gaps between them show" (user): 0.8 / 1.0 / 1.2 compared with dark gaps
 ART_OUTLINE = 1.0              # art: no darkened edge inside, a dark rim outside instead (ART_RIM grey level; the client's arts: 2-8; 16 = no true black)
 ART_RIM = 16.0
 TILT = 20.0                    # deg: the gump weapon leans out from the body (its top to the left of the picture), so a flail's chain hangs free beside the haft (user);
@@ -44,9 +44,10 @@ TILT = 20.0                    # deg: the gump weapon leans out from the body (i
 DRAPE = ()                     # a flail's chain on the gump: (x, z) direction of the first pieces (x < 0 = outwards), then straight down (() = hanging free; with an upright
                                # haft it was ((-1, -0.2), (-1, -0.7), (-0.5, -1)): an arch over the outer side)
 HOLD_CUT = (8, 9, 6)           # the window of the fist around the grip (x within +-8 px, y from 9 above to 6 below): the haft is cut out where the body gump's fist lies in it,
-HOLD_ROWS = 5                  # but only in its top HOLD_ROWS rows (the fingers; 0 = the whole fist), lower down the haft shows through the hand. The client's weapon gumps
-                               # leave out the haft over the fingers only (male rows 109-113) and draw it over the rest of the fist; the whole fist hid it ("let the stick
-                               # show through the hand a little", user). The body gumps come from CLIENT
+HOLD_SHOW = {"male": 2, "female": 3}   # but the haft shows through the bottom HOLD_SHOW rows of the fist (counted up from the fist's lower edge in each column; 0 = hidden
+                               # under the whole fist): "let the stick show through the hand a little" (user). The client's weapon gumps leave out the haft over the top 5 rows
+                               # of the fist (male 109-113) and draw it over the rest; that suited the female fist (8 rows high at the haft, user: ok) but on the male one
+                               # (9 rows) the haft started in the middle of the fist, pasted on ("cut out ugly", user); male 3 / 2 / 1 compared. Body gumps from CLIENT
 CLIENT = os.path.join(HERE, "..", "uo_client", "NelderimServUO")
 BODY = {"male": 12, "female": 13}
 ART_PXM = 34.0                 # art px per m (the client's maces: 0.7-1 m long weapons are 28-38 px along the diagonal)
@@ -56,7 +57,7 @@ ART_APEX = 2                   # the turn made over the first ART_APEX pieces of
 ART_CHAIN_LEN = 1.25           # art: the chain x this long (its links longer; "a little longer", user)
 LINK_PX = 3.0                  # art: draw the chain's links: every LINK_PX px along the chain the last LINK_GAP of it darkened x LINK_DARK (0 = as rendered)
 LINK_GAP = 0.34
-LINK_DARK = 0.45
+LINK_DARK = 0.0                # (<= 0: the gap takes the rim's grey, ART_RIM: the gaps read as breaks between the links; x0.45 / x0.3 left a grain)
 PART_GAIN = (1.0, 0.85, 1.1)    # a flail: the grey of the haft / chain / ball relative to each other (each part's median first brought to one level: the wooden haft's luma
                                # was 2 x the metal's, a white board on the gump)
 ART_W = 44
@@ -231,7 +232,7 @@ def links(img, part, nodes, to_px, period, gap, dark):
         u = np.clip(((q - P[k]) @ seg[k]) / max(L[k] ** 2, 1e-9), 0, 1); d = np.linalg.norm(q - (P[k] + np.outer(u, seg[k])), axis=1)
         b = d < best; best[b] = d[b]; sval[b] = cum[k] + u[b] * L[k]
     g = (sval % period) >= period * (1 - gap)
-    out = img.copy(); v = out[ys[g], xs[g], :3].astype(float) * dark
+    out = img.copy(); v = out[ys[g], xs[g], :3].astype(float) * dark if dark > 0 else np.full((int(g.sum()), 3), float(ART_RIM))
     out[ys[g], xs[g], :3] = (np.clip(np.round(v), 8, 255).astype(np.int32) >> 3) << 3
     return out
 
@@ -310,8 +311,11 @@ def main(src, out):
             bm = np.zeros((GH, GW), bool); h_, w_ = min(GH, bodyg.shape[0]), min(GW, bodyg.shape[1]); bm[:h_, :w_] = bodyg[:h_, :w_, 3] > 0
             yy, xx = np.mgrid[0:GH, 0:GW]; win = (np.abs(xx + 0.5 - gx) <= HOLD_CUT[0]) & (yy + 0.5 >= gy - HOLD_CUT[1]) & (yy + 0.5 <= gy + HOLD_CUT[2])
             cut = win & bm & (pp == 0) & (img[..., 3] > 0)
-            if HOLD_ROWS and cut.any():
-                top = np.nonzero(cut.any(1))[0].min(); cut[top + HOLD_ROWS:] = False
+            hs = HOLD_SHOW[gender] if isinstance(HOLD_SHOW, dict) else HOLD_SHOW
+            if hs:
+                fist = win & bm
+                bottom = np.where(fist.any(0), GH - 1 - np.argmax(fist[::-1], 0), -1)          # the fist's lowest row in each column
+                cut &= yy <= bottom[None, :] - hs
             img[cut] = 0
             print("WG gump %s: %d haft px cut out under the fist (rows %d..%d)" % (gender, cut.sum(), *(lambda r: (r.min(), r.max()))(np.nonzero(cut)[0])) if cut.any() else "WG gump %s: nothing under the fist" % gender)
         elif HOLD_CUT:
@@ -354,7 +358,7 @@ if __name__ == "__main__":
     while i < len(a):
         if a[i] == "--set":
             k, v = a[i + 1].split("=", 1); g = globals()
-            g[k] = eval(v) if isinstance(g[k], tuple) else type(g[k])(v); i += 2
+            g[k] = eval(v) if isinstance(g[k], (tuple, dict)) else type(g[k])(v); i += 2
         else:
             pos.append(a[i]); i += 1
     main(pos[0], pos[1])

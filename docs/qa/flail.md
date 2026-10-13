@@ -109,6 +109,9 @@ Wzorce z klienta Nelderim (`tiledata.mul`, `art.mul`, `Gumpart.mul`): mace 0xF5C
   Art dalej (gump przyjęty; „łańcuch delikatnie dłuższy, z widocznymi ogniwami i zgięty jak litera A, a nie L”): trzonek jak w gumpie (`ART_HAFT_LEN` 1,56), łańcuch x1,25 (`ART_CHAIN_LEN`),
   zgięcie 125° w pierwszych dwóch ogniwach, dalej prosto (`ART_CURL`, `ART_APEX`; porównane 110 / 125 / 140°), przekrój łańcucha x1,6. Ogniwa: przy 34 px/m ogniwo 5 cm ma ok. 2 px i łańcuch był
   równym ziarnem, więc co 3 px wzdłuż łańcucha ostatnia 1/3 przyciemniona x0,45 (`LINK_PX`, `LINK_GAP`, `LINK_DARK`; porównane 3 / 4 px). Art 44 x 25, cep 32 x 25 px. Gumpy bez zmian.
+  Potem: „gump kobiecy ok, męski brzydko wycięty”: pięść męska ma przy trzonku 9 wierszy (damska 8) i trzonek prześwitujący od 6. wiersza zaczynał się w połowie pięści jak naklejony.
+  Wycięcie liczone od dolnej krawędzi pięści w każdej kolumnie (`HOLD_SHOW`: trzonek widać w dolnych N wierszach): męski 3 / 2 / 1 porównane, wybrane 2 (40 px wyciętych, wiersze 109-116), damski 3 (bez zmian).
+  Art („łańcuch cieńszy, żeby było widać przerwy między ogniwami”): przekrój łańcucha 0,8 (porównane 0,8 / 1,0 / 1,2), przerwy w kolorze obwódki (`LINK_DARK` 0; x0,45 / x0,3 zostawiały ziarno). Art 44 x 24, cep 32 x 24 px.
 - Art: cep leżący, widziany z góry, trzonek po przekątnej (koniec na dole po lewej, jak mace), łańcuch skręca o 90° (`ART_CURL`; 35 / 60 / 90 porównane, przy 90 kula i łańcuch odstają od trzonka i w skali 1:1 widać cep),
   34 px/m, przekrój trzonka x1,0, łańcucha x0,8, kula x1,4, ciemna obwódka 1 px na zewnątrz (szarość 16, bez czystej czerni; oryginały mają 2-8). Drugi art = odbicie lustrzane (jak pary 0xF5C / 0xF5D). Art 44 x 18, cep 32 x 18 px.
 - Kolory: metal (łańcuch, kula, okucia trzonka) dokładnie szary R = G = B, każda część najpierw sprowadzona do jednej mediany (drewno w renderze miało 2 x jaśniejszą lumę niż metal: biała deska), potem poziomy:
