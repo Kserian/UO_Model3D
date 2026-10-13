@@ -46,6 +46,17 @@ INELASTIC = True      # the push out of the body does not turn into speed (with 
                       # in eat, salute, mounted walk, the bow attacks)
 WEAPON_BONE_ACTIONS = ""   # actions ("18,23,26") in which the haft is carried by weapon1h.R (its turn fitted to the original weapons) instead of HOLD; needs HAND_SMOOTH > 0
                       # (the renderer draws the haft with the stored carrier). Measured: mounted 1H attack (26): with the hand the haft crossed the body, with weapon1h.R it swings outside
+ALIGN_ACTIONS = ""    # actions in which the haft continues the line of the forearm (the hand's turn kept otherwise, the grip in the hand): a swing or a raised fist. Mounted 1H
+                      # attack (26): the original flail is the arm's extension and the ball flies out far forward; with weapon1h.R the haft pointed into the body. Area spell (17):
+                      # the original holds it up along the raised forearm; with the hand it turned about the arm's axis (user, 2026-10-13)
+UP_ACTIONS = ""       # actions in which the haft stands upright in the hand (salute, eat: user, 2026-10-13)
+HANG_ACTIONS = ""     # actions in which the chain does not swing: every frame it hangs straight down from the end of the haft, along the haft when the haft is upright, the ball
+                      # beside it on the outer side (salute, eat: "static, the chain hangs along the haft"; the free chain whirled by the head)
+ACTION_SET = ""       # per-action settings of the simulation: "26:STIFF=40,DAMP=2;9:DAMP=3" (STIFF, DAMP, FRAME_TIME, ALIGN_FWD, GRIP_TWIST)
+ALIGN_FWD = 0.0       # ALIGN_ACTIONS: the forearm's line tipped towards the front of the body by this (0 = along the forearm; 1 = half way at right angles)
+GRIP_TWIST = 0.0      # deg: the haft turned about the hand's axis through the grip in the actions carried by the hand. Walk (0, 1: ACTION_SET "1:GRIP_TWIST=20"): the original
+                      # haft points out to the side, ours pointed forward and in, so seen from behind the ball hung in front of the belly, hidden; in every action it made the
+                      # attacks worse (slash ball +4.9 px), so per action only
 HAND_SMOOTH = 0       # passes of smoothing of the hand's turn over the frames of an action (about the grip; loops wrap): the turn of our wrist is fitted to silhouettes and
                       # shakes in some actions (mounted walk: the end of the haft jumped 0.3-0.5 m a frame); the haft is drawn with the smoothed turn too
 RIGID = ""            # actions (numbers, "9,23") in which the flail is held gathered: the chain hangs settled in the first pose and then moves rigidly with the hand
@@ -184,14 +195,38 @@ def simulate(rig, act, nodes, br, caps):
     sc = bpy.context.scene
     a = int(act["uo_action"]); nf = int(act["uo_frames"])
     rig.animation_data.action = act; rig["uo_direction"] = 0
-    names = [HOLD, BONE] + [c[0] for c in caps]
+    loc = dict(STIFF=STIFF, DAMP=DAMP, FRAME_TIME=FRAME_TIME, ALIGN_FWD=ALIGN_FWD, GRIP_TWIST=GRIP_TWIST)
+    for part_ in ACTION_SET.split(";"):
+        if ":" in part_ and int(part_.split(":")[0]) == a:
+            for kv in part_.split(":")[1].split(","):
+                k_, v_ = kv.split("="); loc[k_.strip()] = float(v_)
+    names = list(dict.fromkeys([HOLD, BONE, "forearm.R", "spine"] + [c[0] for c in caps]))
     keys = []
-    use_w = HAND_SMOOTH > 0 and a in {int(x) for x in WEAPON_BONE_ACTIONS.split(",") if x.strip()}
+    nums = lambda s: {int(x) for x in s.split(",") if x.strip()}
+    use_w = HAND_SMOOTH > 0 and a in nums(WEAPON_BONE_ACTIONS)
+    mode = "align" if a in nums(ALIGN_ACTIONS) else "up" if a in nums(UP_ACTIONS) else "weapon" if use_w else "hand"
+    hd = (nodes[1] - nodes[0]) / np.linalg.norm(nodes[1] - nodes[0])          # the haft's direction at rest (grip -> chain)
+    fy0 = np.array(rig.data.bones["forearm.R"].matrix_local)[:3, 1]
+    ha = np.array(rig.data.bones[HOLD].matrix_local)[:3, 1]; ha /= np.linalg.norm(ha)
+    Tw = np.eye(4)
+    if loc["GRIP_TWIST"]:                                                    # the haft turned about the hand's axis through the grip (rest space)
+        Rt = np.array(Matrix.Rotation(np.radians(loc["GRIP_TWIST"]), 3, Vector(ha.tolist())))
+        Tw[:3, :3] = Rt; Tw[:3, 3] = GRIP[0] - Rt @ GRIP[0]
     for i in range(nf):
         sc.frame_set(1 + i * STEP); k = pose_mats(rig, names)
-        if use_w:                                                            # the turn of weapon1h.R, the grip where the hand holds it (the bone also moves away from the hand:
-            g = k[HOLD][:3, :3] @ GRIP[0] + k[HOLD][:3, 3]                   # in the mounted 1H attack the haft left the hand)
-            Mw = k[BONE].copy(); Mw[:3, 3] = g - Mw[:3, :3] @ GRIP[0]; k[HOLD] = Mw
+        Mh = k[HOLD]; g_ = Mh[:3, :3] @ GRIP[0] + Mh[:3, 3]                 # where the hand holds the grip
+        if mode == "weapon":                                                 # the turn of weapon1h.R, the grip where the hand holds it (the bone also moves away from the hand:
+            R = k[BONE][:3, :3]                                              # in the mounted 1H attack the haft left the hand)
+        elif mode in ("align", "up"):
+            dh = Mh[:3, :3] @ hd
+            to = k["forearm.R"][:3, :3] @ fy0 if mode == "align" else np.array([0.0, 0.0, 1.0])
+            if mode == "align" and loc["ALIGN_FWD"]:                         # tipped towards the front of the body (where the enemy is)
+                fw = -(k["spine"][:3, :3] @ np.array([0.0, 1.0, 0.0])); fw[2] = 0; fw /= max(np.linalg.norm(fw), 1e-9)
+                to = to / np.linalg.norm(to) + loc["ALIGN_FWD"] * fw
+            R = np.array(Vector(dh.tolist()).rotation_difference(Vector((to / np.linalg.norm(to)).tolist())).to_matrix()) @ Mh[:3, :3]
+        else:
+            R = (Mh @ Tw)[:3, :3]
+        M = np.eye(4); M[:3, :3] = R; M[:3, 3] = g_ - R @ GRIP[0]; k[HOLD] = M
         keys.append(k)
     loop = a in LOOP and nf > 1
     if HAND_SMOOTH > 0 and nf > 2:                                          # the hand's turn smoothed over the frames, about the grip
@@ -214,8 +249,8 @@ def simulate(rig, act, nodes, br, caps):
     w = np.ones(n); w[0] = 0.0; w[-1] = 1.0 / MASS                          # inverse masses: node 0 is carried by the haft
     rest = np.linalg.norm(np.diff(nodes, axis=0), axis=1)
     rad = np.full(n, 0.01); rad[-1] = BALL_GAP or br * 0.6
-    sub = STEP * SUB; dt = FRAME_TIME / sub; g = np.array([0, 0, -GRAVITY]); keep = np.exp(-DAMP * dt)
-    kb = 1 - np.exp(-STIFF * dt); hd = (nodes[1] - nodes[0]) / np.linalg.norm(nodes[1] - nodes[0])   # the haft's direction at rest
+    sub = STEP * SUB; dt = loc["FRAME_TIME"] / sub; g = np.array([0, 0, -GRAVITY]); keep = np.exp(-loc["DAMP"] * dt)
+    kb = 1 - np.exp(-loc["STIFF"] * dt)
 
     def step(M, X, Xp, mats):
         Xn = X + (X - Xp) * keep + g * dt * dt * (w > 0)[:, None]
@@ -229,7 +264,7 @@ def simulate(rig, act, nodes, br, caps):
                 corr = (dist - rest[k]) / dist / ws * dv
                 Xn[k] += w[k] * corr; Xn[k + 1] -= w[k + 1] * corr
             before = Xn[1:].copy(); Xn[1:] = seg_push(Xn[1:], caps, mats, rad[1:] + GAP); hit[1:] += Xn[1:] - before
-        if STIFF > 0:                                                        # bending: each piece pulled towards the line of the one before (the first: the haft)
+        if kb > 0:                                                           # bending: each piece pulled towards the line of the one before (the first: the haft)
             prev = M[:3, :3] @ hd
             for k in range(n - 1):
                 tgt = Xn[k] + prev * rest[k]
@@ -245,6 +280,17 @@ def simulate(rig, act, nodes, br, caps):
         for _ in range(int(PREROLL / dt)):
             X, Xp = step(M0, X, Xp, keys[0])
     out = {}
+    if a in nums(HANG_ACTIONS):                                              # static: the chain hangs straight down from the end of the haft, the ball beside the haft outside
+        sp0 = np.array(rig.data.bones["spine"].head_local)
+        for i in range(nf):
+            M = keys[i][HOLD]; X = np.zeros_like(nodes); X[0] = M[:3, :3] @ nodes[0] + M[:3, 3]
+            sp = keys[i]["spine"][:3, :3] @ sp0 + keys[i]["spine"][:3, 3]
+            side = (M[:3, :3] @ GRIP[0] + M[:3, 3]) - sp; side[2] = 0; side /= max(np.linalg.norm(side), 1e-9)
+            for j in range(n - 1):
+                dv = side + np.array([0, 0, -0.35]) if j == 0 else np.array([0, 0, -1.0])
+                X[j + 1] = X[j] + dv / np.linalg.norm(dv) * rest[j]
+            out["%d_%d" % (a, i)] = X; out["%d_%d_M" % (a, i)] = M
+        return out
     rig_set = set(range(35)) if RIGID == "all" else {int(x) for x in RIGID.split(",") if x.strip()}
     if a in rig_set:                                                         # gathered: settled in the first pose, then rigid on the hand
         for _ in range(int(PREROLL / dt)):
