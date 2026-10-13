@@ -52,7 +52,8 @@ ALIGN_ACTIONS = ""    # actions in which the haft continues the line of the fore
 UP_ACTIONS = ""       # actions in which the haft stands upright in the hand (salute, eat: user, 2026-10-13)
 HANG_ACTIONS = ""     # actions in which the chain does not swing: every frame it hangs straight down from the end of the haft, along the haft when the haft is upright, the ball
                       # beside it on the outer side (salute, eat: "static, the chain hangs along the haft"; the free chain whirled by the head)
-ACTION_SET = ""       # per-action settings of the simulation: "26:STIFF=40,DAMP=2;9:DAMP=3" (STIFF, DAMP, FRAME_TIME, ALIGN_FWD, GRIP_TWIST)
+ACTION_SET = ""       # per-action settings of the simulation: "26:STIFF=40,DAMP=2;9:DAMP=3" (STIFF, DAMP, FRAME_TIME, ALIGN_FWD, GRIP_TWIST, MIRROR: 1 = the haft's line
+                      # mirrored across the body's front-back plane through the hand, so a raised haft leans out and the chain hangs on the outside; combat advance 15, user 2026-10-13)
 ALIGN_FWD = 0.0       # ALIGN_ACTIONS / UP_ACTIONS: the forearm's line (the upright) tipped towards the front of the body by this (0 = none; 1 = half way at right angles).
                       # Eat (34): upright from the hand at the hip the haft went up through the side of the torso in frame 0 (user, 2026-10-13)
 GRIP_TWIST = 0.0      # deg: the haft turned about the hand's axis through the grip in the actions carried by the hand. Walk (0, 1: ACTION_SET "1:GRIP_TWIST=20"): the original
@@ -196,7 +197,7 @@ def simulate(rig, act, nodes, br, caps):
     sc = bpy.context.scene
     a = int(act["uo_action"]); nf = int(act["uo_frames"])
     rig.animation_data.action = act; rig["uo_direction"] = 0
-    loc = dict(STIFF=STIFF, DAMP=DAMP, FRAME_TIME=FRAME_TIME, ALIGN_FWD=ALIGN_FWD, GRIP_TWIST=GRIP_TWIST)
+    loc = dict(STIFF=STIFF, DAMP=DAMP, FRAME_TIME=FRAME_TIME, ALIGN_FWD=ALIGN_FWD, GRIP_TWIST=GRIP_TWIST, MIRROR=0.0)
     for part_ in ACTION_SET.split(";"):
         if ":" in part_ and int(part_.split(":")[0]) == a:
             for kv in part_.split(":")[1].split(","):
@@ -227,6 +228,10 @@ def simulate(rig, act, nodes, br, caps):
             R = np.array(Vector(dh.tolist()).rotation_difference(Vector((to / np.linalg.norm(to)).tolist())).to_matrix()) @ Mh[:3, :3]
         else:
             R = (Mh @ Tw)[:3, :3]
+        if loc["MIRROR"]:                                                    # the haft's line mirrored across the body's front-back plane through the hand (its lean to the
+            sd = k["spine"][:3, :3] @ np.array([1.0, 0.0, 0.0]); sd /= np.linalg.norm(sd)   # side flipped): the chain hangs on the outside (combat advance 15, user)
+            dh = R @ hd; dm = dh - 2 * (dh @ sd) * sd
+            R = np.array(Vector(dh.tolist()).rotation_difference(Vector(dm.tolist())).to_matrix()) @ R
         M = np.eye(4); M[:3, :3] = R; M[:3, 3] = g_ - R @ GRIP[0]; k[HOLD] = M
         keys.append(k)
     loop = a in LOOP and nf > 1

@@ -2,4 +2,4 @@
  "weapon": {"class": "mace", "part": "weapon1h", "length": 1.25, "tip": "heavy", "butt": -0.06},
  "materials": {"METAL": true, "BRIGHTNESS": 2.5},
  "scene": {"uo_outline": 0.7, "uo_occluders": "head,upper_arm,forearm,hand,thigh,shin,foot,pelvis,spine,chest,neck,clavicle"},
- "flail": {"HAFT_SCALE": 2.07, "CHAIN_SCALE": 0.48, "BALL_SCALE": 0.65, "DAMP": 6, "HOLD": "hand.R", "HAND_SMOOTH": 2, "RIGID": "18", "WEAPON_BONE_ACTIONS": "18,23", "ALIGN_ACTIONS": "17,26", "UP_ACTIONS": "33,34", "HANG_ACTIONS": "17,33,34", "ACTION_SET": "0:GRIP_TWIST=20;1:GRIP_TWIST=20;26:STIFF=20,DAMP=2,ALIGN_FWD=0.7;34:ALIGN_FWD=0.8"}}
+ "flail": {"HAFT_SCALE": 2.07, "CHAIN_SCALE": 0.48, "BALL_SCALE": 0.65, "DAMP": 6, "HOLD": "hand.R", "HAND_SMOOTH": 2, "RIGID": "18", "WEAPON_BONE_ACTIONS": "18,23", "ALIGN_ACTIONS": "17,26", "UP_ACTIONS": "33,34", "HANG_ACTIONS": "17,33,34", "ACTION_SET": "0:GRIP_TWIST=20;1:GRIP_TWIST=20;15:MIRROR=1;26:STIFF=20,DAMP=2,ALIGN_FWD=0.7;34:ALIGN_FWD=0.8"}}
