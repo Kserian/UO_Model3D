@@ -10,6 +10,8 @@ RECIPE.json (only "file" and "kind" are required):
    "arms_down": 0,                  # deg; 80-90 for a model in a T-pose (arms out): the sleeves are turned down about the shoulders ("arm_materials": ["sleeve"] names them, "arm_blend": 0.12 m is the width over which the turn fades into the body)
    "outer_shell": false,       # true for a garment that is a closed solid ~1.5 cm thick (cloth simulator export): only the outer layer is kept before the reduction (uo_import_item.py OUTER_SHELL);
                                # a number (0.006 m) = first rebuilt by a voxel remesh into one continuous solid (separate panels whose seams open when the item is fitted), the texture baked (OUTER_REMESH)
+   "holes": {"close": 0.06, "grow": 0.025},   # with outer_shell: pinholes closed, rips widened (a torn robe; uo_import_item.py HOLES)
+   "bake_normal": 0.0, "bake_ao": 0.0,        # with a baked texture: normal map of the original's geometry blurred over m / its occlusion darkening the colour (uo_import_item.py BAKE_NORMAL, BAKE_AO)
    "bake_texture": 0,          # px (2048): the reduced model gets new UVs and a texture baked from the original (a reduction smears the UVs of a detailed texture; uo_import_item.py BAKE_TEXTURE)
    "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1},   # per-item settings of render_uo_layer.py (outline strength, hands / head hide a pixel less, the legs never hide a long robe)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
@@ -288,7 +290,7 @@ def build_stage(recipe, out_blend):
     if "parts" in recipe:
         return build_parts_stage(recipe, out_blend)
     kind = recipe.get("kind", "")
-    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), ARM_BLEND=float(recipe.get("arm_blend", 0.12)), TURN=int(recipe.get("turn", 0)), OUTER_SHELL=bool(recipe.get("outer_shell", False)), OUTER_REMESH=float(recipe["outer_shell"]) if not isinstance(recipe.get("outer_shell", False), bool) else 0.0, BAKE_TEXTURE=int(recipe.get("bake_texture", 0)),
+    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), ARM_BLEND=float(recipe.get("arm_blend", 0.12)), TURN=int(recipe.get("turn", 0)), OUTER_SHELL=bool(recipe.get("outer_shell", False)), OUTER_REMESH=float(recipe["outer_shell"]) if not isinstance(recipe.get("outer_shell", False), bool) else 0.0, BAKE_TEXTURE=int(recipe.get("bake_texture", 0)), HOLES=recipe.get("holes"), BAKE_NORMAL=float(recipe.get("bake_normal", 0.0)), BAKE_AO=float(recipe.get("bake_ao", 0.0)),
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
     if "scale" in recipe:
         imp["SCALE"] = float(recipe["scale"])

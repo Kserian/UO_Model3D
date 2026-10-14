@@ -72,6 +72,10 @@ DESPECKLE = 28                    # clothing: single dark pixels inside the item
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
                                    # poking through or a gap in the item mesh, not a real occluder. 0 = off; scene property uo_fill_holes (a torn robe whose
                                    # rips should show the body: 0, docs/qa/robe_ragged.md)
+INNER_LINE = 0.0                   # clothing: > 0 = the torso pixels of an item that touch its sleeve (point attribute uo_region of uo_conform_item.py) are darkened to this share: a 1-px
+                                   # line that sets the sleeves off the torso like the original robes (an extra label render per frame). 0 = off; scene property uo_inner_line
+EDGE_SMOOTH = 0                    # clothing: passes of outline smoothing (a pixel with at most 1 of its 4 neighbours in the item is dropped, an empty one with 3-4 is filled with the colour
+                                   # around): the 1-px spikes and notches of a ragged hem. 0 = off; scene property uo_edge_smooth (docs/qa/robe_ragged.md)
 BODY_GAP = 0.006                   # m: every frame, parts of the bound items closer than this to the arms, hands, legs or
                                    # head of the posed body are pushed out (smoothly) before rendering - otherwise a forearm
                                    # poking through a sleeve in motion cuts a hole in the item. 0 = off
@@ -93,6 +97,8 @@ HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py se
 CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
 LIE_W = {}
 FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
+INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
+EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
@@ -890,6 +896,63 @@ def despeckle(img, thr, passes=2):
     return out
 
 
+def region_labels(a, i, d):
+    """INNER_LINE: which pixels of the clothing layer are a sleeve (1) and which the torso part (0) of the items with uo_region; -1 elsewhere"""
+    obs = [o for o in clothes if not o.hide_render and "uo_region" in o.data.attributes]
+    if not obs:
+        return None
+    m = bpy.data.materials.get("uo_region_label")
+    if m is None:
+        m = bpy.data.materials.new("uo_region_label"); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+        at = nt.nodes.new("ShaderNodeAttribute"); at.attribute_type = "GEOMETRY"; at.attribute_name = "uo_region"
+        dv = nt.nodes.new("ShaderNodeMath"); dv.operation = "DIVIDE"; dv.inputs[1].default_value = 4.0
+        cr = nt.nodes.new("ShaderNodeValToRGB"); cr.color_ramp.interpolation = "CONSTANT"; el = cr.color_ramp.elements
+        el[0].position = 0.0; el[0].color = (1, 0, 0, 1); el[1].position = 0.125; el[1].color = (0, 1, 0, 1)
+        e = el.new(0.375); e.color = (0, 0, 1, 1); e = el.new(0.625); e.color = (0, 1, 0, 1); e = el.new(0.875); e.color = (0, 0, 1, 1)
+        em = nt.nodes.new("ShaderNodeEmission"); out = nt.nodes.new("ShaderNodeOutputMaterial")
+        nt.links.new(at.outputs["Fac"], dv.inputs[0]); nt.links.new(dv.outputs[0], cr.inputs["Fac"]); nt.links.new(cr.outputs["Color"], em.inputs["Color"]); nt.links.new(em.outputs[0], out.inputs["Surface"])
+    keep = {o.name: [sl.material for sl in o.material_slots] for o in obs}
+    for o in obs:
+        for sl in o.material_slots:
+            sl.material = m
+    try:
+        px = render_frame(a, i, d, "holdout")
+    finally:
+        for o in obs:
+            for sl, mt in zip(o.material_slots, keep[o.name]):
+                sl.material = mt
+    lab = np.full(px.shape[:2], -1, np.int8); on = px[..., 3] >= 0.5
+    c = px[..., :3].argmax(2)
+    lab[on & (c == 0)] = 0; lab[on & (c > 0)] = 1
+    return lab
+
+
+def inner_line(px, lab, k):
+    """INNER_LINE: torso pixels next to a sleeve pixel darkened to k"""
+    on = px[..., 3] >= 0.5
+    line = on & (lab == 0) & binary_dilation(on & (lab == 1), 1)
+    px = px.copy(); px[line, :3] *= k
+    return px
+
+
+def edge_smooth(px, passes):
+    """EDGE_SMOOTH: 1-px spikes of the outline dropped, 1-px notches filled with the mean colour of their neighbours"""
+    px = px.copy()
+    for _ in range(passes):
+        on = px[..., 3] >= 0.5
+        n = np.zeros(on.shape, np.int8)
+        n[1:] += on[:-1]; n[:-1] += on[1:]; n[:, 1:] += on[:, :-1]; n[:, :-1] += on[:, 1:]
+        spike = on & (n <= 1); notch = ~on & (n >= 3)
+        if notch.any():
+            acc = np.zeros(px.shape[:2] + (3,), np.float32); w = on.astype(np.float32)
+            for sl_to, sl_from in (((slice(1, None),), (slice(None, -1),)), ((slice(None, -1),), (slice(1, None),)),
+                                   ((slice(None), slice(1, None)), (slice(None), slice(None, -1))), ((slice(None), slice(None, -1)), (slice(None), slice(1, None)))):
+                acc[sl_to] += px[sl_from][..., :3] * w[sl_from][..., None]
+            px[notch, :3] = acc[notch] / np.maximum(n[notch], 1)[:, None]; px[notch, 3] = 1.0
+        px[spike, 3] = 0.0
+    return px
+
+
 def drop_small_pieces(img, min_px):
     """uint8 RGBA: detached pieces of the item (8-connected) smaller than min_px -> transparent, except the biggest"""
     m = img[..., 3] > 0; H, W = m.shape
@@ -975,6 +1038,12 @@ def frame_job():
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
+                        if INNER_LINE > 0:
+                            lab = region_labels(a, i, d)
+                            if lab is not None:
+                                px = inner_line(px, lab, INNER_LINE)
+                        if EDGE_SMOOTH > 0:
+                            px = edge_smooth(px, EDGE_SMOOTH)
                         rgba = uo_post(px)
                         if DESPECKLE > 0:
                             rgba = despeckle(rgba, DESPECKLE)

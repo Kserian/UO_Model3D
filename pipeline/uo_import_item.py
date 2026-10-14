@@ -38,6 +38,13 @@ OUTER_SHELL = False   # a model that is a CLOSED SOLID cloth (a cloth simulator 
 OUTER_REMESH = 0.0    # m: > 0 (0.006) = before OUTER_SHELL the solid is rebuilt by Blender's voxel remesh: a garment exported as separate panels (sewing patterns that only touch, 284 of them
                       # in docs/qa/robe_black.md) becomes ONE continuous sheet, so the seams cannot open when the sleeves are turned onto the arms or the item is wrapped. The UVs are lost:
                       # the texture is baked from the original (BAKE_TEXTURE, 2048 when not given). Recipe: "outer_shell": 0.006
+HOLES = None          # {"close": 0.06, "grow": 0.025, "max": 1.5}: with OUTER_SHELL, the holes of the sheet (rips of a torn robe): a rim shorter than `close` m is closed (a pinhole: 1-px black
+                      # noise in the sprites), one up to `max` m is widened by `grow` m all round (the rips shrank with the reduction and the shortened hem and read as dark specks; the
+                      # hem, cuffs and neck are longer than `max`). docs/qa/robe_ragged.md. Recipe: "holes": {...}
+BAKE_NORMAL = 0.0     # with BAKE_TEXTURE: > 0 = a tangent normal map of the ORIGINAL'S GEOMETRY is baked too (its own normal map, the weave, is left out: noise at UO size), blurred over this
+                      # many m, and lights the item (uo_materials.py NORMAL_MAP): the sculpted folds of the model shade the reduced shell. Recipe: "bake_normal": 0.01
+BAKE_AO = 0.0         # with BAKE_TEXTURE: 0..1 = the ambient occlusion of the original (folds, the hollows between them, AO_DIST m) darkens the baked colour by up to this share. Recipe: "bake_ao": 0.5
+AO_DIST = 0.08
 NAME = ""             # name of the result ("" = file name)
 BAKE_TEXTURE = 0      # > 0 (px, 2048 is plenty): the reduced model gets a NEW UV map and a texture BAKED from the original: a reduction drags the UVs of a model with a sculpted detail / an embroidery into
                       # streaks (the cloth turns into smeared noise). Needs the Cycles engine of Blender. Recipe: "bake_texture": 2048
@@ -221,6 +228,60 @@ def outer_shell(n, rays=8, reach=1.5, partner_max=0.06, smooth=8, min_island=0.0
     print("uo_import_item: OUTER_SHELL %s: %d of %d faces kept (outer layer; %d faces of small pieces removed), %d -> %d vertices, %.0f s" % (n.name, npoly - len(drop) - len(bits), npoly, len(bits), nv0, len(me.vertices), time.time() - t0))
 
 
+def holes(n, cfg):
+    """HOLES: close the pinholes of the sheet, widen the rips"""
+    import bmesh
+    from mathutils.kdtree import KDTree
+    cfg = dict(dict(close=0.06, grow=0.025, max=1.5), **cfg)
+    me = n.data; bm = bmesh.new(); bm.from_mesh(me)
+    seen, loops = set(), []
+    for e0 in bm.edges:
+        if not e0.is_boundary or e0 in seen:
+            continue
+        st, loop = [e0], []; seen.add(e0)
+        while st:
+            e = st.pop(); loop.append(e)
+            for v in e.verts:
+                for f in v.link_edges:
+                    if f.is_boundary and f not in seen:
+                        seen.add(f); st.append(f)
+        loops.append((sum(e.calc_length() for e in loop), loop))
+    small = [l for L, l in loops if L < cfg["close"]]
+    rips = [l for L, l in loops if cfg["close"] <= L < cfg["max"]]
+    for l in small:
+        bmesh.ops.holes_fill(bm, edges=l, sides=0)
+    rim = list(set(v for l in rips for e in l for v in e.verts))
+    kd = KDTree(len(rim))
+    for k, v in enumerate(rim):
+        kd.insert(v.co, k)
+    kd.balance()
+    drop = [f for f in bm.faces if any(kd.find(v.co)[2] < cfg["grow"] for v in f.verts)] if rim else []
+    bmesh.ops.delete(bm, geom=drop, context="FACES")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+    for _ in range(3):                                            # the widened rims smoothed along themselves (no 1-face steps)
+        bv = [v for v in bm.verts if v.is_boundary]
+        new = {v: sum((e.other_vert(v).co for e in v.link_edges if e.is_boundary), v.co * 0) for v in bv}
+        for v, c in new.items():
+            k = sum(1 for e in v.link_edges if e.is_boundary)
+            if k == 2:
+                v.co = 0.5 * v.co + 0.25 * c
+    bm.to_mesh(me); bm.free(); me.update()
+    print("uo_import_item: HOLES %s: %d pinholes closed (rim < %.2f m), %d rips widened by %.3f m (%d faces removed), %d rims left as they are, %d vertices" % (
+        n.name, len(small), cfg["close"], len(rips), cfg["grow"], len(drop), len(loops) - len(small) - len(rips), len(me.vertices)))
+
+
+def blur_image(img, sigma_px, normal=False):
+    """Gaussian blur of an image in place (a normal map is renormalised)"""
+    from scipy.ndimage import gaussian_filter
+    w, h = img.size; a = np.array(img.pixels[:], np.float32).reshape(h, w, 4)
+    for c in range(3):
+        a[..., c] = gaussian_filter(a[..., c], sigma_px, mode="wrap")
+    if normal:
+        v = a[..., :3] * 2 - 1; v /= np.maximum(np.linalg.norm(v, axis=2, keepdims=True), 1e-6); a[..., :3] = v * 0.5 + 0.5
+    img.pixels[:] = a.ravel()
+    return a
+
+
 def bake_texture(lo, hi, px):
     """texture of the original `hi` baked onto the reduced `lo` (new smart-projected UVs, one image `px` x `px`, a Principled material with it)"""
     import math, tempfile, time
@@ -247,6 +308,34 @@ def bake_texture(lo, hi, px):
     b.use_pass_direct = False; b.use_pass_indirect = False; b.use_pass_color = True
     hi.select_set(True); lo.select_set(True); bpy.context.view_layer.objects.active = lo
     bpy.ops.object.bake(type="DIFFUSE")
+    texels_per_m = px / max(math.sqrt(sum(p.area for p in lo.data.polygons) / 0.6), 1e-6)    # smart project fills ~60 % of the image
+    if BAKE_NORMAL > 0 or BAKE_AO > 0:
+        for m in hi.data.materials:                              # the original's own normal map (the weave) left out: only its geometry
+            if m and m.use_nodes:
+                for l in list(m.node_tree.links):
+                    if l.to_socket.name == "Normal" and l.to_node.type == "BSDF_PRINCIPLED":
+                        m.node_tree.links.remove(l)
+    if BAKE_AO > 0:
+        ao = bpy.data.images.new("uo_ao_" + lo.name, px, px, alpha=False); atex = nt.nodes.new("ShaderNodeTexImage"); atex.image = ao; nt.nodes.active = atex
+        sc.world = sc.world or bpy.data.worlds.new("uo_bake_world"); sc.world.light_settings.distance = AO_DIST; sc.cycles.samples = 16
+        hi.select_set(True); lo.select_set(True); bpy.context.view_layer.objects.active = lo
+        bpy.ops.object.bake(type="AO")
+        A = blur_image(ao, max(1.0, 0.01 * texels_per_m))[..., 0]
+        w_, h_ = img.size; C = np.array(img.pixels[:], np.float32).reshape(h_, w_, 4)
+        C[..., :3] *= (1.0 - BAKE_AO * (1.0 - np.clip(A, 0, 1)))[..., None]; img.pixels[:] = C.ravel()
+        nt.nodes.remove(atex); bpy.data.images.remove(ao); sc.cycles.samples = 1
+        print("uo_import_item: BAKE_AO %s: occlusion of the original (%.2f m) darkens the colour by up to %.0f %%, mean AO %.2f" % (lo.name, AO_DIST, 100 * BAKE_AO, float(A.mean())))
+    if BAKE_NORMAL > 0:
+        nim = bpy.data.images.new("uo_normal_" + lo.name, px, px, alpha=False); nim.colorspace_settings.name = "Non-Color"
+        ntex = nt.nodes.new("ShaderNodeTexImage"); ntex.image = nim; nt.nodes.active = ntex
+        b.normal_space = "TANGENT"
+        hi.select_set(True); lo.select_set(True); bpy.context.view_layer.objects.active = lo
+        bpy.ops.object.bake(type="NORMAL")
+        blur_image(nim, max(1.0, BAKE_NORMAL * texels_per_m), normal=True)
+        nm = nt.nodes.new("ShaderNodeNormalMap"); nt.links.new(ntex.outputs["Color"], nm.inputs["Color"]); nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
+        fn = os.path.join(tempfile.mkdtemp(prefix="uo_bake_"), "normal.png"); nim.filepath_raw = fn; nim.file_format = "PNG"; nim.save(); nim.pack()
+        nt.nodes.active = tex
+        print("uo_import_item: BAKE_NORMAL %s: normal map of the original's geometry, blurred over %.3f m (%.0f texels/m)" % (lo.name, BAKE_NORMAL, texels_per_m))
     f = os.path.join(tempfile.mkdtemp(prefix="uo_bake_"), "baked.png"); img.filepath_raw = f; img.file_format = "PNG"; img.save(); img.pack()
     print("uo_import_item: BAKE_TEXTURE %s: %d x %d px from %s, %d vertices, %.0f s" % (lo.name, px, px, hi.name, len(lo.data.vertices), time.time() - t0))
 
@@ -318,6 +407,8 @@ def run():
                 me = bpy.data.meshes.new_from_object(n.evaluated_get(dg)); n.modifiers.clear(); old = n.data; n.data = me; bpy.data.meshes.remove(old)
                 print("uo_import_item: OUTER_REMESH %s: voxels %.1f mm, %d -> %d vertices (one continuous solid), %.0f s" % (n.name, 1000 * OUTER_REMESH, k0, len(me.vertices), time.time() - t0))
             outer_shell(n)
+            if HOLES:
+                holes(n, HOLES)
     if DECIMATE_TO > 0:
         total = sum(len(n.data.vertices) for n in news)
         if total > DECIMATE_TO:
