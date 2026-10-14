@@ -195,4 +195,4 @@ Wynik: shade 20,7 (469: 21,5), dziury w kliencie ręka 190 / tułów 196 px na 1
 Model użytkownika (Meshy, `.glb` 1,13 mln wierzchołków z teksturą, poza repo); przepis `docs/qa/dress_meshy_recipe.json`. Uwagi użytkownika do v1: krawędzie bez czystej czerni, więcej cieniowania / głębi, lepsze dopasowanie, rękawy się rwą.
 `uo_conform_item.py`: rękaw = tylko kawałek siatki od barku (`sleeve_piece`; wcześniej górę spódnicy sukni balowej brało za rękaw i ściskało na ręce: rozciągnięcie krawędzi p99 6,06 -> 1,40), nowe `OCCLUSION` / `OCC_DIST` / `SHADE_MIN`
 (przyciemnienie fałd jak w kapturze; kod wspólny w `uo_hood_cover.py`: `occlusion_share`, `apply_shade`).
-Wynik: `item_look` shade 17,2 -> 18,5 (oryginały 21,5-26,9), obwódka / piksel głębiej 0,38 -> 0,62 (`uo_outline` 0,75 w przepisie), `item_qa` 2,8 -> 1,5 %. Pełne `.vd` nierenderowane.
+Wynik: `item_look` shade 17,2 -> 18,5 (oryginały 21,5-26,9), obwódka / piksel głębiej 0,38 -> 0,62 (`uo_outline` 0,75 w przepisie), `item_qa` 2,8 -> 1,5 %. v4 (+ `bake_normal` 0,01, `bake_ao` 1,0, `uo_inner_line` 0,75 z `main`): shade 23,7, ciemne tony jak w sukni 447. Pełne `.vd` nierenderowane.

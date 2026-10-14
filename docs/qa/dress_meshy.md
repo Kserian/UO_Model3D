@@ -2,7 +2,7 @@
 
 Model: `Meshy_AI_Blue_Bow_Belle_1014091851_texture.glb`, wygenerowany przez użytkownika w Meshy (poza repo). Jedna siatka: 1,13 mln wierzchołków, 1,90 × 1,54 × 1,80 m,
 tekstura 2048 px (kolor, metal / szorstkość, normalne). Suknia balowa na krynolinie, bufiaste rękawy do łokcia z koronką, falbany przy rąbku, wzór w kwiaty.
-Przepis: `docs/qa/dress_meshy_recipe.json` (uruchamiany z katalogu z `.glb`). Pełny `--preview` (4 akcje) ok. 20 min (symulacja tkaniny 8 min), render warstwy 4 akcji 3,5 min.
+Przepis: `docs/qa/dress_meshy_recipe.json` (v4, uruchamiany z katalogu z `.glb`). Pełny `--preview` (4 akcje) ok. 20 min (symulacja tkaniny 8 min), render warstwy 4 akcji 3,5 min.
 
 ```
 python pipeline/uo_make_item.py dress_meshy_recipe.json --out OUT --preview --actions 04_stand,00_walk_unarmed,02_run_unarmed,09_attack_1h_slash
@@ -26,6 +26,20 @@ Uwagi użytkownika: „złagodź krawędzie, żeby nie były takie true black, d
 Warianty głębi (geometria v2 bez symulacji, `item_look` shade): bez 16,0; mapa normalnych ×3 + cień własny 0,15: 16,4; `OCCLUSION` 0,8 / 6 cm: 17,0; 0,8 / 10 cm: 17,6;
 **1,0 / 15 cm: 18,7**; 1,0 / 25 cm: 18,9. Na widocznej powierzchni 6-10 cm przyciemnia tylko o 0-20 % (mediana 2-4 %): zagłębienia sukni są szersze niż w kapturze.
 
+## v4: cieniowanie z oryginału (opcje z sesji szaty podartej)
+Do przepisu v3 dodane `"bake_normal": 0.01`, `"bake_ao": 1.0` (`uo_import_item.py`: mapa normalnych z geometrii oryginału i jego AO w teksturze; średnie AO sukni 0,33) oraz
+`"scene": {"uo_inner_line": 0.75, "uo_edge_smooth": 1}` (linia rękaw / tułów, wygładzona krawędź). `OCCLUSION` z `conform` zostaje (to zagłębienia po dopasowaniu, AO to fałdy modelu).
+
+| stanie + chód, 55 klatek | v1 | v3 | **v4** | 447 | 469 |
+|---|---|---|---|---|---|
+| `item_look` shade | 17,2 | 18,5 | **23,7** | 26,9 | 21,5 |
+| średnia jasność | 147 | 139 | 130 | 153 | 134 |
+| jasność wnętrza p10/p50 ... p90/p50 (rozmyte 2 px) | 0,89 ... 1,12 | 0,86 ... 1,14 | 0,78 ... 1,19 | 0,83 ... 1,17 | |
+| piksele wnętrza < 60 / p5 | | 0,4 % / 95 | 2,5 % / 72 | 3,1 % / 74 | |
+| obwódka / piksel głębiej, obwódka < 24 | 0,38, 2 % | 0,62, 0 % | 0,61, 2 % | 0,41, 24 % | |
+
+v4 jest w ciemnych tonach najbliżej oryginalnej sukni 447; bufki rękawów są w nim najciemniejsze (AO modelu między bufkami). Przepis w repo to v4.
+
 ## Otwarte
 - Pełne `.vd` (35 akcji, ok. 1 h) nierenderowane; tylko podgląd 4 akcji.
-- Głębia nadal poniżej oryginalnych sukni (447 ma drobne pionowe plisy, 1-3 px); model Meshy ich nie ma.
+- Drobnych pionowych plis 1-3 px jak w sukni 447 model Meshy nie ma (v4 shade 23,7 vs 26,9).
