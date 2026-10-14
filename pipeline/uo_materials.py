@@ -38,6 +38,8 @@ TEXTURE_FILTER = True # box-average every colour / normal texture that is finer 
                       # a 1 m coat on a 1024 px texture is sampled every ~25th texel and comes out as noise, and the thin dark details (laces, buttons, stitches) appear and disappear
                       # from frame to frame. Averaged, they stay as one soft dark pixel line. Skipped for cut-out textures (Alpha used) and for small textures.
 FILTER_TEXELS_PER_M = 54.0   # = 1.5 texels per UO pixel (36 px/m)
+TEXTURE_BLUR = 0.0    # m: > 0 = after TEXTURE_FILTER the colour textures are blurred (Gauss, sigma this many m of the item at FILTER_TEXELS_PER_M): only the large stains and the baked shading
+                      # of the folds stay, the mottle of a scanned texture goes (it read as pixel noise; docs/qa/robe_ragged.md). Normal maps are left. Recipe: "materials": {"TEXTURE_BLUR": 0.045}
 NORMAL_MAP = True     # a normal map of the model lights the item (UO_Look_N: the UO light on the mapped normal): weave, folds and raised straps give the shading the flat shell lacks.
                       # False = the old behaviour (the map is dropped). The map is filtered like the colour (renormalised)
 NORMAL_STRENGTH = 1.0
@@ -366,6 +368,19 @@ def run():
         grey_cloth(obs, lines)
     if TEXTURE_FILTER:
         filter_textures(obs, lines)
+    if TEXTURE_BLUR > 0:
+        from scipy.ndimage import gaussian_filter
+        cols = {n.image for o in obs for sl in o.material_slots if sl.material and sl.material.use_nodes for n in sl.material.node_tree.nodes
+                if n.type == "TEX_IMAGE" and n.image and not any(l.to_node.type == "NORMAL_MAP" for l in n.outputs["Color"].links)}
+        sig = TEXTURE_BLUR * FILTER_TEXELS_PER_M
+        for im in cols:
+            w, h = im.size; px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px); px = px.reshape(h, w, 4)
+            msk = (px[..., :3].sum(2) > 0.02).astype(np.float32)              # the empty background of a baked atlas is not mixed in (dark seams at the UV islands)
+            wm = np.maximum(gaussian_filter(msk, sig, mode="nearest"), 1e-4)
+            for c in range(3):
+                px[..., c] = np.where(msk > 0, gaussian_filter(px[..., c] * msk, sig, mode="nearest") / wm, px[..., c])
+            im.pixels.foreach_set(px.ravel()); im.update(); im.pack()
+            lines.append("texture %s blurred (sigma %.3f m = %.1f texels)" % (im.name, TEXTURE_BLUR, sig))
     if TEXTURE_PX > 0:
         used = {n.image for o in obs for sl in o.material_slots if sl.material and sl.material.use_nodes for n in sl.material.node_tree.nodes if n.type == "TEX_IMAGE" and n.image}   # only the item's own textures
         for im in used:
