@@ -175,9 +175,15 @@ Chód w trybie walki (15): łańcuch ma wisieć na zewnątrz i do tyłu (uwaga u
 Art i gumpy cepa (`docs/qa/flail.md`, ostatnia sekcja): `uo_render_weapon_gump.py` (na razie tylko cepy z `uo_flail.py`), `uo_hue_preview.py`, `uo_grey_metal.py`; klient w `uo_client/` (poza repo): wypakowane `art*.mul`, `Gump*.mul`, `gumpartLegacyMUL.uop`, `hues.mul`, `tiledata.mul`.
 Drewniany trzonek + szary metal: farbuje się tylko metal, jeśli przedmiot ma w tiledata flagę PartialHue (do ustawienia przez użytkownika); animacja v10 ma metal dokładnie szary.
 Model: obrót głowy wygładzony w czasie we wszystkich akcjach (maska kolegi skakała w walk war; `docs/qa/arm_poses.md`, ostatnia sekcja): skok przedmiotu sztywnego na głowie 2,75 -> 1,35 px, IoU ciała 0,9001 -> 0,8991, `test_items` 0,722. Zmieniony plik binarny: `model/UO_Body_0x190.blend` (tylko klucze `head` 31 akcji).
+Jakość tekstur (`docs/qa/render_quality.md`): `render_uo_layer.py` renderuje przedmioty z 512 próbkami (adaptacyjnie), bez `DESPECKLE`, z obwódką dobieraną do oryginałów UO (`OUTLINE_TARGET` 0,38); wgrane do `model/UO_Body_0x190.blend`. `test_canvas.py` włącza w bieżącym skrypcie stary wygląd do porównania z referencją.
 
 ## Sesja 24 (2026-10-13): podarta szata mnicha z dziurami (`docs/qa/robe_ragged.md`)
 Zlecenie: szata z Google Drive (`.glb`, 774 tys. wierzchołków, zamknięta bryła 1,5 cm, poza A, licencja nieznana, poza repo) na model, bez przebić ciała, tkanina ma się ruszać we wszystkich akcjach. **Decyzja użytkownika: dziury modelu są zamierzone, ciało ma przez nie prześwitywać.**
 Przepis `docs/qa/robe_ragged_recipe.json` (przepis czarnej szaty bez złota). Nowe: `uo_prepare_item.py` `HEM_FLARE` (zwężenie rozkloszowanego dołu wokół osi spódnicy; w staniu z przodu 39 -> 29 px, oryginał 469: 22), `item_skin_check.py --split` (skóra przed tkaniną vs w dziurach / pod rąbkiem).
 Wynik (35 akcji, 1050 klatek): tułów przed tkaniną 46 px, ręce 3,2 px na klatkę (nadgarstek przy mankiecie), nogi przed tkaniną to stopy leżącej postaci i jeźdźca; `item_clearance` 0,030 % / 0,43 % / 22,7 mm. Model: wgrany `uo_prepare_item.py` (bpy 4.2). Pełne `.vd` ok. 60 min (Blender 5.2).
 Odrzucone: zaszywanie dziur (`FILL_HOLES`, kod usunięty).
+
+## Sesja 21, gump i art szaty (2026-10-14; `docs/qa/robe_black.md`, „Gump paperdolla i art”)
+`pipeline/uo_render_gump_fit.py`: gumpy męski / żeński i art przedmiotu zakrywającego ciało, dopasowane do oryginalnego przedmiotu tego rodzaju (szata 469: gumpy 50469 / 60469, art 0x1F03): poza rąk + skala x / y do sylwetki oryginału
+(IoU 0,65 -> 0,83), poziomy szarości oryginału, złoto zostaje. Kaptur: slot `hood` (bez `uo_fit_item.py`, `docs/qa/autofit.md`, „Kaptur”).
+
