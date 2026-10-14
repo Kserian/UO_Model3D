@@ -934,9 +934,11 @@ def region_labels(a, i, d):
     for o in obs:
         for sl in o.material_slots:
             sl.material = m
+    ns = (sc.cycles.samples, sc.cycles.use_adaptive_sampling); sc.cycles.samples = 1; sc.cycles.use_adaptive_sampling = False   # flat labels: 1 sample is exact
     try:
         px = render_frame(a, i, d, "holdout")
     finally:
+        sc.cycles.samples, sc.cycles.use_adaptive_sampling = ns
         for o in obs:
             for sl, mt in zip(o.material_slots, keep[o.name]):
                 sl.material = mt
