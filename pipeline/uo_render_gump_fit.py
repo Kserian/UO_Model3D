@@ -19,6 +19,13 @@ from scipy import ndimage, optimize
 
 OUT = os.environ["PD_OUT"]
 REFS = {g: os.environ.get("PD_REF_" + g.upper()) for g in ("male", "female")}
+BODIES = {g: os.environ.get("PD_BODY_" + g.upper()) for g in ("male", "female")}      # the body gumps (12 / 13): where their fists are, the sleeves must end
+HAND_W = float(os.environ.get("PD_HAND_W", "0.5"))          # weight of the hands' distance to the fists (per (10 px)^2) against 1 - IoU
+ARM_W = float(os.environ.get("PD_ARM_W", "2.0"))            # weight of 1 - IoU in the sleeves' region alone (the skirt is most of the item: with the whole IoU only, a sleeve could leave
+                                                           # the upper arm of the body gump bare)
+ARM_ROWS, ARM_DX = (70, 175), 24
+BARE_W = float(os.environ.get("PD_BARE_W", "3.0"))         # weight of the share of the body gump's arm skin (under the original's sleeves) left bare
+SCALE_W = 200.0                                            # penalty on the scales beyond 15 % (shoulders), 25 % (hem), 8 % (height) from 1: without it the search ran off (height x1.36)                           # the sleeves' region: these rows, farther than ARM_DX px from the body axis
 ART_REF = os.environ.get("PD_ART_REF")
 ART_TURN = float(os.environ.get("PD_ART_TURN", "-45"))      # deg, counter-clockwise on the screen
 ART_ARMS = float(os.environ.get("PD_ART_ARMS", "15"))       # deg the arms are raised from the rest pose (40 deg from the vertical) for the laid item
@@ -61,8 +68,9 @@ for o in items:                              # no per-frame cloth push here: the
             del o[k]
 
 
-def pose_arms(out_deg, bend_deg):
-    """both arms `out_deg` further out at the shoulder and `bend_deg` more out at the elbow, in the front plane (about the forward axis)"""
+def pose_arms(out_deg, bend_deg, length=1.0):
+    """both arms `out_deg` further out at the shoulder and `bend_deg` more out at the elbow, in the front plane (about the forward axis); upper arm and forearm `length` times as long
+    (the drawn paperdoll bodies have shorter arms than the 3D body: with the real length the hand reached the fist only with the upper arm pulled into the torso)"""
     for pb in rig.pose.bones:
         pb.matrix_basis = Matrix()
     for side, sg in (("L", -1.0), ("R", 1.0)):
@@ -71,6 +79,8 @@ def pose_arms(out_deg, bend_deg):
             R = Matrix.Rotation(np.radians(sg * ang), 3, "Y")
             q = (ml.inverted() @ R @ ml).to_quaternion()
             pb = rig.pose.bones[bn]; pb.rotation_mode = "QUATERNION"; pb.rotation_quaternion = q
+            if bn.startswith("upper_arm"):
+                pb.scale = (1.0, length, 1.0)                               # along the bone; the forearm inherits it (one factor for both)
     bpy.context.view_layer.update()
 
 
@@ -86,10 +96,18 @@ def flat_tris(objs):
     return np.concatenate(out)
 
 
+Z_TOP, Z_HEM = 1.45, 0.15                    # m: the horizontal scale goes from kx_top at the shoulders to kx_hem at the hem (a skirt wider than the original's is narrowed without pulling the
+                                             # shoulders in: with one kx the upper arm of the body gump came out bare beside the shoulder)
+
+
+def kx_at(z, kxt, kxb):
+    return kxb + (kxt - kxb) * np.clip((z - Z_HEM) / (Z_TOP - Z_HEM), 0, 1)
+
+
 def to_gump(xz, p):
-    """world (x, z) -> gump pixel with the fit p = (kx, ky, dx, dy) about the body axis / the floor"""
-    kx, ky, dx, dy = p
-    return np.stack([GX0 + xz[..., 0] * PXM * kx + dx, GY_FEET - xz[..., 1] * PXM * ky + dy], -1)
+    """world (x, z) -> gump pixel with the fit p = (kx_top, kx_hem, ky, dx, dy) about the body axis / the floor"""
+    kxt, kxb, ky, dx, dy = p
+    return np.stack([GX0 + xz[..., 0] * PXM * kx_at(xz[..., 1], kxt, kxb) + dx, GY_FEET - xz[..., 1] * PXM * ky + dy], -1)
 
 
 def raster(tris_px, w, h, k=2):
@@ -103,21 +121,51 @@ def iou(a, b):
     return (a & b).sum() / max((a | b).sum(), 1)
 
 
-def fit_gender(ref):
-    """arms (out, bend) and kx, ky, dx, dy that make the item's silhouette best match the original gump `ref` (alpha)"""
+def fists(body_png, ref):
+    """centres of the two fists of a body gump: its pixels that the original item does not cover, at the height of the hands (the two biggest pieces between the shoulders and the knees)"""
+    b = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0
+    free = b & ~ndimage.binary_dilation(ref, iterations=1); free[:85] = False; free[170:] = False
+    lab, n = ndimage.label(free)
+    sizes = ndimage.sum(free, lab, range(1, n + 1)); big = np.argsort(sizes)[::-1][:2] + 1
+    c = [ndimage.center_of_mass(free, lab, k) for k in big]
+    return sorted([(x, y) for y, x in c])                                  # left on the screen first
+
+
+def hand_points():
+    """the hands (middle of the hand bone) in world (x, z), left on the screen first"""
+    pts = []
+    for side in ("R", "L"):                                                 # the character's right hand is on the left of the screen (front view)
+        pb = rig.pose.bones["hand." + side]; M = rig.matrix_world
+        h, t = M @ pb.head, M @ pb.tail
+        pts.append(((h.x + t.x) / 2, (h.z + t.z) / 2))
+    return np.array(pts)
+
+
+def fit_gender(ref, fist=None, bare=None):
+    """arms (out, bend) and kx, ky, dx, dy that make the item's silhouette best match the original gump `ref` (alpha) and put the hands on the fists of the body gump"""
     cache = {}
+    arm_zone = np.zeros((GH, GW), bool); arm_zone[ARM_ROWS[0]:ARM_ROWS[1]] = True; arm_zone[:, int(GX0 - ARM_DX):int(GX0 + ARM_DX)] = False
 
     def cost(x):
-        out, bend, kx, ky, dx, dy = x
-        key = (round(out, 1), round(bend, 1))
+        out, bend, alen, kxt, kxb, ky, dx, dy = x
+        key = (round(out, 1), round(bend, 1), round(alen, 3))
         if key not in cache:
-            pose_arms(*key); cache[key] = flat_tris(items)
-        return 1.0 - iou(raster(to_gump(cache[key], (kx, ky, dx, dy)), GW, GH, 1), ref)
+            pose_arms(*key); cache[key] = (flat_tris(items), hand_points())
+        tr, hp = cache[key]
+        sil = raster(to_gump(tr, (kxt, kxb, ky, dx, dy)), GW, GH, 1)
+        c = 1.0 - iou(sil, ref) + ARM_W * (1.0 - iou(sil & arm_zone, ref & arm_zone))
+        if bare is not None:                                                # skin of the body gump's arms the original covers and ours does not
+            c += BARE_W * (bare & ~sil).sum() / max(bare.sum(), 1)
+        c += SCALE_W * max(0.0, abs(alen - 0.85) - 0.2) ** 2
+        c += SCALE_W * sum(max(0.0, abs(v - 1.0) - lim) ** 2 for v, lim in ((kxt, 0.15), (kxb, 0.25), (ky, 0.08)))   # the scales stay near the body gump's (90.5 px/m)
+        if fist is not None:
+            d = to_gump(hp, (kxt, kxb, ky, dx, dy)) - np.array(fist)
+            c += HAND_W * float((d ** 2).sum(1).mean()) / 100.0
+        return c
     best = None
-    for out0, bend0 in ((0, 0), (10, 25), (20, 40)):                   # a few starts (the cost is flat in some directions)
-        r = optimize.minimize(cost, [out0, bend0, 1.0, 1.0, 0.0, 0.0], method="Nelder-Mead",
-                              options=dict(initial_simplex=np.array([[out0, bend0, 1, 1, 0, 0]] + [[out0 + (i == 0) * 8, bend0 + (i == 1) * 12, 1 + (i == 2) * 0.06, 1 + (i == 3) * 0.06,
-                                                                                                    (i == 4) * 4, (i == 5) * 4] for i in range(6)], float), maxiter=260, xatol=0.05, fatol=1e-4))
+    for out0, bend0 in ((0, 0), (10, 25), (20, 40), (10, 60), (0, 80)):                   # a few starts (the cost is flat in some directions)
+        x0 = np.array([out0, bend0, 0.85, 1.0, 1.0, 1.0, 0.0, 0.0]); step = np.array([8, 12, 0.08, 0.06, 0.06, 0.06, 4, 4])
+        r = optimize.minimize(cost, x0, method="Nelder-Mead", options=dict(initial_simplex=np.vstack([x0, x0 + np.diag(step)]), maxiter=320, xatol=0.05, fatol=1e-4))
         if best is None or r.fun < best.fun:
             best = r
     return best
@@ -211,30 +259,41 @@ for gender, refp in REFS.items():
     if not refp:
         continue
     ref = np.asarray(Image.open(refp).convert("RGBA")); refm = ref[..., 3] > 0
-    pose_arms(0, 0); before = iou(raster(to_gump(flat_tris(items), (1, 1, 0, 0)), GW, GH, 1), refm)
-    r = fit_gender(refm); out_deg, bend, kx, ky, dx, dy = r.x
-    pose_arms(round(out_deg, 1), round(bend, 1))
-    # render at the gump scale times SS with the uniform scale min(kx, ky), then the rest of the fit as a resampling
-    k0 = min(kx, ky); W, H = GW * SS, GH * SS
+    pose_arms(0, 0); before = iou(raster(to_gump(flat_tris(items), (1, 1, 1, 0, 0)), GW, GH, 1), refm)
+    fist = fists(BODIES[gender], refm) if BODIES.get(gender) else None
+    bare = None
+    if BODIES.get(gender):
+        bb = np.asarray(Image.open(BODIES[gender]).convert("RGBA"))[..., 3] > 0
+        bare = bb & refm; bare[:ARM_ROWS[0]] = False; bare[ARM_ROWS[1]:] = False; bare[:, int(GX0 - ARM_DX):int(GX0 + ARM_DX)] = False
+    r = fit_gender(refm, fist, bare); out_deg, bend, alen, kxt, kxb, ky, dx, dy = r.x; P = (kxt, kxb, ky, dx, dy)
+    pose_arms(round(out_deg, 1), round(bend, 1), round(alen, 3))
+    # render at the gump scale times SS with one uniform scale k0, then the rest of the fit as a resampling (map_coordinates: the horizontal scale depends on the height)
+    k0 = min(kxt, kxb, ky); W, H = GW * SS, GH * SS
     cxw = (GW / 2 - GX0) / PXM; czw = (GY_FEET - GH / 2) / PXM
     a = render(tmp, W, H, PXM * SS * k0, cxw / k0, czw / k0, items, True)
     # the render maps world (x, z) to SS * (GX0 + x PXM k0, GY_FEET - z PXM k0) (camera centred so that the body axis / floor land there); the wanted map uses kx, ky and the shift
-    sx, sy = kx / k0, ky / k0
-    A = np.array([1.0 / sy, 1.0 / sx])                                    # output (y, x) -> input (y, x): about (GY_FEET, GX0) in supersampled px
-    t = np.array([SS * GY_FEET - (SS * GY_FEET + SS * dy) / sy, SS * GX0 - (SS * GX0 + SS * dx) / sx])
-    res = box_down(warp(a, A, t, (H, W)), SS)
+    Yo, Xo = np.mgrid[0:H, 0:W].astype(np.float64) + 0.5
+    z = (SS * (GY_FEET + dy) - Yo) / (SS * PXM * ky); xw = (Xo - SS * (GX0 + dx)) / (SS * PXM * kx_at(z, kxt, kxb))
+    Yi, Xi = SS * GY_FEET - z * SS * PXM * k0 - 0.5, SS * GX0 + xw * SS * PXM * k0 - 0.5
+    pm = a.copy(); pm[..., :3] *= pm[..., 3:]
+    wa = np.stack([ndimage.map_coordinates(pm[..., c], [Yi, Xi], order=1, mode="constant", cval=0.0) for c in range(4)], -1).astype(np.float32)
+    wa[..., :3] /= np.maximum(wa[..., 3:], 1e-6)
+    res = box_down(wa, SS)
     res, lv = match_levels(res, ref)
     res, nsp = despeckle(res) if DESPECKLE > 0 else (res, 0)          # after the levels: their stretch made the darker folds black again
     Image.fromarray(to8(res)).save(os.path.join(OUT, "gump_%s.png" % gender))
     after = iou(res[..., 3] > 0, refm)
-    report[gender] = dict(arms_out=round(out_deg, 1), elbow_bend=round(bend, 1), kx=round(kx, 3), ky=round(ky, 3), dx=round(dx, 1), dy=round(dy, 1),
-                          iou_rest=round(before, 3), iou_fit_flat=round(1 - r.fun, 3), iou_render=round(after, 3), levels=[round(float(v), 3) for v in lv], specks=nsp)
+    hand_px = to_gump(hand_points(), P)
+    hand_err = [round(float(np.hypot(*(hp - np.array(f)))), 1) for hp, f in zip(hand_px, fist)] if fist else None
+    bare_left = int((bare & ~(res[..., 3] > 0)).sum()) if bare is not None else None
+    report[gender] = dict(arms_out=round(out_deg, 1), elbow_bend=round(bend, 1), arm_length=round(alen, 3), bare_arm_px=bare_left, kx_top=round(kxt, 3), kx_hem=round(kxb, 3), ky=round(ky, 3), dx=round(dx, 1), dy=round(dy, 1),
+                          iou_rest=round(before, 3), iou_fit_flat=round(1 - r.fun, 3), iou_render=round(after, 3), levels=[round(float(v), 3) for v in lv], specks=nsp, fists=[[round(float(v), 1) for v in f] for f in fist] if fist else None, hand_error_px=hand_err)
     print("GUMP %s: %s" % (gender, report[gender]), flush=True)
 
 if ART_REF:                                  # the item laid flat: arms out at a right angle, front view, turned 45 deg (the collar up right, the hem down left, as the original icon), fitted to its box
     ref = np.asarray(Image.open(ART_REF).convert("RGBA")); ys, xs = np.nonzero(ref[..., 3] > 0)
     rb = (xs.min(), ys.min(), xs.max(), ys.max()); AW, AH = ref.shape[1], ref.shape[0]
-    pose_arms(ART_ARMS, 0)
+    pose_arms(ART_ARMS, 0, 1.0)
     tr = flat_tris(items); lo = tr.reshape(-1, 2).min(0); hi = tr.reshape(-1, 2).max(0)
     ppm = 400.0
     w, h = int((hi[0] - lo[0]) * ppm) + 8, int((hi[1] - lo[1]) * ppm) + 8
