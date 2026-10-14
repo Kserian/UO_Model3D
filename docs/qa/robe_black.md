@@ -113,6 +113,19 @@ Zgłoszenia: Die Backward kier. 0 kl. 6 i Die Forward kier. 4 kl. 6 („nie wida
 - Pełne 35 akcji przed -> po: ręka 143 -> 234, tułów 68 -> 81, nogi 445 -> 492 px. Ręka to 1-2 px nadgarstka między węższym mankietem a dłonią (oryginał też go pokazuje), nogi to wcięcia w upadkach.
   QA (bpy 4.2): `run_qa` OK, `test_items` 0,723.
 
+## Gump paperdolla i art (ikona w plecaku / na zwłokach)
+Prośba użytkownika: art przedmiotu oraz gump męski i żeński do paperdolla. Wzorzec: oryginalna szata z klienta (przedmiot robe 0x1F03 / 0x1F04, AnimID 469 w `tiledata.mul`):
+gumpy **50469** (męski, na ciele gumpa 12) i **60469** (żeński, ciało 13), 260 x 237, oraz arty 0x1F03 / 0x1F04 (**56 x 56**, szata rozłożona ukośnie, kołnierz w prawo w górę, rąbek w lewo w dół; druga to odbicie).
+Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.png PD_REF_FEMALE=60469.png PD_ART_REF=7939.png python pipeline/run_script_in_blend.py ITEM.blend pipeline/uo_render_gump_fit.py`):
+- ręce narysowanych ciał gumpa stoją inaczej niż poza spoczynku 3D (ręce proste, 40° od pionu), więc dla każdej płci szukane są kąt ramion i zgięcie łokci (oba ramiona tak samo, w płaszczyźnie czołowej) oraz skala x / y
+  i przesunięcie, przy których sylwetka szaty (rzut trójkątów) najlepiej pokrywa oryginalny gump szaty (Nelder-Mead z 3 startów); potem render jak `uo_render_paperdoll.py` (UO_Look, Słońce własnego cienia,
+  ciało jako holdout, 3 x 3 nadpróbkowania) i ta sama transformacja; szarość dopasowana do poziomów oryginału (p50 / p95 jasności), złoto jednym współczynnikiem (zostaje złote i cieniowane);
+  szczeliny między panelami modelu i najciemniejsze cienie fałd (czarne linie w skali gumpa) wypełnione kolorem tkaniny wokół (`PD_DARK_FILL` 0,45 mediany, po wyrównaniu poziomów), pojedyncze ciemne piksele 3 przejścia.
+  Wynik: IoU sylwetki z oryginałem męski 0,648 -> 0,831 (ramiona -5,7°, łokieć +1,7°, skala x 0,866 / y 1,05), żeński 0,638 -> 0,826 (ramiona -11,6°, łokieć +23,6°, x 0,884 / y 1,02).
+- art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
+- zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
+Pliki szaty i grafiki nie są w repo.
+
 ## Odrzucone (zmierzone, nie powtarzać)
 - Zwykły `fit` z `stretch` 1,2 / 1,15: zakrywa ciało, ale szata wychodzi za duża (bufiaste barki), rękawy zasłaniają dłonie; użytkownik odrzucił.
 - `CLOTH_KAPPA` 1,0 bez ograniczenia `in_max`: kinematycznie nogi zakryte, ale symulowany rąbek zostaje w tyle i stopa wychodzi przez spódnicę w biegu.

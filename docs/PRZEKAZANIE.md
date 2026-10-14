@@ -151,3 +151,7 @@ Kula tkaniny na uniesionym kolanie: powłoka nóg + `drop` 1,0 (tkanina wracała
 dłonie widać jak w oryginale, w jeździe bez pierścienia mankietu). Dziury 35 akcji: ręka 143 -> 234 (nadgarstek 1-2 px), tułów 68 -> 81, nogi 445 -> 492 (wcięcia w upadkach). Odrzucone: `HAND_OVER`, zwężanie dłoni od strony mankietu.
 Model: wgrany `render_uo_layer.py`. QA OK, `test_items` 0,723.
 
+## Sesja 21, gump i art szaty (2026-10-14; `docs/qa/robe_black.md`, „Gump paperdolla i art”)
+`pipeline/uo_render_gump_fit.py`: gumpy męski / żeński i art przedmiotu zakrywającego ciało, dopasowane do oryginalnego przedmiotu tego rodzaju (szata 469: gumpy 50469 / 60469, art 0x1F03): poza rąk + skala x / y do sylwetki oryginału
+(IoU 0,65 -> 0,83), poziomy szarości oryginału, złoto zostaje. Kaptur: slot `hood` (bez `uo_fit_item.py`, `docs/qa/autofit.md`, „Kaptur”).
+
