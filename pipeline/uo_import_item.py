@@ -38,9 +38,11 @@ OUTER_SHELL = False   # a model that is a CLOSED SOLID cloth (a cloth simulator 
 OUTER_REMESH = 0.0    # m: > 0 (0.006) = before OUTER_SHELL the solid is rebuilt by Blender's voxel remesh: a garment exported as separate panels (sewing patterns that only touch, 284 of them
                       # in docs/qa/robe_black.md) becomes ONE continuous sheet, so the seams cannot open when the sleeves are turned onto the arms or the item is wrapped. The UVs are lost:
                       # the texture is baked from the original (BAKE_TEXTURE, 2048 when not given). Recipe: "outer_shell": 0.006
-HOLES = None          # {"close": 0.06, "grow": 0.025, "max": 1.5}: with OUTER_SHELL, the holes of the sheet (rips of a torn robe): a rim shorter than `close` m is closed (a pinhole: 1-px black
-                      # noise in the sprites), one up to `max` m is widened by `grow` m all round (the rips shrank with the reduction and the shortened hem and read as dark specks; the
-                      # hem, cuffs and neck are longer than `max`). docs/qa/robe_ragged.md. Recipe: "holes": {...}
+HOLES = None          # {"close": 0.06, "grow": 0.025, "max": 1.5, "close_above": 0.78}: with OUTER_SHELL, the holes of the sheet (rips of a torn robe): a rim shorter than `close` m is closed
+                      # (a pinhole: 1-px black noise in the sprites), one up to `max` m is widened by `grow` m all round (the rips shrank with the reduction and the shortened hem and read as
+                      # dark specks; the hem, cuffs and neck are longer than `max`); every hole whose rim lies above `close_above` of the sheet's height is closed (the shoulders and the
+                      # roots of the sleeves stay whole: widened rips there read as the sleeve torn off). Closed holes get the cloth around them in the baked texture (their faces take the
+                      # UVs of the nearest rim). docs/qa/robe_ragged.md. Recipe: "holes": {...}
 BAKE_NORMAL = 0.0     # with BAKE_TEXTURE: > 0 = a tangent normal map of the ORIGINAL'S GEOMETRY is baked too (its own normal map, the weave, is left out: noise at UO size), blurred over this
                       # many m, and lights the item (uo_materials.py NORMAL_MAP): the sculpted folds of the model shade the reduced shell. Recipe: "bake_normal": 0.01
 BAKE_AO = 0.0         # with BAKE_TEXTURE: 0..1 = the ambient occlusion of the original (folds, the hollows between them, AO_DIST m) darkens the baked colour by up to this share. Recipe: "bake_ao": 0.5
@@ -246,10 +248,17 @@ def holes(n, cfg):
                     if f.is_boundary and f not in seen:
                         seen.add(f); st.append(f)
         loops.append((sum(e.calc_length() for e in loop), loop))
-    small = [l for L, l in loops if L < cfg["close"]]
-    rips = [l for L, l in loops if cfg["close"] <= L < cfg["max"]]
+    zs = [v.co.z for v in bm.verts]; z_cut = min(zs) + cfg.get("close_above", 2.0) * (max(zs) - min(zs))
+    high = lambda l: float(np.mean([e.verts[0].co.z for e in l])) > z_cut
+    small = [l for L, l in loops if L < cfg["close"] or (L < cfg["max"] and high(l))]
+    rips = [l for L, l in loops if cfg["close"] <= L < cfg["max"] and not high(l)]
+    if small:                                                     # the patches: a material slot of their own (kept by the reduction) -> bake_texture gives them the cloth of their rim
+        me.materials.append(me.materials[0] if len(me.materials) else None); slot = len(me.materials) - 1
+        n["uo_patch_slot"] = slot
     for l in small:
-        bmesh.ops.holes_fill(bm, edges=l, sides=0)
+        for f in bmesh.ops.holes_fill(bm, edges=l, sides=0)["faces"]:
+            f.material_index = slot
+    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4], quad_method="BEAUTY", ngon_method="BEAUTY")
     rim = list(set(v for l in rips for e in l for v in e.verts))
     kd = KDTree(len(rim))
     for k, v in enumerate(rim):
@@ -266,8 +275,8 @@ def holes(n, cfg):
             if k == 2:
                 v.co = 0.5 * v.co + 0.25 * c
     bm.to_mesh(me); bm.free(); me.update()
-    print("uo_import_item: HOLES %s: %d pinholes closed (rim < %.2f m), %d rips widened by %.3f m (%d faces removed), %d rims left as they are, %d vertices" % (
-        n.name, len(small), cfg["close"], len(rips), cfg["grow"], len(drop), len(loops) - len(small) - len(rips), len(me.vertices)))
+    print("uo_import_item: HOLES %s: %d holes closed (rim < %.2f m, or above %.2f m), %d rips widened by %.3f m (%d faces removed), %d rims left as they are, %d vertices" % (
+        n.name, len(small), cfg["close"], z_cut, len(rips), cfg["grow"], len(drop), len(loops) - len(small) - len(rips), len(me.vertices)))
 
 
 def blur_image(img, sigma_px, normal=False):
@@ -299,6 +308,8 @@ def bake_texture(lo, hi, px):
     mat = bpy.data.materials.new("uo_baked_" + lo.name); mat.use_nodes = True; nt = mat.node_tree
     bsdf = nt.nodes["Principled BSDF"]; tex = nt.nodes.new("ShaderNodeTexImage"); tex.image = img
     nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"]); nt.nodes.active = tex
+    slot = lo.get("uo_patch_slot")
+    patch = np.array([p.material_index == slot for p in lo.data.polygons]) if slot is not None else np.zeros(len(lo.data.polygons), bool)
     lo.data.materials.clear(); lo.data.materials.append(mat)
     for i in range(len(lo.data.polygons)):
         lo.data.polygons[i].material_index = 0
@@ -336,6 +347,28 @@ def bake_texture(lo, hi, px):
         fn = os.path.join(tempfile.mkdtemp(prefix="uo_bake_"), "normal.png"); nim.filepath_raw = fn; nim.file_format = "PNG"; nim.save(); nim.pack()
         nt.nodes.active = tex
         print("uo_import_item: BAKE_NORMAL %s: normal map of the original's geometry, blurred over %.3f m (%.0f texels/m)" % (lo.name, BAKE_NORMAL, texels_per_m))
+    if patch.any():                                              # closed holes: the UVs of the nearest rim vertex (the cloth around, not the dark inside of the rip)
+        from mathutils.kdtree import KDTree
+        me = lo.data; uv = me.uv_layers.active.data
+        rimuv = {}
+        for p in me.polygons:
+            if not patch[p.index]:
+                for li in p.loop_indices:
+                    vi = me.loops[li].vertex_index
+                    if vi not in rimuv:
+                        rimuv[vi] = uv[li].uv.copy()
+        kd = KDTree(len(rimuv)); keys = list(rimuv)
+        for k, vi in enumerate(keys):
+            kd.insert(me.vertices[vi].co, k)
+        kd.balance()
+        for p in me.polygons:                                    # one rim texel per face (UVs of one face from different islands of the atlas would smear across it)
+            if patch[p.index]:
+                t = rimuv[keys[kd.find(p.center)[1]]]
+                for li in p.loop_indices:
+                    uv[li].uv = t
+        print("uo_import_item: HOLES %s: %d faces of closed holes take the cloth of their rim" % (lo.name, int(patch.sum())))
+    if "uo_patch_slot" in lo:
+        del lo["uo_patch_slot"]
     f = os.path.join(tempfile.mkdtemp(prefix="uo_bake_"), "baked.png"); img.filepath_raw = f; img.file_format = "PNG"; img.save(); img.pack()
     print("uo_import_item: BAKE_TEXTURE %s: %d x %d px from %s, %d vertices, %.0f s" % (lo.name, px, px, hi.name, len(lo.data.vertices), time.time() - t0))
 
