@@ -111,9 +111,9 @@ def from_gump(px, p):
     return np.array([(px[0] - GX0 - dx) / (PXM * kx_at(z, kxt, kxb)), z])
 
 
-def pose_arms_to(joints, p, wrist=None, fore=None):
-    """each upper arm along shoulder -> elbow and each forearm along elbow -> wrist of the body gump, in the front plane, and as long as those (the drawn arms are shorter, the forearm
-    pointing at the viewer is foreshortened: with the model's lengths the sleeves covered the fists); the forearm and the hand do not inherit the scale of their parent (no shear)"""
+def pose_arms_to(joints, p, wrist=None):
+    """each upper arm along shoulder -> elbow of the body gump, in the front plane, as long as that (the drawn arms are shorter); each forearm aimed at the wrist (aim_forearm);
+    the hands shrunk to nothing (the body is a holdout: a 3D hand in front of the sleeve would cut a hole in it, the drawn fist shows instead)"""
     for pb in rig.pose.bones:
         pb.matrix_basis = Matrix()
     out = {}
@@ -121,23 +121,32 @@ def pose_arms_to(joints, p, wrist=None, fore=None):
         if wrist and side in wrist:
             W = wrist[side]
         s, e, w = (from_gump(np.array(v, float), p) for v in (S, E, W))
-        if fore and side in fore:
-            w = e + (w - e) * fore[side]
-        abs_ang, lens = [], []
-        for bn, tgt in (("upper_arm." + side, e - s), ("forearm." + side, w - e)):
-            b = rig.data.bones[bn]; d0 = np.array([b.tail_local.x - b.head_local.x, b.tail_local.z - b.head_local.z])
-            lens.append(float(np.linalg.norm(tgt)) / b.length)
-            ang = np.arctan2(d0[0] * tgt[1] - d0[1] * tgt[0], d0 @ tgt)          # from the rest direction to the target, counter-clockwise in (x, z)
-            abs_ang.append(-ang)                                              # Matrix.Rotation(t, "Y") turns (x, z) by -t
-        for bn, t, k in (("upper_arm." + side, abs_ang[0], lens[0]), ("forearm." + side, abs_ang[1] - abs_ang[0], lens[1])):
-            ml = rig.data.bones[bn].matrix_local.to_3x3()
-            q = (ml.inverted() @ Matrix.Rotation(t, 3, "Y") @ ml).to_quaternion()
-            pb = rig.pose.bones[bn]; pb.rotation_mode = "QUATERNION"; pb.rotation_quaternion = q; pb.scale = (1.0, k, 1.0)
+        b = rig.data.bones["upper_arm." + side]; d0 = np.array([b.tail_local.x - b.head_local.x, b.tail_local.z - b.head_local.z]); tgt = e - s
+        ang = -np.arctan2(d0[0] * tgt[1] - d0[1] * tgt[0], d0 @ tgt); k = float(np.linalg.norm(tgt)) / b.length       # Matrix.Rotation(t, "Y") turns (x, z) by -t
+        ml = b.matrix_local.to_3x3()
+        pb = rig.pose.bones["upper_arm." + side]; pb.rotation_mode = "QUATERNION"; pb.rotation_quaternion = (ml.inverted() @ Matrix.Rotation(ang, 3, "Y") @ ml).to_quaternion(); pb.scale = (1.0, k, 1.0)
         for bn in ("forearm." + side, "hand." + side):
             rig.data.bones[bn].inherit_scale = "NONE"
-        out[side] = [round(float(np.degrees(v)), 1) for v in abs_ang] + [round(v, 3) for v in lens]
+        bpy.context.view_layer.update()
+        fk, lean = aim_forearm(side, w)
+        hb = rig.pose.bones["hand." + side]; hb.scale = (0.01, 0.01, 0.01)
+        out[side] = [round(float(np.degrees(ang)), 1), round(k, 3), round(fk, 3), round(lean, 1)]
     bpy.context.view_layer.update()
     return out
+
+
+def aim_forearm(side, w):
+    """the forearm from its posed head towards the point w = world (x, z) in the front view: nearer than its length -> it leans towards the viewer (-y) so that its front view is that short
+    (the drawn forearm is foreshortened; squashing it along the bone crumpled the sleeve), farther -> stretched. Returns (stretch, lean deg)"""
+    pb = rig.pose.bones["forearm." + side]; Mw = rig.matrix_world
+    hw = Mw @ pb.head; t = np.array([w[0] - hw.x, w[1] - hw.z]); d2 = float(np.linalg.norm(t)); L = pb.bone.length * Mw.to_scale()[0]
+    lean = min(np.arccos(min(1.0, d2 / L)), np.radians(LEAN_MAX))
+    dy, k = -L * np.sin(lean), d2 / (L * np.cos(lean))
+    dw = Vector((t[0], dy, t[1])).normalized(); da = (Mw.to_3x3().inverted() @ dw).normalized()
+    rest = pb.bone.matrix_local.to_3x3()
+    M = (rest.col[1].rotation_difference(da).to_matrix() @ rest).to_4x4(); M.translation = pb.head
+    pb.rotation_mode = "QUATERNION"; pb.matrix = M; bpy.context.view_layer.update(); pb.scale = (SLEEVE_W, k, SLEEVE_W)
+    return k, float(np.degrees(lean))
 
 
 def fist_blobs(body_png, ref):
@@ -149,35 +158,94 @@ def fist_blobs(body_png, ref):
     return [(lab == k, ndimage.center_of_mass(free, lab, k)) for k in big]
 
 
-def fit_forearms(joints, p, body_png, ref):
-    """per arm: the wrist target = the fist's pixel nearest the elbow, and the forearm length (factor of elbow -> wrist) at which the sleeve meets the fist: the fewest pixels of the body
-    gump's forearm bare between the cuff and the fist, a sleeve over the fist counting less"""
+CUFF_RIM = 0.015                             # m: the sleeve's mouth = per 15 deg around the forearm the vertices this close to the farthest one along it (the whole slanted rim of the bell)
+CUFF_INTO = float(os.environ.get("PD_CUFF_INTO", "0.5"))   # px: the mouth's far edge this far past the drawn wrist into the hand (the centre of the mouth on the forearm's line)
+LEAN_MAX = float(os.environ.get("PD_LEAN_MAX", "30"))      # deg: the forearm leans towards the viewer at most this much, the rest of the foreshortening is a squash along the bone
+SLEEVE_W = float(os.environ.get("PD_SLEEVE_W", "0.75"))    # the forearm (the sleeve's bell) this wide across the bone: leaning, the bell's mouth seen nearly face-on covered the hand
+
+
+def cuff_rims(objs):
+    """per arm side: [(object index, vertex indices)] of the sleeve's mouth, in the rest pose: vertices weighted >= 0.9 to the forearm, per 15 deg sector around its axis the farthest
+    CUFF_RIM along it (the farthest 3 cm overall were only the bell's lower lip, 5 cm below the axis)"""
+    for pb in rig.pose.bones:
+        pb.matrix_basis = Matrix()
+    bpy.context.view_layer.update()
+    rest = posed_verts(objs); out = {}
+    for side in ("R", "L"):
+        b = rig.data.bones["forearm." + side]; M = np.array(rig.matrix_world)
+        h = M[:3, :3] @ np.array(b.head_local) + M[:3, 3]; t = M[:3, :3] @ np.array(b.tail_local) + M[:3, 3]; d = (t - h) / np.linalg.norm(t - h)
+        u = np.cross(d, [0.0, 1.0, 0.0]); u /= np.linalg.norm(u); v = np.cross(d, u)
+        rim = []
+        for k, o in enumerate(objs):
+            gi = o.vertex_groups.get("forearm." + side)
+            if gi is None:
+                continue
+            w = np.zeros(len(o.data.vertices), np.float32)
+            for vx in o.data.vertices:
+                for g in vx.groups:
+                    if g.group == gi.index:
+                        w[vx.index] = g.weight
+            r = rest[k] - h; along = r @ d; sec = ((np.degrees(np.arctan2(r @ v, r @ u)) + 180) // 15).astype(int)
+            sel = (w >= 0.9) & (along > 0.5 * np.linalg.norm(t - h)); ix = []
+            for sc_ in np.unique(sec[sel]):
+                s2 = sel & (sec == sc_)
+                ix.append(np.nonzero(s2 & (along >= along[s2].max() - CUFF_RIM))[0])
+            if ix:
+                rim.append((k, np.concatenate(ix)))
+        out[side] = rim
+    return out
+
+
+def posed_verts(objs):
+    dg = bpy.context.evaluated_depsgraph_get(); out = []
+    for o in objs:
+        ev = o.evaluated_get(dg); me = ev.to_mesh()
+        co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+        M = np.array(ev.matrix_world); out.append(co @ M[:3, :3].T + M[:3, 3]); ev.to_mesh_clear()
+    return out
+
+
+def hand_mask(body_png, ref, E, W):
+    """the drawn hand: the body gump's pixels the original item leaves free (fist_blobs) beyond the drawn wrist W (across the line through W square to elbow -> wrist)"""
+    d = np.array(W, float) - np.array(E, float); d /= np.linalg.norm(d)
+    fm, _ = min(fist_blobs(body_png, ref), key=lambda bc: np.hypot(bc[1][1] - W[0], bc[1][0] - W[1]))
+    Y, X = np.mgrid[0:GH, 0:GW]
+    return fm & ((X - W[0]) * d[0] + (Y - W[1]) * d[1] > 0)
+
+
+def fit_cuffs(joints, p, body_png, ref):
+    """per arm: the forearm aimed (aim_forearm) until the centre of the sleeve's mouth (cuff_rims) lands CUFF_INTO px past the drawn wrist (JOINTS) in the gump: fixed-point, the forearm's
+    target moved by the remaining error. Measured: the drawn forearm left bare (elbow -> wrist, outside the hand) and the hand covered by the sleeve, px"""
     bb = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0
-    blobs = fist_blobs(body_png, ref); wrist, fore, gap = {}, {}, {}
+    rims = cuff_rims(items); tgt, err, bare, over = {}, {}, {}, {}
     Y, X = np.mgrid[0:GH, 0:GW]
     for side, (S, E, W) in joints.items():
-        fm, _ = min(blobs, key=lambda bc: np.hypot(bc[1][1] - W[0], bc[1][0] - W[1]))     # the blob nearest the read wrist
-        ys, xs = np.nonzero(fm); k = np.argmin(np.hypot(xs - E[0], ys - E[1])); wrist[side] = (float(xs[k]), float(ys[k]))
-        e, w = np.array(E, float), np.array(wrist[side]); d = w - e; L = np.hypot(*d); d /= L
-        t = (X - e[0]) * d[0] + (Y - e[1]) * d[1]; nrm = np.abs(-(X - e[0]) * d[1] + (Y - e[1]) * d[0])
-        lane = bb & ~fm & (t > 0) & (t <= L + 2) & (nrm <= 7)                     # the body gump's forearm up to the fist
-        best = None
-        for f in np.linspace(0.7, 1.6, 19):
-            pose_arms_to({side: (S, E, W)}, p, wrist, {side: f})
-            sil = raster(to_gump(flat_tris(items), p), GW, GH, 2)
-            c = (lane & ~sil).sum() + 0.7 * (sil & fm).sum()
-            if best is None or c < best[0]:
-                best = (c, f, int((lane & ~sil).sum()))
-        fore[side], gap[side] = float(best[1]), best[2]
-    return wrist, fore, gap
+        d = np.array(W, float) - np.array(E, float); L = np.linalg.norm(d); d /= L
+        wv = np.array(W, float)
+        for it in range(15):
+            pose_arms_to({side: (S, E, tuple(wv))}, p)
+            pv = posed_verts(items)
+            rp = to_gump(np.concatenate([pv[k][ix][:, [0, 2]] for k, ix in rims[side]]), p) - np.array(W, float)
+            nv = np.array([-d[1], d[0]])
+            e = -(np.max(rp @ d) - CUFF_INTO) * d - np.mean(rp @ nv) * nv                     # the far edge to the wrist along the forearm, the centre onto its line
+            if np.hypot(*e) < 0.2:
+                break
+            wv = wv + e
+        tgt[side] = (round(float(wv[0]), 2), round(float(wv[1]), 2)); err[side] = round(float(np.hypot(*e)), 2)
+        hm = hand_mask(body_png, ref, E, W)
+        t = (X - E[0]) * d[0] + (Y - E[1]) * d[1]; nrm = np.abs(-(X - E[0]) * d[1] + (Y - E[1]) * d[0])
+        lane = bb & ~hm & (t > 0) & (t <= L) & (nrm <= 6)
+        sil = raster(to_gump(flat_tris(items), p), GW, GH, 2)
+        bare[side] = int((lane & ~sil).sum()); over[side] = int((hm & sil).sum())
+    return tgt, err, bare, over
 
 
-def cover_body(a, body_png, ref):
-    """the body gump's skin within COVER_PX of the item (not the fists, the head and neck, the feet) taken into the item, coloured like the nearest cloth"""
+def cover_body(a, body_png, ref, joints=None):
+    """the body gump's skin within COVER_PX of the item (not the hands beyond the drawn wrists, the head and neck, the feet) taken into the item, coloured like the nearest cloth"""
     bb = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0
     m = a[..., 3] > 0
     keep = np.zeros_like(bb)
-    for fm, _ in fist_blobs(body_png, ref):
+    for fm in ([hand_mask(body_png, ref, E, W) for S, E, W in joints.values()] if joints else [f for f, _ in fist_blobs(body_png, ref)]):
         keep |= ndimage.binary_dilation(fm, iterations=1)
     keep[:84] = True; keep[205:] = True                                        # head with the neck, feet
     d, (iy, ix) = ndimage.distance_transform_edt(~m, return_indices=True)
@@ -492,9 +560,9 @@ for gender, refp in REFS.items():
         bare = bb & refm; bare[:ARM_ROWS[0]] = False; bare[ARM_ROWS[1]:] = False; bare[:, int(GX0 - ARM_DX):int(GX0 + ARM_DX)] = False
     if ARM_MODE == "joints" and gender in JOINTS:
         r = fit_body(refm); kxt, kxb, ky, dx, dy = r.x; P = tuple(r.x)
-        wr, fo, gp = fit_forearms(JOINTS[gender], P, BODIES[gender], refm) if BODIES.get(gender) else (None, None, None)
-        arms = pose_arms_to(JOINTS[gender], P, wr, fo); out_deg = bend = alen = float("nan")
-        arms = dict(arms, forearm_factor=fo, wrist=wr, cuff_gap_px=gp)
+        wr, ce, gp, ov = fit_cuffs(JOINTS[gender], P, BODIES[gender], refm) if BODIES.get(gender) else (None, None, None, None)
+        arms = pose_arms_to(JOINTS[gender], P, wr); out_deg = bend = alen = float("nan")
+        arms = dict(arms, forearm_target=wr, cuff_error_px=ce, forearm_bare_px=gp, hand_covered_px=ov)
     else:
         r = fit_gender(refm, fist, bare); out_deg, bend, alen, kxt, kxb, ky, dx, dy = r.x; P = (kxt, kxb, ky, dx, dy)
         pose_arms(round(out_deg, 1), round(bend, 1), round(alen, 3)); arms = None
@@ -520,7 +588,7 @@ for gender, refp in REFS.items():
     res, nsp = despeckle(res) if DESPECKLE > 0 else (res, 0)          # after the levels: their stretch made the darker folds black again
     covered, skin_left = 0, None
     if BODIES.get(gender):                                            # before smooth_cloth: the outline goes round the grown edge
-        res, covered, skin_left = cover_body(res, BODIES[gender], refm)
+        res, covered, skin_left = cover_body(res, BODIES[gender], refm, JOINTS.get(gender) if ARM_MODE == "joints" else None)
     res = smooth_cloth(res)
     Image.fromarray(to8(res)).save(os.path.join(OUT, "gump_%s.png" % gender))
     after = iou(res[..., 3] > 0, refm)

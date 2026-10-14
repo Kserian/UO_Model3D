@@ -141,6 +141,14 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   całe piksele gumpa złote albo szare, 2 przejścia większości 3 x 3: wcześniej mieszany piksel brzegu dostawał poziomy szarości albo złota przypadkiem i brzeg był kropkowany) x kolor złota x światło;
   złoto jaśniejsze (`PD_GOLD_K` 2,1), bez wyrównywania i wyostrzania szarości. Wynik: męski IoU 0,847, skóry odsłoniętej 11 px; żeński 0,862, 4 px; przerwa mankiet-pięść L 0 px, P 11-21 px
   (jak w oryginale: z rękawa prawej ręki postaci wychodzi kawałek przedramienia); art IoU 0,68. `PD_SAVE_RAW=1` zapisuje surowe rendery (`raw_*.npy`, `shade_*.npy`) do strojenia obróbki bez renderu.
+  Uwaga użytkownika: rękawy mają być ustawione względem nadgarstków. Błąd czwartej: „pięść" z pikseli, których oryginalna szata nie zakrywa, to na prawej ręce postaci pięść **z przedramieniem**
+  (oryginał zostawia je gołe), więc rękaw kończył się w połowie przedramienia. Piąta: cel = narysowany nadgarstek z `JOINTS` (sprawdzony w powiększeniu ciał 12 / 13: granica pięści i przedramienia,
+  męski (54, 113) / (129, 121)); wylot rękawu na siatce = w każdym wycinku 15° wokół osi przedramienia wierzchołki (waga przedramienia ≥ 0,9) do 1,5 cm od najdalszego (cały skośny brzeg dzwonu;
+  najdalsze 3 cm ogólnie to była tylko dolna warga, 5 cm pod osią); przedramię celowane iteracyjnie, aż dalszy brzeg wylotu jest 0,5 px za nadgarstkiem, a środek wylotu na linii przedramienia
+  (błąd 0,1-0,2 px). Narysowane przedramię jest skrócone perspektywą: model pochyla przedramię do widza najwyżej 30° (`PD_LEAN_MAX`), resztę skraca wzdłuż kości; dzwon zwężony do 0,75 (`PD_SLEEVE_W`);
+  dłonie 3D zwinięte (ciało jest holdoutem, dłoń przed rękawem wycinała w nim dziurę). Warianty (pochylenie / szerokość: gołe przedramię px, rękaw na dłoni px, męski): pełne pochylenie (do 68°):
+  0 / 77 (wylot dzwonu widziany od czoła zakrywał dłoń); 0° / 1,0: 14 + 11 / 4 + 15 (rękaw zgnieciony do 0,25); **30° / 0,75: 15 + 0 / 2 + 9**; 45° / 0,6: 20 + 1 / 3 + 4. Po dołączeniu skóry
+  w promieniu 4 px (`cover_body`, teraz bez dłoni za nadgarstkiem) zostaje 2 px gołej skóry (męski i żeński), IoU męski 0,855, żeński 0,867.
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.
