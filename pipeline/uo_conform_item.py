@@ -41,6 +41,11 @@ SLEEVE_CUFF = -1.0    # m: >= 0 = the end of each sleeve is narrowed to at most 
                       # the reins, was a ring round the hand, docs/qa/robe_black.md; the original robes have narrow sleeves). < 0 = as the model
 CUFF_SPAN = 0.20      # m: along the forearm before the end of the sleeve over which the narrowing grows from none to full
 BLEND = 0.10          # m: along the sleeve from its root, over which it goes from where the model has it to the UO arm
+ROOT_MOVE = 0.0       # m: > 0 = the root of each sleeve (the armhole) and the cloth around it (a Gaussian of this radius in space: the front and back of the bodice by the armpit) move with the
+                      # sleeve as far as its root would move with it: a model whose armholes lie away from the UO shoulders (the ball gown: 12-14 cm behind them) kept its armhole there, the
+                      # sleeve root folded in behind the shoulder and the front of the UO shoulder showed (docs/qa/dress_meshy.md). 0 = off (the root stays where the model has it)
+SLEEVE_SLIDE = 0.0    # m: each sleeve is also moved this far along the UO arm (< 0 = towards the shoulder): a model whose shoulder seam lies further out than the UO shoulder (a ball gown made
+                      # on a narrow-shouldered mannequin: the sleeve began a third of the way down the UO upper arm, its closed cap across the arm, and the arm showed above it, docs/qa/dress_meshy.md)
 TUBE_MARGIN = 0.05    # m: beyond the radius of the sleeve tube the move fades out over this (the side of the torso under the arm stays)
 SKIRT = True          # below the crotch: hangs (the model's shape, pushed out of the legs), follows the pelvis, the legs push it in the render
 SKIRT_TOP = 0.05      # m above the crotch where the shell starts to give way to the hanging skirt (over SKIRT_BAND)
@@ -191,7 +196,7 @@ def align_sleeves(X, rig, G):
         ds = ds if ds @ da > 0 else -ds
         cs = Cd.mean(0)
         R = rot_between(ds, da)
-        target = J + ((cs - J) @ da) * da                               # the centre of the sleeve goes onto the arm line, at the same distance from the shoulder
+        target = J + ((cs - J) @ da + SLEEVE_SLIDE) * da                # the centre of the sleeve goes onto the arm line, at the same distance from the shoulder (+ SLEEVE_SLIDE)
         root = C[0]
         sx = (X - cs) @ ds
         perp = np.linalg.norm((X - cs) - sx[:, None] * ds, axis=1)          # distance from the centre line of the sleeve: the tube of the sleeve, not the side of the torso under it
@@ -202,6 +207,13 @@ def align_sleeves(X, rig, G):
         w = np.clip(s / BLEND, 0, 1) * wt * (X[:, 0] * sg > 0)
         w = G.smooth(w, 6); w = w * w * (3 - 2 * w)
         Y = (X - cs) @ R.T + target
+        if ROOT_MOVE > 0:                                               # the armhole goes with the sleeve: what the sleeve move leaves (1 - w) follows the root's move, fading in space
+            Dr = (root - cs) @ R.T + target - root
+            wr = np.exp(-0.5 * (np.linalg.norm(X - root, axis=1) / ROOT_MOVE) ** 2) * (X[:, 0] * sg > 0)
+            wr = G.smooth(wr, 2)
+            X = X + ((1 - w) * wr)[:, None] * Dr
+            print("uo_conform_item: sleeve %s: root moved %.1f cm (%s) with the cloth around it (radius %.0f cm, %d vertices over a half)" % (
+                sd, 100 * np.linalg.norm(Dr), ", ".join("%+.1f" % (100 * c) for c in Dr), 100 * ROOT_MOVE, int(((1 - w) * wr > 0.5).sum())), flush=True)
         X = X + w[:, None] * (Y - X)
         root_ramp = np.clip((s + 0.02) / 0.05, 0, 1)                    # for the weights the whole sleeve counts, from its root (the move above fades in over BLEND)
         member = np.maximum(member, G.smooth(wt * root_ramp * (X[:, 0] * sg > 0), 2))
