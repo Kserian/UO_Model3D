@@ -149,6 +149,10 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   dłonie 3D zwinięte (ciało jest holdoutem, dłoń przed rękawem wycinała w nim dziurę). Warianty (pochylenie / szerokość: gołe przedramię px, rękaw na dłoni px, męski): pełne pochylenie (do 68°):
   0 / 77 (wylot dzwonu widziany od czoła zakrywał dłoń); 0° / 1,0: 14 + 11 / 4 + 15 (rękaw zgnieciony do 0,25); **30° / 0,75: 15 + 0 / 2 + 9**; 45° / 0,6: 20 + 1 / 3 + 4. Po dołączeniu skóry
   w promieniu 4 px (`cover_body`, teraz bez dłoni za nadgarstkiem) zostaje 2 px gołej skóry (męski i żeński), IoU męski 0,855, żeński 0,867.
+  Prośba: poprawić tekstury. Tkanina z samego światła była gładka jak plastik; oryginał jest malowany. `texture_cloth()`: kontrast fałd (0,6 x (rozmycie 1 px - 5 px)), głębsze cienie
+  (jasność wokół mediany do potęgi 1,2), ziarno i plamki (szum rozmyty 0,6 / 2 px, po 4 % jasności, na złocie połowa), p5 / p50 / p95 szarości z powrotem jak w oryginale, brzeg złotych pasów
+  o 20 % ciemniejszy; złoto z wzorem haftu tekstury (`GOLD_SIGMA` 2 px w skali x4, `GOLD_MOTTLE` 1). Pomiar (gump męski, ziarno = odch. std jasności - rozmycie 1 px, fałdy = rozmycie 1 px - 6 px):
+  ziarno 0,024 -> 0,034 (oryginał 0,020), fałdy 0,061 -> 0,085 (0,067), p5 0,27 -> 0,17 (0,19); art: ziarno 0,039 -> 0,065 (0,058), fałdy 0,055 -> 0,085 (0,075).
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.

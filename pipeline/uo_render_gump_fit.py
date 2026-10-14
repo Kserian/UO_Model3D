@@ -38,7 +38,8 @@ GOLD_SAT = 0.12                                            # compose(): saturati
 GOLD_AREA = 125000                                         # hi-res px of the item the GOLD_* sizes are for (the robe's gump at SS 4); scaled with the item's size (the icon is smaller)
 GOLD_BIG, GOLD_SMALL, GOLD_EDGE = 2000, 200, 12            # hi-res px: gold pieces kept (bigger than BIG, or than SMALL touching the item's edge within EDGE: collar, cuffs; stray specks dropped)
 GOLD_CLOSE, GOLD_OPEN, GOLD_MAJ = 6, 5, 2                  # hi-res px radii of the closing / opening of the gold mask, passes of a 3 x 3 majority on the gump pixels
-GOLD_SIGMA, GOLD_MOTTLE = 6.0, 0.5                         # the gold's colour: its median mixed with the texture's colour smoothed by GOLD_SIGMA hi-res px
+GOLD_SIGMA, GOLD_MOTTLE = 2.0, 1.0                         # the gold's colour: its median mixed with the texture's colour smoothed by GOLD_SIGMA hi-res px (the embroidery's pattern)
+TEX_FOLDS, TEX_GAMMA, TEX_GRAIN, TEX_MOTTLE, TEX_GOLD, TEX_BORDER = 0.6, 1.2, 0.04, 0.04, 0.5, 0.8   # texture_cloth(): see there
 LINE_K = 0.7
 COVER_PX = 4                                               # px: the body gump's skin this close to the item (not the fists, head, feet) is covered by it (the original covers all of the body
                                                            # but the hands, head and feet; a bare shoulder / forearm showed through)   # smooth_cloth(): px, share of the evening, px, the outline's share of the colour
@@ -542,6 +543,31 @@ def smooth_cloth(a):
     return out
 
 
+def texture_cloth(a, ref, seed=3):
+    """the cloth of the original gumps is painted, not smooth: local contrast of the folds (TEX_FOLDS x (blur 1 px - blur 5 px)), deeper shadows (luminance about the median to the power
+    TEX_GAMMA), grain and mottle (noise blurred 0.6 / 2 px, TEX_GRAIN / TEX_MOTTLE of the luminance; on the gold TEX_GOLD of it), the grey's p5 / p50 / p95 back to the original's, the gold
+    bands' edge TEX_BORDER darker (an embroidered band). Measured on the male gump: fine grain 0.024 -> 0.034 (original 0.020), folds 0.061 -> 0.085 (0.067), p5 0.27 -> 0.17 (0.19)"""
+    m = a[..., 3] > 0; inner = ndimage.binary_erosion(m, iterations=1)
+    sat = a[..., :3].max(-1) - a[..., :3].min(-1); gold = m & (sat > 0.06); grey = inner & ~gold
+    if not grey.any():
+        return a
+    Lw = np.array([0.299, 0.587, 0.114]); lum = a[..., :3] @ Lw; rng = np.random.default_rng(seed)
+    new = lum + TEX_FOLDS * (ndimage.gaussian_filter(lum, 1.0) - ndimage.gaussian_filter(lum, 5.0))
+    f = np.where(lum > 1e-3, new / np.maximum(lum, 1e-3), 1.0)
+    med = np.median(lum[grey]); f = f * np.where(grey, (np.maximum(lum, 1e-3) / med) ** (TEX_GAMMA - 1.0), 1.0)
+    n1 = ndimage.gaussian_filter(rng.standard_normal(lum.shape), 0.6); n2 = ndimage.gaussian_filter(rng.standard_normal(lum.shape), 2.0)
+    nz = TEX_GRAIN * n1 / n1.std() + TEX_MOTTLE * n2 / n2.std()
+    f = f * np.where(grey, 1 + nz, np.where(gold, 1 + TEX_GOLD * nz, 1.0))
+    out = a.copy(); out[..., :3] = np.clip(a[..., :3] * f[..., None], 0, 1)
+    l2 = out[..., :3] @ Lw; rm = ref[..., 3] > 0; rl = (ref[..., :3].astype(np.float32) / 255.0) @ Lw
+    s5, s50, s95 = np.percentile(l2[grey], [5, 50, 95]); r5, r50, r95 = np.percentile(rl[rm], [5, 50, 95])
+    tl = np.interp(l2, [0, s5, s50, s95, 1], [0, r5, r50, r95, min(1.0, r95 + (1 - s95) * (r95 - r50) / max(s95 - s50, 1e-4))])
+    out[grey, :3] = np.clip(out[grey, :3] * (tl / np.maximum(l2, 1e-3))[grey][:, None], 0, 1)
+    e = gold & ~ndimage.binary_erosion(gold, iterations=1) & inner
+    out[e, :3] *= TEX_BORDER
+    return out
+
+
 def to8(a):
     return np.clip(a * 255 + 0.5, 0, 255).astype(np.uint8)
 
@@ -589,7 +615,7 @@ for gender, refp in REFS.items():
     covered, skin_left = 0, None
     if BODIES.get(gender):                                            # before smooth_cloth: the outline goes round the grown edge
         res, covered, skin_left = cover_body(res, BODIES[gender], refm, JOINTS.get(gender) if ARM_MODE == "joints" else None)
-    res = smooth_cloth(res)
+    res = texture_cloth(smooth_cloth(res), ref)
     Image.fromarray(to8(res)).save(os.path.join(OUT, "gump_%s.png" % gender))
     after = iou(res[..., 3] > 0, refm)
     hand_px = to_gump(hand_points(), P)
@@ -629,7 +655,7 @@ if ART_REF:                                  # the item laid flat: arms out at a
     art = box_down(big, S4)
     art, lv = match_levels(art, ref)
     art, nsp = despeckle(art) if DESPECKLE > 0 else (art, 0)
-    art = smooth_cloth(art)
+    art = texture_cloth(smooth_cloth(art), ref)
     Image.fromarray(to8(art)).save(os.path.join(OUT, "art.png"))
     Image.fromarray(to8(art[:, ::-1])).save(os.path.join(OUT, "art_mirror.png"))
     ys2, xs2 = np.nonzero(art[..., 3] > 0)
