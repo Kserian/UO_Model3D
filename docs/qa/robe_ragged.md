@@ -74,14 +74,14 @@ Uwagi użytkownika do pierwszej wersji i co zmieniłem (przepis `docs/qa/robe_ra
 ```
 "holes": {"close": 0.06, "grow": 0.025, "close_above": 0.78, "slit": 4, "sleeve": [[0.2, 0.7], [0.56, 0.1], 0.14]}, "bake_normal": 0.01, "bake_ao": 1.0,
 "materials": {"GREY_CLOTH": {"value": 0.55, "contrast": 1.0, "flatten": 0.0}, "TEXTURE_BLUR": 0.045},
-"scene": {"uo_hide_erode": 1, "uo_legs_under": 1, "uo_fill_holes": 2, "uo_inner_line": 0.45, "uo_edge_smooth": 1, "uo_cloth_lie": 1.0, "uo_cloth_lie_drop": 0.5}
+"scene": {"uo_hide_erode": 1, "uo_legs_under": 1, "uo_fill_holes": 2, "uo_inner_line": 0.75, "uo_edge_smooth": 1, "uo_cloth_lie": 1.0, "uo_cloth_lie_drop": 0.5}
 ```
 | Uwaga | Przyczyna | Zmiana |
 |---|---|---|
 | „Oryginalne dziury prawie całkowicie zalane materiałem” | `uo_despeckle` 28 zamieniał ciemne piksele rozdarć na kolor tkaniny, `FILL_HOLES` 4 zalewał otwory do 4 px (przez przednią dziurę renderer widzi tył szaty); rozdarcia skurczone przez skrócenie dołu (×0,62) i zwężenie | `uo_import_item.py` **`HOLES`**: rozdarcia (obwód 6 cm-1,5 m) poszerzone o 2,5 cm w gęstej powłoce, dziurki < 6 cm (czarny szum 1 px) zaszyte; renderer: `uo_fill_holes` 2 (właściwość sceny) |
 | „Szumy czarne 1-2 px wygładź, zostaw cieniowanie i zabrudzenia” | ziarno skanowanej tekstury; `GREY_CLOTH` `flatten` / `contrast` 0,5 kasowały cieniowanie | `uo_materials.py` **`TEXTURE_BLUR`** 0,045 m (Gauss z maską wysp UV); `GREY_CLOTH` bez spłaszczania |
 | „Ładnie pocieniuj, nie płasko” | gładka powłoka, fałdy modelu tylko w geometrii oryginału | `uo_import_item.py` **`BAKE_NORMAL`** (mapa normalnych z geometrii oryginału, bez jego mapy splotu, rozmyta 1 cm) i **`BAKE_AO`** (zacienienie fałd oryginału w teksturze) |
-| „Rękawy mają się odznaczać od torsu jak w oryginalnym robe” | brak wewnętrznych krawędzi | `render_uo_layer.py` **`INNER_LINE`** (`uo_inner_line` 0,45): dodatkowy render etykiet `uo_region` (1 próbka), piksele tułowia przy rękawie przyciemnione |
+| „Rękawy mają się odznaczać od torsu jak w oryginalnym robe” | brak wewnętrznych krawędzi | `render_uo_layer.py` **`INNER_LINE`** (`uo_inner_line` 0,75 (było 0,45: za ciemna linia, uwaga użytkownika)): dodatkowy render etykiet `uo_region` (1 próbka), piksele tułowia przy rękawie przyciemnione |
 | „Wygładź krawędzie” | postrzępiony rąbek: szpilki i wcięcia 1 px | `render_uo_layer.py` **`EDGE_SMOOTH`** (`uo_edge_smooth` 1) |
 | „Ramiona (łączenie z rękawami) bez rozdarć” | poszerzone rozdarcia modelu na barkach i pod kapturem | `HOLES` `close_above` 0,78: dziury powyżej pach zaszyte, łaty biorą UV najbliższego brzegu (kolor tkaniny, nie ciemne wnętrze rozdarcia) |
 | „Poke ramion i łokcia”; „przy 1h bash szata na brzuchu mocno się rozrywa” | rozdarcia na rękawach (łokieć, ramię); długie rozcięcie wzdłuż końca sznura z przodu otwierało się w pochyleniu | `HOLES` `sleeve` (dziury w promieniu 14 cm od osi rękawu modelu zaszyte) i `slit` 4 (rozcięcia dłuższe niż 4× szerokość zaszyte) |
