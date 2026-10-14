@@ -187,3 +187,6 @@ Odrzucone: zaszywanie dziur (`FILL_HOLES`, kod usunięty).
 `pipeline/uo_render_gump_fit.py`: gumpy męski / żeński i art przedmiotu zakrywającego ciało, dopasowane do oryginalnego przedmiotu tego rodzaju (szata 469: gumpy 50469 / 60469, art 0x1F03): poza rąk + skala x / y do sylwetki oryginału
 (IoU 0,65 -> 0,83), poziomy szarości oryginału, złoto zostaje. Kaptur: slot `hood` (bez `uo_fit_item.py`, `docs/qa/autofit.md`, „Kaptur”).
 
+Sesja 24, druga runda (2026-10-14, `docs/qa/robe_ragged.md`, „Druga runda”): dziury poszerzone, a zaszyte na barkach / rękawach / w wydłużonych rozcięciach (`uo_import_item.py` `HOLES`), cieniowanie z oryginału (`BAKE_NORMAL`, `BAKE_AO`), `uo_materials.py` `TEXTURE_BLUR`,
+renderer: `INNER_LINE` (linia rękaw / tułów), `EDGE_SMOOTH`, `CLOTH_LIE_DROP` (upadki: tkanina opada na nogi; bąbel w Die Backward), właściwość sceny `uo_fill_holes`. Szata na nowych ustawieniach renderu z `main` (512 próbek, `OUTLINE_TARGET`).
+Wynik: shade 20,7 (469: 21,5), dziury w kliencie ręka 190 / tułów 196 px na 1050 klatek. Model: wgrane `render_uo_layer.py`, `uo_import_item.py`, `uo_materials.py` (bpy 4.2). Odrzucone: `CLOTH_LIE_SQUEEZE`, `FILL_HOLES` przy imporcie.

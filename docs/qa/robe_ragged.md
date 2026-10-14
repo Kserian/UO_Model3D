@@ -6,7 +6,8 @@ jedna tekstura koloru 4096 px (beżowy len, nasycenie p50 0,13), metaliczność 
 Zlecenie: nałożyć szatę na model, dopasować, ciało nie może przebijać materiału, tkanina ma się poprawnie ruszać we wszystkich akcjach.
 **Decyzja użytkownika: dziury są zrobione specjalnie, ciało ma przez nie prześwitywać** (pierwsza wersja z zaszytymi dziurami, `FILL_HOLES`, została wycofana).
 
-Przepis `docs/qa/robe_ragged_recipe.json` (z katalogu z `robe_ragged.glb`; `--preview` ok. 25 min, `--vd` ok. 60 min, z czego symulacja 165 klatek 43 min w 4 procesach; Blender 5.2):
+Przepis `docs/qa/robe_ragged_recipe.json` (z katalogu z `robe_ragged.glb`; `--preview` ok. 25 min, `--vd` ok. 90 min z 512 próbkami, z czego symulacja 165 klatek 40 min w 4 procesach; Blender 5.2).
+**Wersja końcowa (druga runda) jest opisana niżej, w części „Druga runda”**; poniżej pierwsza wersja:
 ```
 {"name": "robe_ragged", "file": "robe_ragged.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000,
  "materials": {"GREY_CLOTH": {"value": 0.6, "contrast": 0.5, "flatten": 0.05}},
@@ -66,3 +67,32 @@ Arkusze klienta (bieg z profilu, upadek do tyłu): rąbek idzie za wykrokiem, w 
 - Nadgarstek między postrzępionym mankietem a dłonią (3 px na klatkę); dłuższy rękaw zasłania dłoń.
 - Sznur z pasa zwisa jako część tkaniny (nie ma własnej fizyki).
 - Kaptur na plecach owinięty jak reszta tkaniny (bez osobnego ruchu).
+
+
+## Druga runda (2026-10-14): dziury, cieniowanie, barki, Die Backward, nowe ustawienia renderu
+Uwagi użytkownika do pierwszej wersji i co zmieniłem (przepis `docs/qa/robe_ragged_recipe.json`):
+```
+"holes": {"close": 0.06, "grow": 0.025, "close_above": 0.78, "slit": 4, "sleeve": [[0.2, 0.7], [0.56, 0.1], 0.14]}, "bake_normal": 0.01, "bake_ao": 1.0,
+"materials": {"GREY_CLOTH": {"value": 0.55, "contrast": 1.0, "flatten": 0.0}, "TEXTURE_BLUR": 0.045},
+"scene": {"uo_hide_erode": 1, "uo_legs_under": 1, "uo_fill_holes": 2, "uo_inner_line": 0.45, "uo_edge_smooth": 1, "uo_cloth_lie": 1.0, "uo_cloth_lie_drop": 0.5}
+```
+| Uwaga | Przyczyna | Zmiana |
+|---|---|---|
+| „Oryginalne dziury prawie całkowicie zalane materiałem” | `uo_despeckle` 28 zamieniał ciemne piksele rozdarć na kolor tkaniny, `FILL_HOLES` 4 zalewał otwory do 4 px (przez przednią dziurę renderer widzi tył szaty); rozdarcia skurczone przez skrócenie dołu (×0,62) i zwężenie | `uo_import_item.py` **`HOLES`**: rozdarcia (obwód 6 cm-1,5 m) poszerzone o 2,5 cm w gęstej powłoce, dziurki < 6 cm (czarny szum 1 px) zaszyte; renderer: `uo_fill_holes` 2 (właściwość sceny) |
+| „Szumy czarne 1-2 px wygładź, zostaw cieniowanie i zabrudzenia” | ziarno skanowanej tekstury; `GREY_CLOTH` `flatten` / `contrast` 0,5 kasowały cieniowanie | `uo_materials.py` **`TEXTURE_BLUR`** 0,045 m (Gauss z maską wysp UV); `GREY_CLOTH` bez spłaszczania |
+| „Ładnie pocieniuj, nie płasko” | gładka powłoka, fałdy modelu tylko w geometrii oryginału | `uo_import_item.py` **`BAKE_NORMAL`** (mapa normalnych z geometrii oryginału, bez jego mapy splotu, rozmyta 1 cm) i **`BAKE_AO`** (zacienienie fałd oryginału w teksturze) |
+| „Rękawy mają się odznaczać od torsu jak w oryginalnym robe” | brak wewnętrznych krawędzi | `render_uo_layer.py` **`INNER_LINE`** (`uo_inner_line` 0,45): dodatkowy render etykiet `uo_region` (1 próbka), piksele tułowia przy rękawie przyciemnione |
+| „Wygładź krawędzie” | postrzępiony rąbek: szpilki i wcięcia 1 px | `render_uo_layer.py` **`EDGE_SMOOTH`** (`uo_edge_smooth` 1) |
+| „Ramiona (łączenie z rękawami) bez rozdarć” | poszerzone rozdarcia modelu na barkach i pod kapturem | `HOLES` `close_above` 0,78: dziury powyżej pach zaszyte, łaty biorą UV najbliższego brzegu (kolor tkaniny, nie ciemne wnętrze rozdarcia) |
+| „Poke ramion i łokcia”; „przy 1h bash szata na brzuchu mocno się rozrywa” | rozdarcia na rękawach (łokieć, ramię); długie rozcięcie wzdłuż końca sznura z przodu otwierało się w pochyleniu | `HOLES` `sleeve` (dziury w promieniu 14 cm od osi rękawu modelu zaszyte) i `slit` 4 (rozcięcia dłuższe niż 4× szerokość zaszyte) |
+| „Bąbel w Die Backward” (u nas akcja 21) | przód dołu ma wagi obu nóg: przy uniesionych kolanach rozpinał się jak żagiel | `render_uo_layer.py` **`CLOTH_LIE_DROP`** (`uo_cloth_lie_drop` 0,5): w upadkach tkanina poniżej pasa opada na to, co pod nią (nogi / ziemia); IoU z 469: akcja 21 0,684 -> 0,717, 22 0,735 -> 0,715 |
+| Nowe ustawienia renderu z `main` (512 próbek, `OUTLINE_TARGET`, bez despeckle) | | przepis bez `uo_outline` i `uo_despeckle` |
+
+Odrzucone: ściśnięcie dołu wokół osi przed ułożeniem w upadku (`CLOTH_LIE_SQUEEZE`, IoU 21 / 22 0,684 / 0,735 -> 0,546 / 0,593 przy 0,3), także tylko od strony „do góry” (0,691 / 0,711): żagiel to wagi, nie promień; siła mapy normalnych 2-3 (shade +0,1).
+
+Pomiary wersji końcowej (35 akcji, 1050 klatek, Blender 5.2, render z 512 próbkami):
+- `item_look.py` (stanie, marsz): shade / noise / średnia **20,7 / 17,2 / 120** (pierwsza wersja 11,9 / 9,0 / 133; oryginał 469: 21,5 / 17,6 / 134); szum to głównie linie rękawów i obwódka, ziarno tkaniny gładkie.
+- `item_body_holes.py` (warstwa na oryginalnym body400): ręka 190, tułów 196, nogi 4037 px (pierwsza wersja z poszerzonymi dziurami: 210 / 464 / 4935); nogi = zamierzone dziury dołu i stopy pod rąbkiem. Atak bash: tułów 2 px, marsz z bronią: ręka 4, tułów 2.
+- `item_clearance.py`: materiał w skórze 0,035 % wierzchołków (najgorsza klatka 0,49 %), najgłębiej 20 mm.
+- Szerokość dołu w staniu od przodu 29 px (469: 22). IoU sylwetki z 469: stanie 0,818, marsz 0,834.
+- `item_skin_check.py --split` nie rozróżnia dziury od przebicia z przodu (przez przednią dziurę widać tył szaty, więc piksel liczy się jako „przez tkaninę”): do szaty z dziurami lepsze są `item_body_holes.py` i podgląd na czerwonym ciele.
