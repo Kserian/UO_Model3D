@@ -1,6 +1,1 @@
-{"name": "robe_ragged", "file": "robe_ragged.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000,
- "materials": {"GREY_CLOTH": {"value": 0.6, "contrast": 0.5, "flatten": 0.05}},
- "prepare": {"HEM": 0.15, "HEM_FLARE": {"factor": 0.65, "from": 0.95}},
- "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02, "CLOTH_DROP": 0.3, "SLEEVE_CUFF": 0.05},
- "sim": {"arm_goal": 0.95, "smooth": 0.04},
- "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 28, "uo_cloth_lie": 1.0}}
+{"name": "robe_ragged", "file": "robe_ragged.glb", "kind": "robe", "outer_shell": 0.006, "decimate": 20000, "holes": {"close": 0.06, "grow": 0.025, "close_above": 0.78, "slit": 4, "sleeve": [[0.2, 0.7], [0.56, 0.1], 0.14]}, "bake_normal": 0.01, "bake_ao": 1.0, "materials": {"GREY_CLOTH": {"value": 0.55, "contrast": 1.0, "flatten": 0.0}, "TEXTURE_BLUR": 0.045}, "prepare": {"HEM": 0.15, "HEM_FLARE": {"factor": 0.65, "from": 0.95}}, "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02, "CLOTH_DROP": 0.3, "SLEEVE_CUFF": 0.05}, "sim": {"arm_goal": 0.95, "smooth": 0.04}, "scene": {"uo_hide_erode": 1, "uo_legs_under": 1, "uo_fill_holes": 2, "uo_inner_line": 0.75, "uo_edge_smooth": 1, "uo_cloth_lie": 1.0, "uo_cloth_lie_drop": 0.5}}

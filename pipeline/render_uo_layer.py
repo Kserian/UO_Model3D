@@ -45,6 +45,9 @@ CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom propert
 CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share in which the hanging part follows the legs as in riding (CLOTH_MOUNTED) instead of hanging from the pelvis
                                    # pushed out by the legs: a robe lying on the ground lies along the legs (the original robe 469 is a narrow shape with a notch between them, the hull and
                                    # the simulation made one wide lump; docs/qa/robe_black.md). 0 = off; scene property uo_cloth_lie (uo_cloth_sim.py does not simulate these actions then)
+CLOTH_LIE_DROP = 1.0               # with CLOTH_LIE: below the waist the lying garment falls by gravity onto what is under it (the posed legs / body, else the ground): its height above
+                                   # that support is cut to this share (smoothed over the cloth; full 0.3 m under the waist, as far as the body lies). The front between the legs is
+                                   # weighted to both of them and stood up over the raised knees as a sail (docs/qa/robe_ragged.md). 1 = off; scene property uo_cloth_lie_drop
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
@@ -75,7 +78,12 @@ DESPECKLE = 0                      # clothing: single dark pixels inside the ite
                                    # turn into black dots at UO size. 0 = off. Was 28 while items were rendered at 1 sample (it cleaned that noise);
                                    # at SAMPLES it only erased dark texture detail (17 % of the pixels of a textured mask); per item: scene "uo_despeckle"
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
-                                   # poking through or a gap in the item mesh, not a real occluder. 0 = off
+                                   # poking through or a gap in the item mesh, not a real occluder. 0 = off; scene property uo_fill_holes (a torn robe whose
+                                   # rips should show the body: 0, docs/qa/robe_ragged.md)
+INNER_LINE = 0.0                   # clothing: > 0 = the torso pixels of an item that touch its sleeve (point attribute uo_region of uo_conform_item.py) are darkened to this share: a 1-px
+                                   # line that sets the sleeves off the torso like the original robes (an extra label render per frame). 0 = off; scene property uo_inner_line
+EDGE_SMOOTH = 0                    # clothing: passes of outline smoothing (a pixel with at most 1 of its 4 neighbours in the item is dropped, an empty one with 3-4 is filled with the colour
+                                   # around): the 1-px spikes and notches of a ragged hem. 0 = off; scene property uo_edge_smooth (docs/qa/robe_ragged.md)
 BODY_GAP = 0.006                   # m: every frame, parts of the bound items closer than this to the arms, hands, legs or
                                    # head of the posed body are pushed out (smoothly) before rendering - otherwise a forearm
                                    # poking through a sleeve in motion cuts a hole in the item. 0 = off
@@ -94,6 +102,11 @@ LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
                                    # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
 HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
+CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
+LIE_W = {}
+FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
+INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
+EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
@@ -203,6 +216,8 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
         return ((d @ skin["chest"][:3, :3].T) @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     share = CLOTH_MOUNTED if 23 <= a <= 29 else CLOTH_LIE if a in (21, 22) else 0.0
     if share > 0:                                                             # riding (and lying, CLOTH_LIE): the hanging part lies along the legs, as the skin under it would move it
+        up = skin["pelvis"][:3, :3].T @ np.array([0.0, 0.0, 1.0])            # how far the body lies (0 upright, 1 lying): CLOTH_LIE_DROP in body_fix
+        LIE_W[o.name] = float(np.clip((np.linalg.norm(up[:2]) - 0.3) / 0.5, 0, 1)) if a in (21, 22) else 0.0
         Vh = np.c_[Vr, np.ones(len(Vr))]
         nv = len(o.data.vertices); Pp = (Vh @ skin["pelvis"].T)[:, :3]; d0 = np.zeros_like(Vr)
         have = all(("uo_leg_" + nm) in o.data.attributes for nm in cl.Capsules.NAMES)
@@ -331,6 +346,25 @@ def flail_fix(a, i):
         fix_on(o, FIX_CACHE[(o.name, a, i)].astype(np.float64))
 
 
+def lie_drop(o, first, X, bvh, bco, E, deg):
+    """CLOTH_LIE_DROP: the lying skirt (body space X) falls onto the posed body under it (ray straight down) or the ground; displacement in body space"""
+    prm = json.loads(o["uo_cloth"]); n = len(o.data.vertices)
+    co = np.empty(n * 3, np.float32); o.data.vertices.foreach_get("co", co); Mb_ = np.array(o.matrix_basis)
+    zr = ((co.reshape(-1, 3) @ Mb_[:3, :3].T + Mb_[:3, 3])[first])[:, 2]
+    k = (1.0 - CLOTH_LIE_DROP) * LIE_W[o.name] * np.clip((prm["z_top"] - zr) / 0.3, 0, 1)
+    ground = float(bco[:, 2].min()); top = float(X[:, 2].max()) + 0.1
+    sup = np.full(len(X), ground)
+    for j in np.nonzero(k > 0)[0]:
+        loc = bvh.ray_cast(Vector((X[j, 0], X[j, 1], top)), Vector((0, 0, -1)), top - X[j, 2] + 0.5)[0]
+        if loc is not None and loc.z < X[j, 2]:                     # the highest body surface under the cloth (the cloth itself above it)
+            sup[j] = max(ground, loc.z)
+    dz = -k * np.maximum(X[:, 2] - sup, 0.0)
+    for _ in range(6):                                            # smoothed over the cloth: no tearing between a fallen and a held vertex
+        acc = np.zeros_like(dz); np.add.at(acc, E[:, 0], dz[E[:, 1]]); np.add.at(acc, E[:, 1], dz[E[:, 0]])
+        dz = np.where(deg > 0, 0.5 * dz + 0.5 * acc / np.maximum(deg, 1), dz)
+    return np.c_[np.zeros((len(X), 2)), dz]
+
+
 def body_fix(a, i):
     """BODY_GAP for UO frame i of action a: the pose does not depend on the direction, so each frame is solved once"""
     items = [o for o in clothes if not o.hide_render and not o.get("uo_no_body_gap")]   # uo_no_body_gap: a rigid item (sword, shield) is never bent
@@ -364,6 +398,9 @@ def body_fix(a, i):
             Dc = cloth_push(o, first, dg, Mw, a, i)                                 # loose garment: the legs push it out first
             if Dc is not None:
                 X = X + Dc @ M[:3, :3].T
+                if CLOTH_LIE_DROP < 1.0 and LIE_W.get(o.name, 0.0) > 0:
+                    G = lie_drop(o, first, X, bvh, bco, E, deg)
+                    X = X + G; Dc = Dc + G @ np.linalg.inv(M[:3, :3]).T
             if o.get("uo_conform") and cbvh is not None and "uo_region" in o.data.attributes:
                 lab = np.empty(len(o.data.vertices), np.int32); o.data.attributes["uo_region"].data.foreach_get("value", lab)
                 gap = max(float(json.loads(o["uo_conform"]).get("gap", BODY_GAP)), BODY_GAP)
@@ -878,6 +915,65 @@ def despeckle(img, thr, passes=2):
     return out
 
 
+def region_labels(a, i, d):
+    """INNER_LINE: which pixels of the clothing layer are a sleeve (1) and which the torso part (0) of the items with uo_region; -1 elsewhere"""
+    obs = [o for o in clothes if not o.hide_render and "uo_region" in o.data.attributes]
+    if not obs:
+        return None
+    m = bpy.data.materials.get("uo_region_label")
+    if m is None:
+        m = bpy.data.materials.new("uo_region_label"); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+        at = nt.nodes.new("ShaderNodeAttribute"); at.attribute_type = "GEOMETRY"; at.attribute_name = "uo_region"
+        dv = nt.nodes.new("ShaderNodeMath"); dv.operation = "DIVIDE"; dv.inputs[1].default_value = 4.0
+        cr = nt.nodes.new("ShaderNodeValToRGB"); cr.color_ramp.interpolation = "CONSTANT"; el = cr.color_ramp.elements
+        el[0].position = 0.0; el[0].color = (1, 0, 0, 1); el[1].position = 0.125; el[1].color = (0, 1, 0, 1)
+        e = el.new(0.375); e.color = (0, 0, 1, 1); e = el.new(0.625); e.color = (0, 1, 0, 1); e = el.new(0.875); e.color = (0, 0, 1, 1)
+        em = nt.nodes.new("ShaderNodeEmission"); out = nt.nodes.new("ShaderNodeOutputMaterial")
+        nt.links.new(at.outputs["Fac"], dv.inputs[0]); nt.links.new(dv.outputs[0], cr.inputs["Fac"]); nt.links.new(cr.outputs["Color"], em.inputs["Color"]); nt.links.new(em.outputs[0], out.inputs["Surface"])
+    keep = {o.name: [sl.material for sl in o.material_slots] for o in obs}
+    for o in obs:
+        for sl in o.material_slots:
+            sl.material = m
+    ns = (sc.cycles.samples, sc.cycles.use_adaptive_sampling); sc.cycles.samples = 1; sc.cycles.use_adaptive_sampling = False   # flat labels: 1 sample is exact
+    try:
+        px = render_frame(a, i, d, "holdout")
+    finally:
+        sc.cycles.samples, sc.cycles.use_adaptive_sampling = ns
+        for o in obs:
+            for sl, mt in zip(o.material_slots, keep[o.name]):
+                sl.material = mt
+    lab = np.full(px.shape[:2], -1, np.int8); on = px[..., 3] >= 0.5
+    c = px[..., :3].argmax(2)
+    lab[on & (c == 0)] = 0; lab[on & (c > 0)] = 1
+    return lab
+
+
+def inner_line(px, lab, k):
+    """INNER_LINE: torso pixels next to a sleeve pixel darkened to k"""
+    on = px[..., 3] >= 0.5
+    line = on & (lab == 0) & binary_dilation(on & (lab == 1), 1)
+    px = px.copy(); px[line, :3] *= k
+    return px
+
+
+def edge_smooth(px, passes):
+    """EDGE_SMOOTH: 1-px spikes of the outline dropped, 1-px notches filled with the mean colour of their neighbours"""
+    px = px.copy()
+    for _ in range(passes):
+        on = px[..., 3] >= 0.5
+        n = np.zeros(on.shape, np.int8)
+        n[1:] += on[:-1]; n[:-1] += on[1:]; n[:, 1:] += on[:, :-1]; n[:, :-1] += on[:, 1:]
+        spike = on & (n <= 1); notch = ~on & (n >= 3)
+        if notch.any():
+            acc = np.zeros(px.shape[:2] + (3,), np.float32); w = on.astype(np.float32)
+            for sl_to, sl_from in (((slice(1, None),), (slice(None, -1),)), ((slice(None, -1),), (slice(1, None),)),
+                                   ((slice(None), slice(1, None)), (slice(None), slice(None, -1))), ((slice(None), slice(None, -1)), (slice(None), slice(1, None)))):
+                acc[sl_to] += px[sl_from][..., :3] * w[sl_from][..., None]
+            px[notch, :3] = acc[notch] / np.maximum(n[notch], 1)[:, None]; px[notch, 3] = 1.0
+        px[spike, 3] = 0.0
+    return px
+
+
 def drop_small_pieces(img, min_px):
     """uint8 RGBA: detached pieces of the item (8-connected) smaller than min_px -> transparent, except the biggest"""
     m = img[..., 3] > 0; H, W = m.shape
@@ -963,6 +1059,12 @@ def frame_job():
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
+                        if INNER_LINE > 0:
+                            lab = region_labels(a, i, d)
+                            if lab is not None:
+                                px = inner_line(px, lab, INNER_LINE)
+                        if EDGE_SMOOTH > 0:
+                            px = edge_smooth(px, EDGE_SMOOTH)
                         rgba = uo_post(px)
                         if DESPECKLE > 0:
                             rgba = despeckle(rgba, DESPECKLE)

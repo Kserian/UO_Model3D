@@ -166,6 +166,11 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   ciała (szyja 3D wycinała w szacie dziurę po prawej: 28 / 100 px dołożone), złoty pas 3 px pod U z tym samym haftem, światło w strefie z mediany wierszy pod nią (wygładzone wzdłuż x), kołnierz
   oświetlony równo (cień wierszy pod nim robił jedną połowę ciemną), miękki cień 2 px pod kołnierzem, pasy przednie zaczynają się pod nim; `cover_body` nie zakrywa dekoltu. Symetria kołnierza
   (IoU z odbiciem) męski 0,76, żeński 1,0; reszta bez zmian (rękawy, tułów, pasy 0,998).
+  Uwagi: kołnierz niesymetryczny do złotego pasa, potem (po wyśrodkowaniu na pasie) do głowy; krawędzie mają być gładkie, bez czarnej obwódki. Narysowana szyja jest 2-3 px w lewo od środka
+  szaty (12: szyja 91, pasy 93; 13: 90 / 92,5). Teraz kołnierz na środku szyi, symetryczny (pas złota | jego odbicie, IoU 1,0), a oś pasów biegnie od środka szyi pod kołnierzem do osi pasów
+  tekstury przy rąbku (w połówkach piksela; szerokości pasów mierzone względem osi tekstury: mierzone względem przesuniętej osi rozcięcie wychodziło szersze, 7,5 zamiast 5,5 px). Brzeg kołnierza
+  przy szyi wygładzony (`soft_collar`): piksel częściowo w dekolcie (siatka 4 x 4) = kolor kołnierza x0,9 zmieszany z pikselem ciała gumpa w udziale dekoltu, bez czarnego obrysu; obrys złota
+  x0,75 (`OUTLINE_GOLD`, było x0,55), przy kołnierzu x0,85, cień pod kołnierzem x0,95 na 1 px.
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.
@@ -176,6 +181,12 @@ Pliki szaty i grafiki nie są w repo.
 - `arm_goal` 0,7 dla rękawów `conform`: rękawy dzwonowe marszczą się na ręce w biegu; 0,95 gładkie.
 - Sklejanie szwów po odległości (`remove_doubles` 0,5-4 mm): szczeliny między panelami mają medianę ok. 1 cm, sklejanie zjada gęstą siatkę zanim zszyje panele; remesh wokselowy zlewa je w 2 s.
 - Grubsza kolizja z `dist` 0,02 (nie tylko `thick`): bieg 147 zamiast 196 px nóg, ale symulacja 3 razy wolniejsza.
+
+## Ponowne wygenerowanie z nowymi ustawieniami renderu (2026-10-14)
+Prośba: szata jeszcze raz z nowymi ustawieniami modelu (`docs/qa/render_quality.md`: 512 próbek adaptacyjnie, bez `DESPECKLE`, obwódka `OUTLINE_TARGET` 0,38). Przepis jak wyżej bez
+`scene.uo_despeckle` (28, czyścił szum 1 próbki, zjadał detale) i `scene.uo_outline` (0,6, miałby pierwszeństwo przed `OUTLINE_TARGET`). Czas 60 min (było 54; symulacja 1747 s).
+`item_body_holes.py` (1050 klatek): ręce 234 -> 254 px, tułów 81 -> 120, nogi 492 -> 466, dłonie 4693 -> 4524, klatki z błędem 382 -> 382; `ITEM_QA` bez zmian (6,6 %).
+Wygląd: ciemniejsza obwódka jak w oryginałach, mniej rozmyta tekstura, brak plamek szumu.
 
 ## Otwarte
 - W biegu z profilu szata rozkłada się szeroko (powłoka nóg `kappa` 1,0 pokrywa cały wykrok); węższa = stopy przez materiał.

@@ -187,8 +187,12 @@ Odrzucone: zaszywanie dziur (`FILL_HOLES`, kod usunięty).
 `pipeline/uo_render_gump_fit.py`: gumpy męski / żeński i art przedmiotu zakrywającego ciało, dopasowane do oryginalnego przedmiotu tego rodzaju (szata 469: gumpy 50469 / 60469, art 0x1F03): poza rąk + skala x / y do sylwetki oryginału
 (IoU 0,65 -> 0,83), poziomy szarości oryginału, złoto zostaje. Kaptur: slot `hood` (bez `uo_fit_item.py`, `docs/qa/autofit.md`, „Kaptur”).
 
+Sesja 24, druga runda (2026-10-14, `docs/qa/robe_ragged.md`, „Druga runda”): dziury poszerzone, a zaszyte na barkach / rękawach / w wydłużonych rozcięciach (`uo_import_item.py` `HOLES`), cieniowanie z oryginału (`BAKE_NORMAL`, `BAKE_AO`), `uo_materials.py` `TEXTURE_BLUR`,
+renderer: `INNER_LINE` (linia rękaw / tułów), `EDGE_SMOOTH`, `CLOTH_LIE_DROP` (upadki: tkanina opada na nogi; bąbel w Die Backward), właściwość sceny `uo_fill_holes`. Szata na nowych ustawieniach renderu z `main` (512 próbek, `OUTLINE_TARGET`).
+Wynik: shade 20,7 (469: 21,5), dziury w kliencie ręka 190 / tułów 196 px na 1050 klatek. Model: wgrane `render_uo_layer.py`, `uo_import_item.py`, `uo_materials.py` (bpy 4.2). Odrzucone: `CLOTH_LIE_SQUEEZE`, `FILL_HOLES` przy imporcie.
+
 ## Sesja 23, suknia balowa z Meshy (2026-10-14; `docs/qa/dress_meshy.md`)
 Model użytkownika (Meshy, `.glb` 1,13 mln wierzchołków z teksturą, poza repo); przepis `docs/qa/dress_meshy_recipe.json`. Uwagi użytkownika do v1: krawędzie bez czystej czerni, więcej cieniowania / głębi, lepsze dopasowanie, rękawy się rwą.
 `uo_conform_item.py`: rękaw = tylko kawałek siatki od barku (`sleeve_piece`; wcześniej górę spódnicy sukni balowej brało za rękaw i ściskało na ręce: rozciągnięcie krawędzi p99 6,06 -> 1,40), nowe `OCCLUSION` / `OCC_DIST` / `SHADE_MIN`
-(przyciemnienie fałd jak w kapturze; kod wspólny w `uo_hood_cover.py`: `occlusion_share`, `apply_shade`). `uo_import_item.py` `BAKE_NORMAL` (mapa normalnych przy wypalanej teksturze; wgrany do `model/UO_Body_0x190.blend`, bpy 4.2).
+(przyciemnienie fałd jak w kapturze; kod wspólny w `uo_hood_cover.py`: `occlusion_share`, `apply_shade`).
 Wynik: `item_look` shade 17,2 -> 18,5 (oryginały 21,5-26,9), obwódka / piksel głębiej 0,38 -> 0,62 (`uo_outline` 0,75 w przepisie), `item_qa` 2,8 -> 1,5 %. Pełne `.vd` nierenderowane.
