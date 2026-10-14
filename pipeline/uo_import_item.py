@@ -41,6 +41,8 @@ OUTER_REMESH = 0.0    # m: > 0 (0.006) = before OUTER_SHELL the solid is rebuilt
 NAME = ""             # name of the result ("" = file name)
 BAKE_TEXTURE = 0      # > 0 (px, 2048 is plenty): the reduced model gets a NEW UV map and a texture BAKED from the original: a reduction drags the UVs of a model with a sculpted detail / an embroidery into
                       # streaks (the cloth turns into smeared noise). Needs the Cycles engine of Blender. Recipe: "bake_texture": 2048
+BAKE_NORMAL = True    # with BAKE_TEXTURE also a tangent-space normal map of the original (its folds, frills, lace and its own normal map) baked onto the reduced model: uo_materials.py lights the
+                      # item with it (NORMAL_MAP). On the Meshy dress it changed little at 36 px/m (the texture filter averages it; docs/qa/dress_meshy.md). Recipe: "bake_normal": false = off
 BAKE_RAY = 0.04       # m: how far from the reduced surface the original is looked for in the bake (layers closer to each other than this, e.g. a robe over a tunic, are not mixed up if they are further apart)
 WELD = 1e-6           # m: vertices closer than this are merged before the reduction (seams of the glTF import; 0 = off)
 DECIMATE_TO = 30000   # a model with more vertices than this is reduced (collapse, UVs and materials kept) - a 144k-vertex scan costs minutes in every later step; uo_densify_item.py adds
@@ -248,7 +250,19 @@ def bake_texture(lo, hi, px):
     hi.select_set(True); lo.select_set(True); bpy.context.view_layer.objects.active = lo
     bpy.ops.object.bake(type="DIFFUSE")
     f = os.path.join(tempfile.mkdtemp(prefix="uo_bake_"), "baked.png"); img.filepath_raw = f; img.file_format = "PNG"; img.save(); img.pack()
-    print("uo_import_item: BAKE_TEXTURE %s: %d x %d px from %s, %d vertices, %.0f s" % (lo.name, px, px, hi.name, len(lo.data.vertices), time.time() - t0))
+    how = ""
+    if BAKE_NORMAL:                                       # relief of the original as a normal map (tangent space of the smooth-shaded reduced model, as it is rendered)
+        if SMOOTH_SHADE:
+            lo.data.polygons.foreach_set("use_smooth", [True] * len(lo.data.polygons)); lo.data.update()
+        imn = bpy.data.images.new("uo_baked_n_" + lo.name, px, px, alpha=False); imn.colorspace_settings.name = "Non-Color"
+        tn = nt.nodes.new("ShaderNodeTexImage"); tn.image = imn; tn.location = (-600, -300)
+        nm = nt.nodes.new("ShaderNodeNormalMap"); nm.space = "TANGENT"; nm.uv_map = "UVMap"
+        nt.links.new(tn.outputs["Color"], nm.inputs["Color"]); nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"]); nt.nodes.active = tn
+        b.normal_space = "TANGENT"
+        bpy.ops.object.bake(type="NORMAL")
+        f = os.path.join(os.path.dirname(f), "baked_n.png"); imn.filepath_raw = f; imn.file_format = "PNG"; imn.save(); imn.pack()
+        how = " + normal map"
+    print("uo_import_item: BAKE_TEXTURE %s: %d x %d px from %s%s, %d vertices, %.0f s" % (lo.name, px, px, hi.name, how, len(lo.data.vertices), time.time() - t0))
 
 
 def run():

@@ -132,40 +132,32 @@ BVHTree_body = []
 BVH_BODY_V, BVH_BODY_F = [], []
 
 
-def inner_shade(it, c, n_panel):
-    """uo_shade per vertex (1 outside, INNER_SHADE inside the hood and on the neck panel) and the albedo of the hood's materials scaled by it"""
-    me = it.data; Mw = it.matrix_world; R = Mw.to_3x3()
-    P = np.array([Mw @ v.co for v in me.vertices]); Nn = np.array([(R @ v.normal).normalized() for v in me.vertices])
+def occlusion_share(P, Nn, faces, E, body_V, body_F, rays=24, dist=0.06):
+    """per vertex the share of `rays` cosine-weighted rays over the half sphere of its normal Nn that hit the item (faces over P) or the body (body_F over body_V)
+    within `dist` m: high in folds, between layers, under a sleeve; smoothed twice over the edges E"""
     from mathutils import Vector
-    bh = BVHTree_body[0]
-    hit = np.array([bh.ray_cast(Vector(p + 0.002 * n), Vector(n), INNER_DIST)[0] is not None for p, n in zip(P, Nn)], float)   # cloth that faces the head / neck (the inside)
-    E = np.array([e.vertices[:] for e in me.edges]); cnt = np.maximum(np.bincount(E.ravel(), minlength=len(P)), 1)
-    x = hit
-    for _ in range(INNER_SMOOTH):                                        # a soft edge round the opening
-        x = 0.5 * x + 0.5 * (np.bincount(E[:, 0], x[E[:, 1]], len(P)) + np.bincount(E[:, 1], x[E[:, 0]], len(P))) / cnt
-    f = 1 - (1 - INNER_SHADE) * x
-    if OCCLUSION > 0:
-        from mathutils.bvhtree import BVHTree as _B
-        tri = [tuple(p.vertices) for p in me.polygons]
-        bv = [tuple(v) for v in BVH_BODY_V[0]]; nb = len(bv)
-        both = _B.FromPolygons([tuple(p) for p in P] + bv, tri + [tuple(i + len(P) for i in f_) for f_ in BVH_BODY_F[0]])
-        rng = np.random.default_rng(0); u = rng.random((OCC_RAYS, 2))
-        loc = np.c_[np.sqrt(u[:, 0]) * np.cos(2 * np.pi * u[:, 1]), np.sqrt(u[:, 0]) * np.sin(2 * np.pi * u[:, 1]), np.sqrt(1 - u[:, 0])]   # cosine-weighted
-        occ = np.zeros(len(P))
-        for i, (p, n) in enumerate(zip(P, Nn)):
-            a = np.array([1.0, 0, 0]) if abs(n[0]) < 0.9 else np.array([0, 1.0, 0])
-            t1 = np.cross(n, a); t1 /= np.linalg.norm(t1); t2 = np.cross(n, t1)
-            D = loc[:, :1] * t1 + loc[:, 1:2] * t2 + loc[:, 2:] * n
-            o = Vector(p + 0.002 * n)
-            occ[i] = sum(both.ray_cast(o, Vector(d), OCC_DIST)[0] is not None for d in D) / OCC_RAYS
-        for _ in range(2):
-            occ = 0.5 * occ + 0.5 * (np.bincount(E[:, 0], occ[E[:, 1]], len(P)) + np.bincount(E[:, 1], occ[E[:, 0]], len(P))) / cnt
-        f = f * (1 - OCCLUSION * occ)
-        print("uo_hood_cover: %s: occlusion x%.2f: share of rays hit p50 %.2f p90 %.2f" % (it.name, OCCLUSION, np.percentile(occ, 50), np.percentile(occ, 90)))
-    f[n_panel:] = np.minimum(f[n_panel:], INNER_SHADE)
-    f = np.maximum(f, SHADE_MIN)
+    from mathutils.bvhtree import BVHTree as _B
+    P = np.asarray(P, float); Nn = np.asarray(Nn, float)
+    both = _B.FromPolygons([tuple(p) for p in P] + [tuple(v) for v in body_V], [tuple(f) for f in faces] + [tuple(i + len(P) for i in f_) for f_ in body_F])
+    rng = np.random.default_rng(0); u = rng.random((rays, 2))
+    loc = np.c_[np.sqrt(u[:, 0]) * np.cos(2 * np.pi * u[:, 1]), np.sqrt(u[:, 0]) * np.sin(2 * np.pi * u[:, 1]), np.sqrt(1 - u[:, 0])]   # cosine-weighted
+    occ = np.zeros(len(P))
+    for i, (p, n) in enumerate(zip(P, Nn)):
+        a = np.array([1.0, 0, 0]) if abs(n[0]) < 0.9 else np.array([0, 1.0, 0])
+        t1 = np.cross(n, a); t1 /= np.linalg.norm(t1); t2 = np.cross(n, t1)
+        D = loc[:, :1] * t1 + loc[:, 1:2] * t2 + loc[:, 2:] * n
+        o = Vector(p + 0.002 * n)
+        occ[i] = sum(both.ray_cast(o, Vector(d), dist)[0] is not None for d in D) / rays
+    E = np.asarray(E); cnt = np.maximum(np.bincount(E.ravel(), minlength=len(P)), 1)
+    for _ in range(2):
+        occ = 0.5 * occ + 0.5 * (np.bincount(E[:, 0], occ[E[:, 1]], len(P)) + np.bincount(E[:, 1], occ[E[:, 0]], len(P))) / cnt
+    return occ
+
+
+def apply_shade(me, f):
+    """attribute uo_shade (per vertex, 0..1) on the mesh `me` and the albedo of its UO_Look materials multiplied by it"""
     a = me.attributes.get("uo_shade") or me.attributes.new("uo_shade", "FLOAT", "POINT")
-    a.data.foreach_set("value", f.astype(np.float32))
+    a.data.foreach_set("value", np.asarray(f, np.float32))
     for m in me.materials:
         nt = m.node_tree if m else None
         grp = next((n for n in nt.nodes if n.type == "GROUP" and n.node_tree and n.node_tree.name.startswith("UO_Look")), None) if nt else None
@@ -179,6 +171,27 @@ def inner_shade(it, c, n_panel):
         else:
             sc_.inputs[0].default_value = grp.inputs["Albedo"].default_value[:3]
         nt.links.new(at.outputs["Fac"], sc_.inputs[1]); nt.links.new(sc_.outputs[0], grp.inputs["Albedo"])
+
+
+def inner_shade(it, c, n_panel):
+    """uo_shade per vertex (1 outside, INNER_SHADE inside the hood and on the neck panel) and the albedo of the hood's materials scaled by it"""
+    me = it.data; Mw = it.matrix_world; R = Mw.to_3x3()
+    P = np.array([Mw @ v.co for v in me.vertices]); Nn = np.array([(R @ v.normal).normalized() for v in me.vertices])
+    from mathutils import Vector
+    bh = BVHTree_body[0]
+    hit = np.array([bh.ray_cast(Vector(p + 0.002 * n), Vector(n), INNER_DIST)[0] is not None for p, n in zip(P, Nn)], float)   # cloth that faces the head / neck (the inside)
+    E = np.array([e.vertices[:] for e in me.edges]); cnt = np.maximum(np.bincount(E.ravel(), minlength=len(P)), 1)
+    x = hit
+    for _ in range(INNER_SMOOTH):                                        # a soft edge round the opening
+        x = 0.5 * x + 0.5 * (np.bincount(E[:, 0], x[E[:, 1]], len(P)) + np.bincount(E[:, 1], x[E[:, 0]], len(P))) / cnt
+    f = 1 - (1 - INNER_SHADE) * x
+    if OCCLUSION > 0:
+        occ = occlusion_share(P, Nn, [tuple(p.vertices) for p in me.polygons], E, BVH_BODY_V[0], BVH_BODY_F[0], OCC_RAYS, OCC_DIST)
+        f = f * (1 - OCCLUSION * occ)
+        print("uo_hood_cover: %s: occlusion x%.2f: share of rays hit p50 %.2f p90 %.2f" % (it.name, OCCLUSION, np.percentile(occ, 50), np.percentile(occ, 90)))
+    f[n_panel:] = np.minimum(f[n_panel:], INNER_SHADE)
+    f = np.maximum(f, SHADE_MIN)
+    apply_shade(me, f)
     print("uo_hood_cover: %s: inside shaded x%.2f (%d of %d vertices darker than 0.9, %d panel vertices)" % (it.name, INNER_SHADE, int((f < 0.9).sum()), len(f), len(f) - n_panel))
 
 
