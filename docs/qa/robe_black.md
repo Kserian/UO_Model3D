@@ -187,6 +187,9 @@ Prośba: szata jeszcze raz z nowymi ustawieniami modelu (`docs/qa/render_quality
 `scene.uo_despeckle` (28, czyścił szum 1 próbki, zjadał detale) i `scene.uo_outline` (0,6, miałby pierwszeństwo przed `OUTLINE_TARGET`). Czas 60 min (było 54; symulacja 1747 s).
 `item_body_holes.py` (1050 klatek): ręce 234 -> 254 px, tułów 81 -> 120, nogi 492 -> 466, dłonie 4693 -> 4524, klatki z błędem 382 -> 382; `ITEM_QA` bez zmian (6,6 %).
 Wygląd: ciemniejsza obwódka jak w oryginałach, mniej rozmyta tekstura, brak plamek szumu.
+Uwaga użytkownika: obwódka prawie czarna. Pomiar (akcje 00 / 04 / 09 / 22, brzeg / piksel głębiej, jasność brzegu p5 / p50 / p95): stara (`uo_outline` 0,6, 1 próbka) 0,53, 0,13 / 0,23 / 0,33;
+`OUTLINE_TARGET` 0,38: 0,38, 0,09 / 0,17 / 0,24; oryginał 469: 0,40, 0,00 / 0,16 / 0,38 (brzeg od światła jasny, od cienia czarny; nasz równo ciemny, stąd czarna linia).
+Stała obwódka 0,6 / 0,7 / 0,8: 0,47 / 0,55 / 0,63, mediana brzegu 0,21 / 0,24 / 0,28. Wybrane `scene.uo_outline` 0,8 (przepis), ponowny render bez nowej symulacji (20 min).
 
 ## Otwarte
 - W biegu z profilu szata rozkłada się szeroko (powłoka nóg `kappa` 1,0 pokrywa cały wykrok); węższa = stopy przez materiał.

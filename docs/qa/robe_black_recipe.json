@@ -36,6 +36,7 @@
  "scene": {
   "uo_hide_erode": 1,
   "uo_legs_under": 1,
-  "uo_cloth_lie": 1.0
+  "uo_cloth_lie": 1.0,
+  "uo_outline": 0.8
  }
 }
