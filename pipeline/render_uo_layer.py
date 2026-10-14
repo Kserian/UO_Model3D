@@ -38,8 +38,9 @@ CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom propert
 CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share in which the hanging part follows the legs as in riding (CLOTH_MOUNTED) instead of hanging from the pelvis
                                    # pushed out by the legs: a robe lying on the ground lies along the legs (the original robe 469 is a narrow shape with a notch between them, the hull and
                                    # the simulation made one wide lump; docs/qa/robe_black.md). 0 = off; scene property uo_cloth_lie (uo_cloth_sim.py does not simulate these actions then)
-CLOTH_LIE_SQUEEZE = 1.0            # with CLOTH_LIE: below the waist the garment is first drawn in about its axis to this share of its distance (in the rest shape, full from 0.3 m under
-                                   # the waist), then laid along the legs: a flared robe kept its whole width round the lying legs and stood up as a dome or a tube (docs/qa/robe_ragged.md).
+CLOTH_LIE_SQUEEZE = 1.0            # with CLOTH_LIE: below the waist the part of the garment's offset from its axis that points UP in the frame (world up taken into the pelvis frame)
+                                   # is cut to this share (in the rest shape, full from 0.3 m under the waist, only as far as the body lies), then laid along the legs: a flared robe kept
+                                   # its whole width round the lying legs and stood up over them as a dome; the sides stay spread on the ground (docs/qa/robe_ragged.md).
                                    # 1 = off; scene property uo_cloth_lie_squeeze
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
@@ -200,9 +201,14 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
     share = CLOTH_MOUNTED if 23 <= a <= 29 else CLOTH_LIE if a in (21, 22) else 0.0
     if share > 0:                                                             # riding (and lying, CLOTH_LIE): the hanging part lies along the legs, as the skin under it would move it
         Vr0 = Vr
-        if a in (21, 22) and CLOTH_LIE_SQUEEZE < 1.0:                          # a lying robe drawn in about its axis first: its flare stood up round the legs as a dome
-            f = 1.0 - (1.0 - CLOTH_LIE_SQUEEZE) * np.clip((prm["z_top"] - Vr[:, 2]) / 0.3, 0, 1)
-            c = np.asarray(prm["centre"], float); Vr = Vr.copy(); Vr[:, :2] = c + (Vr[:, :2] - c) * f[:, None]
+        if a in (21, 22) and CLOTH_LIE_SQUEEZE < 1.0:                          # gravity on a lying robe: the side of the skirt that faces up falls onto the legs (its flare stood up over them as a dome)
+            up = skin["pelvis"][:3, :3].T @ np.array([0.0, 0.0, 1.0]); uh = up[:2]; tilt = np.linalg.norm(uh)
+            w = np.clip((tilt - 0.3) / 0.5, 0, 1)                             # 0 while upright, 1 lying
+            if w > 0:
+                uh = uh / tilt; c = np.asarray(prm["centre"], float)
+                k = (1.0 - CLOTH_LIE_SQUEEZE) * w * np.clip((prm["z_top"] - Vr[:, 2]) / 0.3, 0, 1)
+                d = Vr[:, :2] - c; sd = np.maximum(d @ uh, 0.0)              # the part of the offset that points up
+                Vr = Vr.copy(); Vr[:, :2] = Vr[:, :2] - (k * sd)[:, None] * uh
         Vh = np.c_[Vr, np.ones(len(Vr))]
         nv = len(o.data.vertices); Pp = (Vh @ skin["pelvis"].T)[:, :3]; d0 = np.zeros_like(Vr)
         have = all(("uo_leg_" + nm) in o.data.attributes for nm in cl.Capsules.NAMES)
