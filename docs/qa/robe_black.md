@@ -160,6 +160,12 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   0,867 -> 0,834 (zamierzone: oryginał jest luźny). Pasy (`sym_trims`, na siatce gumpa przed poziomami): przednie pasy z prostych krawędzi symetrycznych względem osi pasów (zgodność maski z odbiciem
   0,997 / 0,996), rąbek: wysokość pasa wygładzona i uśredniona z odbiciem, haft: ciemniejsza lamówka, jasna nitka, kropki co 4 px na środku pasa, pół złota płaskiego, pół z tekstury. Pierwsza próba
   (lamówka x0,75, motyw na całej szerokości pasa) wyglądała jak drabinka. Art: maska złota symetryzowana przed obrotem (`sym_art`).
+  Prośba: kołnierze wygładzić i dopasować do ciał. Kołnierz modelu (stójka) w gumpie to były dwa złote rogi obok szyi nad poszarpanym ciemnym pasem jego wnętrza, dekolt zalany skórą szyi
+  (`cover_body`). Teraz (`neckline`, w `sym_trims`): z ciała gumpa szyja (najwęższy wiersz 65-90: 12 x 85-97, 13 x 86-94) i wiersz barków (o ≥ 8 px szerszy: 81 / 82), dekolt = U o głębokości
+  5 px i połowie szerokości szyi + 2 px (jak oryginał: wiersz 82 -> 88); szata wycięta nad U i nad górną krawędzią ciała obok szyi (rogi: 49 / 39 px), strefa kołnierza wypełniona do linii barków
+  ciała (szyja 3D wycinała w szacie dziurę po prawej: 28 / 100 px dołożone), złoty pas 3 px pod U z tym samym haftem, światło w strefie z mediany wierszy pod nią (wygładzone wzdłuż x), kołnierz
+  oświetlony równo (cień wierszy pod nim robił jedną połowę ciemną), miękki cień 2 px pod kołnierzem, pasy przednie zaczynają się pod nim; `cover_body` nie zakrywa dekoltu. Symetria kołnierza
+  (IoU z odbiciem) męski 0,76, żeński 1,0; reszta bez zmian (rękawy, tułów, pasy 0,998).
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.

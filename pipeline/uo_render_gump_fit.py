@@ -263,7 +263,7 @@ def fit_cuffs(joints, p, body_png, ref, upper_w=1.0):
     return tgt, err, bare, over
 
 
-def cover_body(a, body_png, ref, joints=None):
+def cover_body(a, body_png, ref, joints=None, neck=False):
     """the body gump's skin within COVER_PX of the item (not the hands beyond the drawn wrists, the head and neck, the feet) taken into the item, coloured like the nearest cloth"""
     bb = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0
     m = a[..., 3] > 0
@@ -271,6 +271,8 @@ def cover_body(a, body_png, ref, joints=None):
     for fm in ([hand_mask(body_png, ref, E, W) for S, E, W in joints.values()] if joints else [f for f, _ in fist_blobs(body_png, ref)]):
         keep |= ndimage.binary_dilation(fm, iterations=1)
     keep[:84] = True; keep[205:] = True                                        # head with the neck, feet
+    if neck:                                                                   # and the neckline's opening (the skin of the neck would fill it)
+        keep |= ndimage.binary_dilation(neck_opening(neckline(body_png), keep.shape), iterations=1)
     d, (iy, ix) = ndimage.distance_transform_edt(~m, return_indices=True)
     add = bb & ~m & ~keep & (d <= COVER_PX)
     out = a.copy()
@@ -497,11 +499,36 @@ TRIM_ZONE, HEM_MAX = 22, 14                  # gump px: the front strips within 
 TRIM = dict(sat=1.15, collar_rows=6, edge=0.85, thread=1.08, dot=1.18, dip=0.93, tex_mix=0.5)   # sym_trims(): the gold's saturation, rows of the collar kept, the embroidery's shades
 
 
-def sym_trims(a, light, P=TRIM):
+NECK_PAD, NECK_DEPTH, COLLAR_W = 2.0, 5.0, 3.0   # neckline(): px beside the drawn neck, depth of the U at the middle (the originals: 82 -> 88), the collar band's width
+
+
+def neckline(body_png):
+    """the drawn body's neck: its narrowest row (rows 65-90) gives the neck's columns nl..nr, the shoulders' row y_sh is the first row below it at least 8 px wider; the neckline is the U
+    y = y_sh + NECK_DEPTH (1 - ((x - xc) / hw)^2), |x - xc| <= hw = half the neck + NECK_PAD"""
+    bb = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0; x0 = int(GX0) - 3
+    runs = {y: run_at(bb, y, x0) or run_at(bb, y, x0 - 3) for y in range(65, 100)}
+    ws = {y: r[1] - r[0] + 1 for y, r in runs.items() if r}
+    yn = min((y for y in ws if y <= 90), key=lambda y: (ws[y], -y)); nl, nr = runs[yn]
+    y_sh = next(y for y in range(yn, 100) if y in ws and ws[y] >= ws[yn] + 8)
+    top = np.full(bb.shape[1], bb.shape[0]); cs = np.nonzero(bb.any(0))[0]
+    top[cs] = bb[:, cs].argmax(0)                                                  # the body's top row per column
+    return dict(xc=(nl + nr) / 2.0, hw=(nr - nl) / 2.0 + NECK_PAD, y_sh=int(y_sh), neck=[int(nl), int(nr)], top=top)
+
+
+def neck_opening(nk, shape):
+    """pixels above the neckline's U (the neck shows there)"""
+    Y, X = np.mgrid[0:shape[0], 0:shape[1]]
+    t = (X - nk["xc"]) / nk["hw"]
+    return (np.abs(t) <= 1) & (Y < nk["y_sh"] + NECK_DEPTH * (1 - t * t)) & (Y >= nk["y_sh"] - 8)
+
+
+def sym_trims(a, light, P=TRIM, body_png=None):
     """the gold bands redrawn on the gump grid (before the levels; a = compose() boxed down, light = the light alone boxed down): the texture's front strips were uneven (left and right of
     different width, a step at the waist) -> per row the outer half-width of the pair (a straight line fitted, outliers > 1.5 px dropped) and the gap between them (0 above the row where the
     front opens, its median below, 3 rows of taper) about the strips' own axis, so both strips are mirror images; the hem band's height per column smoothed (median of 7) and averaged with
-    its mirror column; the collar and the cuffs as the texture has them. On all gold an embroidery: edge x0.85, a light thread x1.08 inside it, on the band's middle line a dot every 4 px
+    its mirror column; the cuffs as the texture has them. With the body gump the collar is redrawn (the model's standing collar was two gold horns beside the neck over a ragged
+    dark band of its inside): the item cut away above the neckline U (neckline()) and above the body's top beside the neck, a COLLAR_W gold band under the U, the cloth around it with a
+    smooth light (per column the median of the 3 rows under the zone) and a soft shadow under the collar; the front strips start under it. On all gold an embroidery: edge x0.85, a light thread x1.08 inside it, on the band's middle line a dot every 4 px
     (x1.18 / x0.93 between), the gold half flat (the texture's median gold, saturation x1.15) and half the texture's own (its pattern), times the light. Returns (image, measures)"""
     m = a[..., 3] > 0; sat = a[..., :3].max(-1) - a[..., :3].min(-1); gold = m & (sat > 0.06)
     if gold.sum() < 20:
@@ -522,8 +549,9 @@ def sym_trims(a, light, P=TRIM):
     rows = [y for y in range(H) if front_old[y].any()]
     mids = [(np.nonzero(front_old[y])[0].min() + np.nonzero(front_old[y])[0].max()) / 2 for y in rows]
     ax = round(float(np.median(mids)) * 2) / 2 if mids else x0
-    # the collar: the top rows of the front gold (above the first row of a narrow strip pair) are kept as drawn
-    ys_f = np.array(rows); y0 = ys_f.min() + P.get("collar_rows", 6); y1 = int(np.median(yb[cols][np.abs(cols - ax) <= 3]))
+    # the collar: the top rows of the front gold (above the first row of a narrow strip pair) are kept as drawn; with the body gump the strips start under the redrawn collar
+    nk = neckline(body_png) if body_png else None
+    ys_f = np.array(rows); y0 = int(nk["y_sh"] + NECK_DEPTH + COLLAR_W) if nk else ys_f.min() + P.get("collar_rows", 6); y1 = int(np.median(yb[cols][np.abs(cols - ax) <= 3]))
     ho, gi, yy = [], [], []
     for y in range(y0, y1 + 1):
         xs = np.nonzero(front_old[y])[0]
@@ -557,24 +585,50 @@ def sym_trims(a, light, P=TRIM):
     hem = m & (Y > (yb - np.round(thm))[None, :]) & (thm[None, :] > 0)
     zone = (np.abs(X - ax) <= TRIM_ZONE) & (Y >= y0)
     other = gold & ~hem_old & ~zone
-    new = front | hem | other | (gold & ~hem_old & (Y < y0))
+    cut = np.zeros_like(m); collar = np.zeros_like(m); czone = np.zeros_like(m); info = {}
+    if nk:
+        op = neck_opening(nk, m.shape); side = np.abs(X - nk["xc"]) > nk["hw"]
+        cut = m & (op | (side & (Y < nk["top"][None, :]) & (Y < nk["y_sh"] + 2)))
+        m = m & ~cut
+        zb = int(nk["y_sh"] + NECK_DEPTH + 6); near = np.abs(X - nk["xc"]) <= nk["hw"]
+        fill = (np.abs(X - nk["xc"]) <= nk["hw"] + 8) & (Y <= zb) & ~op & np.where(near, Y >= nk["y_sh"] - 1, Y >= nk["top"][None, :])
+        grow = fill & ~m; m = m | fill                                             # the item fills the zone down from the body's shoulder line (the 3D neck cut a hole beside it)
+        a = a.copy(); a[grow, 3] = 1.0
+        dn = ndimage.distance_transform_edt(~op)
+        collar = m & (dn <= COLLAR_W) & (np.abs(X - nk["xc"]) <= nk["hw"] + 2)
+        czone = m & (Y >= nk["y_sh"] - 8) & (Y <= zb) & (np.abs(X - nk["xc"]) <= nk["hw"] + 8)
+        other = other & ~czone
+        lf = light.copy(); xs_z = np.nonzero(czone.any(0))[0]; lc = np.zeros(W); wc = np.zeros(W)   # the light in the zone: per column the median of the 3 rows under it, smoothed along x
+        for x in xs_z:
+            col = light[zb + 1:zb + 4, x][m[zb + 1:zb + 4, x]]
+            if len(col):
+                lc[x], wc[x] = np.median(col), 1.0
+        lc = ndimage.gaussian_filter1d(lc, 3.0) / np.maximum(ndimage.gaussian_filter1d(wc, 3.0), 1e-3)
+        lf = np.where(czone, lc[None, :], lf)
+        lf = np.where(collar, max(float(np.median(lc[xs_z])), 1e-3), lf)            # the collar evenly lit (the shadow of the rows under it made one half dark)
+        lf = np.where(czone & ~collar & (dn <= COLLAR_W + 2), lf * 0.9, lf)        # a soft shadow under the collar
+        light = np.where(czone, lf, light)
+        cm = collar.copy(); cm[:, :] = collar[:, np.clip(np.round(2 * nk["xc"] - X[0]).astype(int), 0, W - 1)]
+        info = dict(neck=nk["neck"], shoulder_row=nk["y_sh"], centre=nk["xc"], cut_px=int(cut.sum()), collar_px=int(collar.sum()),
+                    collar_sym_iou=round(float((collar & cm).sum() / max((collar | cm).sum(), 1)), 3), grown_px=int(grow.sum()))
+    new = front | hem | other | collar | (gold & ~hem_old & (Y < y0) & ~czone)
     # the embroidery: a darker edge, a light thread inside it, on the band's middle line a dot every 4 px; mixed with the texture's own gold (its pattern)
     dist = ndimage.distance_transform_cdt(np.pad(new, 1), metric="taxicab")[1:-1, 1:-1]
-    u = np.where(hem, X, np.where(front, Y, X + Y))
+    u = np.where(hem | collar, X, np.where(front, Y, X + Y))
     ridge = (dist >= 3) & (dist >= ndimage.maximum_filter(dist, 3))
     prof = np.where(dist == 1, P.get("edge", 0.85), np.where(dist == 2, P.get("thread", 1.08), 1.0))
     prof = np.where(ridge & (u % 4 == 0), P.get("dot", 1.18), np.where(ridge & (u % 4 == 2), P.get("dip", 0.93), prof))
-    out = a.copy()
+    out = a.copy(); out[cut, 3] = 0.0
     out[m, :3] = 0.5 * light[m][:, None]
     flat = gm[None, :] * light[new][:, None]
-    tex = np.where((gold & new)[new][:, None], a[new, :3], flat)
+    tex = np.where((gold & new & ~czone)[new][:, None], a[new, :3], flat)
     mix = P.get("tex_mix", 0.5)
     out[new, :3] = np.clip(((1 - mix) * flat + mix * tex) * prof[new][:, None], 0, 1)
     sym = new & zone; symm = np.zeros_like(sym)
     xs_, ys_ = np.nonzero(sym.T)
     xm = np.round(2 * ax - xs_).astype(int); ok = (xm >= 0) & (xm < W)
     symm[ys_[ok], xm[ok]] = True
-    return out, dict(axis=ax, split_row=int(split), strip_halfwidth=[round(float(np.polyval(c1, y0)), 2), round(float(np.polyval(c1, y1)), 2)], gap_halfwidth=round(gw, 2),
+    return out, dict(collar=info, axis=ax, split_row=int(split), strip_halfwidth=[round(float(np.polyval(c1, y0)), 2), round(float(np.polyval(c1, y1)), 2)], gap_halfwidth=round(gw, 2),
                      front_sym_iou=round(float((sym & symm).sum() / max((sym | symm).sum(), 1)), 3))
 
 
@@ -791,12 +845,12 @@ for gender, refp in REFS.items():
     if os.environ.get("PD_SAVE_RAW"):
         np.save(os.path.join(OUT, "raw_%s.npy" % gender), wa); np.save(os.path.join(OUT, "shade_%s.npy" % gender), wsh)
     res = box_down(compose(wa, wsh, SS), SS)
-    res, trims = sym_trims(res, box_down(wsh, SS)[..., :3] @ LW)
+    res, trims = sym_trims(res, box_down(wsh, SS)[..., :3] @ LW, body_png=BODIES.get(gender))
     res, lv = match_levels(res, ref)
     res, nsp = despeckle(res) if DESPECKLE > 0 else (res, 0)          # after the levels: their stretch made the darker folds black again
     covered, skin_left = 0, None
     if BODIES.get(gender):                                            # before smooth_cloth: the outline goes round the grown edge
-        res, covered, skin_left = cover_body(res, BODIES[gender], refm, JOINTS.get(gender) if ARM_MODE == "joints" else None)
+        res, covered, skin_left = cover_body(res, BODIES[gender], refm, JOINTS.get(gender) if ARM_MODE == "joints" else None, neck=True)
     res = texture_cloth(smooth_cloth(res), ref)
     Image.fromarray(to8(res)).save(os.path.join(OUT, "gump_%s.png" % gender))
     after = iou(res[..., 3] > 0, refm)
