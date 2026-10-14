@@ -166,6 +166,11 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   ciała (szyja 3D wycinała w szacie dziurę po prawej: 28 / 100 px dołożone), złoty pas 3 px pod U z tym samym haftem, światło w strefie z mediany wierszy pod nią (wygładzone wzdłuż x), kołnierz
   oświetlony równo (cień wierszy pod nim robił jedną połowę ciemną), miękki cień 2 px pod kołnierzem, pasy przednie zaczynają się pod nim; `cover_body` nie zakrywa dekoltu. Symetria kołnierza
   (IoU z odbiciem) męski 0,76, żeński 1,0; reszta bez zmian (rękawy, tułów, pasy 0,998).
+  Uwagi: kołnierz niesymetryczny do złotego pasa, potem (po wyśrodkowaniu na pasie) do głowy; krawędzie mają być gładkie, bez czarnej obwódki. Narysowana szyja jest 2-3 px w lewo od środka
+  szaty (12: szyja 91, pasy 93; 13: 90 / 92,5). Teraz kołnierz na środku szyi, symetryczny (pas złota | jego odbicie, IoU 1,0), a oś pasów biegnie od środka szyi pod kołnierzem do osi pasów
+  tekstury przy rąbku (w połówkach piksela; szerokości pasów mierzone względem osi tekstury: mierzone względem przesuniętej osi rozcięcie wychodziło szersze, 7,5 zamiast 5,5 px). Brzeg kołnierza
+  przy szyi wygładzony (`soft_collar`): piksel częściowo w dekolcie (siatka 4 x 4) = kolor kołnierza x0,9 zmieszany z pikselem ciała gumpa w udziale dekoltu, bez czarnego obrysu; obrys złota
+  x0,75 (`OUTLINE_GOLD`, było x0,55), przy kołnierzu x0,85, cień pod kołnierzem x0,95 na 1 px.
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.
