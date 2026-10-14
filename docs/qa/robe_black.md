@@ -121,7 +121,12 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   i przesunięcie, przy których sylwetka szaty (rzut trójkątów) najlepiej pokrywa oryginalny gump szaty (Nelder-Mead z 3 startów); potem render jak `uo_render_paperdoll.py` (UO_Look, Słońce własnego cienia,
   ciało jako holdout, 3 x 3 nadpróbkowania) i ta sama transformacja; szarość dopasowana do poziomów oryginału (p50 / p95 jasności), złoto jednym współczynnikiem (zostaje złote i cieniowane);
   szczeliny między panelami modelu i najciemniejsze cienie fałd (czarne linie w skali gumpa) wypełnione kolorem tkaniny wokół (`PD_DARK_FILL` 0,45 mediany, po wyrównaniu poziomów), pojedyncze ciemne piksele 3 przejścia.
-  Wynik: IoU sylwetki z oryginałem męski 0,648 -> 0,831 (ramiona -5,7°, łokieć +1,7°, skala x 0,866 / y 1,05), żeński 0,638 -> 0,826 (ramiona -11,6°, łokieć +23,6°, x 0,884 / y 1,02).
+  Pierwsza wersja: IoU sylwetki męski 0,648 -> 0,831, żeński 0,638 -> 0,826, ale (uwaga użytkownika) **rękawy nie pasowały do dłoni**: dzwonowe rękawy wisiały pod pięściami ciała gumpa.
+  Druga: do kosztu doszły odległość dłoni modelu od pięści ciała gumpa (`PD_BODY_MALE` / `PD_BODY_FEMALE`: pięści = piksele ciała gumpa, których oryginalna szata nie zakrywa, na wysokości rąk),
+  IoU samego obszaru rękawów (waga 2), udział skóry rąk ciała gumpa pod rękawami oryginału, który nasz rękaw odsłania (waga 3), skala pozioma zmienna z wysokością (barki / rąbek osobno:
+  jedna skala ściskała barki razem ze zbyt szeroką spódnicą i obok barku wychodziło ramię ciała gumpa), długość ręki (narysowane ręce są krótsze) i kara za skale dalej niż 15 / 25 / 8 % od 1.
+  Wynik: męski IoU 0,862, dłonie 5,0 / 7,5 px od pięści, skóry rąk odsłoniętej 65 px; żeński IoU 0,842, dłonie 3,7 / 9,9 px, 33 px. Silniejsza kara za skórę (8 / 15) nie pomaga
+  (skóry 63 / 15 px kosztem IoU 0,74-0,80, przeszukiwanie trafia w różne minima).
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.
