@@ -182,6 +182,12 @@ Pliki szaty i grafiki nie są w repo.
 - Sklejanie szwów po odległości (`remove_doubles` 0,5-4 mm): szczeliny między panelami mają medianę ok. 1 cm, sklejanie zjada gęstą siatkę zanim zszyje panele; remesh wokselowy zlewa je w 2 s.
 - Grubsza kolizja z `dist` 0,02 (nie tylko `thick`): bieg 147 zamiast 196 px nóg, ale symulacja 3 razy wolniejsza.
 
+## Ponowne wygenerowanie z nowymi ustawieniami renderu (2026-10-14)
+Prośba: szata jeszcze raz z nowymi ustawieniami modelu (`docs/qa/render_quality.md`: 512 próbek adaptacyjnie, bez `DESPECKLE`, obwódka `OUTLINE_TARGET` 0,38). Przepis jak wyżej bez
+`scene.uo_despeckle` (28, czyścił szum 1 próbki, zjadał detale) i `scene.uo_outline` (0,6, miałby pierwszeństwo przed `OUTLINE_TARGET`). Czas 60 min (było 54; symulacja 1747 s).
+`item_body_holes.py` (1050 klatek): ręce 234 -> 254 px, tułów 81 -> 120, nogi 492 -> 466, dłonie 4693 -> 4524, klatki z błędem 382 -> 382; `ITEM_QA` bez zmian (6,6 %).
+Wygląd: ciemniejsza obwódka jak w oryginałach, mniej rozmyta tekstura, brak plamek szumu.
+
 ## Otwarte
 - W biegu z profilu szata rozkłada się szeroko (powłoka nóg `kappa` 1,0 pokrywa cały wykrok); węższa = stopy przez materiał.
 - Tekstura po remeshu jest wypalona 2048 px: haft rozmyty (przy 36 px/m niewidoczny).
