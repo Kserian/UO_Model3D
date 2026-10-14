@@ -127,6 +127,12 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   jedna skala ściskała barki razem ze zbyt szeroką spódnicą i obok barku wychodziło ramię ciała gumpa), długość ręki (narysowane ręce są krótsze) i kara za skale dalej niż 15 / 25 / 8 % od 1.
   Wynik: męski IoU 0,862, dłonie 5,0 / 7,5 px od pięści, skóry rąk odsłoniętej 65 px; żeński IoU 0,842, dłonie 3,7 / 9,9 px, 33 px. Silniejsza kara za skórę (8 / 15) nie pomaga
   (skóry 63 / 15 px kosztem IoU 0,74-0,80, przeszukiwanie trafia w różne minima).
+  Uwaga użytkownika do drugiej wersji: rękawy dalej nie pasują, poszarpane brzegi, duże bufy na barkach, ciemna plama na środku. Przyczyna bufów: ręce narysowanych ciał **nie są symetryczne**
+  (prawa ręka postaci: łokieć w dół, przedramię w bok; lewa: łokieć w bok, przedramię w dół), a szukana była jedna symetryczna poza (ramię wciągane w tułów, rękaw zbity w buf).
+  Trzecia wersja (`PD_ARM_MODE` = `joints`, domyślnie): z gumpów 12 / 13 odczytane bark, łokieć, nadgarstek każdej ręki (`JOINTS` w skrypcie); skala x (barki / rąbek) i y dopasowane do sylwetki
+  bez obszaru rękawów, potem każde ramię i przedramię ustawione wzdłuż odcinków gumpa i skrócone do ich długości (przedramię 0,40-0,60, ramię 1,02-1,19 długości modelu; przedramię i dłoń
+  bez dziedziczenia skali). Wygląd: szarość wyrównana do tkaniny wokół (sigma 6 px, 70 %) i wygładzona (0,8 px), brzeg bez pojedynczych zębów, ciemny obrys 1 px jak w oryginałach.
+  Wynik: IoU męski 0,848, żeński 0,868, skóry rąk odsłoniętej 72 / 6 px, rękawy kończą się przed pięściami, bez bufów.
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.

@@ -32,6 +32,7 @@ ART_ARMS = float(os.environ.get("PD_ART_ARMS", "15"))       # deg the arms are r
 GOLD_K = float(os.environ.get("PD_GOLD_K", "1.5"))
 DESPECKLE = float(os.environ.get("PD_DESPECKLE", "0.6"))    # a pixel darker than this share of its neighbours' mean is a speck (0 = off)
 DARK_FILL = float(os.environ.get("PD_DARK_FILL", "0.45"))  # share of the item's median luminance below which a pixel is a slit / deep shadow to fill (0 = off)
+FLATTEN_SIGMA, FLATTEN_K, SOFT_SIGMA, OUTLINE_K = 6.0, 0.7, 0.8, 0.55   # smooth_cloth(): px, share of the evening, px, the outline's share of the colour
 DESPECKLE_PASSES = int(os.environ.get("PD_DESPECKLE_PASSES", "3"))   # repeated: small clusters of dark pixels shrink from their edges          # coloured parts: the grey's mean factor times this (embroidery stays brighter than the cloth)
 PXM = 90.5                                   # gump px per m and the body axis / floor of the gump of body 12 (uo_render_paperdoll.py, docs/qa/belt_swords.md)
 GW, GH = 260, 237
@@ -82,6 +83,59 @@ def pose_arms(out_deg, bend_deg, length=1.0):
             if bn.startswith("upper_arm"):
                 pb.scale = (1.0, length, 1.0)                               # along the bone; the forearm inherits it (one factor for both)
     bpy.context.view_layer.update()
+
+
+# The arms of the drawn paperdoll bodies (gump px, read off gumps 12 / 13 of the Nelderim client): shoulder, elbow, wrist of each arm. They are not symmetric: the character's right arm
+# (left on the screen) hangs from the shoulder to the elbow and points the forearm out to the side, the left one goes out at the elbow and down to the fist. A symmetric pose searched
+# for the silhouette (the first versions) bunched the sleeves into puffs at the shoulders.
+JOINTS = {"male": {"R": ((75, 88), (69, 116), (54, 113)), "L": ((114, 88), (122, 111), (129, 121))},
+          "female": {"R": ((75, 88), (70, 115), (52, 111)), "L": ((113, 88), (121, 112), (128, 121))}}
+ARM_MODE = os.environ.get("PD_ARM_MODE", "joints")       # "joints": each arm along the drawn body's (JOINTS); "fit": one symmetric pose searched for the silhouette (the first versions)
+
+
+def from_gump(px, p):
+    """gump pixel -> world (x, z) for the fit p (inverse of to_gump)"""
+    kxt, kxb, ky, dx, dy = p
+    z = (GY_FEET + dy - px[1]) / (PXM * ky)
+    return np.array([(px[0] - GX0 - dx) / (PXM * kx_at(z, kxt, kxb)), z])
+
+
+def pose_arms_to(joints, p):
+    """each upper arm along shoulder -> elbow and each forearm along elbow -> wrist of the body gump, in the front plane, and as long as those (the drawn arms are shorter, the forearm
+    pointing at the viewer is foreshortened: with the model's lengths the sleeves covered the fists); the forearm and the hand do not inherit the scale of their parent (no shear)"""
+    for pb in rig.pose.bones:
+        pb.matrix_basis = Matrix()
+    out = {}
+    for side, (S, E, W) in joints.items():
+        s, e, w = (from_gump(np.array(v, float), p) for v in (S, E, W))
+        abs_ang, lens = [], []
+        for bn, tgt in (("upper_arm." + side, e - s), ("forearm." + side, w - e)):
+            b = rig.data.bones[bn]; d0 = np.array([b.tail_local.x - b.head_local.x, b.tail_local.z - b.head_local.z])
+            lens.append(float(np.linalg.norm(tgt)) / b.length)
+            ang = np.arctan2(d0[0] * tgt[1] - d0[1] * tgt[0], d0 @ tgt)          # from the rest direction to the target, counter-clockwise in (x, z)
+            abs_ang.append(-ang)                                              # Matrix.Rotation(t, "Y") turns (x, z) by -t
+        for bn, t, k in (("upper_arm." + side, abs_ang[0], lens[0]), ("forearm." + side, abs_ang[1] - abs_ang[0], lens[1])):
+            ml = rig.data.bones[bn].matrix_local.to_3x3()
+            q = (ml.inverted() @ Matrix.Rotation(t, 3, "Y") @ ml).to_quaternion()
+            pb = rig.pose.bones[bn]; pb.rotation_mode = "QUATERNION"; pb.rotation_quaternion = q; pb.scale = (1.0, k, 1.0)
+        for bn in ("forearm." + side, "hand." + side):
+            rig.data.bones[bn].inherit_scale = "NONE"
+        out[side] = [round(float(np.degrees(v)), 1) for v in abs_ang] + [round(v, 3) for v in lens]
+    bpy.context.view_layer.update()
+    return out
+
+
+def fit_body(ref):
+    """kx_top, kx_hem, ky, dx, dy that match the item without its sleeves (arms at rest) to the original gump without the sleeves' region"""
+    zone = np.zeros((GH, GW), bool); zone[ARM_ROWS[0]:ARM_ROWS[1]] = True; zone[:, int(GX0 - ARM_DX):int(GX0 + ARM_DX)] = False
+    pose_arms(0, 0); tr = flat_tris(items)
+
+    def cost(x):
+        kxt, kxb, ky, dx, dy = x
+        sil = raster(to_gump(tr, x), GW, GH, 1)
+        return 1.0 - iou(sil & ~zone, ref & ~zone) + SCALE_W * sum(max(0.0, abs(v - 1.0) - lim) ** 2 for v, lim in ((kxt, 0.15), (kxb, 0.25), (ky, 0.08)))
+    x0 = np.array([1.0, 1.0, 1.0, 0.0, 0.0]); step = np.array([0.06, 0.06, 0.06, 4, 4])
+    return optimize.minimize(cost, x0, method="Nelder-Mead", options=dict(initial_simplex=np.vstack([x0, x0 + np.diag(step)]), maxiter=400, xatol=0.01, fatol=1e-5))
 
 
 def flat_tris(objs):
@@ -249,6 +303,34 @@ def despeckle1(a, k):
     return out, int(bad.sum())
 
 
+def smooth_cloth(a):
+    """the look of the original gumps: smooth grey (the texture's small pattern and the darker inner panel were noise and a dark patch at 90 px/m): the grey luminance evened against its
+    surroundings (FLATTEN_SIGMA px: panels of another shade come to the level of the cloth around) and softened (SOFT_SIGMA px), the item's edge rounded (a ragged cuff) and drawn as a
+    dark 1 px outline like the originals' (OUTLINE_K of the colour)"""
+    m = a[..., 3] > 0
+    if not m.any():
+        return a
+    m2 = ndimage.binary_opening(m, iterations=1) | (ndimage.binary_erosion(m, iterations=1))      # single-pixel spikes of the edge (a ragged cuff) cut off
+    m2 = ndimage.binary_closing(m2, iterations=1) & ndimage.binary_dilation(m, iterations=1)
+    lum = a[..., :3] @ np.array([0.299, 0.587, 0.114]); sat = a[..., :3].max(-1) - a[..., :3].min(-1)
+    grey = m & (sat <= 0.06); g = grey.astype(np.float32)
+    nz = lambda x, sg: ndimage.gaussian_filter(x * g, sg) / np.maximum(ndimage.gaussian_filter(g, sg), 1e-6)
+    med = np.median(lum[grey]) if grey.any() else 0.5
+    flat = lum * (med / np.maximum(nz(lum, FLATTEN_SIGMA), 1e-4)) ** FLATTEN_K
+    soft = nz(flat, SOFT_SIGMA)
+    new = np.where(grey, np.clip(soft, 0, 1), lum)
+    f = np.where(lum > 1e-4, new / np.maximum(lum, 1e-4), 1.0)
+    out = a.copy(); out[..., :3] = np.clip(a[..., :3] * f[..., None], 0, 1)
+    grow = m2 & ~m                                                          # pixels the closing added: the colour around
+    if grow.any():
+        mm = m.astype(np.float32); col = np.stack([ndimage.gaussian_filter(out[..., c] * mm, 1.0) for c in range(3)], -1) / np.maximum(ndimage.gaussian_filter(mm, 1.0), 1e-6)[..., None]
+        out[grow, :3] = col[grow]
+    out[..., 3] = m2
+    edge = m2 & ~ndimage.binary_erosion(m2, iterations=1)
+    out[edge, :3] *= OUTLINE_K
+    return out
+
+
 def to8(a):
     return np.clip(a * 255 + 0.5, 0, 255).astype(np.uint8)
 
@@ -265,8 +347,12 @@ for gender, refp in REFS.items():
     if BODIES.get(gender):
         bb = np.asarray(Image.open(BODIES[gender]).convert("RGBA"))[..., 3] > 0
         bare = bb & refm; bare[:ARM_ROWS[0]] = False; bare[ARM_ROWS[1]:] = False; bare[:, int(GX0 - ARM_DX):int(GX0 + ARM_DX)] = False
-    r = fit_gender(refm, fist, bare); out_deg, bend, alen, kxt, kxb, ky, dx, dy = r.x; P = (kxt, kxb, ky, dx, dy)
-    pose_arms(round(out_deg, 1), round(bend, 1), round(alen, 3))
+    if ARM_MODE == "joints" and gender in JOINTS:
+        r = fit_body(refm); kxt, kxb, ky, dx, dy = r.x; P = tuple(r.x)
+        arms = pose_arms_to(JOINTS[gender], P); out_deg = bend = alen = float("nan")
+    else:
+        r = fit_gender(refm, fist, bare); out_deg, bend, alen, kxt, kxb, ky, dx, dy = r.x; P = (kxt, kxb, ky, dx, dy)
+        pose_arms(round(out_deg, 1), round(bend, 1), round(alen, 3)); arms = None
     # render at the gump scale times SS with one uniform scale k0, then the rest of the fit as a resampling (map_coordinates: the horizontal scale depends on the height)
     k0 = min(kxt, kxb, ky); W, H = GW * SS, GH * SS
     cxw = (GW / 2 - GX0) / PXM; czw = (GY_FEET - GH / 2) / PXM
@@ -281,12 +367,13 @@ for gender, refp in REFS.items():
     res = box_down(wa, SS)
     res, lv = match_levels(res, ref)
     res, nsp = despeckle(res) if DESPECKLE > 0 else (res, 0)          # after the levels: their stretch made the darker folds black again
+    res = smooth_cloth(res)
     Image.fromarray(to8(res)).save(os.path.join(OUT, "gump_%s.png" % gender))
     after = iou(res[..., 3] > 0, refm)
     hand_px = to_gump(hand_points(), P)
     hand_err = [round(float(np.hypot(*(hp - np.array(f)))), 1) for hp, f in zip(hand_px, fist)] if fist else None
     bare_left = int((bare & ~(res[..., 3] > 0)).sum()) if bare is not None else None
-    report[gender] = dict(arms_out=round(out_deg, 1), elbow_bend=round(bend, 1), arm_length=round(alen, 3), bare_arm_px=bare_left, kx_top=round(kxt, 3), kx_hem=round(kxb, 3), ky=round(ky, 3), dx=round(dx, 1), dy=round(dy, 1),
+    report[gender] = dict(arm_mode=ARM_MODE, arms_deg=arms, arms_out=round(out_deg, 1), elbow_bend=round(bend, 1), arm_length=round(alen, 3), bare_arm_px=bare_left, kx_top=round(kxt, 3), kx_hem=round(kxb, 3), ky=round(ky, 3), dx=round(dx, 1), dy=round(dy, 1),
                           iou_rest=round(before, 3), iou_fit_flat=round(1 - r.fun, 3), iou_render=round(after, 3), levels=[round(float(v), 3) for v in lv], specks=nsp, fists=[[round(float(v), 1) for v in f] for f in fist] if fist else None, hand_error_px=hand_err)
     print("GUMP %s: %s" % (gender, report[gender]), flush=True)
 
@@ -309,6 +396,7 @@ if ART_REF:                                  # the item laid flat: arms out at a
     art = box_down(big, S4)
     art, lv = match_levels(art, ref)
     art, nsp = despeckle(art) if DESPECKLE > 0 else (art, 0)
+    art = smooth_cloth(art)
     Image.fromarray(to8(art)).save(os.path.join(OUT, "art.png"))
     Image.fromarray(to8(art[:, ::-1])).save(os.path.join(OUT, "art_mirror.png"))
     ys2, xs2 = np.nonzero(art[..., 3] > 0)
