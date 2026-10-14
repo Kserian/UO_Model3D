@@ -19,7 +19,14 @@ from mathutils.bvhtree import BVHTree
 
 LAYER = "clothing"
 ONLY = []                          # e.g. ["04_stand", "00_walk_unarmed"]; empty = all 35 UO actions
-OUTLINE = 0.38                     # dark 1-px outline like UO art (measured on the original body); 1.0 = off
+OUTLINE = 0.38                     # dark 1-px outline like UO art (measured on the original body); 1.0 = off. Items: see OUTLINE_TARGET
+OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline": the rim is darkened by one factor for the whole render so that the mean brightness
+                                   # of the rim pixels / the pixels one in = this (the client's items 0.33-0.43, mean 0.38, body 0.40; with a fixed 0.38 a small
+                                   # textured mask came out 0.24 and lost its texture, our 3D body 0.48). Measured over every frame of the run, applied before
+                                   # the .vd is written (a factor per frame jumped up to 0.17 between frames). 0 = the fixed OUTLINE
+SAMPLES = 512                      # Cycles samples per pixel for items (adaptive sampling; the pixel filter stays a 0.01 px box = the pixel centre, no blur): the
+                                   # gloss of metal in UO_Look (Principled) is sampled at random, so at 1 sample a flail had 61 % of its pixels off the converged
+                                   # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
 OUT_DIR = "//uo_render/"           # PNG output root (vdtool 'canvas' layout + meta.json)
 WRITE_VD = True
 VD_FILE = "//uo_render/%s.vd"      # %s -> LAYER
@@ -63,9 +70,10 @@ TORSO_HIDE_MARGIN = 0.12           # m: the torso (pelvis, spine, chest, neck, c
                                    # Only when a visible item carries the custom property `uo_behind_torso` (a sword, quiver or cape hanging on the back: from the
                                    # front the chest hides it, from the sides it stays visible). Off otherwise: UO draws other items over the torso even where they
                                    # are behind it (a sleeve of an arm behind the chest) and hiding them cost 0.02-0.07 IoU. 0 = never.
-DESPECKLE = 28                    # clothing: single dark pixels inside the item darker than their neighbours by more
+DESPECKLE = 0                      # clothing: single dark pixels inside the item darker than their neighbours by more
                                    # than this (0-255) take the colour around them - deep sculpt details / rivets that
-                                   # turn into black dots at UO size. 0 = off
+                                   # turn into black dots at UO size. 0 = off. Was 28 while items were rendered at 1 sample (it cleaned that noise);
+                                   # at SAMPLES it only erased dark texture detail (17 % of the pixels of a textured mask); per item: scene "uo_despeckle"
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
                                    # poking through or a gap in the item mesh, not a real occluder. 0 = off
 BODY_GAP = 0.006                   # m: every frame, parts of the bound items closer than this to the arms, hands, legs or
@@ -87,7 +95,9 @@ OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occlud
                                    # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
 HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
+OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
+RIM = dict(edge=0.0, inner=0.0, ne=0, ni=0, paths={})   # OUTLINE_AUTO: brightness sums of the rim / one pixel in, and the frames of this run
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
 rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
@@ -511,7 +521,10 @@ if EXACT_ANY and sc.render.engine == "CYCLES":
     sc.cycles.pixel_filter_type = "BOX"          # one sample point per pixel centre, like the UO art (no blur)
     sc.cycles.filter_width = 0.01
     sc.cycles.use_denoising = False
-    sc.cycles.samples = 1                        # 1 sample = exactly the pixel centre (the UO shading is noise-free)
+    sc.cycles.samples = 1 if LAYER == "body" else SAMPLES     # every sample at the pixel centre (filter 0.01 px): more samples only average the
+    sc.cycles.use_adaptive_sampling = LAYER != "body" and SAMPLES > 1     # random parts of the shading (the gloss of metal); adaptive with a strict
+    sc.cycles.adaptive_threshold = 0.002; sc.cycles.adaptive_min_samples = 64  # noise threshold: = fixed 512 samples (0.03 % of the pixels > 2 levels off) in a quarter
+                                                                               # of the time; the default threshold (0.01) left 3.9 % of the pixels noisy (> 2 levels)
 ORIG = {}
 if EXACT_ANY and "uo_original_frames.json" in bpy.data.texts:
     import base64, zlib
@@ -576,7 +589,13 @@ def uo_post(px, keep=None):
     if keep is not None:
         edge &= ~keep
         rgb[keep & m] = px[..., :3][keep & m]
-    rgb[edge] *= OUTLINE
+    if OUTLINE_AUTO:                                   # the rim is darkened in finish(), by one factor for the whole render
+        ring = inner & ~(np.pad(~edge, 1, constant_values=True)[1:-1, 2:] & np.pad(~edge, 1, constant_values=True)[1:-1, :-2]
+                         & np.pad(~edge, 1, constant_values=True)[2:, 1:-1] & np.pad(~edge, 1, constant_values=True)[:-2, 1:-1])
+        y = rgb.mean(-1)
+        RIM["edge"] += float(y[edge].sum()); RIM["ne"] += int(edge.sum()); RIM["inner"] += float(y[ring].sum()); RIM["ni"] += int(ring.sum())
+    else:
+        rgb[edge] *= OUTLINE
     out = np.zeros(px.shape, np.uint8)
     out[..., :3] = np.clip(rgb * 255 + 0.5, 0, 255).astype(np.uint8)
     out[..., 3] = m * 255
@@ -966,6 +985,7 @@ def frame_job():
                     png.filepath_raw = os.path.join(fdir, "%02d.png" % i); png.file_format = "PNG"; png.save()
                     bpy.data.images.remove(png)
                     meta_frames.append(dict(file="%02d.png" % i))
+                    RIM["paths"][(a, d, i)] = os.path.join(fdir, "%02d.png" % i)
                     done_frames += 1
                     yield "%d / %d frames (%s, direction %d)" % (done_frames, total_frames, act.name, d)
                 blocks[(a, d)] = frames
@@ -1012,6 +1032,18 @@ def finish():
                 frames.append(np.clip(px.reshape(h, w, 4)[::-1] * 255 + 0.5, 0, 255).astype(np.uint8))
             blocks[(a, d)] = frames
             meta_blocks.append(dict(action=a, dir=d, name=act.name, frames=[dict(file=f) for f in files]))
+    if OUTLINE_AUTO and RIM["ne"] and RIM["ni"]:      # one rim factor for the whole render: rim / one pixel in = OUTLINE_TARGET
+        r = (RIM["edge"] / RIM["ne"]) / max(RIM["inner"] / RIM["ni"], 1e-6)
+        k = float(np.clip(OUTLINE_TARGET / max(r, 1e-6), 0.25, 1.0))
+        print("render_uo_layer: rim / one pixel in %.2f before the outline, outline factor %.2f (target %.2f)" % (r, k, OUTLINE_TARGET))
+        for (a, d, i), path in RIM["paths"].items():
+            fr = blocks[(a, d)][i]; m = fr[..., 3] > 0
+            inner = m.copy(); inner[1:] &= m[:-1]; inner[:-1] &= m[1:]; inner[:, 1:] &= m[:, :-1]; inner[:, :-1] &= m[:, 1:]
+            edge = m & ~inner
+            fr[..., :3][edge] = np.clip(fr[..., :3][edge].astype(np.float32) * k + 0.5, 0, 255).astype(np.uint8)
+            h, w = fr.shape[:2]; png = bpy.data.images.new("uo_tmp_out", w, h, alpha=True)
+            png.pixels.foreach_set((fr[::-1].astype(np.float32) / 255.0).ravel())
+            png.filepath_raw = path; png.file_format = "PNG"; png.save(); bpy.data.images.remove(png)
     print("actions in this .vd:", sorted({a for a, _ in blocks}))
     # vdtool-compatible meta.json (canvas mode) so the PNGs can also be packed with: python vdtool.py pack <folder> out.vd
     done_blocks = {(b["action"], b["dir"]): b for b in meta_blocks}

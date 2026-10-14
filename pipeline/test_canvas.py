@@ -26,8 +26,11 @@ CANVASES = [((136, 120), (68, 86)), ((256, 256), (128, 192)), ((200, 180), (90, 
 def render(blend, script, out, case, actions, canvas=None):
     sets = dict(s.split("=", 1) for s in CASES[case][0].split("; "))
     sets["ONLY"] = repr(actions)
-    if "OWN_PARTS_NEVER_HIDE" in open(script).read():      # the reference (commit ea55c0b) has no such rule: switch it off, this test only checks the canvas
+    src = open(script).read()
+    if "OWN_PARTS_NEVER_HIDE" in src:      # the reference (commit ea55c0b) has no such rule: switch it off, this test only checks the canvas
         sets["OWN_PARTS_NEVER_HIDE"] = "False"
+    if "OUTLINE_TARGET" in src:            # nor 512 samples, the outline set per render and DESPECKLE 0 (item texture quality, 2026-10-14): the reference look
+        sets.update(SAMPLES="1", OUTLINE_TARGET="0", DESPECKLE="28")
     if canvas:
         sets["CANVAS"], sets["ANCHOR"] = repr(canvas[0]), repr(canvas[1])
     cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, out, "--script", script] + ["%s=%s" % kv for kv in sets.items()]
