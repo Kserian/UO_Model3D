@@ -133,6 +133,14 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   bez obszaru rękawów, potem każde ramię i przedramię ustawione wzdłuż odcinków gumpa i skrócone do ich długości (przedramię 0,40-0,60, ramię 1,02-1,19 długości modelu; przedramię i dłoń
   bez dziedziczenia skali). Wygląd: szarość wyrównana do tkaniny wokół (sigma 6 px, 70 %) i wygładzona (0,8 px), brzeg bez pojedynczych zębów, ciemny obrys 1 px jak w oryginałach.
   Wynik: IoU męski 0,848, żeński 0,868, skóry rąk odsłoniętej 72 / 6 px, rękawy kończą się przed pięściami, bez bufów.
+  Uwaga do trzeciej: prześwituje bark, rękaw nie łączy się z nadgarstkiem, grafika krzywa i nierówna. Czwarta: nadgarstek celu = brzeg pięści ciała gumpa najbliższy łokciowi, długość przedramienia
+  per ręka (przeszukiwanie 0,7-1,6) tak, by rękaw dochodził do pięści; skóra ciała gumpa (bez pięści, głowy, stóp) do 4 px od szaty dołączona do szaty w kolorze najbliższej tkaniny (`COVER_PX`);
+  nadpróbkowanie 4 x 4. Ciemne kreski wzdłuż złotych pasów, ziarno i plamy tkaniny pochodziły z **tekstury** (wypalony haft, szwy paneli, drobinki złota), nie z geometrii: drugi render tego samego
+  ujęcia z albedo zastąpionym jednolitą szarością (samo światło, miękki cień własny: Słońce 20°, 32 próbki; twardy cień rękawa robił płaską ciemną plamę na talii) i składanie
+  (`compose()`): tkanina = stała szarość x światło, złoto = maska złota tekstury oczyszczona (kawałki > 1,6 % powierzchni szaty albo > 0,16 % przy brzegu: kołnierz, mankiety; domknięcie / otwarcie,
+  całe piksele gumpa złote albo szare, 2 przejścia większości 3 x 3: wcześniej mieszany piksel brzegu dostawał poziomy szarości albo złota przypadkiem i brzeg był kropkowany) x kolor złota x światło;
+  złoto jaśniejsze (`PD_GOLD_K` 2,1), bez wyrównywania i wyostrzania szarości. Wynik: męski IoU 0,847, skóry odsłoniętej 11 px; żeński 0,862, 4 px; przerwa mankiet-pięść L 0 px, P 11-21 px
+  (jak w oryginale: z rękawa prawej ręki postaci wychodzi kawałek przedramienia); art IoU 0,68. `PD_SAVE_RAW=1` zapisuje surowe rendery (`raw_*.npy`, `shade_*.npy`) do strojenia obróbki bez renderu.
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.

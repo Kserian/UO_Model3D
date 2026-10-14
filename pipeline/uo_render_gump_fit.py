@@ -6,7 +6,8 @@ uo_render_paperdoll.py fits a belt to the waist; a robe covers the whole body an
 rest pose of the 3D body (arms straight, 40 deg from the vertical). So per gender the arms are posed (the same angle out at both shoulders and bend at both elbows, in the front plane) and the
 render is scaled / moved (x and y apart) so that the silhouette of the item matches the original gump of the same kind of item (plain robe 50469 / 60469 for a robe; docs/qa/robe_black.md).
 The search uses the item's triangles projected flat (fast), the final image is rendered like uo_render_paperdoll.py (UO_Look, the Sun of the own shadow, the body a holdout for the back of
-the item, 3 x 3 supersampling). The grey of the item is mapped to the levels of the original gump (p50 / p95 of its luminance), coloured parts (gold) keep their colour.
+the item, 4 x 4 supersampling) twice: textured and with the light alone (compose(): flat grey cloth times the light, the texture's gold as a cleaned mask). The grey of the item is mapped to
+the levels of the original gump (p5 / p50 / p95 of its luminance), coloured parts (gold) keep their colour. PD_SAVE_RAW=1 also writes the raw renders (raw_*.npy, shade_*.npy).
 Art: the item laid flat (arms out at a right angle, front view) turned PD_ART_TURN degrees and stretched into the box of the original icon (PD_ART_REF; the mirrored second icon
 is written too). Writes gump_male.png, gump_female.png, art.png, art_mirror.png, fit.json in PD_OUT.
 """
@@ -23,21 +24,31 @@ BODIES = {g: os.environ.get("PD_BODY_" + g.upper()) for g in ("male", "female")}
 HAND_W = float(os.environ.get("PD_HAND_W", "0.5"))          # weight of the hands' distance to the fists (per (10 px)^2) against 1 - IoU
 ARM_W = float(os.environ.get("PD_ARM_W", "2.0"))            # weight of 1 - IoU in the sleeves' region alone (the skirt is most of the item: with the whole IoU only, a sleeve could leave
                                                            # the upper arm of the body gump bare)
-ARM_ROWS, ARM_DX = (70, 175), 24
+ARM_ROWS, ARM_DX = (70, 175), 24                           # the sleeves' region: these rows, farther than ARM_DX px from the body axis
 BARE_W = float(os.environ.get("PD_BARE_W", "3.0"))         # weight of the share of the body gump's arm skin (under the original's sleeves) left bare
-SCALE_W = 200.0                                            # penalty on the scales beyond 15 % (shoulders), 25 % (hem), 8 % (height) from 1: without it the search ran off (height x1.36)                           # the sleeves' region: these rows, farther than ARM_DX px from the body axis
+SCALE_W = 200.0                                            # penalty on the scales beyond 15 % (shoulders), 25 % (hem), 8 % (height) from 1: without it the search ran off (height x1.36)
 ART_REF = os.environ.get("PD_ART_REF")
 ART_TURN = float(os.environ.get("PD_ART_TURN", "-45"))      # deg, counter-clockwise on the screen
 ART_ARMS = float(os.environ.get("PD_ART_ARMS", "15"))       # deg the arms are raised from the rest pose (40 deg from the vertical) for the laid item
-GOLD_K = float(os.environ.get("PD_GOLD_K", "1.5"))
+GOLD_K = float(os.environ.get("PD_GOLD_K", "2.1"))          # coloured parts: the grey's mean factor times this (embroidery stays brighter than the cloth)
 DESPECKLE = float(os.environ.get("PD_DESPECKLE", "0.6"))    # a pixel darker than this share of its neighbours' mean is a speck (0 = off)
 DARK_FILL = float(os.environ.get("PD_DARK_FILL", "0.45"))  # share of the item's median luminance below which a pixel is a slit / deep shadow to fill (0 = off)
-FLATTEN_SIGMA, FLATTEN_K, SOFT_SIGMA, OUTLINE_K = 6.0, 0.7, 0.8, 0.55   # smooth_cloth(): px, share of the evening, px, the outline's share of the colour
-DESPECKLE_PASSES = int(os.environ.get("PD_DESPECKLE_PASSES", "3"))   # repeated: small clusters of dark pixels shrink from their edges          # coloured parts: the grey's mean factor times this (embroidery stays brighter than the cloth)
+FLATTEN_SIGMA, FLATTEN_K, SOFT_SIGMA, OUTLINE_K, SHARPEN = 10.0, 0.0, 0.0, 0.55, 0.0   # smooth_cloth(): px, share, px, outline, unsharp amount (off since compose(): the cloth is the light alone)
+GOLD_SAT = 0.12                                            # compose(): saturation of the texture's gold
+GOLD_AREA = 125000                                         # hi-res px of the item the GOLD_* sizes are for (the robe's gump at SS 4); scaled with the item's size (the icon is smaller)
+GOLD_BIG, GOLD_SMALL, GOLD_EDGE = 2000, 200, 12            # hi-res px: gold pieces kept (bigger than BIG, or than SMALL touching the item's edge within EDGE: collar, cuffs; stray specks dropped)
+GOLD_CLOSE, GOLD_OPEN, GOLD_MAJ = 6, 5, 2                  # hi-res px radii of the closing / opening of the gold mask, passes of a 3 x 3 majority on the gump pixels
+GOLD_SIGMA, GOLD_MOTTLE = 6.0, 0.5                         # the gold's colour: its median mixed with the texture's colour smoothed by GOLD_SIGMA hi-res px
+LINE_K = 0.7
+COVER_PX = 4                                               # px: the body gump's skin this close to the item (not the fists, head, feet) is covered by it (the original covers all of the body
+                                                           # but the hands, head and feet; a bare shoulder / forearm showed through)   # smooth_cloth(): px, share of the evening, px, the outline's share of the colour
+DESPECKLE_PASSES = int(os.environ.get("PD_DESPECKLE_PASSES", "3"))   # repeated: small clusters of dark pixels shrink from their edges
 PXM = 90.5                                   # gump px per m and the body axis / floor of the gump of body 12 (uo_render_paperdoll.py, docs/qa/belt_swords.md)
 GW, GH = 260, 237
 GX0, GY_FEET = 94.5, 221.0
-SS = 3
+SS = 4
+LIGHT_SUN_DEG = float(os.environ.get("PD_SUN_DEG", "20"))    # deg: the Sun's angular size in the render of the light (soft own shadows)
+LIGHT_SAMPLES = int(os.environ.get("PD_LIGHT_SAMPLES", "32"))
 os.makedirs(OUT, exist_ok=True)
 sc = bpy.context.scene
 rig, body = bpy.data.objects["UO_Rig"], bpy.data.objects["UO_Body"]
@@ -52,7 +63,7 @@ sc.render.film_transparent = True; sc.view_settings.view_transform = "Standard"
 sc.render.image_settings.file_format = "PNG"; sc.render.image_settings.color_mode = "RGBA"
 sc["uo_look"] = 1.0; sc["uo_exact"] = 0.0
 sc.render.resolution_percentage = 100
-g = bpy.data.node_groups.get("UO_Look_NS")
+g = bpy.data.node_groups.get("UO_Look_NS"); sun = None
 if g is not None:                            # the Sun of the own shadow, as render_uo_layer.shadow_sun / uo_render_paperdoll.py
     Lv = Vector(next(n for n in g.nodes if n.type == "COMBXYZ").inputs[i].default_value for i in range(3))
     ld = bpy.data.lights.new("UO_Sun", "SUN"); sun = bpy.data.objects.new("UO_Sun", ld); sc.collection.objects.link(sun)
@@ -100,14 +111,18 @@ def from_gump(px, p):
     return np.array([(px[0] - GX0 - dx) / (PXM * kx_at(z, kxt, kxb)), z])
 
 
-def pose_arms_to(joints, p):
+def pose_arms_to(joints, p, wrist=None, fore=None):
     """each upper arm along shoulder -> elbow and each forearm along elbow -> wrist of the body gump, in the front plane, and as long as those (the drawn arms are shorter, the forearm
     pointing at the viewer is foreshortened: with the model's lengths the sleeves covered the fists); the forearm and the hand do not inherit the scale of their parent (no shear)"""
     for pb in rig.pose.bones:
         pb.matrix_basis = Matrix()
     out = {}
     for side, (S, E, W) in joints.items():
+        if wrist and side in wrist:
+            W = wrist[side]
         s, e, w = (from_gump(np.array(v, float), p) for v in (S, E, W))
+        if fore and side in fore:
+            w = e + (w - e) * fore[side]
         abs_ang, lens = [], []
         for bn, tgt in (("upper_arm." + side, e - s), ("forearm." + side, w - e)):
             b = rig.data.bones[bn]; d0 = np.array([b.tail_local.x - b.head_local.x, b.tail_local.z - b.head_local.z])
@@ -123,6 +138,53 @@ def pose_arms_to(joints, p):
         out[side] = [round(float(np.degrees(v)), 1) for v in abs_ang] + [round(v, 3) for v in lens]
     bpy.context.view_layer.update()
     return out
+
+
+def fist_blobs(body_png, ref):
+    """the fists of a body gump as masks with their centres: its pixels the original item does not cover, at the height of the hands, the two biggest pieces"""
+    b = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0
+    free = b & ~ndimage.binary_dilation(ref, iterations=1); free[:85] = False; free[170:] = False
+    lab, n = ndimage.label(free)
+    sizes = ndimage.sum(free, lab, range(1, n + 1)); big = np.argsort(sizes)[::-1][:2] + 1
+    return [(lab == k, ndimage.center_of_mass(free, lab, k)) for k in big]
+
+
+def fit_forearms(joints, p, body_png, ref):
+    """per arm: the wrist target = the fist's pixel nearest the elbow, and the forearm length (factor of elbow -> wrist) at which the sleeve meets the fist: the fewest pixels of the body
+    gump's forearm bare between the cuff and the fist, a sleeve over the fist counting less"""
+    bb = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0
+    blobs = fist_blobs(body_png, ref); wrist, fore, gap = {}, {}, {}
+    Y, X = np.mgrid[0:GH, 0:GW]
+    for side, (S, E, W) in joints.items():
+        fm, _ = min(blobs, key=lambda bc: np.hypot(bc[1][1] - W[0], bc[1][0] - W[1]))     # the blob nearest the read wrist
+        ys, xs = np.nonzero(fm); k = np.argmin(np.hypot(xs - E[0], ys - E[1])); wrist[side] = (float(xs[k]), float(ys[k]))
+        e, w = np.array(E, float), np.array(wrist[side]); d = w - e; L = np.hypot(*d); d /= L
+        t = (X - e[0]) * d[0] + (Y - e[1]) * d[1]; nrm = np.abs(-(X - e[0]) * d[1] + (Y - e[1]) * d[0])
+        lane = bb & ~fm & (t > 0) & (t <= L + 2) & (nrm <= 7)                     # the body gump's forearm up to the fist
+        best = None
+        for f in np.linspace(0.7, 1.6, 19):
+            pose_arms_to({side: (S, E, W)}, p, wrist, {side: f})
+            sil = raster(to_gump(flat_tris(items), p), GW, GH, 2)
+            c = (lane & ~sil).sum() + 0.7 * (sil & fm).sum()
+            if best is None or c < best[0]:
+                best = (c, f, int((lane & ~sil).sum()))
+        fore[side], gap[side] = float(best[1]), best[2]
+    return wrist, fore, gap
+
+
+def cover_body(a, body_png, ref):
+    """the body gump's skin within COVER_PX of the item (not the fists, the head and neck, the feet) taken into the item, coloured like the nearest cloth"""
+    bb = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0
+    m = a[..., 3] > 0
+    keep = np.zeros_like(bb)
+    for fm, _ in fist_blobs(body_png, ref):
+        keep |= ndimage.binary_dilation(fm, iterations=1)
+    keep[:84] = True; keep[205:] = True                                        # head with the neck, feet
+    d, (iy, ix) = ndimage.distance_transform_edt(~m, return_indices=True)
+    add = bb & ~m & ~keep & (d <= COVER_PX)
+    out = a.copy()
+    out[add, :3] = a[iy[add], ix[add], :3]; out[add, 3] = 1.0
+    return out, int(add.sum()), int((bb & ~(out[..., 3] > 0) & ~keep).sum())
 
 
 def fit_body(ref):
@@ -238,6 +300,78 @@ def render(path, w, h, px_per_m, cx, cz, show, holdout_body):
     return np.asarray(Image.open(path).convert("RGBA"), np.float32) / 255.0
 
 
+def render_light(*args):
+    """render() of the light alone (white_albedo) with soft own shadows: the sleeves' hard shadow on the waist was a flat dark patch at the gump scale"""
+    ang, spp = (sun.data.angle, sc.cycles.samples) if sun is not None else (None, None)
+    if sun is not None:
+        sun.data.angle = np.radians(LIGHT_SUN_DEG); sc.cycles.samples = LIGHT_SAMPLES
+    try:
+        return render(*args)
+    finally:
+        if sun is not None:
+            sun.data.angle, sc.cycles.samples = ang, spp
+
+
+def disk(r):
+    y, x = np.mgrid[-r:r + 1, -r:r + 1]
+    return x * x + y * y <= r * r
+
+
+def compose(tex, sh, k):
+    """the item from two renders on the gump grid times k: tex (textured) and sh (white_albedo: the light alone). The texture's small pattern, its dark seams and stray specks of gold were
+    noise, black dashes and a dark patch at the gump scale (docs/qa/robe_black.md); so the cloth is a flat grey times the light, and the gold a cleaned mask of the texture's gold (whole gump
+    pixels: a mixed edge pixel got the grey's or the gold's levels by chance, a dotted edge) times its colour times the light"""
+    m = tex[..., 3] > 0.5
+    f = np.sqrt(m.sum() / GOLD_AREA); r = lambda v: max(1, int(round(v * f)))
+    sat = tex[..., :3].max(-1) - tex[..., :3].min(-1); g = m & (sat > GOLD_SAT)
+    lab, n = ndimage.label(g); sz = np.bincount(lab.ravel()); sz[0] = 0
+    touch = np.zeros(n + 1, bool); touch[np.unique(lab[m & ~ndimage.binary_erosion(m, disk(r(GOLD_EDGE)))])] = True
+    keep = (sz >= GOLD_BIG * f * f) | ((sz >= GOLD_SMALL * f * f) & touch); keep[0] = False
+    gk = ndimage.binary_closing(keep[lab], disk(r(GOLD_CLOSE))) & m
+    gk = ndimage.binary_fill_holes(ndimage.binary_opening(gk, disk(r(GOLD_OPEN)))) & m
+    if k > 1:
+        h, w = gk.shape[0] // k, gk.shape[1] // k
+        blk = gk[:h * k, :w * k].reshape(h, k, w, k).mean((1, 3)) >= 0.5
+        for _ in range(GOLD_MAJ):
+            blk = ndimage.median_filter(blk.astype(np.uint8), size=3).astype(bool)
+        gk = np.zeros_like(gk); gk[:h * k, :w * k] = np.repeat(np.repeat(blk, k, 0), k, 1)
+    light = sh[..., :3] @ np.array([0.299, 0.587, 0.114])                 # 0.5 = a white-lit grey 0.5 albedo
+    alb = tex[..., :3] / np.maximum(light, 0.05)[..., None] * 0.5
+    w = g.astype(np.float32); sg = GOLD_SIGMA * f; den = ndimage.gaussian_filter(w, sg)
+    gm = np.median(alb[g], axis=0) if g.any() else np.array([0.8, 0.6, 0.3])
+    loc = np.stack([ndimage.gaussian_filter(alb[..., c] * w, sg) for c in range(3)], -1) / np.maximum(den, 1e-3)[..., None]
+    loc = np.where(den[..., None] > 0.05, loc, gm)
+    out = np.zeros_like(tex)
+    out[..., :3] = np.where(gk[..., None], gm * (1 - GOLD_MOTTLE) + loc * GOLD_MOTTLE, 0.5) * light[..., None]
+    out[..., 3] = tex[..., 3]
+    return np.clip(out, 0, 1)
+
+
+def white_albedo(objs):
+    """the items' UO_Look albedo unlinked and set to a flat grey (returned to restore it): a render of the light alone"""
+    saved = []
+    for o in objs:
+        for slot in o.material_slots:
+            m = slot.material
+            if m is None or m.node_tree is None:
+                continue
+            for n in m.node_tree.nodes:
+                if n.type == "GROUP" and n.node_tree is not None and n.node_tree.name.startswith("UO_Look"):
+                    sock = n.inputs["Albedo"]
+                    saved.append((m.node_tree, sock, [l.from_socket for l in sock.links], tuple(sock.default_value)))
+                    for l in list(sock.links):
+                        m.node_tree.links.remove(l)
+                    sock.default_value = (0.5, 0.5, 0.5, 1.0)
+    return saved
+
+
+def restore_albedo(saved):
+    for nt, sock, srcs, val in saved:
+        sock.default_value = val
+        for fs in srcs:
+            nt.links.new(fs, sock)
+
+
 def warp(a, A, t, shape):
     """premultiplied linear resampling: output pixel (y, x) samples input A @ (y, x) + t"""
     pm = a.copy(); pm[..., :3] *= pm[..., 3:]
@@ -263,9 +397,8 @@ def match_levels(a, ref_rgba):
     rm = ref_rgba[..., 3] > 0; rl = (ref_rgba[..., :3].astype(np.float32) / 255.0) @ np.array([0.299, 0.587, 0.114])
     sat = a[..., :3].max(-1) - a[..., :3].min(-1)
     grey = m & (sat <= 0.06)
-    s50, s95 = np.percentile(lum[grey], 50), np.percentile(lum[grey], 95); r50, r95 = np.percentile(rl[rm], 50), np.percentile(rl[rm], 95)
-    k = (r95 - r50) / max(s95 - s50, 1e-4)
-    new = np.clip(r50 + (lum - s50) * k, 0, 1)
+    s5, s50, s95 = np.percentile(lum[grey], [5, 50, 95]); r5, r50, r95 = np.percentile(rl[rm], [5, 50, 95])
+    new = np.clip(np.interp(lum, [0.0, s5, s50, s95, 1.0], [0.0, r5, r50, r95, min(1.0, r95 + (1 - s95) * (r95 - r50) / max(s95 - s50, 1e-4))]), 0, 1)   # p5 / p50 / p95 as the original's
     f = np.where(lum > 1e-4, new / np.maximum(lum, 1e-4), 1.0)
     f = np.where(sat <= 0.06, f, GOLD_K * r50 / s50)   # gold: one factor (its shading stays; the stretch of the grey turned it brown-black, a cap at p95 made it flat)
     out = a.copy(); out[..., :3] = np.clip(a[..., :3] * f[..., None], 0, 1)
@@ -312,20 +445,30 @@ def smooth_cloth(a):
         return a
     m2 = ndimage.binary_opening(m, iterations=1) | (ndimage.binary_erosion(m, iterations=1))      # single-pixel spikes of the edge (a ragged cuff) cut off
     m2 = ndimage.binary_closing(m2, iterations=1) & ndimage.binary_dilation(m, iterations=1)
+    m2 = ndimage.binary_fill_holes(m2)                                      # slits between the panels inside the item: filled, no outline drawn round them
     lum = a[..., :3] @ np.array([0.299, 0.587, 0.114]); sat = a[..., :3].max(-1) - a[..., :3].min(-1)
     grey = m & (sat <= 0.06); g = grey.astype(np.float32)
     nz = lambda x, sg: ndimage.gaussian_filter(x * g, sg) / np.maximum(ndimage.gaussian_filter(g, sg), 1e-6)
     med = np.median(lum[grey]) if grey.any() else 0.5
     flat = lum * (med / np.maximum(nz(lum, FLATTEN_SIGMA), 1e-4)) ** FLATTEN_K
-    soft = nz(flat, SOFT_SIGMA)
+    soft = nz(flat, SOFT_SIGMA) if SOFT_SIGMA > 0 else flat
+    if SHARPEN > 0:                                                         # the folds as crisp as in the original (unsharp mask, 1 px)
+        soft = soft + SHARPEN * (soft - nz(soft, 1.0))
     new = np.where(grey, np.clip(soft, 0, 1), lum)
     f = np.where(lum > 1e-4, new / np.maximum(lum, 1e-4), 1.0)
     out = a.copy(); out[..., :3] = np.clip(a[..., :3] * f[..., None], 0, 1)
-    grow = m2 & ~m                                                          # pixels the closing added: the colour around
+    grow = m2 & ~m                                                          # pixels the closing / the hole filling added: the colour around
     if grow.any():
-        mm = m.astype(np.float32); col = np.stack([ndimage.gaussian_filter(out[..., c] * mm, 1.0) for c in range(3)], -1) / np.maximum(ndimage.gaussian_filter(mm, 1.0), 1e-6)[..., None]
-        out[grow, :3] = col[grow]
+        _, (iy, ix) = ndimage.distance_transform_edt(~m, return_indices=True)
+        out[grow, :3] = out[iy[grow], ix[grow], :3]
     out[..., 3] = m2
+    out, _ = despeckle(out)                                                 # the sharpening brought the seams of the panels back as dark dashes
+    lum2 = out[..., :3] @ np.array([0.299, 0.587, 0.114]); inside = ndimage.binary_erosion(m2, iterations=1)
+    med5 = ndimage.median_filter(np.where(m2, lum2, np.nan_to_num(np.median(lum2[m2]))), size=5)
+    line = inside & (lum2 < LINE_K * med5)                                  # dark lines (a dark seam of the texture along the gold bands, slits): darker than LINE_K of the 5 x 5 median
+    if line.any():
+        medc = np.stack([ndimage.median_filter(out[..., c], size=5) for c in range(3)], -1)
+        out[line, :3] = medc[line]
     edge = m2 & ~ndimage.binary_erosion(m2, iterations=1)
     out[edge, :3] *= OUTLINE_K
     return out
@@ -349,7 +492,9 @@ for gender, refp in REFS.items():
         bare = bb & refm; bare[:ARM_ROWS[0]] = False; bare[ARM_ROWS[1]:] = False; bare[:, int(GX0 - ARM_DX):int(GX0 + ARM_DX)] = False
     if ARM_MODE == "joints" and gender in JOINTS:
         r = fit_body(refm); kxt, kxb, ky, dx, dy = r.x; P = tuple(r.x)
-        arms = pose_arms_to(JOINTS[gender], P); out_deg = bend = alen = float("nan")
+        wr, fo, gp = fit_forearms(JOINTS[gender], P, BODIES[gender], refm) if BODIES.get(gender) else (None, None, None)
+        arms = pose_arms_to(JOINTS[gender], P, wr, fo); out_deg = bend = alen = float("nan")
+        arms = dict(arms, forearm_factor=fo, wrist=wr, cuff_gap_px=gp)
     else:
         r = fit_gender(refm, fist, bare); out_deg, bend, alen, kxt, kxb, ky, dx, dy = r.x; P = (kxt, kxb, ky, dx, dy)
         pose_arms(round(out_deg, 1), round(bend, 1), round(alen, 3)); arms = None
@@ -357,6 +502,7 @@ for gender, refp in REFS.items():
     k0 = min(kxt, kxb, ky); W, H = GW * SS, GH * SS
     cxw = (GW / 2 - GX0) / PXM; czw = (GY_FEET - GH / 2) / PXM
     a = render(tmp, W, H, PXM * SS * k0, cxw / k0, czw / k0, items, True)
+    saved = white_albedo(items); sh = render_light(tmp, W, H, PXM * SS * k0, cxw / k0, czw / k0, items, True); restore_albedo(saved)
     # the render maps world (x, z) to SS * (GX0 + x PXM k0, GY_FEET - z PXM k0) (camera centred so that the body axis / floor land there); the wanted map uses kx, ky and the shift
     Yo, Xo = np.mgrid[0:H, 0:W].astype(np.float64) + 0.5
     z = (SS * (GY_FEET + dy) - Yo) / (SS * PXM * ky); xw = (Xo - SS * (GX0 + dx)) / (SS * PXM * kx_at(z, kxt, kxb))
@@ -364,16 +510,24 @@ for gender, refp in REFS.items():
     pm = a.copy(); pm[..., :3] *= pm[..., 3:]
     wa = np.stack([ndimage.map_coordinates(pm[..., c], [Yi, Xi], order=1, mode="constant", cval=0.0) for c in range(4)], -1).astype(np.float32)
     wa[..., :3] /= np.maximum(wa[..., 3:], 1e-6)
-    res = box_down(wa, SS)
+    psh = sh.copy(); psh[..., :3] *= psh[..., 3:]
+    wsh = np.stack([ndimage.map_coordinates(psh[..., c], [Yi, Xi], order=1, mode="constant", cval=0.0) for c in range(4)], -1).astype(np.float32)
+    wsh[..., :3] /= np.maximum(wsh[..., 3:], 1e-6)
+    if os.environ.get("PD_SAVE_RAW"):
+        np.save(os.path.join(OUT, "raw_%s.npy" % gender), wa); np.save(os.path.join(OUT, "shade_%s.npy" % gender), wsh)
+    res = box_down(compose(wa, wsh, SS), SS)
     res, lv = match_levels(res, ref)
     res, nsp = despeckle(res) if DESPECKLE > 0 else (res, 0)          # after the levels: their stretch made the darker folds black again
+    covered, skin_left = 0, None
+    if BODIES.get(gender):                                            # before smooth_cloth: the outline goes round the grown edge
+        res, covered, skin_left = cover_body(res, BODIES[gender], refm)
     res = smooth_cloth(res)
     Image.fromarray(to8(res)).save(os.path.join(OUT, "gump_%s.png" % gender))
     after = iou(res[..., 3] > 0, refm)
     hand_px = to_gump(hand_points(), P)
     hand_err = [round(float(np.hypot(*(hp - np.array(f)))), 1) for hp, f in zip(hand_px, fist)] if fist else None
     bare_left = int((bare & ~(res[..., 3] > 0)).sum()) if bare is not None else None
-    report[gender] = dict(arm_mode=ARM_MODE, arms_deg=arms, arms_out=round(out_deg, 1), elbow_bend=round(bend, 1), arm_length=round(alen, 3), bare_arm_px=bare_left, kx_top=round(kxt, 3), kx_hem=round(kxb, 3), ky=round(ky, 3), dx=round(dx, 1), dy=round(dy, 1),
+    report[gender] = dict(arm_mode=ARM_MODE, arms_deg=arms, arms_out=round(out_deg, 1), elbow_bend=round(bend, 1), arm_length=round(alen, 3), bare_arm_px=bare_left, covered_px=covered, skin_left_px=skin_left, kx_top=round(kxt, 3), kx_hem=round(kxb, 3), ky=round(ky, 3), dx=round(dx, 1), dy=round(dy, 1),
                           iou_rest=round(before, 3), iou_fit_flat=round(1 - r.fun, 3), iou_render=round(after, 3), levels=[round(float(v), 3) for v in lv], specks=nsp, fists=[[round(float(v), 1) for v in f] for f in fist] if fist else None, hand_error_px=hand_err)
     print("GUMP %s: %s" % (gender, report[gender]), flush=True)
 
@@ -385,14 +539,25 @@ if ART_REF:                                  # the item laid flat: arms out at a
     ppm = 400.0
     w, h = int((hi[0] - lo[0]) * ppm) + 8, int((hi[1] - lo[1]) * ppm) + 8
     a = render(tmp, w, h, ppm, (lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, items, False)          # no holdout: the head would cut a hole in the collar
-    pm = a.copy(); pm[..., :3] *= pm[..., 3:]
-    im = Image.fromarray(np.clip(pm * 255 + 0.5, 0, 255).astype(np.uint8), "RGBA").rotate(ART_TURN, resample=Image.BICUBIC, expand=True)
-    rot = np.asarray(im, np.float32) / 255.0
-    yy, xx = np.nonzero(rot[..., 3] > 0.5); rot = rot[yy.min():yy.max() + 1, xx.min():xx.max() + 1]
+    saved = white_albedo(items); sh = render_light(tmp, w, h, ppm, (lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, items, False); restore_albedo(saved)
+    if os.environ.get("PD_SAVE_RAW"):
+        np.save(os.path.join(OUT, "rawrot_art.npy"), a); np.save(os.path.join(OUT, "shaderot_art.npy"), sh)
+    def laid(x, box=None):                    # turned ART_TURN, cropped (to the textured render's box), stretched to the original's box at S4 times its pixels
+        pm = x.copy(); pm[..., :3] *= pm[..., 3:]
+        im = Image.fromarray(np.clip(pm * 255 + 0.5, 0, 255).astype(np.uint8), "RGBA").rotate(ART_TURN, resample=Image.BICUBIC, expand=True)
+        rot = np.asarray(im, np.float32) / 255.0
+        if box is None:
+            yy, xx = np.nonzero(rot[..., 3] > 0.5); box = (yy.min(), yy.max() + 1, xx.min(), xx.max() + 1)
+        rot = rot[box[0]:box[1], box[2]:box[3]]
+        rs = np.stack([np.asarray(Image.fromarray(rot[..., c]).resize((bw, bh), Image.BILINEAR)) for c in range(4)], -1)
+        rs[..., :3] /= np.maximum(rs[..., 3:], 1e-6)
+        big = np.zeros((AH * S4, AW * S4, 4), np.float32); big[rb[1] * S4:rb[1] * S4 + bh, rb[0] * S4:rb[0] * S4 + bw] = rs
+        return big, box
     S4 = 4; bw, bh = (rb[2] - rb[0] + 1) * S4, (rb[3] - rb[1] + 1) * S4          # stretched to the original's box (its proportions are those of a laid robe)
-    rs = np.stack([np.asarray(Image.fromarray(rot[..., c]).resize((bw, bh), Image.BILINEAR)) for c in range(4)], -1)
-    rs[..., :3] /= np.maximum(rs[..., 3:], 1e-6)
-    big = np.zeros((AH * S4, AW * S4, 4), np.float32); big[rb[1] * S4:rb[1] * S4 + bh, rb[0] * S4:rb[0] * S4 + bw] = rs
+    big, box = laid(a); bigsh, _ = laid(sh, box)
+    big = compose(big, bigsh, S4)
+    if os.environ.get("PD_SAVE_RAW"):
+        np.save(os.path.join(OUT, "raw_art.npy"), big)
     art = box_down(big, S4)
     art, lv = match_levels(art, ref)
     art, nsp = despeckle(art) if DESPECKLE > 0 else (art, 0)
