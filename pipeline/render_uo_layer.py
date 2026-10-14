@@ -38,6 +38,9 @@ CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom propert
 CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share in which the hanging part follows the legs as in riding (CLOTH_MOUNTED) instead of hanging from the pelvis
                                    # pushed out by the legs: a robe lying on the ground lies along the legs (the original robe 469 is a narrow shape with a notch between them, the hull and
                                    # the simulation made one wide lump; docs/qa/robe_black.md). 0 = off; scene property uo_cloth_lie (uo_cloth_sim.py does not simulate these actions then)
+CLOTH_LIE_SQUEEZE = 1.0            # with CLOTH_LIE: below the waist the garment is first drawn in about its axis to this share of its distance (in the rest shape, full from 0.3 m under
+                                   # the waist), then laid along the legs: a flared robe kept its whole width round the lying legs and stood up as a dome or a tube (docs/qa/robe_ragged.md).
+                                   # 1 = off; scene property uo_cloth_lie_squeeze
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
@@ -67,7 +70,8 @@ DESPECKLE = 28                    # clothing: single dark pixels inside the item
                                    # than this (0-255) take the colour around them - deep sculpt details / rivets that
                                    # turn into black dots at UO size. 0 = off
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
-                                   # poking through or a gap in the item mesh, not a real occluder. 0 = off
+                                   # poking through or a gap in the item mesh, not a real occluder. 0 = off; scene property uo_fill_holes (a torn robe whose
+                                   # rips should show the body: 0, docs/qa/robe_ragged.md)
 BODY_GAP = 0.006                   # m: every frame, parts of the bound items closer than this to the arms, hands, legs or
                                    # head of the posed body are pushed out (smoothly) before rendering - otherwise a forearm
                                    # poking through a sleeve in motion cuts a hole in the item. 0 = off
@@ -86,6 +90,8 @@ LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
                                    # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
 HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
+CLOTH_LIE_SQUEEZE = float(sc.get("uo_cloth_lie_squeeze", CLOTH_LIE_SQUEEZE))
+FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
@@ -193,6 +199,10 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
         return ((d @ skin["chest"][:3, :3].T) @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     share = CLOTH_MOUNTED if 23 <= a <= 29 else CLOTH_LIE if a in (21, 22) else 0.0
     if share > 0:                                                             # riding (and lying, CLOTH_LIE): the hanging part lies along the legs, as the skin under it would move it
+        Vr0 = Vr
+        if a in (21, 22) and CLOTH_LIE_SQUEEZE < 1.0:                          # a lying robe drawn in about its axis first: its flare stood up round the legs as a dome
+            f = 1.0 - (1.0 - CLOTH_LIE_SQUEEZE) * np.clip((prm["z_top"] - Vr[:, 2]) / 0.3, 0, 1)
+            c = np.asarray(prm["centre"], float); Vr = Vr.copy(); Vr[:, :2] = c + (Vr[:, :2] - c) * f[:, None]
         Vh = np.c_[Vr, np.ones(len(Vr))]
         nv = len(o.data.vertices); Pp = (Vh @ skin["pelvis"].T)[:, :3]; d0 = np.zeros_like(Vr)
         have = all(("uo_leg_" + nm) in o.data.attributes for nm in cl.Capsules.NAMES)
@@ -205,6 +215,8 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
             leg = lambda sd: (1 - ws) * (Vh @ skin["thigh." + sd].T)[:, :3] + ws * (Vh @ skin["shin." + sd].T)[:, :3]
             d0 = np.clip((prm["z_top"] - Vr[:, 2]) / 0.2, 0, 1)[:, None] * ((1 - side)[:, None] * leg("L") + side[:, None] * leg("R") - Pp)
         d0 = d0 * share
+        if Vr is not Vr0:
+            d0 = d0 + ((Vr - Vr0) @ skin["pelvis"][:3, :3].T)
         return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     d0 = cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
                       z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
