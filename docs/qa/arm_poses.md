@@ -69,3 +69,19 @@ Zysk rundy maleje (runda 3: −394 px, 4: −407 px, 5: −216 px).
 Wynik: ciało 0,8993 -> **0,9001**, błędy ≥ 2 px 2265 -> **2154** (start 3746, −42,5%), IoU po pominięciu obwódki 1 px **0,9974**, `test_items` 0,723, `test_canvas` 16/16 OK (`body_parts_after_arms6.json`, `items_after_arms6.json`).
 Zysk rund: 3: −394 px, 4: −407, 5: −216, 6: −111; koszt dopasowania w rundzie 6 spada już tylko o ok. 0,001 na klatkę. **Dopasowanie z sylwetek doszło do granicy; dalsze rundy nie mają sensu.**
 Zostaje (≥ 40 px na klatkę, suma 5 kierunków): 21 kl. 1 / 4 / 5 (76-92 px: leżąca postać, ręce nakładają się na tułów, sylwetki ich nie wyznaczają), 17 kl. 3-5 (symetria rąk, decyzja użytkownika), 22 kl. 4-5, 29 kl. 0-1 (43-51 px). Te klatki można poprawić tylko ręcznie, wg wskazania użytkownika na arkuszu porównania.
+
+## Obrót głowy wygładzony w czasie (2026-10-13)
+Zgłoszenie: maska kolegi (na naszym modelu, sztywno na kości `head`) skakała w „walk war” (15) w klatkach 4 i 9 o 2-3 px. Przyczyna: dopasowanie póz klatka po klatce do sylwetek kręciło głową,
+żeby trafić w detale konturu (głowa jest prawie kulą, jej obrót prawie nie zmienia sylwetki): w 15 obrót głowy 10-26° między klatkami pętli (zygzak co klatkę). Położenie głowy zgadzało się z oryginałem ±1 px
+(też w wersjach modelu od 2026-10-05), więc IoU tego nie widziało; widać to tylko na przedmiotach sztywnych na głowie (hełm, maska, czapka, włosy, kaptur).
+Poprawka w modelu: orientacja głowy w przestrzeni postaci wygładzona w każdej akcji (klatka = pół drogi do średniej sąsiadów, 1 przejście; pętle 0-8, 15, 23-25 z zawinięciem, w innych akcjach skrajne
+klatki bez zmian), klucze przeliczone względem niezmienionej szyi (położenie głowy bez zmian), 31 akcji (stanie: 1 klatka). Wygładzanie kluczy lokalnych zostało odrzucone (w atakach gorzej: głowa dziedziczy szum szyi).
+Miara: skok punktu sztywnego na głowie (13 cm od nasady) względem sąsiednich klatek, na ekranie, max na akcję (średnia z 31 akcji / najgorsza):
+
+| wariant | skok hełmu | 15 (walk war) | IoU ciała (1050 kl.) | `test_items` helm / średnia |
+|---|---|---|---|---|
+| przed | 2,75 / 5,5 px | 2,5 px | 0,9001 | 0,783 / 0,7232 |
+| **1 przejście (wgrane)** | **1,35 / 3,1 px** | **1,0 px** | **0,8991** | **0,776 / 0,722** |
+| 2 przejścia | 0,99 / 2,3 px | 0,8 px | 0,8982 | 0,767 / 0,7209 |
+
+Zostaje ≥ 2 px: 11, 16, 21, 22, 32 (ataki, śmierć, ukłon: częściowo prawdziwy ruch głowy). Pomiary: `body_parts_after_head_smooth.json`, `items_after_head_smooth.json`.

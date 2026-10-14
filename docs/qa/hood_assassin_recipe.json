@@ -1,0 +1,5 @@
+{"name": "hood_assassin", "file": "hood_assassin.glb", "kind": "hood",
+ "materials": {"METAL": false, "SATURATION": 0, "BRIGHTNESS": 0.55},
+ "scene": {"uo_outline": 0.65},
+ "hood_cover": {"TOP_GAP": 0.05, "TILT_BACK": 0, "TILT_FADE": 0.1, "SHORTEN": 0.5, "INNER_SHADE": 0.35, "OCCLUSION": 0.8},
+ "tune": {"uo_autofit_item.py": {"UNIT": 0.3, "SCALE_RANGE": [0.8, 1.3]}}}

@@ -20,6 +20,9 @@ FIT = None            # False: skip uo_fit_item.py (the item already sits right)
 HEM = None            # m: a robe / skirt that is longer than the body (made on a taller mannequin) has its part below HEM_FROM shortened (uniformly, folds and embroidery squeezed) so that the hem lands this high above the ground
                       # (the original robes end at 0.0-0.2 m; a hem below the ground would hang under the feet of the sprite). None = leave. Recipe: "prepare": {"HEM": 0.02}
 HEM_FROM = 0.70       # m: the shortening starts here (the sleeves of the model end above it)
+HEM_FLARE = None      # {"factor": 0.7, "from": 0.95, "r_min": 0.12}: a skirt flared wider than the UO robes (a model that trails on the floor, then shortened by HEM: the hem stands ~1.1 m wide from the
+                      # front, the original robe 469 ~0.6 m) is narrowed about its axis: the distance from the axis beyond r_min m is scaled from 1 at `from` m down to `factor` at the hem
+                      # (linear in height; the axis = centre of the cloth at HEM_FROM). docs/qa/robe_ragged.md. Recipe: "prepare": {"HEM_FLARE": {...}}
 HEM_BAND = None       # {"height": 0.09, "fade": 0.02, "skip_front": 20, "edge": 5}: a gold band along the whole hem (an embroidered band that the model has only on some panels breaks off
                       # between the legs in the sprites): up to `height` m above the LOCAL hem (lowest point per angle around the skirt), fading over `fade` m, none within `skip_front`
                       # degrees of the front (-Y; the opening of a robe, soft over `edge` degrees). Point attribute uo_hem_band + the item's material mixes in the gold of its own texture
@@ -92,6 +95,24 @@ if HEM is not None:                                   # after the autofit the me
             z[low] = HEM_FROM - (HEM_FROM - z[low]) * _k
             o.data.vertices.foreach_set("co", c); o.data.update()
         print("uo_prepare_item: HEM: the part below %.2f m shortened x%.2f, the hem was at %.3f m, now %.3f m" % (HEM_FROM, _k, _zmin, HEM))
+if HEM_FLARE:
+    import numpy as np
+    _cfg = dict(dict(factor=0.7, r_min=0.12), **HEM_FLARE); _cfg.setdefault("from", 0.95)
+    _obs = [o for o in bpy.context.selected_objects if o.type == "MESH" and o.name != "UO_Body"]
+    _P = {o: np.array([v.co for v in o.data.vertices]) for o in _obs}
+    _all = np.concatenate(list(_P.values())); _zlo = float(_all[:, 2].min())
+    _band = _all[np.abs(_all[:, 2] - HEM_FROM) < 0.05]
+    _c = 0.5 * (_band[:, :2].min(0) + _band[:, :2].max(0))
+    _w0 = np.ptp(_all[_all[:, 2] < _zlo + 0.05][:, 0])
+    for o, P in _P.items():
+        t = np.clip((_cfg["from"] - P[:, 2]) / max(_cfg["from"] - _zlo, 1e-6), 0.0, 1.0)
+        f = 1.0 + (_cfg["factor"] - 1.0) * t
+        d = P[:, :2] - _c; r = np.linalg.norm(d, axis=1)
+        rn = np.where(r > _cfg["r_min"], _cfg["r_min"] + (r - _cfg["r_min"]) * f, r)
+        P[:, :2] = _c + d * (rn / np.maximum(r, 1e-9))[:, None]
+        o.data.vertices.foreach_set("co", P.astype(np.float32).ravel()); o.data.update()
+    _all = np.concatenate(list(_P.values()))
+    print("uo_prepare_item: HEM_FLARE x%.2f at the hem (from %.2f m, axis %.3f %.3f): hem width %.2f -> %.2f m" % (_cfg["factor"], _cfg["from"], _c[0], _c[1], _w0, np.ptp(_all[_all[:, 2] < _zlo + 0.05][:, 0])))
 if DENSIFY and _dens:
     run("uo_densify_item.py", KIND=KIND)
 if FIT is None:

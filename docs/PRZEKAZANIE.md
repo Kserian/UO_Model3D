@@ -149,7 +149,38 @@ Kula tkaniny na uniesionym kolanie: powłoka nóg + `drop` 1,0 (tkanina wracała
 ## Sesja 21, piąta runda (2026-10-11): upadki i dłonie (`docs/qa/robe_black.md`, „Upadki i dłonie”)
 `render_uo_layer.py` `CLOTH_LIE` (upadki 21, 22: szata wzdłuż nóg jak w jeździe, bez symulacji; IoU z 469 0,682 / 0,695 -> 0,694 / 0,725), `uo_conform_item.py` `SLEEVE_CUFF` (zwężony koniec dzwonowego rękawu:
 dłonie widać jak w oryginale, w jeździe bez pierścienia mankietu). Dziury 35 akcji: ręka 143 -> 234 (nadgarstek 1-2 px), tułów 68 -> 81, nogi 445 -> 492 (wcięcia w upadkach). Odrzucone: `HAND_OVER`, zwężanie dłoni od strony mankietu.
-Model: wgrany `render_uo_layer.py`. QA OK, `test_items` 0,723.
+Model: wgrany `render_uo_layer.py`. Potem (dwa otwory: twarz i dekolt w V kołnierza): `FILL_NECK`, wewnętrzna wstawka nad szyją i piersią widoczną w dekolcie; 35 akcji: 24 klatki z ≥ 2 otworami, 18 to ramię / dłoń przed kołnierzem, 6 szczelin 3 px. QA OK, `test_items` 0,723.
+
+
+## Sesja 22 (2026-10-12): kaptur Meshy AI na głowie (`docs/qa/autofit.md`, „Kaptur”)
+Zlecenie: kaptur z `.glb` użytkownika (Meshy AI, 327 tys. wierzchołków, bez tekstury, poza repo) na głowę, symetrycznie, zakrywa głowę z każdej strony, otwór na twarz; przykładowe klatki.
+Przepis `docs/qa/hood_recipe.json` (szary `FLAT_GREY` 0,5: tkanina pod hue). Nowe: `pipeline/uo_hood_cover.py` (uszy wychodziły przez boki: symetryczne, gładkie wypchnięcie promieniowe ze środka głowy), wywoływany przez `uo_make_item.py` dla slotu `hood`.
+Po uwadze użytkownika (za wysoko, kołnierz nie leży na barkach): cały kaptur w dół o 126 mm (wnętrze szczytu 118 -> 25 mm nad czaszką), kołnierz wypchnięty z barków gładkim polem w przestrzeni, ponowne wiązanie.
+Wynik: odkryta skóra poza twarzą 52 -> 5-8 wierzchołków, symetria p90 5,0 mm. `.blend` bez zmian (nowy krok działa na `item.blend`). `run_qa.py` PASSED (items 0,723).
+Potem (otwór nie trzyma się twarzy, twarz niewidoczna przy odchyleniu głowy): kaptur od brody w górę sztywno na głowie (`HEAD_RIGID`), obrót do tyłu 20° (`TILT_BACK`): twarz widoczna z góry 45 -> 100 %. Renderer: `HEAD_HIDES` (`uo_head_hides`, ustawiane przez `uo_hood_cover.py`): głowa zasłania wnętrze kaptura w warstwie `clothing` (wcześniej wnętrze rysowało się na twarzy). Model: wgrany `render_uo_layer.py`.
+Otwarte: kaptur nie ma tekstury; dekolt w V kołnierza pokazuje pierś (kształt modelu); pełny `.vd` nierenderowany.
+
+## Sesja 23 (2026-10-12): kaptur „Assassin” z Google Drive (`docs/qa/autofit.md`, „Kaptur Assassin”)
+Zlecenie: kaptur ma okrywać głowę (nie za wysoko, nie za nisko), twarz widoczna, ruch z głową, cieniowanie z głębią. Potem uwaga użytkownika: „krzywo, jak porozciągana szmata”.
+Potem: kaptur niżej na czole (`TILT_BACK` 18) i krótki kołnierz do linii barków (`SHORTEN` 0,35; wstawka dekoltu tylko powyżej styku pół).
+Nowe w `uo_hood_cover.py`: `BROW_Z` (czoło pod dziobem kaptura), `TILT_FADE` (obrót tylko kaptura, nie kołnierza), `SYMMETRIZE` / `SYM_SIGMA` (płaszczyzna lustra + gładka symetryzacja), `HEAD_NEAR` (brzeg kołnierza nie idzie z głową), `BIND_SMOOTH` / `BIND_ARM`, `INNER_SHADE` (wnętrze ciemniejsze).
+`uo_bind_item.py` PART `hood`: także `upper_arm` (0,5). Model: wgrany `uo_bind_item.py`. Przepis: `docs/qa/hood_assassin_recipe.json` (model poza repo). Narzędzia zbliżeń 3D i pomiaru twarzy były w scratchpadzie (nie w repo).
+Uwaga: nowe ustawienia domyślne zmieniają też wynik starego kaptura Meshy (sesja 22, nie przeliczony).
+
+## Sesja 23, cep z łańcuchem (`docs/qa/flail.md`)
+Prośba użytkownika: łańcuch maczugi ma poddawać się fizyce. Wzorzec: oryginalna animacja cepa od użytkownika (`.vd`, poza repo). Model z Meshy według promptu z proporcjami oryginału.
+Nowe: `pipeline/uo_flail.py` (podział trzonek / łańcuch / kula, symulacja Verleta per akcja -> `flail_sim.npz`), `render_uo_layer.py` `flail_fix`, `pipeline/flail_fit.py` (pomiar wobec oryginału), `uo_place_weapon.py` `BUTT` (miejsce chwytu; przepis `"weapon": {"butt": -0.06}`), przepis `"flail"` w `uo_make_item.py`.
+Wynik (druga runda, po uwagach użytkownika): trzonek 0,56 m jak w oryginale, kula od oryginału 22,0 px (sztywny) -> 11,1 px, przedmiot 9,3 -> 4,6 px, szybkość kuli 9,8 px/klatkę (oryginał 10,9; pierwsza wersja 14,6); sztywno tylko akcje 17, 18; ręce nie wycinają cepa (`uo_occluders`); w 18, 23, 26 trzonek niesie kość broni (atak konno po zewnętrznej); kula 10,9 px, przedmiot 4,5 px; trzecia runda: tułów i ręce zasłaniają cep (zasada użytkownika), chwyt trzonka zawsze w dłoni (w ataku konno uciekał do 0,62 m); kula 11,0 px, przedmiot 5,3 px. Model: wgrane `render_uo_layer.py` i `uo_place_weapon.py`. Przepis: `docs/qa/flail_recipe.json`.
+Chód w trybie walki (15): łańcuch ma wisieć na zewnątrz i do tyłu (uwaga użytkownika). Lustro trzonka względem tułowia (v8) nie działało, bo tułów jest w tej akcji skręcony o ok. 70°; v9: trzonek pionowo + `LEAN_OUT` / `LEAN_BACK` w układzie kierunku postaci (`uo_flail.py`), `MIRROR` usunięty.
+Art i gumpy cepa (`docs/qa/flail.md`, ostatnia sekcja): `uo_render_weapon_gump.py` (na razie tylko cepy z `uo_flail.py`), `uo_hue_preview.py`, `uo_grey_metal.py`; klient w `uo_client/` (poza repo): wypakowane `art*.mul`, `Gump*.mul`, `gumpartLegacyMUL.uop`, `hues.mul`, `tiledata.mul`.
+Drewniany trzonek + szary metal: farbuje się tylko metal, jeśli przedmiot ma w tiledata flagę PartialHue (do ustawienia przez użytkownika); animacja v10 ma metal dokładnie szary.
+Model: obrót głowy wygładzony w czasie we wszystkich akcjach (maska kolegi skakała w walk war; `docs/qa/arm_poses.md`, ostatnia sekcja): skok przedmiotu sztywnego na głowie 2,75 -> 1,35 px, IoU ciała 0,9001 -> 0,8991, `test_items` 0,722. Zmieniony plik binarny: `model/UO_Body_0x190.blend` (tylko klucze `head` 31 akcji).
+
+## Sesja 24 (2026-10-13): podarta szata mnicha z dziurami (`docs/qa/robe_ragged.md`)
+Zlecenie: szata z Google Drive (`.glb`, 774 tys. wierzchołków, zamknięta bryła 1,5 cm, poza A, licencja nieznana, poza repo) na model, bez przebić ciała, tkanina ma się ruszać we wszystkich akcjach. **Decyzja użytkownika: dziury modelu są zamierzone, ciało ma przez nie prześwitywać.**
+Przepis `docs/qa/robe_ragged_recipe.json` (przepis czarnej szaty bez złota). Nowe: `uo_prepare_item.py` `HEM_FLARE` (zwężenie rozkloszowanego dołu wokół osi spódnicy; w staniu z przodu 39 -> 29 px, oryginał 469: 22), `item_skin_check.py --split` (skóra przed tkaniną vs w dziurach / pod rąbkiem).
+Wynik (35 akcji, 1050 klatek): tułów przed tkaniną 46 px, ręce 3,2 px na klatkę (nadgarstek przy mankiecie), nogi przed tkaniną to stopy leżącej postaci i jeźdźca; `item_clearance` 0,030 % / 0,43 % / 22,7 mm. Model: wgrany `uo_prepare_item.py` (bpy 4.2). Pełne `.vd` ok. 60 min (Blender 5.2).
+Odrzucone: zaszywanie dziur (`FILL_HOLES`, kod usunięty).
 
 ## Sesja 21, gump i art szaty (2026-10-14; `docs/qa/robe_black.md`, „Gump paperdolla i art”)
 `pipeline/uo_render_gump_fit.py`: gumpy męski / żeński i art przedmiotu zakrywającego ciało, dopasowane do oryginalnego przedmiotu tego rodzaju (szata 469: gumpy 50469 / 60469, art 0x1F03): poza rąk + skala x / y do sylwetki oryginału

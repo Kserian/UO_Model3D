@@ -54,6 +54,8 @@ HIDE_ERODE = 0                     # px: the area where a HAND or the HEAD hides
                                    # original in a hole of a sleeve or a collar (docs/qa/robe_black.md). 0 = off; scene property uo_hide_erode
 LEGS_UNDER = False                 # the legs (thighs, shins, feet) never hide the item: a long robe covers them in the client, and a leg that comes out in front of it in 3D (a foot
                                    # lifted in a fall, a knee through the front slit) cut a hole that showed the ORIGINAL legs (docs/qa/robe_black.md). Scene property uo_legs_under
+HEAD_HIDES = False                 # the head hides the item even when the item is skinned to it: a hood stands off the head, and through its face opening the inside of its back
+                                   # wall is behind the face (with the head "worn" it was drawn over the face; docs/qa/autofit.md "Kaptur"). Scene property uo_head_hides
 OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs item: thighs, shins, pelvis) never hide it: the item
                                    # wraps them, so their skin in front of the item shell is the item's own edge, not an occluder
                                    # (it cut 1-px strips off the sides of trousers). False = every OCCLUDERS part may hide it
@@ -81,6 +83,9 @@ sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
+OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
+                                   # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
+HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
@@ -267,6 +272,53 @@ def evaluated_co(ob, dg):
     ev = ob.evaluated_get(dg); me = ev.to_mesh()
     co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co)
     return ev, me, co.reshape(-1, 3).astype(np.float64)
+
+
+FLAIL = {}
+
+
+def flail_fix(a, i):
+    """flails (custom property uo_flail, uo_flail.py): the chain and the ball moved to the simulated nodes of this frame (flail_sim.npz next to the .blend), the haft as bound"""
+    obs = [o for o in clothes if not o.hide_render and o.get("uo_flail")]
+    if not obs:
+        return
+    if "sim" not in FLAIL:
+        path = os.path.join(os.path.dirname(bpy.data.filepath), "flail_sim.npz") if bpy.data.filepath else ""
+        FLAIL["sim"] = dict(np.load(path)) if path and os.path.exists(path) else {}
+        print("render_uo_layer: flail simulation %s (%d frames)" % (path, len(FLAIL["sim"])))
+    X = FLAIL["sim"].get("%d_%d" % (a, i))
+    for o in obs:
+        fix_off(o)
+    if X is None:
+        return
+    bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+    Mrig = np.array(rig.matrix_world)
+    for o in obs:
+        prm = json.loads(o["uo_flail"]); R = np.array(prm["nodes"]); n = len(R)
+        if (o.name, a, i) not in FIX_CACHE:
+            nv = len(o.data.vertices)
+            s = np.empty(nv, np.float32); o.data.attributes["uo_flail_s"].data.foreach_get("value", s)
+            part = np.empty(nv, np.int32); o.data.attributes["uo_flail_part"].data.foreach_get("value", part)
+            co = np.empty(nv * 3, np.float32); o.data.vertices.foreach_get("co", co); co = co.reshape(-1, 3).astype(np.float64)
+            Mo = np.linalg.inv(Mrig) @ np.array(o.matrix_world)                      # object -> armature (does not change with the direction)
+            Vr = co @ Mo[:3, :3].T + Mo[:3, 3]
+            Ms = FLAIL["sim"].get("%d_%d_M" % (a, i))                              # the hand's turn smoothed over the action (uo_flail.py HAND_SMOOTH): the haft drawn with it too
+            pb = rig.pose.bones[prm["bone"]]; F = (np.array(pb.matrix) @ np.linalg.inv(np.array(pb.bone.matrix_local)))[:3, :3] if Ms is None else Ms[:3, :3]
+            seg = (prm["ball_start"] - prm["haft_end"]) / (n - 2)
+            piece = np.where(part == 2, n - 2, np.clip(((s - prm["haft_end"]) / seg).astype(int), 0, n - 3))
+            ev, me, cur = evaluated_co(o, dg); Mw = np.array(ev.matrix_world); ev.to_mesh_clear()
+            pos = cur.copy(); Mi = np.linalg.inv(Mw) @ Mrig
+            if Ms is not None:
+                m0 = part == 0; pos[m0] = (Vr[m0] @ Ms[:3, :3].T + Ms[:3, 3]) @ Mi[:3, :3].T + Mi[:3, 3]
+            for k in range(n - 1):                                                    # each piece turned like its segment, the turn carried down from the haft (no twist jumps)
+                c = F @ (R[k + 1] - R[k]); x = X[k + 1] - X[k]
+                F = np.array(Vector(c.tolist()).rotation_difference(Vector(x.tolist())).to_matrix()) @ F
+                m = (piece == k) & (part > 0)
+                if m.any():
+                    P = X[k] + (Vr[m] - R[k]) @ F.T
+                    pos[m] = P @ Mi[:3, :3].T + Mi[:3, 3]
+            FIX_CACHE[(o.name, a, i)] = pos.astype(np.float32)
+        fix_on(o, FIX_CACHE[(o.name, a, i)].astype(np.float64))
 
 
 def body_fix(a, i):
@@ -612,6 +664,8 @@ def worn_parts(share=0.04):
 WORN = worn_parts() if (LAYER == "clothing" and OWN_PARTS_NEVER_HIDE) else set()
 if LAYER == "clothing" and LEGS_UNDER:
     WORN |= {"thigh", "shin", "foot"}
+if HEAD_HIDES:
+    WORN.discard("head")
 OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP keeps the items away from
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
 HANDHEAD_TRIS = body_part_mask({"hand", "head"})                # HIDE_ERODE shrinks what these hide (a hand only next to its sleeve)
@@ -878,6 +932,8 @@ def frame_job():
                     sc.frame_set(1 + i * STEP)
                     if (BODY_GAP > 0 or HAS_CLOTH) and LAYER != "body":
                         body_fix(a, i)
+                    if LAYER != "body":
+                        flail_fix(a, i)
                     orig = original(a, i, d) if EXACT_ANY else None
                     orig_m = orig[..., 3] > 0 if orig is not None else None
                     if LAYER == "body" and EXACT_BODY and orig is not None:

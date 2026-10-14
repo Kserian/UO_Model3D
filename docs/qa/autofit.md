@@ -80,3 +80,58 @@ Uwaga użytkownika: z przodu kaptur „krzywy i niepełny”. Surowy model jest 
 (1042 wierzchołki w środku, przesunięte prawie wszystkie, do 17 cm) wygięło boki nierówno, przy twarzy zostawały 1-px paski i dziury. Większy kaptur (`UNIT` 0,33 / 0,36 / 0,40) nie pomaga
 (więcej w środku, p90 19-29 mm). Bez dopasowania p90 5,4 mm i równy otwór na twarz; drobne wejście w skórę wyrównuje render (`BODY_GAP`). Zmiana: `uo_prepare_item.py` `FIT = None` = wg slotu,
 dla `hood` bez `uo_fit_item.py` (przepis może włączyć: `"prepare": {"FIT": true}`).
+
+Sesja 22 (2026-10-12, „ma zakrywać głowę z każdej strony, symetrycznie, z dziurą na twarz”): ten sam model. Po autofit (bez fit) **uszy wychodzą przez boki kaptura**:
+promień ze środka głowy C (kość głowy + 8 cm) przez skórę głowy za twarzą nie trafia w kaptur dla 52 wierzchołków (lewe 19, prawe 33; x ±0,118 m, z 1,59-1,72), widać to na zbliżeniu z boku.
+Nowy krok `pipeline/uo_hood_cover.py` (`uo_make_item.py` uruchamia go dla `kind: hood`, przepis `"hood_cover": false | {"GAP": ...}`): każdy wierzchołek kaptura w tym samym kierunku od C
+co skóra głowy (stożek 4°; skóra + jej odbicie lustrzane, twarz z przodu pominięta) ma stać co najmniej `GAP` 12 mm dalej niż ona; potrzeba rozlana po kierunkach (σ 14°) i po siatce
+(30 przejść, nigdy poniżej własnej potrzeby), wierzchołek bierze większe pchnięcie swoje i bliźniaka z odbicia. Wynik: odkryta skóra poza twarzą 52 -> 5 wierzchołków (środek pod brodą, w otworze twarzy),
+symetria kaptura p90 4,7 -> 4,8 mm, przesunięte 18 tys. wierzchołków o maks. 42 mm (gładko). Odrzucone: σ 7° i przesuwanie tylko warstwy przy głowie (guzy na boku kaptura).
+Warstwa na oryginalnym ciele (`item_body_holes.py`, 8 akcji, 240 klatek): „tułów” 624 px i „głowa” 528 px to dekolt w V kołnierza i otwór twarzy modelu (z przodu), ręce 194 px, nogi 44 px.
+`item_qa` 11,1 -> 11,4 % (kołnierz w klatce przy ruchu ramion; render wypycha `BODY_GAP`). Przepis: `docs/qa/hood_recipe.json` (model nie jest w repo).
+Uwaga użytkownika: kaptur za wysoko (wnętrze szczytu powinno prawie dotykać głowy) i dół kaptura nie przylega do barków. Zmierzone (promień z C): wnętrze szczytu 118 mm nad czaszką,
+z przodu u góry 130, boki 25-31. Zmiana w `uo_hood_cover.py`: cały kaptur w dół (`TOP_GAP` 12 mm; spadek poprawiany 3 razy, bo wypchnięcia podnoszą szczyt), potem uszy, potem
+wypchnięcie z całego ciała do `BODY_GAP` 8 mm wzdłuż normalnej skóry jako gładkie pole w przestrzeni (`FIELD_SIGMA` 3 cm, odbite lustrzanie, 8 rund), na koniec ponowne wiązanie.
+Wynik: kaptur niżej o 126 mm, wnętrze szczytu 25 mm nad czaszką (z przodu 23, z tyłu u góry 23; boki 37-43), kołnierz leży na barkach i klatce, symetria p90 5,0 mm. `item_qa` 11,4 -> 3,7 % (kaptur w ciele w ruchu). `item_body_holes` (9 akcji, 290 klatek): tułów 2969 px, prawie całość to dekolt w V kołnierza, który po obniżeniu sięga niżej na pierś (kształt modelu), ręce 393, nogi 19.
+Odrzucone: ściśnięcie samej góry w pionie (użytkownik: obniżyć całość), opadanie per wierzchołek z zatrzymaniem na ciele i pchnięcie per wierzchołek wygładzane po siatce
+(pogniecione: warstwa wewnętrzna i zewnętrzna tkaniny rozjeżdżały się).
+Uwaga użytkownika: otwór kaptura nie trzyma się twarzy, przy odchyleniu głowy nie widać twarzy. Zmierzone: (1) brzeg otworu przy brodzie (z 1,52-1,58 m) miał średnio 0,64 wagi głowy (min 0),
+zostawał z szyją; (2) po obniżeniu brzeg kaptura zszedł do brwi (najniższy punkt nad czołem z 1,872 -> 1,728 m): z przodu widać 72 % punktów twarzy, z góry (30°, jak kamera UO) 45 %
+(przed obniżeniem 100 / 100 %), na sprite'ach piksele twarzy w otworze 528 -> 131. Zmiany w `uo_hood_cover.py`: `HEAD_RIGID` / `HEAD_BLEND` (od wysokości kości głowy w górę kaptur tylko na głowie,
+7 cm przejścia do wag kołnierza; brzeg przy brodzie 0,64 -> 0,96) i `TILT_BACK` (kaptur obrócony do tyłu wokół C przed obniżeniem). Kąt z pomiaru: 10° -> 84 / 73 %, **20° -> 100 / 100 %**
+(brzeg z 1,815 m, szczyt 26 mm nad czaszką), 30° -> 100 / 100 % (szczyt 34 mm). Przepis: `"hood_cover": {"TILT_BACK": 20}`. `BODY_ROUNDS` 8 -> 20 (po obrocie 8 rund zostawiało 115 wierzchołków do 29 mm w barku).
+Z boku ramię zasłania brzeg kołnierza, który wisi między ramieniem a tułowiem (promienie z kamery: skóra 2-3 cm przed kapturem, kaptur nie jest w ciele).
+Na sprite'ach twarz nadal była zakryta: w warstwie `clothing` przez otwór widać wnętrze tylnej ściany kaptura, a głowa (kość, na której kaptur jest skórowany) według `OWN_PARTS_NEVER_HIDE`
+nigdy nie zasłania przedmiotu, więc wnętrze rysowało się na twarzy. Nowe: `render_uo_layer.py` `HEAD_HIDES` (właściwość sceny `uo_head_hides`, domyślnie wyłączona; `uo_hood_cover.py` ją ustawia):
+głowa może zasłaniać przedmiot, który na niej siedzi (kaptur stoi ≥ 12 mm od głowy, więc przód kaptura nie jest wycinany). Wynik (11 akcji, 350 klatek, `item_body_holes`): piksele twarzy widoczne w otworze 163 -> 3320; `run_qa` PASSED (items 0,723, canvas 16/16).
+Uwaga użytkownika: czasem dwa otwory w kapturze. Zbliżenia klatek z etykietą części ciała: pod otworem twarzy pas kaptura w poprzek szyi, pod nim dekolt w V kołnierza (pierś); w 3D tak samo
+(po obniżeniu i odchyleniu dolny brzeg otworu twarzy idzie w poprzek szyi, poły kołnierza krzyżują się dopiero na piersi). Szyja jako zasłaniająca (jak `HEAD_HIDES`) nic nie zmieniła (pas to przód
+kaptura, nie wnętrze) i została cofnięta. Zmiana: `uo_hood_cover.py` `FILL_NECK` 6 mm: wewnętrzna wstawka z tkaniny kaptura nad skórą szyi i piersi widoczną przez przód kaptura (z przodu i z góry 30°),
+poszerzona o 4 pierścienie siatki skóry, wagi jak skóra. Wynik (11 akcji): dziury tułowia 1736 -> 228 px, twarz 3320 -> 3331 px. 35 akcji (1050 klatek): klatki z ≥ 2 otworami ≥ 3 px w warstwie: 24, z tego 18 to ramię / dłoń przed kołnierzem (zasłanianie, nie otwór w materiale),
+6 to szczeliny 3 px (tułów 4, głowa 2); dziury tułowia 655 px, twarz w otworze 8961 px.
+
+### Kaptur „Assassin” (sesja 23, 2026-10-12)
+Model użytkownika (Google Drive, `.glb` 581 tys. wierzchołków, tekstura prawie biała ok. 205/255, mapa normalnych; licencja nieznana, poza repo): kaptur z dziobem nad czołem i kołnierzem z rogami na barkach.
+Przepis `docs/qa/hood_assassin_recipe.json`. Pomiary w spoczynku (promienie ze skóry, `item_qa` na 6 akcjach) i na sprite'ach.
+1. **Pas skóry przez szczyt kaptura:** `uo_hood_cover.py` pomijał całą skórę przed twarzą, a dziób kaptura po obniżeniu wchodził w czoło. Nowe `BROW_Z` (6 cm nad C): skóra czoła, przez którą promień z C trafia w kaptur, też jest wypychana. Wierzchołki kaptura w głowie 59 -> 0.
+2. **Wysokość / twarz:** `TILT_BACK` 20 / 23 / 25 / 27 / 30°: oczy z kamery UO 58 / 69 / 82 / 91 / 100 %, odkryte czoło 101 / 136 / 153 / 168 / 202 z 269 punktów, przy 30° odsłonięte boki głowy (282 punkty, było 117). Wybrane 25°.
+   Obrót całego kaptura podnosił też poły kołnierza (z boku sterczały do przodu): `TILT_FADE` 0,1 m = obrót pełny nad kością głowy, wygaszony poniżej (0,08 i 0,15 dają to samo).
+3. **Krzywo:** surowy model jest obrócony o ok. 3° i niesymetryczny (lustro p90 21,6 mm). `SYMMETRIZE`: dopasowanie płaszczyzny lustra (obrót 3,25°, przechył 0,75°, x −6,2 mm; p90 26,3 -> 17,3 mm), potem połowa drogi do odbitej powierzchni jako gładkie pole w przestrzeni (`SYM_SIGMA` 2 cm, 4 przejścia): p90 9,5 mm. Odrzucone: przesuwanie każdego wierzchołka osobno (poszarpany dziób, warstwy dobierane na krzyż).
+4. **„Szmata” w ruchu:** dolny brzeg kaptura przy barkach (z 1,48-1,55 m) miał 40-70 % wagi głowy (sama wysokość, `HEAD_BLEND`) i przy ruchu głowy wchodził w barki. `HEAD_NEAR` 3 cm: waga głowy wygaszana, gdzie kaptur jest bliżej skóry barków / klatki niż głowy. Wierzchołki > 5 mm w ciele: atak 2433 -> 1259, bieg 1293 -> 151, czar ok. 5000 (ręce do przodu unoszą boki kołnierza; render je wypycha). `item_qa` 7,0 -> 3,4 %.
+   Wagi: `PARTS["hood"]` z ramionami (`upper_arm` 0,5) i `BIND_SMOOTH` 12; warianty ramienia 0 / 0,5 / 1,0 prawie bez różnicy (`item_qa` 6,5-7,1 % przed `HEAD_NEAR`).
+5. **Głębia:** mapa normalnych po filtrze tekstury do rozdzielczości sprite'a jest płaska (odchylenie 0,002), siła 1-3 nie zmienia pikseli. Jasność sama nie daje głębi (`item_look` shade/mean stałe ok. 0,10).
+   Nowe `INNER_SHADE`: tkanina zwrócona do ciała (promień wzdłuż normalnej trafia w ciało w 10 cm) i wstawka dekoltu mają ten ułamek koloru (atrybut `uo_shade` w materiale). Szarość pod hue (`SATURATION` 0, `BRIGHTNESS` 0,55: średnia 189 -> 134, jak szaty 469/449 134-149).
+   `item_look` (stand + walk): shade 14,6 (bez) -> 16,5 (0,4) -> 17,7 (0,25); oryginały 21-25. Uwaga: to przyciemnienie zależne od geometrii (wnętrze), nie zmiana światła UO.
+Wynik: twarz z przodu i z kamery UO 100 %, oczy 100 %, wnętrze szczytu 21 mm nad czaszką, brzeg kaptura z = 1,774 m (nad brwiami), symetria p90 9,5 mm.
+Otwarte: w czarze (ręce do przodu) boki kołnierza są wypychane przez ramiona; głębia nadal poniżej oryginałów (gładka powłoka bez fałd).
+Uwaga użytkownika (ta sama sesja): kaptur bardziej na czoło, dół krótszy, ma tylko lekko dotykać ramion.
+`TILT_BACK` 25 -> 18°: brzeg nad czołem z 1,774 -> 1,737 m, odkryte czoło 167 -> 93 z 269 punktów, twarz z kamery UO 90 %, oczy 74 % (z przodu 100 / 100 %).
+Nowe `SHORTEN` 0,35 (`SHORTEN_Z` 1,55 m, linia barków): to, co wisi niżej, jest ściskane w pionie ku tej linii, brzeg zachowuje kształt; najniższy punkt kołnierza 1,217 -> 1,433 m.
+Odrzucone: ściąganie kołnierza promieniowo do nasady szyi (przód nadal długi, kołnierz obciskał tors jak kamizelka). Wstawka dekoltu (`FILL_NECK`) zaczyna się teraz najniżej tam, gdzie schodzą się poły kołnierza
+(przy krótkim kołnierzu obejmowała całą odsłoniętą pierś jako ciemny „śliniak”). `item_qa` 4,6 %; w czarze ramiona przechodzą przez skrzydła kołnierza (render je wypycha). `item_look` shade 16,2, średnia 149.
+Uwaga użytkownika: kołnierz nieco dłuższy, cieniowanie, kaptur bardziej na oczy, szpic z przodu jak w oryginale; łagodne krawędzie, bez czystej czerni.
+Szpic i spiczasty czubek ginęły przy obniżeniu o 126 mm (`TOP_GAP` 12 mm): czaszka wypychała czubek w kopułę (pchnięcia do 77-97 mm). `TOP_GAP` 50 mm i `TILT_BACK` 0: pchnięcia do 19 mm, kształt modelu zostaje,
+brzeg z 1,717 m (oczy: z przodu 94 %, z kamery UO 22 %, zasłania je dziób), `TILT_BACK` 8 -> brzeg 1,746 m, oczy z góry 94 %. `SHORTEN` 0,35 -> 0,5 (dół 1,433 -> 1,414 m).
+Nowe `OCCLUSION` (0,8; 24 promienie po półsferze normalnej, 6 cm, kaptur + ciało; na prośbę użytkownika tylko dla tego przedmiotu, światło UO bez zmian) i `SHADE_MIN` 0,35 (cień nigdy czarny); obrys `uo_outline` 0,65.
+`item_look` (stand + walk, ten sam model bez / z): 14,6 -> 16,0 przy 0,8 (0,5: 15,3); w przepisie z progiem 0,35 i obrysem 0,65: 13,8, średnia 143. Piksele obrysu p5/p50 25/49 -> 41/82, najciemniejszy piksel 17 (8 z 51 tys. <= 20).
+`item_qa` 4,4 %, wierzchołki w ciele: atak 242, bieg 43, czar 6882 (ramiona przez skrzydła kołnierza, render wypycha). Symetria p90 8,0 mm.

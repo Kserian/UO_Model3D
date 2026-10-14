@@ -16,6 +16,7 @@ from mathutils import Vector, Matrix
 PART = "polearm"      # "polearm", "axe2h", "bow" or "weapon1h"
 REF_ANIM = None       # original weapon whose head orientation to copy (anim id, e.g. 624 halberd, 613 executioner's axe, 623 cutlass); None = the reference of the class
 ROLL_DEG = None       # or: offset of the head about the shaft in degrees (overrides REF_ANIM)
+BUTT = None           # m along the class line where the butt goes (the hand pivot is at 0): None = the class's usual `butt`; e.g. -0.06 = held close to the butt end (a flail's short haft)
 BONE = {"polearm": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "weapon1h": "weapon1h.R"}[PART]
 
 WM = json.loads(bpy.data.texts["weapon_motion.json"].as_string())[BONE]
@@ -31,11 +32,11 @@ for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
     co = np.array([ob.matrix_world @ v.co for v in ob.data.vertices])
     z0, ctr = co[:, 2].min(), co[:, :2].mean(0)                                # butt height, shaft axis (middle of the bounds in XY)
     R = Vector((0, 0, 1)).rotation_difference(d).to_matrix().to_4x4()
-    start = piv + d * WM["butt"]                                               # where the butt goes
+    start = piv + d * (WM["butt"] if BUTT is None else BUTT)                  # where the butt goes
     Rr = Matrix.Identity(4)
     if ru is not None:
         x1 = R.to_3x3() @ Vector((1, 0, 0))
         Rr = Matrix.Rotation(math.atan2(d.dot(x1.cross(ru)), x1.dot(ru)), 4, d)
     T = Matrix.Translation(start) @ Rr @ R @ Matrix.Translation(-Vector((ctr[0], ctr[1], z0)))
     ob.matrix_world = T @ ob.matrix_world
-    print("uo_place_weapon: %s on the line of %s, butt at %.2f m along it" % (ob.name, BONE, WM["butt"]))
+    print("uo_place_weapon: %s on the line of %s, butt at %.2f m along it" % (ob.name, BONE, WM["butt"] if BUTT is None else BUTT))
