@@ -38,10 +38,9 @@ CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom propert
 CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share in which the hanging part follows the legs as in riding (CLOTH_MOUNTED) instead of hanging from the pelvis
                                    # pushed out by the legs: a robe lying on the ground lies along the legs (the original robe 469 is a narrow shape with a notch between them, the hull and
                                    # the simulation made one wide lump; docs/qa/robe_black.md). 0 = off; scene property uo_cloth_lie (uo_cloth_sim.py does not simulate these actions then)
-CLOTH_LIE_SQUEEZE = 1.0            # with CLOTH_LIE: below the waist the part of the garment's offset from its axis that points UP in the frame (world up taken into the pelvis frame)
-                                   # is cut to this share (in the rest shape, full from 0.3 m under the waist, only as far as the body lies), then laid along the legs: a flared robe kept
-                                   # its whole width round the lying legs and stood up over them as a dome; the sides stay spread on the ground (docs/qa/robe_ragged.md).
-                                   # 1 = off; scene property uo_cloth_lie_squeeze
+CLOTH_LIE_DROP = 1.0               # with CLOTH_LIE: below the waist the lying garment falls by gravity onto what is under it (the posed legs / body, else the ground): its height above
+                                   # that support is cut to this share (smoothed over the cloth; full 0.3 m under the waist, as far as the body lies). The front between the legs is
+                                   # weighted to both of them and stood up over the raised knees as a sail (docs/qa/robe_ragged.md). 1 = off; scene property uo_cloth_lie_drop
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
@@ -91,7 +90,8 @@ LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
                                    # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
 HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
-CLOTH_LIE_SQUEEZE = float(sc.get("uo_cloth_lie_squeeze", CLOTH_LIE_SQUEEZE))
+CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
+LIE_W = {}
 FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
@@ -200,15 +200,8 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
         return ((d @ skin["chest"][:3, :3].T) @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     share = CLOTH_MOUNTED if 23 <= a <= 29 else CLOTH_LIE if a in (21, 22) else 0.0
     if share > 0:                                                             # riding (and lying, CLOTH_LIE): the hanging part lies along the legs, as the skin under it would move it
-        Vr0 = Vr
-        if a in (21, 22) and CLOTH_LIE_SQUEEZE < 1.0:                          # gravity on a lying robe: the side of the skirt that faces up falls onto the legs (its flare stood up over them as a dome)
-            up = skin["pelvis"][:3, :3].T @ np.array([0.0, 0.0, 1.0]); uh = up[:2]; tilt = np.linalg.norm(uh)
-            w = np.clip((tilt - 0.3) / 0.5, 0, 1)                             # 0 while upright, 1 lying
-            if w > 0:
-                uh = uh / tilt; c = np.asarray(prm["centre"], float)
-                k = (1.0 - CLOTH_LIE_SQUEEZE) * w * np.clip((prm["z_top"] - Vr[:, 2]) / 0.3, 0, 1)
-                d = Vr[:, :2] - c; sd = np.maximum(d @ uh, 0.0)              # the part of the offset that points up
-                Vr = Vr.copy(); Vr[:, :2] = Vr[:, :2] - (k * sd)[:, None] * uh
+        up = skin["pelvis"][:3, :3].T @ np.array([0.0, 0.0, 1.0])            # how far the body lies (0 upright, 1 lying): CLOTH_LIE_DROP in body_fix
+        LIE_W[o.name] = float(np.clip((np.linalg.norm(up[:2]) - 0.3) / 0.5, 0, 1)) if a in (21, 22) else 0.0
         Vh = np.c_[Vr, np.ones(len(Vr))]
         nv = len(o.data.vertices); Pp = (Vh @ skin["pelvis"].T)[:, :3]; d0 = np.zeros_like(Vr)
         have = all(("uo_leg_" + nm) in o.data.attributes for nm in cl.Capsules.NAMES)
@@ -221,8 +214,6 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
             leg = lambda sd: (1 - ws) * (Vh @ skin["thigh." + sd].T)[:, :3] + ws * (Vh @ skin["shin." + sd].T)[:, :3]
             d0 = np.clip((prm["z_top"] - Vr[:, 2]) / 0.2, 0, 1)[:, None] * ((1 - side)[:, None] * leg("L") + side[:, None] * leg("R") - Pp)
         d0 = d0 * share
-        if Vr is not Vr0:
-            d0 = d0 + ((Vr - Vr0) @ skin["pelvis"][:3, :3].T)
         return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     d0 = cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
                       z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
@@ -339,6 +330,25 @@ def flail_fix(a, i):
         fix_on(o, FIX_CACHE[(o.name, a, i)].astype(np.float64))
 
 
+def lie_drop(o, first, X, bvh, bco, E, deg):
+    """CLOTH_LIE_DROP: the lying skirt (body space X) falls onto the posed body under it (ray straight down) or the ground; displacement in body space"""
+    prm = json.loads(o["uo_cloth"]); n = len(o.data.vertices)
+    co = np.empty(n * 3, np.float32); o.data.vertices.foreach_get("co", co); Mb_ = np.array(o.matrix_basis)
+    zr = ((co.reshape(-1, 3) @ Mb_[:3, :3].T + Mb_[:3, 3])[first])[:, 2]
+    k = (1.0 - CLOTH_LIE_DROP) * LIE_W[o.name] * np.clip((prm["z_top"] - zr) / 0.3, 0, 1)
+    ground = float(bco[:, 2].min()); top = float(X[:, 2].max()) + 0.1
+    sup = np.full(len(X), ground)
+    for j in np.nonzero(k > 0)[0]:
+        loc = bvh.ray_cast(Vector((X[j, 0], X[j, 1], top)), Vector((0, 0, -1)), top - X[j, 2] + 0.5)[0]
+        if loc is not None and loc.z < X[j, 2]:                     # the highest body surface under the cloth (the cloth itself above it)
+            sup[j] = max(ground, loc.z)
+    dz = -k * np.maximum(X[:, 2] - sup, 0.0)
+    for _ in range(6):                                            # smoothed over the cloth: no tearing between a fallen and a held vertex
+        acc = np.zeros_like(dz); np.add.at(acc, E[:, 0], dz[E[:, 1]]); np.add.at(acc, E[:, 1], dz[E[:, 0]])
+        dz = np.where(deg > 0, 0.5 * dz + 0.5 * acc / np.maximum(deg, 1), dz)
+    return np.c_[np.zeros((len(X), 2)), dz]
+
+
 def body_fix(a, i):
     """BODY_GAP for UO frame i of action a: the pose does not depend on the direction, so each frame is solved once"""
     items = [o for o in clothes if not o.hide_render and not o.get("uo_no_body_gap")]   # uo_no_body_gap: a rigid item (sword, shield) is never bent
@@ -372,6 +382,9 @@ def body_fix(a, i):
             Dc = cloth_push(o, first, dg, Mw, a, i)                                 # loose garment: the legs push it out first
             if Dc is not None:
                 X = X + Dc @ M[:3, :3].T
+                if CLOTH_LIE_DROP < 1.0 and LIE_W.get(o.name, 0.0) > 0:
+                    G = lie_drop(o, first, X, bvh, bco, E, deg)
+                    X = X + G; Dc = Dc + G @ np.linalg.inv(M[:3, :3]).T
             if o.get("uo_conform") and cbvh is not None and "uo_region" in o.data.attributes:
                 lab = np.empty(len(o.data.vertices), np.int32); o.data.attributes["uo_region"].data.foreach_get("value", lab)
                 gap = max(float(json.loads(o["uo_conform"]).get("gap", BODY_GAP)), BODY_GAP)

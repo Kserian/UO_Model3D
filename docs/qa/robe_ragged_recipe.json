@@ -3,4 +3,4 @@
  "prepare": {"HEM": 0.15, "HEM_FLARE": {"factor": 0.65, "from": 0.95}},
  "conform": {"CLOTH_KAPPA": 1.0, "CLOTH_MARGIN": 0.06, "SPACE_SMOOTH": 0.04, "SLEEVE_END": 0.02, "CLOTH_DROP": 0.3, "SLEEVE_CUFF": 0.05},
  "sim": {"arm_goal": 0.95, "smooth": 0.04},
- "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 28, "uo_cloth_lie": 1.0}}
+ "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1, "uo_despeckle": 0, "uo_fill_holes": 0, "uo_cloth_lie": 1.0, "uo_cloth_lie_drop": 0.5}}
