@@ -153,6 +153,13 @@ Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.
   (jasność wokół mediany do potęgi 1,2), ziarno i plamki (szum rozmyty 0,6 / 2 px, po 4 % jasności, na złocie połowa), p5 / p50 / p95 szarości z powrotem jak w oryginale, brzeg złotych pasów
   o 20 % ciemniejszy; złoto z wzorem haftu tekstury (`GOLD_SIGMA` 2 px w skali x4, `GOLD_MOTTLE` 1). Pomiar (gump męski, ziarno = odch. std jasności - rozmycie 1 px, fałdy = rozmycie 1 px - 6 px):
   ziarno 0,024 -> 0,034 (oryginał 0,020), fałdy 0,061 -> 0,085 (0,067), p5 0,27 -> 0,17 (0,19); art: ziarno 0,039 -> 0,065 (0,058), fałdy 0,055 -> 0,085 (0,075).
+  Prośba: szata kobieca bardziej dopasowana, złote pasy symetryczne i ładniejsze. Kobieta (`FIT_TORSO`): skala w poprzek kości pelvis / spine / chest (obojczyki wzdłuż, barki do środka;
+  dzieci bez dziedziczenia skali) dobrana na rzucie samego tułowia (trójkąty bez wag rąk) do ciała 13 + 3 px na stronę w wierszach 106-142 (pelvis 0,98, spine 1,09, chest 0,91; talia 34 -> 33 px,
+  cel 32; tułów był już blisko ciała), ramię celowane z przesuniętego barku, kx_top ≤ 1,0. Pudełkowy wygląd dawały szerokie rękawy zlane z talią (oryginał i ciało 13 mają tam przerwę):
+  górny rękaw zwężony do 0,7 w poprzek (`UPPER_W`); piksele szaty w przerwach ręka-talia (wiersze 104-124, poza ciałem i oryginałem) 156 -> 66 (0,55: 56, wygląda chudo). IoU kobiecej z 60469
+  0,867 -> 0,834 (zamierzone: oryginał jest luźny). Pasy (`sym_trims`, na siatce gumpa przed poziomami): przednie pasy z prostych krawędzi symetrycznych względem osi pasów (zgodność maski z odbiciem
+  0,997 / 0,996), rąbek: wysokość pasa wygładzona i uśredniona z odbiciem, haft: ciemniejsza lamówka, jasna nitka, kropki co 4 px na środku pasa, pół złota płaskiego, pół z tekstury. Pierwsza próba
+  (lamówka x0,75, motyw na całej szerokości pasa) wyglądała jak drabinka. Art: maska złota symetryzowana przed obrotem (`sym_art`).
 - art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
 - zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
 Pliki szaty i grafiki nie są w repo.

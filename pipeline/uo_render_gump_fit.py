@@ -39,7 +39,7 @@ GOLD_AREA = 125000                                         # hi-res px of the it
 GOLD_BIG, GOLD_SMALL, GOLD_EDGE = 2000, 200, 12            # hi-res px: gold pieces kept (bigger than BIG, or than SMALL touching the item's edge within EDGE: collar, cuffs; stray specks dropped)
 GOLD_CLOSE, GOLD_OPEN, GOLD_MAJ = 6, 5, 2                  # hi-res px radii of the closing / opening of the gold mask, passes of a 3 x 3 majority on the gump pixels
 GOLD_SIGMA, GOLD_MOTTLE = 2.0, 1.0                         # the gold's colour: its median mixed with the texture's colour smoothed by GOLD_SIGMA hi-res px (the embroidery's pattern)
-TEX_FOLDS, TEX_GAMMA, TEX_GRAIN, TEX_MOTTLE, TEX_GOLD, TEX_BORDER = 0.6, 1.2, 0.04, 0.04, 0.5, 0.8   # texture_cloth(): see there
+TEX_FOLDS, TEX_GAMMA, TEX_GRAIN, TEX_MOTTLE, TEX_GOLD, TEX_BORDER = 0.6, 1.2, 0.04, 0.04, 0.0, 1.0   # gold: no noise and no darker edge (sym_trims draws its embroidery)   # texture_cloth(): see there
 LINE_K = 0.7
 COVER_PX = 4                                               # px: the body gump's skin this close to the item (not the fists, head, feet) is covered by it (the original covers all of the body
                                                            # but the hands, head and feet; a bare shoulder / forearm showed through)   # smooth_cloth(): px, share of the evening, px, the outline's share of the colour
@@ -81,11 +81,30 @@ for o in items:                              # no per-frame cloth push here: the
             del o[k]
 
 
+TORSO = {}                                   # bone -> scale across the body (fit_torso): pelvis / spine / chest along x, the clavicles along themselves (the shoulders come in with the chest)
+FIT_TORSO = {"female": True}                 # genders whose robe is fitted to the drawn body (user: the woman's robe more fitted; the original 60469 is as loose as the man's)
+FIT_MARGIN = float(os.environ.get("PD_FIT_MARGIN", "3"))   # px of cloth beyond the drawn body on each side, shoulders to hips
+UPPER_W = {"female": float(os.environ.get("PD_UPPER_W", "0.7"))}   # the upper sleeve this wide across the arm: the wide sleeves merged with the torso at the waist (the drawn woman and
+                                             # the original show a gap between the arm and the waist)
+FIT_ROWS = (106, 142)                        # gump rows of the fit (waist and hips of body 13; above, the drawn upper arms join the torso)
+
+
+def apply_torso():
+    """the robe's torso narrowed (TORSO); the children do not inherit the scale (legs, neck, arms keep their size, the shoulders move in)"""
+    for bn in ("spine", "chest", "neck", "clavicle.L", "clavicle.R", "thigh.L", "thigh.R", "upper_arm.L", "upper_arm.R"):
+        rig.data.bones[bn].inherit_scale = "NONE" if TORSO else "FULL"
+    for bn in ("pelvis", "spine", "chest"):
+        rig.pose.bones[bn].scale = (TORSO.get(bn, 1.0), 1.0, 1.0)
+    for side in ("L", "R"):
+        rig.pose.bones["clavicle." + side].scale = (1.0, TORSO.get("chest", 1.0), 1.0)
+
+
 def pose_arms(out_deg, bend_deg, length=1.0):
     """both arms `out_deg` further out at the shoulder and `bend_deg` more out at the elbow, in the front plane (about the forward axis); upper arm and forearm `length` times as long
     (the drawn paperdoll bodies have shorter arms than the 3D body: with the real length the hand reached the fist only with the upper arm pulled into the torso)"""
     for pb in rig.pose.bones:
         pb.matrix_basis = Matrix()
+    apply_torso()
     for side, sg in (("L", -1.0), ("R", 1.0)):
         for bn, ang in (("upper_arm." + side, out_deg), ("forearm." + side, bend_deg)):
             ml = rig.data.bones[bn].matrix_local.to_3x3()
@@ -112,20 +131,23 @@ def from_gump(px, p):
     return np.array([(px[0] - GX0 - dx) / (PXM * kx_at(z, kxt, kxb)), z])
 
 
-def pose_arms_to(joints, p, wrist=None):
+def pose_arms_to(joints, p, wrist=None, upper_w=1.0):
     """each upper arm along shoulder -> elbow of the body gump, in the front plane, as long as that (the drawn arms are shorter); each forearm aimed at the wrist (aim_forearm);
     the hands shrunk to nothing (the body is a holdout: a 3D hand in front of the sleeve would cut a hole in it, the drawn fist shows instead)"""
     for pb in rig.pose.bones:
         pb.matrix_basis = Matrix()
+    apply_torso(); bpy.context.view_layer.update()
     out = {}
     for side, (S, E, W) in joints.items():
         if wrist and side in wrist:
             W = wrist[side]
         s, e, w = (from_gump(np.array(v, float), p) for v in (S, E, W))
+        if TORSO:                                # the narrowed chest moved the shoulder: the upper arm from where it is to the elbow
+            h = rig.matrix_world @ rig.pose.bones["upper_arm." + side].head; s = np.array([h.x, h.z])
         b = rig.data.bones["upper_arm." + side]; d0 = np.array([b.tail_local.x - b.head_local.x, b.tail_local.z - b.head_local.z]); tgt = e - s
         ang = -np.arctan2(d0[0] * tgt[1] - d0[1] * tgt[0], d0 @ tgt); k = float(np.linalg.norm(tgt)) / b.length       # Matrix.Rotation(t, "Y") turns (x, z) by -t
         ml = b.matrix_local.to_3x3()
-        pb = rig.pose.bones["upper_arm." + side]; pb.rotation_mode = "QUATERNION"; pb.rotation_quaternion = (ml.inverted() @ Matrix.Rotation(ang, 3, "Y") @ ml).to_quaternion(); pb.scale = (1.0, k, 1.0)
+        pb = rig.pose.bones["upper_arm." + side]; pb.rotation_mode = "QUATERNION"; pb.rotation_quaternion = (ml.inverted() @ Matrix.Rotation(ang, 3, "Y") @ ml).to_quaternion(); pb.scale = (upper_w, k, upper_w)
         for bn in ("forearm." + side, "hand." + side):
             rig.data.bones[bn].inherit_scale = "NONE"
         bpy.context.view_layer.update()
@@ -214,7 +236,7 @@ def hand_mask(body_png, ref, E, W):
     return fm & ((X - W[0]) * d[0] + (Y - W[1]) * d[1] > 0)
 
 
-def fit_cuffs(joints, p, body_png, ref):
+def fit_cuffs(joints, p, body_png, ref, upper_w=1.0):
     """per arm: the forearm aimed (aim_forearm) until the centre of the sleeve's mouth (cuff_rims) lands CUFF_INTO px past the drawn wrist (JOINTS) in the gump: fixed-point, the forearm's
     target moved by the remaining error. Measured: the drawn forearm left bare (elbow -> wrist, outside the hand) and the hand covered by the sleeve, px"""
     bb = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0
@@ -224,7 +246,7 @@ def fit_cuffs(joints, p, body_png, ref):
         d = np.array(W, float) - np.array(E, float); L = np.linalg.norm(d); d /= L
         wv = np.array(W, float)
         for it in range(15):
-            pose_arms_to({side: (S, E, tuple(wv))}, p)
+            pose_arms_to({side: (S, E, tuple(wv))}, p, upper_w=upper_w)
             pv = posed_verts(items)
             rp = to_gump(np.concatenate([pv[k][ix][:, [0, 2]] for k, ix in rims[side]]), p) - np.array(W, float)
             nv = np.array([-d[1], d[0]])
@@ -256,7 +278,59 @@ def cover_body(a, body_png, ref, joints=None):
     return out, int(add.sum()), int((bb & ~(out[..., 3] > 0) & ~keep).sum())
 
 
-def fit_body(ref):
+def arm_free_tris(objs):
+    """per object the loop triangles whose vertices are all weighted < 0.5 to the arms (the robe's torso and skirt)"""
+    out = []
+    for o in objs:
+        w = np.zeros(len(o.data.vertices), np.float32); gi = {o.vertex_groups[n].index for n in ("upper_arm.L", "upper_arm.R", "forearm.L", "forearm.R") if n in o.vertex_groups}
+        for v in o.data.vertices:
+            for g in v.groups:
+                if g.group in gi:
+                    w[v.index] += g.weight
+        me = o.data; me.calc_loop_triangles()
+        t = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", t); t = t.reshape(-1, 3)
+        out.append(np.nonzero((w[t] < 0.5).all(1))[0])
+    return out
+
+
+def run_at(m, y, x0):
+    """(left, right) of the run of row y of mask m through column x0, None if x0 is not in it"""
+    row = m[y]
+    if not row[x0]:
+        return None
+    l, r = x0, x0
+    while l > 0 and row[l - 1]:
+        l -= 1
+    while r < len(row) - 1 and row[r + 1]:
+        r += 1
+    return l, r
+
+
+def fit_torso(body_png, p):
+    """TORSO scales so that the robe's torso (arm_free_tris, arms at rest) is FIT_MARGIN px wider than the drawn body on each side in FIT_ROWS (least squares of both edges)"""
+    bb = np.asarray(Image.open(body_png).convert("RGBA"))[..., 3] > 0; x0 = int(GX0)
+    rows = [y for y in range(*FIT_ROWS) if run_at(bb, y, x0)]
+    tgt = np.array([run_at(bb, y, x0) for y in rows], float) + np.array([-FIT_MARGIN, FIT_MARGIN])
+    sel = arm_free_tris(items)
+
+    def widths():
+        pose_arms(0, 0); tr = flat_tris(items, sel)
+        m = raster(to_gump(tr, p), GW, GH, 2)
+        return np.array([run_at(m, y, x0) or (x0, x0) for y in rows], float)
+
+    def cost(x):
+        TORSO.clear(); TORSO.update(pelvis=x[0], spine=x[1], chest=x[2])
+        pen = 100.0 * sum(max(0.0, 0.6 - v) ** 2 + max(0.0, v - 1.1) ** 2 for v in x)
+        return float(((widths() - tgt) ** 2).mean()) + pen
+    TORSO.clear(); before = widths()
+    x0v = np.ones(3); r = optimize.minimize(cost, x0v, method="Nelder-Mead", options=dict(initial_simplex=np.vstack([x0v, x0v - 0.1 * np.eye(3)]), maxiter=150, xatol=0.005, fatol=0.01))
+    cost(r.x); after = widths()
+    return dict(scale={k: round(float(v), 3) for k, v in TORSO.items()}, rows=list(FIT_ROWS), rms_px_before=round(float(np.sqrt(((before - tgt) ** 2).mean())), 2),
+                rms_px_after=round(float(np.sqrt(((after - tgt) ** 2).mean())), 2), waist_px=[int(before[len(rows) // 3, 1] - before[len(rows) // 3, 0]), int(after[len(rows) // 3, 1] - after[len(rows) // 3, 0]),
+                int(tgt[len(rows) // 3, 1] - tgt[len(rows) // 3, 0])])
+
+
+def fit_body(ref, kxt_max=None):
     """kx_top, kx_hem, ky, dx, dy that match the item without its sleeves (arms at rest) to the original gump without the sleeves' region"""
     zone = np.zeros((GH, GW), bool); zone[ARM_ROWS[0]:ARM_ROWS[1]] = True; zone[:, int(GX0 - ARM_DX):int(GX0 + ARM_DX)] = False
     pose_arms(0, 0); tr = flat_tris(items)
@@ -264,20 +338,22 @@ def fit_body(ref):
     def cost(x):
         kxt, kxb, ky, dx, dy = x
         sil = raster(to_gump(tr, x), GW, GH, 1)
-        return 1.0 - iou(sil & ~zone, ref & ~zone) + SCALE_W * sum(max(0.0, abs(v - 1.0) - lim) ** 2 for v, lim in ((kxt, 0.15), (kxb, 0.25), (ky, 0.08)))
+        return 1.0 - iou(sil & ~zone, ref & ~zone) + SCALE_W * sum(max(0.0, abs(v - 1.0) - lim) ** 2 for v, lim in ((kxt, 0.15), (kxb, 0.25), (ky, 0.08))) \
+            + (SCALE_W * max(0.0, kxt - kxt_max) ** 2 if kxt_max is not None else 0.0)
     x0 = np.array([1.0, 1.0, 1.0, 0.0, 0.0]); step = np.array([0.06, 0.06, 0.06, 4, 4])
     return optimize.minimize(cost, x0, method="Nelder-Mead", options=dict(initial_simplex=np.vstack([x0, x0 + np.diag(step)]), maxiter=400, xatol=0.01, fatol=1e-5))
 
 
-def flat_tris(objs):
-    """posed triangles of `objs` in world (x, z): (n, 3, 2)"""
+def flat_tris(objs, sel=None):
+    """posed triangles of `objs` in world (x, z): (n, 3, 2); sel: per object the loop triangles to keep"""
     dg = bpy.context.evaluated_depsgraph_get(); out = []
-    for o in objs:
+    for i, o in enumerate(objs):
         ev = o.evaluated_get(dg); me = ev.to_mesh(); me.calc_loop_triangles()
         co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
         M = np.array(ev.matrix_world); co = co @ M[:3, :3].T + M[:3, 3]
         t = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", t)
-        out.append(co[t.reshape(-1, 3)][:, :, [0, 2]]); ev.to_mesh_clear()
+        t = t.reshape(-1, 3)
+        out.append(co[t if sel is None else t[sel[i]]][:, :, [0, 2]]); ev.to_mesh_clear()
     return np.concatenate(out)
 
 
@@ -414,6 +490,106 @@ def compose(tex, sh, k):
     out[..., :3] = np.where(gk[..., None], gm * (1 - GOLD_MOTTLE) + loc * GOLD_MOTTLE, 0.5) * light[..., None]
     out[..., 3] = tex[..., 3]
     return np.clip(out, 0, 1)
+
+
+LW = np.array([0.299, 0.587, 0.114])
+TRIM_ZONE, HEM_MAX = 22, 14                  # gump px: the front strips within this of the body axis, the hem band at most this high
+TRIM = dict(sat=1.15, collar_rows=6, edge=0.85, thread=1.08, dot=1.18, dip=0.93, tex_mix=0.5)   # sym_trims(): the gold's saturation, rows of the collar kept, the embroidery's shades
+
+
+def sym_trims(a, light, P=TRIM):
+    """the gold bands redrawn on the gump grid (before the levels; a = compose() boxed down, light = the light alone boxed down): the texture's front strips were uneven (left and right of
+    different width, a step at the waist) -> per row the outer half-width of the pair (a straight line fitted, outliers > 1.5 px dropped) and the gap between them (0 above the row where the
+    front opens, its median below, 3 rows of taper) about the strips' own axis, so both strips are mirror images; the hem band's height per column smoothed (median of 7) and averaged with
+    its mirror column; the collar and the cuffs as the texture has them. On all gold an embroidery: edge x0.85, a light thread x1.08 inside it, on the band's middle line a dot every 4 px
+    (x1.18 / x0.93 between), the gold half flat (the texture's median gold, saturation x1.15) and half the texture's own (its pattern), times the light. Returns (image, measures)"""
+    m = a[..., 3] > 0; sat = a[..., :3].max(-1) - a[..., :3].min(-1); gold = m & (sat > 0.06)
+    if gold.sum() < 20:
+        return a, {}
+    H, W = m.shape; Y, X = np.mgrid[0:H, 0:W]
+    gm = np.median(a[gold, :3] / np.maximum(light[gold], 1e-3)[:, None], axis=0)
+    gl = gm @ LW; gm = np.clip(gl + P.get("sat", 1.15) * (gm - gl), 0, 1)
+    # hem: per column the lowest item row and the gold above it
+    cols = np.nonzero(m.any(0))[0]; yb = np.full(W, -1); th = np.zeros(W)
+    for x in cols:
+        ys = np.nonzero(m[:, x])[0]; yb[x] = ys.max()
+        g = gold[max(0, yb[x] - HEM_MAX):yb[x] + 1, x]
+        if g.any():
+            th[x] = yb[x] - (max(0, yb[x] - HEM_MAX) + np.argmax(g)) + 1
+    hem_old = m & (Y > (yb - HEM_MAX)[None, :]) & gold
+    # axis from the front strips: rows above the hem, gold within TRIM_ZONE of the body axis
+    x0 = GX0; front_old = gold & ~hem_old & (np.abs(X - x0) <= TRIM_ZONE)
+    rows = [y for y in range(H) if front_old[y].any()]
+    mids = [(np.nonzero(front_old[y])[0].min() + np.nonzero(front_old[y])[0].max()) / 2 for y in rows]
+    ax = round(float(np.median(mids)) * 2) / 2 if mids else x0
+    # the collar: the top rows of the front gold (above the first row of a narrow strip pair) are kept as drawn
+    ys_f = np.array(rows); y0 = ys_f.min() + P.get("collar_rows", 6); y1 = int(np.median(yb[cols][np.abs(cols - ax) <= 3]))
+    ho, gi, yy = [], [], []
+    for y in range(y0, y1 + 1):
+        xs = np.nonzero(front_old[y])[0]
+        if not len(xs):
+            continue
+        ho.append(((ax - xs.min()) + (xs.max() - ax)) / 2)
+        inner = m[y] & ~gold[y]; c = int(round(ax))
+        g_ = 0.0
+        if inner[c] or inner[min(W - 1, c + 1)] or inner[c - 1]:
+            xs2 = [x for x in range(int(ax - ho[-1]), int(ax + ho[-1]) + 1) if inner[x]]
+            if xs2:
+                g_ = ((ax - min(xs2)) + (max(xs2) - ax)) / 2
+        gi.append(g_); yy.append(y)
+    yy, ho, gi = np.array(yy), np.array(ho), np.array(gi)
+    # outer half-width: a straight line (two passes, outliers > 1.5 px dropped)
+    k = np.ones(len(yy), bool)
+    for _ in range(2):
+        c1 = np.polyfit(yy[k], ho[k], 1); k = np.abs(np.polyval(c1, yy) - ho) < 1.5
+    gis = ndimage.median_filter(gi, 7)
+    split = yy[np.argmax(gis > 0.5)] if (gis > 0.5).any() else y1 + 1
+    gw = float(np.median(gi[(yy >= split) & (gi > 0.5)])) if (gi[yy >= split] > 0.5).any() else 0.0
+    d = np.abs(X - ax)
+    HO = np.polyval(c1, Y); GI = np.where(Y >= split, gw * np.clip((Y - split + 1) / 3.0, 0, 1), 0.0)
+    front = m & (Y >= y0) & (Y <= y1) & (d <= HO) & (d >= GI)
+    # hem band: thickness smoothed and symmetric about the axis
+    ths = ndimage.median_filter(th, 7); thm = ths.copy()
+    for x in cols:
+        xm = int(round(2 * ax - x))
+        if 0 <= xm < W and yb[xm] >= 0 and ths[xm] > 0 and ths[x] > 0:
+            thm[x] = (ths[x] + ths[xm]) / 2
+    hem = m & (Y > (yb - np.round(thm))[None, :]) & (thm[None, :] > 0)
+    zone = (np.abs(X - ax) <= TRIM_ZONE) & (Y >= y0)
+    other = gold & ~hem_old & ~zone
+    new = front | hem | other | (gold & ~hem_old & (Y < y0))
+    # the embroidery: a darker edge, a light thread inside it, on the band's middle line a dot every 4 px; mixed with the texture's own gold (its pattern)
+    dist = ndimage.distance_transform_cdt(np.pad(new, 1), metric="taxicab")[1:-1, 1:-1]
+    u = np.where(hem, X, np.where(front, Y, X + Y))
+    ridge = (dist >= 3) & (dist >= ndimage.maximum_filter(dist, 3))
+    prof = np.where(dist == 1, P.get("edge", 0.85), np.where(dist == 2, P.get("thread", 1.08), 1.0))
+    prof = np.where(ridge & (u % 4 == 0), P.get("dot", 1.18), np.where(ridge & (u % 4 == 2), P.get("dip", 0.93), prof))
+    out = a.copy()
+    out[m, :3] = 0.5 * light[m][:, None]
+    flat = gm[None, :] * light[new][:, None]
+    tex = np.where((gold & new)[new][:, None], a[new, :3], flat)
+    mix = P.get("tex_mix", 0.5)
+    out[new, :3] = np.clip(((1 - mix) * flat + mix * tex) * prof[new][:, None], 0, 1)
+    sym = new & zone; symm = np.zeros_like(sym)
+    xs_, ys_ = np.nonzero(sym.T)
+    xm = np.round(2 * ax - xs_).astype(int); ok = (xm >= 0) & (xm < W)
+    symm[ys_[ok], xm[ok]] = True
+    return out, dict(axis=ax, split_row=int(split), strip_halfwidth=[round(float(np.polyval(c1, y0)), 2), round(float(np.polyval(c1, y1)), 2)], gap_halfwidth=round(gw, 2),
+                     front_sym_iou=round(float((sym & symm).sum() / max((sym | symm).sum(), 1)), 3))
+
+
+def sym_art(a, c0, half):
+    """the laid item's gold mirrored about column c0 (the item's centre) within `half` px of it: the mask's Gaussian (1.5 px) averaged with its mirror, >= 0.5 is gold; a pixel that changes
+    takes its mirror pixel's colour (gold) or the median of the cloth (grey)"""
+    m = a[..., 3] > 0.5; sat = a[..., :3].max(-1) - a[..., :3].min(-1); g = m & (sat > GOLD_SAT)
+    H, W = m.shape; X = np.arange(W)[None, :].repeat(H, 0); xm = np.round(2 * c0 - X).astype(int); ok = (xm >= 0) & (xm < W)
+    xm = np.clip(xm, 0, W - 1); Yi = np.arange(H)[:, None].repeat(W, 1)
+    gb = ndimage.gaussian_filter(g.astype(np.float32), 1.5); gs = (gb + gb[Yi, xm]) / 2 >= 0.5
+    zone = ok & (np.abs(X - c0) <= half) & m & m[Yi, xm]
+    out = a.copy(); cloth = np.median(a[m & ~g, :3], axis=0)
+    add = zone & gs & ~g; rem = zone & ~gs & g
+    out[add, :3] = a[Yi[add], xm[add], :3]; out[rem, :3] = cloth
+    return out
 
 
 def white_albedo(objs):
@@ -578,17 +754,22 @@ for gender, refp in REFS.items():
     if not refp:
         continue
     ref = np.asarray(Image.open(refp).convert("RGBA")); refm = ref[..., 3] > 0
-    pose_arms(0, 0); before = iou(raster(to_gump(flat_tris(items), (1, 1, 1, 0, 0)), GW, GH, 1), refm)
+    TORSO.clear(); pose_arms(0, 0); before = iou(raster(to_gump(flat_tris(items), (1, 1, 1, 0, 0)), GW, GH, 1), refm)
     fist = fists(BODIES[gender], refm) if BODIES.get(gender) else None
     bare = None
     if BODIES.get(gender):
         bb = np.asarray(Image.open(BODIES[gender]).convert("RGBA"))[..., 3] > 0
         bare = bb & refm; bare[:ARM_ROWS[0]] = False; bare[ARM_ROWS[1]:] = False; bare[:, int(GX0 - ARM_DX):int(GX0 + ARM_DX)] = False
     if ARM_MODE == "joints" and gender in JOINTS:
+        TORSO.clear(); torso = None
         r = fit_body(refm); kxt, kxb, ky, dx, dy = r.x; P = tuple(r.x)
-        wr, ce, gp, ov = fit_cuffs(JOINTS[gender], P, BODIES[gender], refm) if BODIES.get(gender) else (None, None, None, None)
-        arms = pose_arms_to(JOINTS[gender], P, wr); out_deg = bend = alen = float("nan")
-        arms = dict(arms, forearm_target=wr, cuff_error_px=ce, forearm_bare_px=gp, hand_covered_px=ov)
+        if FIT_TORSO.get(gender) and BODIES.get(gender):        # fitted torso, then the scale / shift again (no widening at the shoulders), the torso once more for that
+            P = (min(kxt, 1.0), kxb, ky, dx, dy); fit_torso(BODIES[gender], P)
+            r = fit_body(refm, 1.0); kxt, kxb, ky, dx, dy = r.x; P = tuple(r.x); torso = fit_torso(BODIES[gender], P)
+        uw = UPPER_W.get(gender, 1.0)
+        wr, ce, gp, ov = fit_cuffs(JOINTS[gender], P, BODIES[gender], refm, uw) if BODIES.get(gender) else (None, None, None, None)
+        arms = pose_arms_to(JOINTS[gender], P, wr, uw); out_deg = bend = alen = float("nan")
+        arms = dict(arms, forearm_target=wr, cuff_error_px=ce, forearm_bare_px=gp, hand_covered_px=ov, torso=torso)
     else:
         r = fit_gender(refm, fist, bare); out_deg, bend, alen, kxt, kxb, ky, dx, dy = r.x; P = (kxt, kxb, ky, dx, dy)
         pose_arms(round(out_deg, 1), round(bend, 1), round(alen, 3)); arms = None
@@ -610,6 +791,7 @@ for gender, refp in REFS.items():
     if os.environ.get("PD_SAVE_RAW"):
         np.save(os.path.join(OUT, "raw_%s.npy" % gender), wa); np.save(os.path.join(OUT, "shade_%s.npy" % gender), wsh)
     res = box_down(compose(wa, wsh, SS), SS)
+    res, trims = sym_trims(res, box_down(wsh, SS)[..., :3] @ LW)
     res, lv = match_levels(res, ref)
     res, nsp = despeckle(res) if DESPECKLE > 0 else (res, 0)          # after the levels: their stretch made the darker folds black again
     covered, skin_left = 0, None
@@ -622,13 +804,13 @@ for gender, refp in REFS.items():
     hand_err = [round(float(np.hypot(*(hp - np.array(f)))), 1) for hp, f in zip(hand_px, fist)] if fist else None
     bare_left = int((bare & ~(res[..., 3] > 0)).sum()) if bare is not None else None
     report[gender] = dict(arm_mode=ARM_MODE, arms_deg=arms, arms_out=round(out_deg, 1), elbow_bend=round(bend, 1), arm_length=round(alen, 3), bare_arm_px=bare_left, covered_px=covered, skin_left_px=skin_left, kx_top=round(kxt, 3), kx_hem=round(kxb, 3), ky=round(ky, 3), dx=round(dx, 1), dy=round(dy, 1),
-                          iou_rest=round(before, 3), iou_fit_flat=round(1 - r.fun, 3), iou_render=round(after, 3), levels=[round(float(v), 3) for v in lv], specks=nsp, fists=[[round(float(v), 1) for v in f] for f in fist] if fist else None, hand_error_px=hand_err)
+                          trims=trims, iou_rest=round(before, 3), iou_fit_flat=round(1 - r.fun, 3), iou_render=round(after, 3), levels=[round(float(v), 3) for v in lv], specks=nsp, fists=[[round(float(v), 1) for v in f] for f in fist] if fist else None, hand_error_px=hand_err)
     print("GUMP %s: %s" % (gender, report[gender]), flush=True)
 
 if ART_REF:                                  # the item laid flat: arms out at a right angle, front view, turned 45 deg (the collar up right, the hem down left, as the original icon), fitted to its box
     ref = np.asarray(Image.open(ART_REF).convert("RGBA")); ys, xs = np.nonzero(ref[..., 3] > 0)
     rb = (xs.min(), ys.min(), xs.max(), ys.max()); AW, AH = ref.shape[1], ref.shape[0]
-    pose_arms(ART_ARMS, 0, 1.0)
+    TORSO.clear(); pose_arms(ART_ARMS, 0, 1.0)
     tr = flat_tris(items); lo = tr.reshape(-1, 2).min(0); hi = tr.reshape(-1, 2).max(0)
     ppm = 400.0
     w, h = int((hi[0] - lo[0]) * ppm) + 8, int((hi[1] - lo[1]) * ppm) + 8
@@ -648,6 +830,7 @@ if ART_REF:                                  # the item laid flat: arms out at a
         big = np.zeros((AH * S4, AW * S4, 4), np.float32); big[rb[1] * S4:rb[1] * S4 + bh, rb[0] * S4:rb[0] * S4 + bw] = rs
         return big, box
     S4 = 4; bw, bh = (rb[2] - rb[0] + 1) * S4, (rb[3] - rb[1] + 1) * S4          # stretched to the original's box (its proportions are those of a laid robe)
+    a = sym_art(a, w / 2 - (lo[0] + hi[0]) / 2 * ppm, 0.12 * ppm)                # symmetric before the turn (the front strips about the item's centre line)
     big, box = laid(a); bigsh, _ = laid(sh, box)
     big = compose(big, bigsh, S4)
     if os.environ.get("PD_SAVE_RAW"):
