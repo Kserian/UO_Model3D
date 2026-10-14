@@ -2,11 +2,14 @@
 body flat by part (hands red, head green, arms yellow, torso magenta, legs cyan), then the pixels of pure arm / torso colour are counted (blends at the edge of a hand
 read as magenta and are left out). The clothing layer cannot show this: there the item is drawn over the body even where the skin is in front of it.
 
-    python item_skin_check.py ITEM.blend OUT_DIR [--actions 04_stand,17_spell_area,...] [--sheet 17_spell_area]
+    python item_skin_check.py ITEM.blend OUT_DIR [--actions 04_stand,17_spell_area,...] [--sheet 17_spell_area] [--split]
 
 Prints per action the arm / torso pixels and the frames with any; --sheet writes OUT_DIR/marked_<action>.png (5 directions x frames, the counted pixels circled:
 black = arm, orange = torso, blue = leg). Torso pixels next to the head (the neck above a collar) do not count; the pelvis under a short hem does (look at the sheet).
 Runs the render (about 7 min for all actions); OUT_DIR/all/frames is reused when it is there.
+--split (an item with holes on purpose, a torn robe: docs/qa/robe_ragged.md): the item is also rendered alone (layer clothing, the body does not hide it) and each counted skin pixel is
+split: THROUGH the cloth (the item is there, the skin is in front of it: the body pierces the item, a fault) or in a HOLE (no item at that pixel: seen through a rip of the model, or
+below the hem). On the sheet the hole pixels are marked by small green circles.
 """
 import os, sys, glob, subprocess
 import numpy as np
@@ -67,28 +70,47 @@ def main():
     from PIL import Image, ImageDraw
     args = sys.argv[1:]
     blend, out = os.path.abspath(args.pop(0)), os.path.abspath(args.pop(0))
-    acts, sheets = [], []
+    acts, sheets, split = [], [], False
     while args:
         f = args.pop(0)
         if f == "--actions":
             acts = args.pop(0).split(",")
         elif f == "--sheet":
             sheets.append(args.pop(0))
+        elif f == "--split":
+            split = True
     here = os.path.dirname(os.path.abspath(__file__))
     if not os.path.isdir(os.path.join(out, "all", "frames")):
         subprocess.run([sys.executable, os.path.join(here, "run_render_headless.py"), blend, out, "--pre", os.path.abspath(__file__), 'LAYER="all"', "EXACT_COLORS=False",
                         "EXACT_BODY=False", "ONLY=%r" % (acts,), "CANVAS=(256,256)", "ANCHOR=(128,192)"], check=True, capture_output=True)
-    tot = [0, 0, 0, 0, 0]
+    if split and not os.path.isdir(os.path.join(out, "clothing", "frames")):
+        subprocess.run([sys.executable, os.path.join(here, "run_render_headless.py"), blend, out, "--pre", os.path.abspath(__file__), 'LAYER="clothing"', "EXACT_COLORS=False",
+                        "EXACT_BODY=False", "ONLY=%r" % (acts,), "CANVAS=(256,256)", "ANCHOR=(128,192)"], check=True, capture_output=True)
+
+    def item_mask(f):
+        g = f.replace(os.path.join(out, "all", "frames"), os.path.join(out, "clothing", "frames"))
+        return np.array(Image.open(g).convert("RGBA"))[..., 3] > 0 if split and os.path.exists(g) else None
+    tot = [0, 0, 0, 0, 0]; stot = np.zeros(6, int)
     for act in sorted(os.listdir(os.path.join(out, "all", "frames"))):
         if acts and act not in acts:
             continue
         arm = tor = leg = fr = bad = 0
+        sp = np.zeros(6, int)
         for f in sorted(glob.glob(os.path.join(out, "all", "frames", act, "dir*", "*.png"))):
             im = np.array(Image.open(f).convert("RGBA")).astype(int); m1, m2 = masks(im)
             leg += int(leg_mask(im).sum()); arm += int(m1.sum()); tor += int(m2.sum()); fr += 1; bad += int((m1.sum() + m2.sum()) > 0)
+            it = item_mask(f)
+            if it is not None:
+                for k, m in enumerate((m1, m2, leg_mask(im))):
+                    sp[k] += int((m & it).sum()); sp[3 + k] += int((m & ~it).sum())
         tot = [tot[0] + fr, tot[1] + arm, tot[2] + tor, tot[3] + bad, tot[4] + leg]
         print("%-26s frames %4d  arm px %4d  torso px %4d  frames with any %d  (leg px %d)" % (act, fr, arm, tor, bad, leg))
+        if split:
+            stot += sp
+            print("%-26s   through the cloth: arm %4d torso %4d leg %4d | in holes: arm %4d torso %4d leg %4d" % (("",) + tuple(sp)))
     print("ITEM_SKIN frames %d, arm px %d, torso px %d, frames with any %d, leg px %d" % tuple(tot))
+    if split:
+        print("ITEM_SKIN_SPLIT through the cloth: arm %d torso %d leg %d px | in holes: arm %d torso %d leg %d px" % tuple(stot))
     for act in sheets:
         rows = []
         for d in range(5):
@@ -98,9 +120,14 @@ def main():
                 crop = (88, 90, 168, 200)
                 im = Image.new("RGBA", a.shape[1::-1], (255, 255, 255, 255)); im.alpha_composite(Image.fromarray(a.astype(np.uint8)))
                 im = im.crop(crop).resize(((crop[2] - crop[0]) * 4, (crop[3] - crop[1]) * 4), Image.NEAREST); dr = ImageDraw.Draw(im)
+                it = item_mask(f)
                 for m, c in ((m1, (0, 0, 0)), (m2, (255, 120, 0)), (leg_mask(a), (0, 160, 255))):
                     for y, x in zip(*np.nonzero(m)):
-                        X = (x - crop[0]) * 4 + 2; Y = (y - crop[1]) * 4 + 2; dr.ellipse((X - 5, Y - 5, X + 5, Y + 5), outline=c, width=2)
+                        X = (x - crop[0]) * 4 + 2; Y = (y - crop[1]) * 4 + 2
+                        if it is not None and not it[y, x]:
+                            dr.ellipse((X - 3, Y - 3, X + 3, Y + 3), outline=(0, 200, 0), width=1)
+                        else:
+                            dr.ellipse((X - 5, Y - 5, X + 5, Y + 5), outline=c, width=2)
                 row.append(im)
             rows.append(row)
         W = Image.new("RGB", (max(len(r) for r in rows) * 320, 440 * len(rows)), (255, 255, 255))

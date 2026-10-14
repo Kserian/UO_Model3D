@@ -113,6 +113,63 @@ Zgłoszenia: Die Backward kier. 0 kl. 6 i Die Forward kier. 4 kl. 6 („nie wida
 - Pełne 35 akcji przed -> po: ręka 143 -> 234, tułów 68 -> 81, nogi 445 -> 492 px. Ręka to 1-2 px nadgarstka między węższym mankietem a dłonią (oryginał też go pokazuje), nogi to wcięcia w upadkach.
   QA (bpy 4.2): `run_qa` OK, `test_items` 0,723.
 
+## Gump paperdolla i art (ikona w plecaku / na zwłokach)
+Prośba użytkownika: art przedmiotu oraz gump męski i żeński do paperdolla. Wzorzec: oryginalna szata z klienta (przedmiot robe 0x1F03 / 0x1F04, AnimID 469 w `tiledata.mul`):
+gumpy **50469** (męski, na ciele gumpa 12) i **60469** (żeński, ciało 13), 260 x 237, oraz arty 0x1F03 / 0x1F04 (**56 x 56**, szata rozłożona ukośnie, kołnierz w prawo w górę, rąbek w lewo w dół; druga to odbicie).
+Nowy skrypt **`pipeline/uo_render_gump_fit.py`** (`PD_OUT=... PD_REF_MALE=50469.png PD_REF_FEMALE=60469.png PD_ART_REF=7939.png python pipeline/run_script_in_blend.py ITEM.blend pipeline/uo_render_gump_fit.py`):
+- ręce narysowanych ciał gumpa stoją inaczej niż poza spoczynku 3D (ręce proste, 40° od pionu), więc dla każdej płci szukane są kąt ramion i zgięcie łokci (oba ramiona tak samo, w płaszczyźnie czołowej) oraz skala x / y
+  i przesunięcie, przy których sylwetka szaty (rzut trójkątów) najlepiej pokrywa oryginalny gump szaty (Nelder-Mead z 3 startów); potem render jak `uo_render_paperdoll.py` (UO_Look, Słońce własnego cienia,
+  ciało jako holdout, 3 x 3 nadpróbkowania) i ta sama transformacja; szarość dopasowana do poziomów oryginału (p50 / p95 jasności), złoto jednym współczynnikiem (zostaje złote i cieniowane);
+  szczeliny między panelami modelu i najciemniejsze cienie fałd (czarne linie w skali gumpa) wypełnione kolorem tkaniny wokół (`PD_DARK_FILL` 0,45 mediany, po wyrównaniu poziomów), pojedyncze ciemne piksele 3 przejścia.
+  Pierwsza wersja: IoU sylwetki męski 0,648 -> 0,831, żeński 0,638 -> 0,826, ale (uwaga użytkownika) **rękawy nie pasowały do dłoni**: dzwonowe rękawy wisiały pod pięściami ciała gumpa.
+  Druga: do kosztu doszły odległość dłoni modelu od pięści ciała gumpa (`PD_BODY_MALE` / `PD_BODY_FEMALE`: pięści = piksele ciała gumpa, których oryginalna szata nie zakrywa, na wysokości rąk),
+  IoU samego obszaru rękawów (waga 2), udział skóry rąk ciała gumpa pod rękawami oryginału, który nasz rękaw odsłania (waga 3), skala pozioma zmienna z wysokością (barki / rąbek osobno:
+  jedna skala ściskała barki razem ze zbyt szeroką spódnicą i obok barku wychodziło ramię ciała gumpa), długość ręki (narysowane ręce są krótsze) i kara za skale dalej niż 15 / 25 / 8 % od 1.
+  Wynik: męski IoU 0,862, dłonie 5,0 / 7,5 px od pięści, skóry rąk odsłoniętej 65 px; żeński IoU 0,842, dłonie 3,7 / 9,9 px, 33 px. Silniejsza kara za skórę (8 / 15) nie pomaga
+  (skóry 63 / 15 px kosztem IoU 0,74-0,80, przeszukiwanie trafia w różne minima).
+  Uwaga użytkownika do drugiej wersji: rękawy dalej nie pasują, poszarpane brzegi, duże bufy na barkach, ciemna plama na środku. Przyczyna bufów: ręce narysowanych ciał **nie są symetryczne**
+  (prawa ręka postaci: łokieć w dół, przedramię w bok; lewa: łokieć w bok, przedramię w dół), a szukana była jedna symetryczna poza (ramię wciągane w tułów, rękaw zbity w buf).
+  Trzecia wersja (`PD_ARM_MODE` = `joints`, domyślnie): z gumpów 12 / 13 odczytane bark, łokieć, nadgarstek każdej ręki (`JOINTS` w skrypcie); skala x (barki / rąbek) i y dopasowane do sylwetki
+  bez obszaru rękawów, potem każde ramię i przedramię ustawione wzdłuż odcinków gumpa i skrócone do ich długości (przedramię 0,40-0,60, ramię 1,02-1,19 długości modelu; przedramię i dłoń
+  bez dziedziczenia skali). Wygląd: szarość wyrównana do tkaniny wokół (sigma 6 px, 70 %) i wygładzona (0,8 px), brzeg bez pojedynczych zębów, ciemny obrys 1 px jak w oryginałach.
+  Wynik: IoU męski 0,848, żeński 0,868, skóry rąk odsłoniętej 72 / 6 px, rękawy kończą się przed pięściami, bez bufów.
+  Uwaga do trzeciej: prześwituje bark, rękaw nie łączy się z nadgarstkiem, grafika krzywa i nierówna. Czwarta: nadgarstek celu = brzeg pięści ciała gumpa najbliższy łokciowi, długość przedramienia
+  per ręka (przeszukiwanie 0,7-1,6) tak, by rękaw dochodził do pięści; skóra ciała gumpa (bez pięści, głowy, stóp) do 4 px od szaty dołączona do szaty w kolorze najbliższej tkaniny (`COVER_PX`);
+  nadpróbkowanie 4 x 4. Ciemne kreski wzdłuż złotych pasów, ziarno i plamy tkaniny pochodziły z **tekstury** (wypalony haft, szwy paneli, drobinki złota), nie z geometrii: drugi render tego samego
+  ujęcia z albedo zastąpionym jednolitą szarością (samo światło, miękki cień własny: Słońce 20°, 32 próbki; twardy cień rękawa robił płaską ciemną plamę na talii) i składanie
+  (`compose()`): tkanina = stała szarość x światło, złoto = maska złota tekstury oczyszczona (kawałki > 1,6 % powierzchni szaty albo > 0,16 % przy brzegu: kołnierz, mankiety; domknięcie / otwarcie,
+  całe piksele gumpa złote albo szare, 2 przejścia większości 3 x 3: wcześniej mieszany piksel brzegu dostawał poziomy szarości albo złota przypadkiem i brzeg był kropkowany) x kolor złota x światło;
+  złoto jaśniejsze (`PD_GOLD_K` 2,1), bez wyrównywania i wyostrzania szarości. Wynik: męski IoU 0,847, skóry odsłoniętej 11 px; żeński 0,862, 4 px; przerwa mankiet-pięść L 0 px, P 11-21 px
+  (jak w oryginale: z rękawa prawej ręki postaci wychodzi kawałek przedramienia); art IoU 0,68. `PD_SAVE_RAW=1` zapisuje surowe rendery (`raw_*.npy`, `shade_*.npy`) do strojenia obróbki bez renderu.
+  Uwaga użytkownika: rękawy mają być ustawione względem nadgarstków. Błąd czwartej: „pięść" z pikseli, których oryginalna szata nie zakrywa, to na prawej ręce postaci pięść **z przedramieniem**
+  (oryginał zostawia je gołe), więc rękaw kończył się w połowie przedramienia. Piąta: cel = narysowany nadgarstek z `JOINTS` (sprawdzony w powiększeniu ciał 12 / 13: granica pięści i przedramienia,
+  męski (54, 113) / (129, 121)); wylot rękawu na siatce = w każdym wycinku 15° wokół osi przedramienia wierzchołki (waga przedramienia ≥ 0,9) do 1,5 cm od najdalszego (cały skośny brzeg dzwonu;
+  najdalsze 3 cm ogólnie to była tylko dolna warga, 5 cm pod osią); przedramię celowane iteracyjnie, aż dalszy brzeg wylotu jest 0,5 px za nadgarstkiem, a środek wylotu na linii przedramienia
+  (błąd 0,1-0,2 px). Narysowane przedramię jest skrócone perspektywą: model pochyla przedramię do widza najwyżej 30° (`PD_LEAN_MAX`), resztę skraca wzdłuż kości; dzwon zwężony do 0,75 (`PD_SLEEVE_W`);
+  dłonie 3D zwinięte (ciało jest holdoutem, dłoń przed rękawem wycinała w nim dziurę). Warianty (pochylenie / szerokość: gołe przedramię px, rękaw na dłoni px, męski): pełne pochylenie (do 68°):
+  0 / 77 (wylot dzwonu widziany od czoła zakrywał dłoń); 0° / 1,0: 14 + 11 / 4 + 15 (rękaw zgnieciony do 0,25); **30° / 0,75: 15 + 0 / 2 + 9**; 45° / 0,6: 20 + 1 / 3 + 4. Po dołączeniu skóry
+  w promieniu 4 px (`cover_body`, teraz bez dłoni za nadgarstkiem) zostaje 2 px gołej skóry (męski i żeński), IoU męski 0,855, żeński 0,867.
+  Prośba: poprawić tekstury. Tkanina z samego światła była gładka jak plastik; oryginał jest malowany. `texture_cloth()`: kontrast fałd (0,6 x (rozmycie 1 px - 5 px)), głębsze cienie
+  (jasność wokół mediany do potęgi 1,2), ziarno i plamki (szum rozmyty 0,6 / 2 px, po 4 % jasności, na złocie połowa), p5 / p50 / p95 szarości z powrotem jak w oryginale, brzeg złotych pasów
+  o 20 % ciemniejszy; złoto z wzorem haftu tekstury (`GOLD_SIGMA` 2 px w skali x4, `GOLD_MOTTLE` 1). Pomiar (gump męski, ziarno = odch. std jasności - rozmycie 1 px, fałdy = rozmycie 1 px - 6 px):
+  ziarno 0,024 -> 0,034 (oryginał 0,020), fałdy 0,061 -> 0,085 (0,067), p5 0,27 -> 0,17 (0,19); art: ziarno 0,039 -> 0,065 (0,058), fałdy 0,055 -> 0,085 (0,075).
+  Prośba: szata kobieca bardziej dopasowana, złote pasy symetryczne i ładniejsze. Kobieta (`FIT_TORSO`): skala w poprzek kości pelvis / spine / chest (obojczyki wzdłuż, barki do środka;
+  dzieci bez dziedziczenia skali) dobrana na rzucie samego tułowia (trójkąty bez wag rąk) do ciała 13 + 3 px na stronę w wierszach 106-142 (pelvis 0,98, spine 1,09, chest 0,91; talia 34 -> 33 px,
+  cel 32; tułów był już blisko ciała), ramię celowane z przesuniętego barku, kx_top ≤ 1,0. Pudełkowy wygląd dawały szerokie rękawy zlane z talią (oryginał i ciało 13 mają tam przerwę):
+  górny rękaw zwężony do 0,7 w poprzek (`UPPER_W`); piksele szaty w przerwach ręka-talia (wiersze 104-124, poza ciałem i oryginałem) 156 -> 66 (0,55: 56, wygląda chudo). IoU kobiecej z 60469
+  0,867 -> 0,834 (zamierzone: oryginał jest luźny). Pasy (`sym_trims`, na siatce gumpa przed poziomami): przednie pasy z prostych krawędzi symetrycznych względem osi pasów (zgodność maski z odbiciem
+  0,997 / 0,996), rąbek: wysokość pasa wygładzona i uśredniona z odbiciem, haft: ciemniejsza lamówka, jasna nitka, kropki co 4 px na środku pasa, pół złota płaskiego, pół z tekstury. Pierwsza próba
+  (lamówka x0,75, motyw na całej szerokości pasa) wyglądała jak drabinka. Art: maska złota symetryzowana przed obrotem (`sym_art`).
+  Prośba: kołnierze wygładzić i dopasować do ciał. Kołnierz modelu (stójka) w gumpie to były dwa złote rogi obok szyi nad poszarpanym ciemnym pasem jego wnętrza, dekolt zalany skórą szyi
+  (`cover_body`). Teraz (`neckline`, w `sym_trims`): z ciała gumpa szyja (najwęższy wiersz 65-90: 12 x 85-97, 13 x 86-94) i wiersz barków (o ≥ 8 px szerszy: 81 / 82), dekolt = U o głębokości
+  5 px i połowie szerokości szyi + 2 px (jak oryginał: wiersz 82 -> 88); szata wycięta nad U i nad górną krawędzią ciała obok szyi (rogi: 49 / 39 px), strefa kołnierza wypełniona do linii barków
+  ciała (szyja 3D wycinała w szacie dziurę po prawej: 28 / 100 px dołożone), złoty pas 3 px pod U z tym samym haftem, światło w strefie z mediany wierszy pod nią (wygładzone wzdłuż x), kołnierz
+  oświetlony równo (cień wierszy pod nim robił jedną połowę ciemną), miękki cień 2 px pod kołnierzem, pasy przednie zaczynają się pod nim; `cover_body` nie zakrywa dekoltu. Symetria kołnierza
+  (IoU z odbiciem) męski 0,76, żeński 1,0; reszta bez zmian (rękawy, tułów, pasy 0,998).
+- art: szata rozłożona (ramiona 15° wyżej niż w spoczynku), widok z przodu, obrót 45°, wpasowana w ramkę oryginału (7..52 x 0..46); IoU sylwetki z oryginałem 0,68; drugi art to odbicie lustrzane.
+- zapis: PNG oraz surowe wpisy (`*_gump_*.bin` = wpis `Gumpart.mul`, extra = 0x010400ED, `*_art*.bin` = wpis `art.mul`), round trip przez `uo_gump_art.read_gump` zgodny (kształt identyczny, kolor w 15 bitach).
+Pliki szaty i grafiki nie są w repo.
+
 ## Odrzucone (zmierzone, nie powtarzać)
 - Zwykły `fit` z `stretch` 1,2 / 1,15: zakrywa ciało, ale szata wychodzi za duża (bufiaste barki), rękawy zasłaniają dłonie; użytkownik odrzucił.
 - `CLOTH_KAPPA` 1,0 bez ograniczenia `in_max`: kinematycznie nogi zakryte, ale symulowany rąbek zostaje w tyle i stopa wychodzi przez spódnicę w biegu.
