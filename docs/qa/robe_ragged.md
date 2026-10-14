@@ -96,3 +96,19 @@ Pomiary wersji końcowej (35 akcji, 1050 klatek, Blender 5.2, render z 512 prób
 - `item_clearance.py`: materiał w skórze 0,035 % wierzchołków (najgorsza klatka 0,49 %), najgłębiej 20 mm.
 - Szerokość dołu w staniu od przodu 29 px (469: 22). IoU sylwetki z 469: stanie 0,818, marsz 0,834.
 - `item_skin_check.py --split` nie rozróżnia dziury od przebicia z przodu (przez przednią dziurę widać tył szaty, więc piksel liczy się jako „przez tkaninę”): do szaty z dziurami lepsze są `item_body_holes.py` i podgląd na czerwonym ciele.
+
+## Paperdoll i art (2026-10-14)
+Prośba: art przedmiotu do plecaka oraz gumpy męski i żeński; szata ma okalać ciało, rękawy wpasowane w ramiona i nadgarstki, kobiecy model w paperdollu jest inaczej ułożony i węższy.
+`uo_render_gump_fit.py` jest strojony pod czarną szatę (złote pasy, stójka, zalewa wszystkie dziury), więc ta szata ma osobny **`pipeline/uo_render_gump_ragged.py`**: wczytuje z tamtego pliku tylko ustawienia i funkcje dopasowania (bez jego części głównej, plik bez zmian),
+obróbka obrazu własna. Wzorce z klienta (`uo_client/`, poza repo): ciała gumpa 12 / 13, oryginalna szata 50469 / 60469, art 0x1F03 (7939).
+```
+PD_OUT=out PD_REF_MALE=50469.png PD_REF_FEMALE=60469.png PD_BODY_MALE=12.png PD_BODY_FEMALE=13.png PD_ART_REF=7939.png \
+    python pipeline/run_script_in_blend.py item.blend pipeline/uo_render_gump_ragged.py
+```
+- dopasowanie (z `uo_render_gump_fit.py`): skala x (barki / rąbek) i y do sylwetki oryginału bez obszaru rękawów, kobieta: tułów zwężony do ciała 13 (pelvis 1,01, spine 1,09, chest 0,96; talia 34 -> 34 px, cel 32), górny rękaw 0,7;
+  każde ramię wzdłuż bark -> łokieć narysowanego ciała, przedramię celowane, aż wylot rękawu kończy się na narysowanym nadgarstku (błąd 0,1-0,2 px);
+- wygląd: render z teksturą (ciało jako holdout: przez dziury dołu widać ciało gumpa, jak w animacji), poziomy szarości oryginału, pojedyncze ciemne piksele wyrównane (wnętrze dziur zostaje), linia rękaw / tułów 0,75 (render etykiet `uo_region`), obwódka 1 px, szpilki postrzępionego rąbka ścięte;
+- szczeliny powyżej wiersza 120 (`PD_HOLE_TOP`: tam, gdzie rękaw odchodzi od tułowia w pozie gumpa) wypełnione tkaniną; skóra ciała gumpa do 4 px od szaty (`cover_body`) i na barkach do 10 px (wiersze 84-104, poza szyją: bark ciała 13 szerszy niż szata) dołączona;
+- art: szata rozłożona z rękami w spoczynku (`PD_ART_ARMS` 0; 15 rozkładało rękawy szeroko: IoU z 0x1F03 0,67 -> 0,74), obrót −45° jak oryginał (kołnierz w prawo w górę, rąbek w lewo w dół), drugi art = odbicie.
+Wynik: IoU sylwetki męski 0,838, żeński 0,812; gołe przedramię 11 / 0 px (męski, jak w oryginale z prawej ręki postaci), 0 / 3 px (żeński); dziury dołu 60 / 63 px; poza pięściami, dekoltem i stopami skóra nie prześwituje.
+Zapis: `gump_male.png`, `gump_female.png`, `art.png`, `art_mirror.png` i surowe wpisy `*.bin` (`Gumpart.mul`: extra = szerokość << 16 | wysokość; `art.mul`). Pliki nie są w repo.
