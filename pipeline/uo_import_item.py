@@ -42,7 +42,8 @@ HOLES = None          # {"close": 0.06, "grow": 0.025, "max": 1.5, "close_above"
                       # (a pinhole: 1-px black noise in the sprites), one up to `max` m is widened by `grow` m all round (the rips shrank with the reduction and the shortened hem and read as
                       # dark specks; the hem, cuffs and neck are longer than `max`); every hole whose rim lies above `close_above` of the sheet's height is closed (the shoulders and the
                       # roots of the sleeves stay whole: widened rips there read as the sleeve torn off), and every one longer than `slit` times its width (a slit along a hanging
-                      # belt end opened over the belly when the body bent forward). Closed holes get the cloth around them in the baked texture (their faces take the
+                      # belt end opened over the belly when the body bent forward), and every one on a sleeve (`sleeve`: the line shoulder -> cuff of the model, |x| and z in its own
+                      # coordinates, and a radius; the elbows read as poking through). Closed holes get the cloth around them in the baked texture (their faces take the
                       # UVs of the nearest rim). docs/qa/robe_ragged.md. Recipe: "holes": {...}
 BAKE_NORMAL = 0.0     # with BAKE_TEXTURE: > 0 = a tangent normal map of the ORIGINAL'S GEOMETRY is baked too (its own normal map, the weave, is left out: noise at UO size), blurred over this
                       # many m, and lights the item (uo_materials.py NORMAL_MAP): the sculpted folds of the model shade the reduced shell. Recipe: "bake_normal": 0.01
@@ -255,8 +256,17 @@ def holes(n, cfg):
         P = np.array([e.verts[0].co for e in l]); ev = np.sort(np.linalg.eigvalsh(np.cov((P - P.mean(0)).T)))[::-1]
         return float(np.sqrt(ev[0] / max(ev[1], 1e-12)))
     slit = lambda l: aspect(l) > cfg.get("slit", 1e9)
-    small = [l for L, l in loops if L < cfg["close"] or (L < cfg["max"] and (high(l) or slit(l)))]
-    rips = [l for L, l in loops if cfg["close"] <= L < cfg["max"] and not high(l) and not slit(l)]
+
+    def sleeve(l):                                               # "sleeve": [[|x|, z] of the shoulder, [|x|, z] of the cuff, r] in the model's own coordinates: a hole within r m of
+        if "sleeve" not in cfg:                                   # that line lies on a sleeve (elbows and upper arms showed through widened rips like the arm poking out)
+            return False
+        (x0, z0), (x1, z1), r = cfg["sleeve"]
+        c = np.mean([e.verts[0].co[:] for e in l], 0); p = np.array([abs(c[0]), c[2]]); a = np.array([x0, z0]); d = np.array([x1, z1]) - a
+        t = np.clip((p - a) @ d / (d @ d), 0, 1)
+        return float(np.linalg.norm(p - a - t * d)) < r
+    shut = lambda l: high(l) or slit(l) or sleeve(l)
+    small = [l for L, l in loops if L < cfg["close"] or (L < cfg["max"] and shut(l))]
+    rips = [l for L, l in loops if cfg["close"] <= L < cfg["max"] and not shut(l)]
     print("uo_import_item: HOLES rims (m, aspect): " + ", ".join("%.2f/%.1f" % (L, aspect(l)) for L, l in sorted(loops, key=lambda t: -t[0])[:30] if L >= cfg["close"]))
     if small:                                                     # the patches: a material slot of their own (kept by the reduction) -> bake_texture gives them the cloth of their rim
         me.materials.append(me.materials[0] if len(me.materials) else None); slot = len(me.materials) - 1
