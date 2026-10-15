@@ -1,4 +1,0 @@
-{"name": "hood", "file": "hood.glb", "kind": "hood",
- "materials": {"FLAT_GREY": 0.5, "METAL": false},
- "hood_cover": {"TILT_BACK": 20},
- "tune": {"uo_autofit_item.py": {"UNIT": 0.3, "SCALE_RANGE": [0.8, 1.3]}}}
