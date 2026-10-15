@@ -1,5 +1,5 @@
 ---
-name: uo-ciało-szkielet
+name: uo-body-skeleton
 description: Ustalone decyzje o ciele i szkielecie (kości, palce, broń, szaty/peleryna, czar akcja 17, obrót głowy, barki/ramiona, płótno). Użyj przed zmianą rigu, póz, kluczy animacji, proporcji lub dopasowania sylwetki.
 ---
 

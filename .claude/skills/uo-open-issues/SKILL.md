@@ -1,5 +1,5 @@
 ---
-name: uo-otwarte-zakazy
+name: uo-open-issues
 description: Otwarte zagadnienia UO_Model3D (sloty, szata, peleryna, naramienniki, body 401, glb/fbx) i czego NIE robić. Użyj przy planowaniu pracy lub gdy nie wiesz, czy zmiana jest dozwolona.
 ---
 

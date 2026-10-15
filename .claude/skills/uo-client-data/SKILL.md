@@ -1,5 +1,5 @@
 ---
-name: uo-klient-dane
+name: uo-client-data
 description: Pobieranie/rozpakowanie klienta UO (anim.mul, idx, tiledata), pliki .vd, mul2vd/vdtool, oryginalne klatki ciała. Użyj, gdy potrzebne są dane klienta lub pytanie, co wolno commitować.
 ---
 

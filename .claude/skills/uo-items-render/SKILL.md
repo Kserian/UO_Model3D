@@ -1,5 +1,5 @@
 ---
-name: uo-przedmioty-render
+name: uo-items-render
 description: Potok przedmiotów z darmowych modeli 3D (uo_make_item.py, przepisy JSON, autofit, conform, szaty), jakość tekstur, światło UO_Look, materiały, siatka i wagi. Użyj przy dodawaniu/naprawie przedmiotu lub zmianie renderu/światła.
 ---
 

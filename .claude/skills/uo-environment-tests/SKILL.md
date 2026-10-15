@@ -1,5 +1,5 @@
 ---
-name: uo-srodowisko-testy
+name: uo-environment-tests
 description: Środowisko (Python, bpy), synchronizacja skryptów z .blend, uruchamianie testów i pułapki. Użyj przed uruchomieniem pipeline/, zmianą model/*.blend lub testowaniem.
 ---
 
