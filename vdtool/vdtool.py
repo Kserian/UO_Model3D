@@ -8,7 +8,7 @@ Uzycie:
     python vdtool.py verify  a.vd     b.vd
 
 Wymagania: Python 3.8+, pip install pillow numpy
-Pelna instrukcja: ../README.md (PL), ../README_EN.md (EN)
+Pelna instrukcja: ../README.md (EN), ../README_PL.md (PL)
 """
 import json
 import os

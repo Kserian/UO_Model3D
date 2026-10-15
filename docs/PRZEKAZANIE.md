@@ -95,7 +95,7 @@ Co zmieniłem:
 - **nowe** `pipeline/item_clearance.py`: przebicia przedmiotu w każdej klatce po pchnięciu renderu (własna strefa, nogi, dłonie / głowa, inna strefa) i rozciągnięcie krawędzi; 35 akcji ok. 4 min.
 - **nowe** `pipeline/item_skin_check.py`: podgląd `all` z niebieskim przedmiotem i kolorowymi częściami ciała, liczba pikseli skóry ręki / tułowia przez przedmiot, arkusz z zaznaczeniem
   (to pokazało przebicia, których warstwa `clothing` nie pokazuje). Pełne 35 akcji ok. 7 min.
-- `model/UO_Body_0x190.blend`: wgrane tylko `render_uo_layer.py` i `cloth_lib.py`. Dokumentacja: `docs/qa/jedi_tunic.md`, `README.md`, `README_EN.md`, `CLAUDE.md` (wiersz „Przedmioty”).
+- `model/UO_Body_0x190.blend`: wgrane tylko `render_uo_layer.py` i `cloth_lib.py`. Dokumentacja: `docs/qa/jedi_tunic.md`, `README.md` (EN), `README_PL.md` (PL), `CLAUDE.md` (wiersz „Przedmioty”).
 
 Wynik (na modelu z poprawionym czarem 17 z innej sesji): `item_skin_check.py` 40 px czystej skóry w 19 z 1050 klatek (łuk 15 px: nadgarstek przy cięciwie; upadek 21: 12 px, miednica pod dołem),
 `item_clearance.py` własna strefa 0,085% (najgorsza klatka 0,45%), najgłębiej 20,7 mm, rozciągnięcie p99 3,65 (skóra 2,80), barki względem klatki w czarze 17: 12,5 / 12,6 cm (symetrycznie).
