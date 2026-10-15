@@ -1,18 +1,16 @@
 ---
 name: uo-ciało-szkielet
-description: Ustalone decyzje o ciele i szkielecie modelu (kości, palce, broń, czar obszarowy akcja 17, obrót głowy, barki/ramiona, płótno 256x256, rozwój modelu). Użyj przed zmianą rigu, póz, kluczy animacji, proporcji ciała lub dopasowania sylwetki.
+description: Ustalone decyzje o ciele i szkielecie (kości, palce, broń, szaty/peleryna, czar akcja 17, obrót głowy, barki/ramiona, płótno). Użyj przed zmianą rigu, póz, kluczy animacji, proporcji lub dopasowania sylwetki.
 ---
 
-# Ciało i szkielet: decyzje (ustalone z użytkownikiem)
+Decyzje użytkownika; nie zmieniaj bez prośby.
 
-| Temat | Decyzja |
-|---|---|
-| Rozwijać czy budować od nowa | Rozwijać UO_Model3D (raport: czysty szkielet daje granicę sylwetki ok. 0,88-0,90 IoU, nowy model trafiłby w tę samą) |
-| Płótno renderu | `CANVAS` 256×256, zaczep (128, 192), 36 px/m (mieści 444 z 449 animacji ludzi/ekwipunku) |
-| Korekty kształtu per klatka (v12) | **NIE.** Ciało poprawiamy w modelu, nie maskujemy. Nie wracaj bez prośby |
-| Szkielet (sesja 14) | **19 kości UO** (pelvis, spine, chest, neck, head, clavicle ×2, upper_arm, forearm, hand, thigh, shin, foot ×2) **+ 30 kości palców** (przywrócone po prośbie użytkownika, pozy dopasowane do klatek UO; `rig_restore_fingers.py`). **+ 5 kości ruchu broni i tarczy** (`polearm.L`, `axe2h.L`, `bow.L`, `weapon1h.R`, `shield.L`; przywrócone, zależą tylko od dłoni i przedramienia; `rig_restore_weapons.py`, kalibracja: `weapon_*.py`, `docs/qa/weapon_roll.md`, `weapons_*_hand.json`). Bez skrętu, palców stóp i łańcuchów materiału (decyzja użytkownika). Pomiar bez palców: IoU sylwetki 0,8922 -> 0,8882, `test_items` 0,718 -> 0,710 (`docs/qa/items_after_slim_rig.json`); po przywróceniu palców: patrz `docs/qa/items_after_fingers.json`. Poprzedni stan: commit `b86c314` |
-| Szata, spódnica, peleryna (sesje 15-16) | `PART robe`/`skirt` = wisi od miednicy, nogi wypychają tkaninę per klatka (`cloth_lib.py`, powłoka nóg; od sesji 16 **symulacja tkaniny Blendera** z kolizją z ciałem, na życzenie użytkownika: `uo_cloth_sim.py`, hybryda = cel to kształt z powłoki, bez łańcuchów kości; kalibracja na oryginale 469, `docs/qa/robe_physics.md`). Peleryna: `PART cloak` (pochylenie do tyłu per akcja, `cloak_pitch.json`). Włosy są sztywne na głowie (`uo_bind_item.py`, `RIGID`) |
-| Czar obszarowy (akcja 17) | Ręce w grze ruszają się symetrycznie, tułów bez skrętu (prośba użytkownika, 2026-10-09; oryginalne klatki tego nie mają): lewa ręka = dokładne odbicie prawej, miednica / kręgosłup / klatka / szyja / głowa tylko pochylenie, poza dopasowana do sprite'ów z 5 kierunków (`arm_sym_fit.py --torso upper`, `arm_mirror_action.py`). IoU akcji 17 0,8618 -> 0,8641, łokcie L = R 7-70° (było 160° w dół), `docs/qa/elbow_spell.md`. Dłonie i palce: wspólna poza palców (zgięcie ok. 20-35°, skala dłoni 1,045; sylwetka nie rozróżnia otwartej dłoni od lekko zgiętej, całkowita pięść jest gorsza: `docs/qa/elbow_spell.md`). Nie wracaj do starej pozy. Stare klucze innych akcji mogą mieć podobny skręt (niesprawdzone); ręce (i w części klatek miednica / nogi) dopasowane niezależnie w ok. 150 klatkach wszystkich akcji poza 17, także w jeździe z maską konia (`arm_joint_fit.py`, 6 rund, `docs/qa/arm_poses.md`): IoU ciała 0,8922 -> 0,9001, błędy ≥ 2 px 3746 -> 2154; dopasowanie z sylwetek doszło do granicy, zostaje obwódka 1 px i 21 kl. 1/4/5 (tylko ręcznie) |
-| Obrót głowy | Wygładzony w czasie (2026-10-13, zgłoszenie: maska kolegi skakała w walk war): dopasowanie z sylwetek zostawiło 10-26° zygzaka obrotu głowy między klatkami (sylwetka go nie widzi, przedmioty sztywne na głowie tak). Orientacja głowy w przestrzeni postaci, 1 przejście, położenie głowy bez zmian: skok hełmu 2,75 -> 1,35 px (walk war 2,5 -> 1,0), IoU ciała 0,9001 -> 0,8991, `test_items` 0,7232 -> 0,722 (helm 0,783 -> 0,776); `docs/qa/arm_poses.md`. Nie dopasowuj obrotu głowy do sylwetek bez członu gładkości w czasie |
-| Barki i ramiona | Barki −1 cm, ramiona ×0,95 (prośba użytkownika; pomiar pokazał, że model zgadzał się z oryginałem ±1 px). Nie zwężaj dalej bez prośby |
-| Cień własny | Odłożony na później (decyzja użytkownika); sprite'y mają częściowy cień własny (s = 0,4), nasz render nie |
+- Rozwijamy UO_Model3D (nie budujemy od nowa; granica sylwetki ok. 0,88-0,90 IoU). Płótno `CANVAS` 256×256, zaczep (128,192), 36 px/m.
+- **Zero korekt kształtu per klatka** (v12): ciało poprawiamy w modelu. Nie dopasowuj dalej sylwetki (granica ~0,90).
+- Szkielet: 19 kości UO + 30 palców (`rig_restore_fingers.py`) + 5 kości broni/tarczy (`polearm.L`, `axe2h.L`, `bow.L`, `weapon1h.R`, `shield.L`; `rig_restore_weapons.py`, kalibracja `weapon_*.py`, `docs/qa/weapon_roll.md`). Bez skrętu, palców stóp, łańcuchów materiału. Włosy sztywne na głowie (`uo_bind_item.py`, `RIGID`). Poprzedni stan: `b86c314`.
+- Szata/spódnica (`PART robe`/`skirt`): wiszą od miednicy, nogi wypychają tkaninę; symulacja tkaniny Blendera `uo_cloth_sim.py` (cel = powłoka nóg `cloth_lib.py`, bez łańcuchów kości; `docs/qa/robe_physics.md`). Peleryna `PART cloak`: pochylenie per akcja (`cloak_pitch.json`).
+- Czar obszarowy (akcja 17): ręce symetryczne (lewa = odbicie prawej), tułów bez skrętu, tylko pochylenie (`arm_sym_fit.py --torso upper`, `arm_mirror_action.py`; `docs/qa/elbow_spell.md`). Wspólna poza palców (zgięcie 20-35°, skala dłoni 1,045). Nie wracaj do starej pozy.
+- Ręce (i część miednicy/nóg) dopasowane z sylwetek w ~150 klatkach (`arm_joint_fit.py`, `docs/qa/arm_poses.md`); IoU ciała 0,9001 → 0,8991 po wygładzeniu głowy.
+- **Obrót głowy gładki w czasie:** nie dopasowuj go do sylwetek bez członu gładkości (zygzak 10-26° skakał hełmem).
+- Barki −1 cm, ramiona ×0,95; nie zwężaj dalej.
+- Cień własny sprite'ów (s=0,4) odłożony; nasz render go nie ma.
