@@ -64,7 +64,7 @@ z własnego klienta: skopiuj `anim1_0x0190.vd` jako `pipeline/body400.vd`, a w `
   (Inherit Scale = None), więc długość kończyn się nie zmienia. Przedmiot przypięty do tych kości pogrubia się razem ze skórą.
 
 **Dopasowanie do klatek.** Poza każdej z 210 klatek jest dopasowana do 5 kierunków oryginału naraz (1050 obrazków),
-bez żadnych korekt kształtu. Broń, tarcza i włosy są sztywne na kości dłoni, przedramienia i głowy.
+bez żadnych korekt kształtu. Ręce (a w części klatek miednica i nogi) są dopasowane osobno w każdej klatce (`docs/qa/arm_poses.md`), a obrót głowy jest wygładzony w czasie, żeby przedmioty sztywne na głowie nie skakały. W czarze obszarowym (akcja 17) ręce ruszają się symetrycznie, a tułów tylko się pochyla (`docs/qa/elbow_spell.md`). Broń, tarcza i włosy są sztywne na kości dłoni, przedramienia i głowy.
 
 **Animacje.** Każda akcja UO to akcja Blendera `NN_nazwa` (z fake userem). 1 klatka UO = 3 klatki sceny (24 fps),
 z płynną interpolacją. Chód i bieg są zapętlone. Właściwości akcji: `uo_action` (numer) i `uo_frames` (liczba klatek).
@@ -254,7 +254,7 @@ wypchnięcie 5 cm i 0,8 drogi do nóg jak w oryginalnych szatach UO. Pomiar na o
 
 ## 4. Render do klatek i pliku `.vd`
 
-1. Silnik renderowania: **Cycles** (skrypt i tak sam go ustawi, razem z 1 próbką na piksel).
+1. Silnik renderowania: **Cycles** (skrypt i tak sam go ustawi, przedmioty 512 próbek adaptacyjnie, warstwa ciała 1 próbka; `docs/qa/render_quality.md`).
 2. Otwórz tekst **`render_uo_layer.py`** i ustaw opcje na początku:
    ```python
    LAYER = "clothing"          # "clothing" = warstwa przedmiotu, "body" = ciało, "all" = podgląd razem
@@ -262,7 +262,9 @@ wypchnięcie 5 cm i 0,8 drogi do nóg jak w oryginalnych szatach UO. Pomiar na o
    ANCHOR = (128, 192)         # punkt zaczepienia w płótnie. 256×256 / (128, 192) mieści 444 z 449 animacji ludzi i ekwipunku
                                # klienta Nelderim (poza nim: latarnia, epolety z papugą). Stary rozmiar: (136, 120) i (68, 86)
    ONLY = ["04_stand"]         # test jednej akcji; [] = wszystkie 35 akcji
-   OUTLINE = 0.38              # ciemny kontur 1 px jak w UO (1.0 = bez konturu)
+   OUTLINE = 0.38              # ciemny kontur 1 px ciała (1.0 = bez konturu); przedmioty: OUTLINE_TARGET = 0.38 (obwódka dobrana tak,
+                               # by krawędź / piksel głębiej zgadzały się z oryginałami UO); właściwość sceny uo_outline ma pierwszeństwo
+   SAMPLES = 512               # próbki Cycles na piksel dla przedmiotów (adaptacyjnie, próg 0,002, min. 64)
    OUT_DIR = "//uo_render/"    # folder obok pliku .blend
    WRITE_VD = True
    VD_FILE = "//uo_render/%s.vd"
@@ -275,8 +277,7 @@ wypchnięcie 5 cm i 0,8 drogi do nóg jak w oryginalnych szatach UO. Pomiar na o
                                # tułów nigdy (przedmioty leżą na nim)
    OWN_PARTS_NEVER_HIDE = True # części ciała, do których przedmiot jest oskórowany (spodnie: uda, golenie), nigdy go nie
                                # zasłaniają: przedmiot je okrywa, a ich skóra przed powłoką obcinała paski po bokach
-   DESPECKLE = 28              # pojedyncze ciemne kropki w środku przedmiotu (głębokie detale, nity) dostają kolor
-                               # otoczenia (0 = wył.)
+   DESPECKLE = 0               # domyślnie wyłączone (zjadało detale tekstury); N > 0: pojedyncze ciemne kropki w przedmiocie dostają kolor otoczenia
    FILL_HOLES = 4              # dziurki do 4 px otoczone przedmiotem są wypełniane (0 = wył.)
    BODY_GAP = 0.006            # w każdej klatce części ubrania bliżej niż 6 mm rąk, dłoni, nóg lub głowy są wypychane
                                # na zewnątrz - ręka przebijająca rękaw w ruchu nie robi dziury (0 = wył.)
@@ -362,17 +363,17 @@ people). Każdy przedmiot ma osobne ID animacji.
 
 - **Tryb dokładny (`EXACT_BODY = True`):** wyrenderowana warstwa ciała jest identyczna z oryginałem (wszystkie 1050 klatek,
   sprawdzone `vdtool verify`).
-- **Sam model 3D (`EXACT_BODY = False`):** średnia zgodność obrysu (IoU) **0,892** na 1050 klatkach (`body_part_qa.py`), **bez żadnych
-  korekt kształtu** (same kości). IoU na akcję: `docs/qa/body_parts_after_fingers.json`. Kolory na wspólnych pikselach są dokładne z `EXACT_COLORS`.
+- **Sam model 3D (`EXACT_BODY = False`):** średnia zgodność obrysu (IoU) **0,899** na 1050 klatkach (`body_part_qa.py`), **bez żadnych
+  korekt kształtu** (same kości). IoU na akcję: `docs/qa/body_parts_after_head_smooth.json`. Kolory na wspólnych pikselach są dokładne z `EXACT_COLORS`.
 
 Różnice to prawie wyłącznie 1-pikselowe paski wzdłuż krawędzi (oryginał rysowano innym modelem 3D). Dużych błędów, np.
 ręki w innym miejscu niż na oryginale, nie ma, więc wycięcia w przedmiotach trafiają w rękę. Dla porównania: poprzedni
 model bez swoich 1254 korekt miał 0,880, a z nimi 0,979 (ale przedmioty musiały kopiować te korekty).
 
 **Przedmioty UO.** Test replik przedmiotów z `anim.mul` (`test_items.py`: koszula, napierśnik, spodnie, buty, rękawice, hełm) na obecnym szkielecie:
-średnia IoU z oryginalnymi klatkami **0,718** (koszula 0,714, napierśnik 0,690, spodnie 0,800, buty 0,768, rękawice 0,557, hełm 0,781; `docs/qa/items_after_fingers.json`).
+średnia IoU z oryginalnymi klatkami **0,722** (koszula 0,715, napierśnik 0,691, spodnie 0,802, buty 0,770, rękawice 0,579, hełm 0,776; `docs/qa/items_after_head_smooth.json`).
 Błąd kształtu dłoni względem oryginału (piksele modelu poza sprite'em na klatkę): 3,9 -> 1,4 (lewa) i 4,3 -> 2,0 (prawa) po przywróceniu palców.
-Nie ma już testów spódnicy, płaszcza i broni (usunięte z szkieletu).
+Broń, szaty i peleryny mają własne testy (`test_weapons.py`, `test_robe.py`, `test_cloak.py`, `run_qa.py`; wyniki w `docs/qa/`).
 
 ## 9. Jak powstał model
 
@@ -380,7 +381,7 @@ Ciało to siatka MakeHuman (CC0, mężczyzna) przeniesiona na szkielet UO; kamer
 piksela, podłoga 7 cm pod nim) i 210 póz × 5 kierunków dopasowano do 1050 oryginalnych klatek (własny rasteryzer + skinning jak w Blenderze),
 potem kształt siatki dopasowano do obrysów wszystkich klatek, a barki i ramiona lekko zwężono na prośbę użytkownika. Światło UO (jedno, przy kamerze,
 Lambert) wyznaczono z klatek i usunięto z koloru, dając albedo. Oryginalne klatki są spakowane w `.blend` jako atlas do trybów dokładnych.
-W sesji 14 szkielet zredukowano do 19 kości (patrz rozdział 2).
+W sesji 14 szkielet zredukowano do 19 kości UO; palce i kości broni przywrócono później (54 kości, patrz rozdział 2). Potem ręce, nogi i głowę dopasowano ponownie w każdej klatce (`docs/qa/arm_poses.md`).
 Pomiary i decyzje: `docs/RAPORT_model3D_UO.txt`, `docs/AUDYT_2026-10-03.md`, `docs/qa/`.
 
 ## 10. Odtworzenie i narzędzia

@@ -1,10 +1,10 @@
 ---
 name: uo-client-data
-description: Pobieranie/rozpakowanie klienta UO (anim.mul, idx, tiledata), pliki .vd, mul2vd/vdtool, oryginalne klatki ciała. Użyj, gdy potrzebne są dane klienta lub pytanie, co wolno commitować.
+description: Downloading/extracting the UO client (anim.mul, idx, tiledata), .vd files, mul2vd/vdtool, original body frames. Use when client data is needed or when unsure what may be committed.
 ---
 
-- Dane tylko do użytku własnego (repo prywatne). Klient: `pip install gdown && mkdir -p uo_client && gdown 1R80D0FN_RO7xuJ7X-yz13ZRdTemNZmIz -O uo_client/client_download` (2,6 GB; link: https://drive.google.com/file/d/1R80D0FN_RO7xuJ7X-yz13ZRdTemNZmIz/view), potem tylko oficjalny `unrar` (RAR5): `cd uo_client && unrar x -y -idq client_download NelderimServUO/anim.idx NelderimServUO/anim.mul ...`. Nie wypakowuj ustawień ani wtyczek użytkownika.
-- `uo_client/` jest w `.gitignore`; **nie commituj** `anim*.mul`, `*.idx`, `tiledata.mul` (limit 100 MB). Wyciągi: `client/extract/`.
-- `.vd`: `python vdtool/mul2vd.py anim.idx anim.mul wyjscie <id>`; do PNG: `vdtool/vdtool.py extract`.
-- Animacje Nelderim (`anim3`/`anim4`, np. 420, 422) zbędne; ubieralne w `anim2`/`anim4` to oryginały gry.
-- **Nie usuwaj oryginalnych klatek ciała** (`client/body_0x190_frames/`, atlas w `.blend`): opiera się na nich `EXACT_BODY` i pomiary.
+- Client data is for the user's own use only (private repo). Download: `pip install gdown && mkdir -p uo_client && gdown 1R80D0FN_RO7xuJ7X-yz13ZRdTemNZmIz -O uo_client/client_download` (2.6 GB; link: https://drive.google.com/file/d/1R80D0FN_RO7xuJ7X-yz13ZRdTemNZmIz/view), then only the official `unrar` (RAR5): `cd uo_client && unrar x -y -idq client_download NelderimServUO/anim.idx NelderimServUO/anim.mul ...`. Do not extract the user's settings or plugins.
+- `uo_client/` is in `.gitignore`; **never commit** `anim*.mul`, `*.idx`, `tiledata.mul` (GitHub 100 MB limit). Extracts go to `client/extract/`.
+- `.vd`: `python vdtool/mul2vd.py anim.idx anim.mul out <id>`; to PNG: `vdtool/vdtool.py extract`.
+- Nelderim-custom animations (`anim3`/`anim4`, e.g. 420, 422) are not needed; wearable animations in `anim2`/`anim4` are original game assets.
+- **Keep the original body frames** (`client/body_0x190_frames/`, atlas in the `.blend`): `EXACT_BODY` and the measurements rely on them.

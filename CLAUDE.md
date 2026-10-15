@@ -1,9 +1,9 @@
 # UO_Model3D
 
-Model 3D ciała UO (body 0x190) do animacji ubrań/zbroi/broni jako `.vd`. **Cel:** nasze body odwzorowuje body UO tak, by przedmioty z naszego modelu pasowały na oryginał. Oceniaj tym każdą zmianę.
+3D model of the Ultima Online body (0x190) for generating clothing, armour and weapon animations as `.vd` files. **Goal:** our body reproduces the UO body so that items made on our model fit the original UO model. Judge every change by this.
 
-- Rozmowa po polsku; commity po angielsku: `UOModel3D: <co i po co>`. Krótkie komunikaty: wynik, blokada, decyzja.
-- Przetestowane wrzucaj na `main` bez dopytywania (`git push origin main`; przy narzuconej gałęzi sesji: na nią, potem `git push origin HEAD:main`). Nietestowanego nie wrzucaj. PR tylko na prośbę. **Nie pushuj na `claude/friendly-knuth-44xtfw`.**
-- **Mierz, nie ufaj:** decyzje opieraj na własnych pomiarach przed/po. Miary: `pipeline/test_items.py` (baseline `docs/qa/items_after_fingers.json`, 0,718), `body_part_raster.py` + `body_part_qa.py` (IoU 0,892).
-- Szkice użytkownika (poza repo) i wyników ich renderu nie commituj.
-- Docs: `README.md` (EN), `README_PL.md` (PL), `docs/PRZEKAZANIE.md` (stan między sesjami), `docs/qa/`. Szczegóły w skillach `.claude/skills/uo-*` (uo-environment-tests, uo-client-data, uo-body-skeleton, uo-items-render, uo-open-issues); zmieniając zasady, popraw skill.
+- Language: documentation, skills and commits are in English (commits: `UOModel3D: <what and why>`). The user may ask to switch to Polish; the conversation is in Polish by default. Keep messages short: result, blocker, decision.
+- Push tested work to `main` without asking (`git push origin main`; if the session mandates another branch, push there, then `git push origin HEAD:main`). Never push untested work. No PR unless asked. **Never push to `claude/friendly-knuth-44xtfw`.**
+- **Measure, don't trust:** base decisions on your own before/after measurements. Metrics: `pipeline/test_items.py` (baseline `docs/qa/items_after_head_smooth.json`, 0.722), `body_part_raster.py` + `body_part_qa.py` (IoU 0.899).
+- Do not commit the user's sketches (kept outside the repo) or their renders.
+- Docs: `README.md` (EN), `README_PL.md` (PL), `docs/PRZEKAZANIE.md` (session handoff, Polish), `docs/qa/`. Details are in the skills `.claude/skills/uo-*` (uo-environment-tests, uo-client-data, uo-body-skeleton, uo-items-render, uo-open-issues); when you change a rule, update the skill.

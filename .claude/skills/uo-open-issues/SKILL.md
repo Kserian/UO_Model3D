@@ -1,14 +1,14 @@
 ---
 name: uo-open-issues
-description: Otwarte zagadnienia UO_Model3D (sloty, szata, peleryna, naramienniki, body 401, glb/fbx) i czego NIE robić. Użyj przy planowaniu pracy lub gdy nie wiesz, czy zmiana jest dozwolona.
+description: Open issues of UO_Model3D (slots, robe, cloak, pauldrons, body 401, glb/fbx) and what NOT to do. Use when planning work or unsure whether a change is allowed.
 ---
 
-**Nie rób:** korekt per klatka, dalszego strojenia replik `test_items`, dalszego dopasowywania sylwetki ciała, zmian kierunku/ambientu światła, AO i cienia na ziemi.
+**Do not:** per-frame corrections, further tuning of `test_items` replicas, further body silhouette fitting, changes to light direction/ambient, AO or ground shadow.
 
-**Otwarte:**
-- Fizyka szat skalibrowana na jednej szacie (469), sprawdzona na 447 i 970; brak testu na kilcie. Peleryna (`docs/qa/cloak_physics.md`) bez falowania boków i testu na prawdziwym modelu.
-- Sloty `waist`, `vest` bez testu na prawdziwym modelu; brakuje Earrings, Ring, Bracelet, Talisman, Backpack (wykrywanie jednostek zakłada 0,15-3 m) i jednej tabeli slotów (`docs/AUDYT_2026-10-03.md`, pkt 5-6).
-- Naramienniki w jednej siatce z korpusem rozciągają się w czarach; 3-4% wierzchołków zbroi w ciele w ruchu (`item_qa.py`); zmiany wag nie pomogły.
-- Pierwszy prawdziwy darmowy model (np. włosy Curuaty CC BY 4.0, https://sketchfab.com/3d-models/hair-cc7e804cc15340db92d9464b32f71a2c): użytkownik sam wrzuca glTF do repo; zapisz atrybucję.
-- Body 401 (kobieta) w `anim.mul` ≈ kopia męskiego; sprawdź w grze przed pracą.
-- `.glb`/`.fbx` nie ma w repo: `pipeline/export.py --blend model/UO_Body_0x190.blend`.
+**Open:**
+- Robe physics is calibrated on one robe (469), checked on 447 and 970; no kilt test. Cloak (`docs/qa/cloak_physics.md`) has no side waving and no real-model test.
+- Slots `waist`, `vest` untested on a real model; missing Earrings, Ring, Bracelet, Talisman, Backpack (unit detection assumes 0.15-3 m) and a single slot table (`docs/AUDYT_2026-10-03.md`, items 5-6).
+- Pauldrons in one mesh with the torso stretch in spells; 3-4% of armour vertices end up inside the body in motion (`item_qa.py`); weight variants did not help.
+- First real free model (e.g. Curuata's hair, CC BY 4.0, https://sketchfab.com/3d-models/hair-cc7e804cc15340db92d9464b32f71a2c): the user adds the glTF to the repo; record the attribution.
+- Body 401 (female) in `anim.mul` ≈ copy of the male; check in game before working on it.
+- `.glb`/`.fbx` are not in the repo: `pipeline/export.py --blend model/UO_Body_0x190.blend`.

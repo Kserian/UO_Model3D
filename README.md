@@ -66,7 +66,7 @@ To add them from your own client: copy `anim1_0x0190.vd` to `pipeline/body400.vd
   (Inherit Scale = None), so limb lengths do not change. Items bound to these bones get thicker with the skin.
 
 **Fitted to the frames.** The pose of each of the 210 frames is fitted to all 5 directions of the original at once
-(1050 images), with no shape corrections. Weapons, shields and hair are rigid on the hand, forearm and head bones.
+(1050 images), with no shape corrections. Arms (and in some frames pelvis and legs) are fitted per frame (`docs/qa/arm_poses.md`), and the head rotation is smoothed in time so that items rigid on the head do not jump. In the area spell (action 17) the arms move symmetrically and the torso only tilts (`docs/qa/elbow_spell.md`). Weapons, shields and hair are rigid on the hand, forearm and head bones.
 
 **Animations.** Each UO action is a Blender action `NN_name` (with a fake user). 1 UO frame = 3 scene frames (24 fps),
 with smooth interpolation. Walk and run loop. Action properties: `uo_action` (number) and `uo_frames` (frame count).
@@ -257,7 +257,7 @@ A model of several items with its mannequin in the file (e.g. a harness with a s
 
 ## 4. Rendering frames and the `.vd` file
 
-1. Render engine: **Cycles** (the script sets it itself, with 1 sample per pixel).
+1. Render engine: **Cycles** (the script sets it itself: items 512 adaptive samples, the body layer 1 sample; `docs/qa/render_quality.md`).
 2. Open the text **`render_uo_layer.py`** and set the options at the top:
    ```python
    LAYER = "clothing"          # "clothing" = item layer, "body" = body, "all" = preview of both
@@ -265,7 +265,9 @@ A model of several items with its mannequin in the file (e.g. a harness with a s
    ANCHOR = (128, 192)         # anchor pixel inside the canvas. 256x256 / (128, 192) holds 444 of the 449 people and equipment
                                # animations of the Nelderim client (outside: a lantern, a parrot epaulet). Old size: (136, 120), (68, 86)
    ONLY = ["04_stand"]         # test one action; [] = all 35 actions
-   OUTLINE = 0.38              # dark 1-px outline like UO art (1.0 = none)
+   OUTLINE = 0.38              # dark 1-px outline of the body (1.0 = none); items use OUTLINE_TARGET = 0.38 (rim darkened so that
+                               # edge / one pixel deeper matches the UO originals); scene property uo_outline overrides it
+   SAMPLES = 512               # Cycles samples per pixel for items (adaptive, threshold 0.002, min 64)
    OUT_DIR = "//uo_render/"    # folder next to the .blend
    WRITE_VD = True
    VD_FILE = "//uo_render/%s.vd"
@@ -278,8 +280,7 @@ A model of several items with its mannequin in the file (e.g. a harness with a s
                                # (items are worn over it)
    OWN_PARTS_NEVER_HIDE = True # body parts the item is skinned to (trousers: thighs, shins) never hide it: the item wraps
                                # them, and their skin in front of the shell cut 1-px strips off the sides
-   DESPECKLE = 28              # single dark dots inside the item (deep details, rivets) take the colour around
-                               # them (0 = off)
+   DESPECKLE = 0               # off by default (it erased texture detail); N > 0: single dark dots inside the item take the colour around them
    FILL_HOLES = 4              # holes up to 4 px fully surrounded by the item are filled (0 = off)
    BODY_GAP = 0.006            # every frame, parts of the items closer than 6 mm to the arms, hands, legs or head are
                                # pushed out - an arm poking through a sleeve in motion cuts no hole (0 = off)
@@ -366,8 +367,8 @@ people). Each item has its own animation ID.
 
 - **Exact mode (`EXACT_BODY = True`):** the rendered body layer is identical to the original (all 1050 frames, checked
   with `vdtool verify`).
-- **Pure 3D model (`EXACT_BODY = False`):** mean silhouette IoU **0.892** over 1050 frames (`body_part_qa.py`), **with no shape
-  corrections** (bones only). IoU per action: `docs/qa/body_parts_after_fingers.json`. Colours on overlapping pixels are exact with `EXACT_COLORS`.
+- **Pure 3D model (`EXACT_BODY = False`):** mean silhouette IoU **0.899** over 1050 frames (`body_part_qa.py`), **with no shape
+  corrections** (bones only). IoU per action: `docs/qa/body_parts_after_head_smooth.json`. Colours on overlapping pixels are exact with `EXACT_COLORS`.
 
 The differences are almost only 1-pixel bands along the edges (the original was drawn from a different 3D model).
 There are no large errors such as an arm in a different place than on the original, so the cut-outs in items hit the
@@ -375,9 +376,9 @@ arm. For comparison: the previous model scored 0.880 without its 1254 correction
 to copy those corrections).
 
 **UO items.** A test of replicas of items from `anim.mul` (`test_items.py`: shirt, plate, trousers, boots, gloves, helmet) on the current rig:
-mean IoU with the original frames **0.718** (shirt 0.714, plate 0.690, trousers 0.800, boots 0.768, gloves 0.557, helmet 0.781; `docs/qa/items_after_fingers.json`).
+mean IoU with the original frames **0.722** (shirt 0.715, plate 0.691, trousers 0.802, boots 0.770, gloves 0.579, helmet 0.776; `docs/qa/items_after_head_smooth.json`).
 Hand shape error against the original (model pixels outside the sprite per frame): 3.9 -> 1.4 (left) and 4.3 -> 2.0 (right) after the fingers came back.
-There are no skirt, cloak or weapon tests any more (their bones were removed).
+Weapons, robes and cloaks have their own tests (`test_weapons.py`, `test_robe.py`, `test_cloak.py`, `run_qa.py`; results in `docs/qa/`).
 
 ## 9. How the model was built
 
@@ -385,7 +386,7 @@ The body is a MakeHuman mesh (CC0, male) moved onto the UO skeleton; the UO came
 floor 7 cm below it) and 210 poses × 5 directions were fitted to the 1050 original frames (own rasteriser + skinning like Blender's), then the mesh shape
 was fitted to the outlines of all frames, and the shoulders and arms were narrowed slightly at the user's request. The UO light (one light near the
 camera, Lambert) was derived from the frames and removed from the colour, giving the albedo. The original frames are packed in the `.blend` as an atlas for the exact modes.
-In session 14 the rig was reduced to 19 bones (see section 2). Measurements and decisions: `docs/RAPORT_model3D_UO.txt`, `docs/AUDYT_2026-10-03.md`, `docs/qa/`.
+In session 14 the rig was reduced to 19 UO bones; the fingers and weapon bones were restored later (54 bones, see section 2). Later the arms, legs and head were refitted per frame (`docs/qa/arm_poses.md`). Measurements and decisions: `docs/RAPORT_model3D_UO.txt`, `docs/AUDYT_2026-10-03.md`, `docs/qa/`.
 
 ## 10. Rebuilding and tools
 
@@ -462,11 +463,11 @@ EXACT      : image "UO_Original_Atlas" (1050 original frames, 35 cols x 30 rows 
              uo_tile_row, uo_exact drive the projection. Present in this repository's .blend.
 MATERIAL   : scene["uo_look"]: 1 = albedo * (0.08 + 0.92 * max(0, N.L)), light fixed to the camera; 0 = plain PBR.
 RENDERING  : text "render_uo_layer.py": LAYER ("clothing" | "body" | "all"), ONLY, OUTLINE = 0.38, WRITE_VD, OUT_DIR,
-             VD_FILE, HORSE_HOLDOUT, EXACT_BODY, EXACT_COLORS. Cycles, 1 sample, box filter 0.01. Post-process:
-             premultiply over black, alpha threshold 0.5 -> 0/1, 1-px boundary outline * 0.38. Runs into the same
+             VD_FILE, HORSE_HOLDOUT, EXACT_BODY, EXACT_COLORS. Cycles, items 512 adaptive samples (body layer 1), box filter 0.01. Post-process:
+             premultiply over black, alpha threshold 0.5 -> 0/1, 1-px boundary outline (items: OUTLINE_TARGET 0.38). Runs into the same
              OUT_DIR accumulate; a file named STOP in the output folder cancels.
              Output: frames/NN_action/dirK/NN.png + meta.json (vdtool layout) + <LAYER>.vd (anim_type 2, anchor 68,86).
-QUALITY    : exact mode: identical to the original body; pure model (bones only): mean silhouette IoU 0.888.
+QUALITY    : exact mode: identical to the original body; pure model (bones only): mean silhouette IoU 0.899.
 RULES      : never swap left/right limbs relative to the original frames; new layers must keep the same 35 actions,
              5 directions and frame counts as the body; do not redistribute UO client files or this repository's .blend.
 REBUILD    : the .blend is the source of truth; build scripts are in git history (commit b86c314), see section 10.
