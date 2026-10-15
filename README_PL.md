@@ -8,8 +8,6 @@ postaci UO, szkielet 19 kości UO plus palce rąk i kości broni (54 kości), ws
 Służy do projektowania nowych warstw ubrań, zbroi, włosów i broni: plik `.blend` renderuje nowe klatki UO
 i od razu zapisuje je do `.vd`.
 
-English version: [`README_EN.md`](README_EN.md).
-
 **Spis treści**
 1. [Zawartość](#1-zawartość)
 2. [Jak działa model](#2-jak-działa-model)

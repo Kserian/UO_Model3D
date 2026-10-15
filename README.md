@@ -8,7 +8,6 @@ UO character's proportions, a 54-bone rig (19 UO bones plus the fingers and weap
 original frames. It is meant for designing new clothing, armour, hair and weapon layers: the `.blend` renders
 new UO frames and writes them straight into a `.vd` file.
 
-Polish version: [`README.md`](README.md).
 
 **Contents**
 1. [What's included](#1-whats-included)
