@@ -34,7 +34,7 @@ FOLD_MAX = 0.02       # m: folds of the model (stand-off minus its smooth part) 
 FOLD_SMOOTH = 12      # passes that make the smooth part of the stand-off (bigger = broader things count as folds)
 MOVE = (0.0, 0.0, 0.0) # m: the whole item is moved by this first
 SLEEVES = True        # step 1
-SLEEVE_END = -1.0     # m: >= 0 = each sleeve is shortened along its arm (only its last SLEEVE_SPAN before the end is squeezed, the cuff keeps its shape) so that it ends this far past the
+SLEEVE_END = -1.0     # m: >= 0 = each sleeve is shortened or lengthened along its arm (only its last SLEEVE_SPAN before the end is squeezed / stretched, the cuff keeps its shape) so that it ends this far past the
                       # wrist (the head of the hand bone): a bell sleeve of a longer-armed mannequin hid the hands (docs/qa/robe_black.md: 9 cm past the wrist -> 0.02). < 0 = as the model
 SLEEVE_SPAN = 0.25    # m
 SLEEVE_CUFF = -1.0    # m: >= 0 = the end of each sleeve is narrowed to at most this far from the axis of the forearm (a bell sleeve: its wide mouth seen from the front, arms forward on
@@ -305,12 +305,12 @@ def main():
                 if m.sum() < 20:
                     continue
                 t = (X - J) @ ax; tend = float(np.percentile(t[m], 99.5)); want = tw + SLEEVE_END
-                if tend <= want:
+                if abs(tend - want) < 0.002:
                     continue
                 t0 = want - SLEEVE_SPAN; k = (want - t0) / (tend - t0)
                 w = np.clip(sleeve, 0, 1) * (X[:, 0] * sg > 0) * (t > t0)
                 X = X - (w * (t - t0) * (1 - k))[:, None] * ax
-                print("uo_conform_item: sleeve %s shortened: ended %.1f cm past the wrist, now %.1f cm (last %.0f cm squeezed x%.2f)" % (sd, 100 * (tend - tw), 100 * SLEEVE_END, 100 * SLEEVE_SPAN, k), flush=True)
+                print("uo_conform_item: sleeve %s resized along the arm: ended %.1f cm past the wrist, now %.1f cm (last %.0f cm squeezed x%.2f)" % (sd, 100 * (tend - tw), 100 * SLEEVE_END, 100 * SLEEVE_SPAN, k), flush=True)
 
         if SLEEVE_CUFF >= 0:                                             # the mouth of the sleeve narrowed round the forearm
             for sd, sg in (("L", 1.0), ("R", -1.0)):
