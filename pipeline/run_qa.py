@@ -2,11 +2,11 @@
 
     python run_qa.py [--quick] [--skip canvas,items,...]
 
-  items     test_items.py          mean IoU of the 6 replicas against the original sprites           >= 0.715   (baseline 0.718, docs/qa/items_after_fingers.json)
+  items     test_items.py          mean IoU of the 6 replicas against the original sprites           >= 0.715   (baseline 0.722, docs/qa/baselines.md)
   canvas    test_canvas.py         every case pixel-identical to the reference render (CANVAS / ANCHOR)           all OK
-  autofit   test_autofit.py        mean vertex error of 12 foreign replicas (wrap)                       <= 20 mm   (13.6 mm, docs/qa/autofit.json)
-  robe      test_robe.py           lower-body IoU of the robe replica against the original robe 469       >= 0.74    (0.757, docs/qa/robe_physics.json)
-  cloak     test_cloak.py          silhouette IoU of a cape replica against the original cloak 468 (swing from cloak_pitch.json)       >= 0.47    (0.507, docs/qa/cloak_physics.md)
+  autofit   test_autofit.py        mean vertex error of 12 foreign replicas (wrap)                       <= 20 mm   (13.6 mm)
+  robe      test_robe.py           lower-body IoU of the robe replica against the original robe 469       >= 0.74    (0.757)
+  cloak     test_cloak.py          silhouette IoU of a cape replica against the original cloak 468 (swing from cloak_pitch.json)       >= 0.47    (0.507)
   materials test_materials.py      "RESULT OK"
   import    test_import_item.py    the chain from a foreign file runs and puts the item where the old method did (bbox)  (runs without error)
 --quick drops items and canvas (about 6 minutes less). Needs the same as the tests (bpy 4.2, numpy, scipy, pillow); each test is the script of the same name in this folder.
