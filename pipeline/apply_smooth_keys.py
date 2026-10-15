@@ -17,8 +17,10 @@ def main():
         for b, qs in d["keys"].items():
             for k in range(4):
                 fc = act.fcurves.find('pose.bones["%s"].rotation_quaternion' % b, index=k)
-                assert fc is not None and len(fc.keyframe_points) == len(qs), (b, k)
-                for i, q in enumerate(qs):
+                assert fc is not None, (b, k)
+                qs_ = qs + [qs[0]] if len(fc.keyframe_points) == len(qs) + 1 else qs   # some loops carry the first key again at the end
+                assert fc is not None and len(fc.keyframe_points) == len(qs_), (d["action"], b, k, len(fc.keyframe_points), len(qs_))
+                for i, q in enumerate(qs_):
                     kp = fc.keyframe_points[i]; assert abs(kp.co[0] - (1 + STEP * i)) < 1e-6
                     kp.co[1] = q[k]
                 fc.update()

@@ -55,6 +55,9 @@ def main():
         for b in allb: Q[b].append(Quaternion(P[b].rotation_quaternion))
     bpy.context.view_layer.update()
 
+    AQ = {b: [None] * n for b in allb}                      # armature-space orientation of every bone and frame (the smoothness is asked of THIS, not of the local key:
+                                                            # a local key inherits the zig-zag of its parents)
+
     def sil_cost(i):
         sc.frame_set(1 + i * STEP)
         for b in allb: P[b].rotation_quaternion = Q[b][i]
@@ -70,6 +73,8 @@ def main():
             s, b = lab >= 0, ORIG[i][d]
             u = max((s | b).sum(), 1)
             c += 1 - (s & b).sum() / u
+            if d == 0:
+                for b_ in allb: AQ[b_][i] = P[b_].matrix.to_quaternion()
             if EDGE_W:
                 dd = np.where(s & ~b, distance_transform_edt(~b), distance_transform_edt(~s))
                 c += EDGE_W * ((s ^ b) & (dd >= 2)).sum() / u
@@ -79,14 +84,15 @@ def main():
         if n < 3 or (not loop and i in (0, n - 1)): return 0.0
         p = 0.0
         for b in bones:
-            mid = Q[b][(i - 1) % n].slerp(Q[b][(i + 1) % n], 0.5)
-            p += angle(Q[b][i], mid) ** 2
+            mid = AQ[b][(i - 1) % n].slerp(AQ[b][(i + 1) % n], 0.5)
+            p += angle(AQ[b][i], mid) ** 2
         return LAMBDA * p
 
     def zigzag(bones):
         idx = range(n) if loop else range(1, n - 1)
-        return float(np.degrees(np.mean([angle(Q[b][i], Q[b][(i - 1) % n].slerp(Q[b][(i + 1) % n], 0.5)) for b in bones for i in idx]))) if n >= 3 else 0.0
+        return float(np.degrees(np.mean([angle(AQ[b][i], AQ[b][(i - 1) % n].slerp(AQ[b][(i + 1) % n], 0.5)) for b in bones for i in idx]))) if n >= 3 else 0.0
 
+    for i in range(n): sil_cost(i)                           # fills AQ
     log = []
     for sw in range(sweeps):
         for st in stages:
@@ -103,7 +109,7 @@ def main():
                 c1 = sil_cost(i)
                 if c1 > c0 + TOL or r.fun >= f0:               # no better overall, or a worse silhouette: keep the old keys
                     for k, b in enumerate(bones): Q[b][i] = base[k]
-                    c1 = c0
+                    c1 = sil_cost(i)                           # (also refreshes AQ of the restored frame)
                 log.append((sw, st, i, round(c0, 4), round(c1, 4)))
                 print("sweep %d %s frame %d sil %.4f -> %.4f" % (sw, st, i, c0, c1), flush=True)
             print("ZIGZAG after %s: %s" % (st, {b: round(zigzag([b]), 1) for b in bones}), flush=True)
