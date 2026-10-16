@@ -2,7 +2,8 @@
 # The calibrated keys of bow.L (weapon_motion.json) come from silhouettes of a thin line: the shaft's tilt towards / away from the camera and the roll about the shaft are not determined by
 # them (in 18_attack_bow the shaft jumps by ~87 degrees between two frames while the hand hardly moves), and the pivot sits up to 10 cm from the fist. Here, for every pose of bow.L:
 #  - the shaft is parallel to the body (pelvis -> neck), straight, in every action (PARALLEL False: the calibrated direction, UPRIGHT actions along UP),
-#  - the string side of the bow (the side the limb tips curve to) faces the body (from the fist to the spine, taken perpendicular to the shaft), the same side of the hand in every action,
+#  - the string side of the bow (the side the limb tips curve to) faces the back of the chest (taken perpendicular to the shaft): the bow stands in the body's own plane in every action
+#    (from the front it is seen edge-on; held out in front the string comes to the archer, the limb tips curve away from the leg when the bow hangs at the side),
 #  - the bone's head (the grip, the middle of the bow) goes to the centre of the fingers of hand.L.
 # Run on a bow that is bound to bow.L (uo_bind_item.py, PART = "bow"), the bow selected.
 import bpy, json
@@ -33,6 +34,7 @@ bpy.context.view_layer.update()
 M = np.array(rig.matrix_world)[:3, :3]
 H0 = M @ np.array(Matrix(rig.data.bones[WM["parent"]].matrix_local).to_3x3())            # hand.L axes at rest -> world
 P = np.array([item.matrix_world @ v.co for v in item.data.vertices])
+C0 = M @ np.array(Matrix(rig.data.bones["chest"].matrix_local).to_3x3()); C0 = C0 / np.linalg.norm(C0, axis=0)
 d = H0 @ np.asarray(WM["dir"], float); d /= np.linalg.norm(d)                             # the class line (shaft, tip up) at rest
 t = (P - P.mean(0)) @ d
 L = np.ptp(t)
@@ -59,10 +61,11 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         r = Vector(p[:3]); ang = r.length
         q0 = Quaternion(r / ang, ang) if ang > 1e-9 else Quaternion()
         body = W(rig.pose.bones["neck"].head) - W(rig.pose.bones["pelvis"].head)
+        Cw = M @ np.array(rig.pose.bones["chest"].matrix.to_3x3()); Cw = Cw / np.linalg.norm(Cw, axis=0)
         D = body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
         D = D / np.linalg.norm(D)
         F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
-        to_body = W(rig.pose.bones["spine"].head) - F
+        to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of the chest (the body faces -Y at rest)
         to_body -= (to_body @ D) * D
         if np.linalg.norm(to_body) < 1e-3:
             to_body = np.array([0.0, 1.0, 0.0])
