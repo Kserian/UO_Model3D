@@ -26,7 +26,7 @@ RECIPE.json (only "file" and "kind" are required):
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
-                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
+                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), inflate (m: every vertex moved along its normal, thickens a thin bow / shaft that renders as a 1-px line), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
@@ -317,6 +317,14 @@ flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}
 wp = %(weapon)r
 if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
+    if wp.get("inflate"):                                        # a thin shaft / bow limb is a 1-px line at 36 px/m: every vertex moved along its normal by this many m (a limb 2 cm thick + 2 x 0.02 m)
+        import bmesh
+        for o in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
+            bm = bmesh.new(); bm.from_mesh(o.data); bm.normal_update()
+            for v in bm.verts:
+                v.co += v.normal * float(wp["inflate"])
+            bm.to_mesh(o.data); bm.free(); o.data.update()
+        print("uo_make_item: inflate %%s by %%s m" %% (wp["class"], wp["inflate"]))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
 else:
