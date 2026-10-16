@@ -317,8 +317,14 @@ flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}
 wp = %(weapon)r
 if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
-    run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
-    run("uo_bind_item.py", PART=wp["part"])
+    if wp.get("strings"):                                        # a lute: strings to -Y, bowl and headstock back
+        run("uo_face_strings.py")
+    if wp.get("carry"):                                          # held by the neck across the front of the body (walk, run, stand): rigid on hand.R, settings of uo_place_carry.py
+        run("uo_place_carry.py", **{k.upper(): v for k, v in wp["carry"].items()})
+        run("uo_bind_item.py", PART="weapon")
+    else:
+        run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
+        run("uo_bind_item.py", PART=wp["part"])
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
