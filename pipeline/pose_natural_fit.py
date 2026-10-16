@@ -49,6 +49,12 @@ GRIP_ROT_W = float(os.environ.get("GRIP_ROT_W", 0.0))   # right fist turned agai
                                                         # (GRIP_* off: the weapon motion jumps, a fist following it jumps too)
 TOL = float(os.environ.get("TOL", 0.001))               # allowed rise of Sil per frame
 ERR2_TOL = int(os.environ.get("ERR2_TOL", 0))          # allowed rise of the >= 2 px errors per frame (sum of 5 directions)
+HEAD_YAW_ACTIONS = {int(x) for x in os.environ.get("HEAD_YAW_ACTIONS", "23,24").split(",") if x}   # mounted walk / run: the rider is hidden under the horse
+HEAD_YAW_W = float(os.environ.get("HEAD_YAW_W", 3.0))   # head turned about the chest's own axis beyond HEAD_YAW_FREE from the mounted-stand pose, per rad^2
+                                                        # (only for HEAD_YAW_ACTIONS; the heads of fighting actions are left to move)
+HEAD_YAW_FREE = np.radians(float(os.environ.get("HEAD_YAW_FREE", 2)))
+HEAD_TOL = float(os.environ.get("HEAD_TOL", 0.004))     # silhouette tolerance per frame of those actions (the horse hides the rider, the sprite outline hardly pins the head)
+HEAD_ERR2_TOL = int(os.environ.get("HEAD_ERR2_TOL", 30))
 MAXFEV = int(os.environ.get("MAXFEV", 400))
 PASSES = int(os.environ.get("PASSES", 1))
 SMOOTH_ONESHOT = float(os.environ.get("SMOOTH_ONESHOT", 0.5))   # one-shot actions (fast attacks...) start only this share of the way to the smoothed orientation
@@ -121,6 +127,9 @@ class ActionFit:
         self.tw_ref = {s: self.uarm_twist(Gs, s) for s in "LR"}
         self.slide_ref = {s: self.joint_in_chest(Ms, s) for s in "LR"}
         self.uarm_dir_ref = {s: Gs[R.bi["chest"]].T @ Gs[R.bi["upper_arm." + s]][:, 1] for s in "LR"}
+        self.tol, self.err2_tol = (HEAD_TOL, HEAD_ERR2_TOL) if aid in HEAD_YAW_ACTIONS else (TOL, ERR2_TOL)
+        self.yaw_w = HEAD_YAW_W if aid in HEAD_YAW_ACTIONS else 0.0
+        qm, lm, sm = R.keys(25); self.head_yaw_ref = self.head_yaw(rot_of(R.fk(qm[0], lm[0], sm[0])))
         self.fold_setup(); Xs = R.skin(Ms); self.fold_ref = {s: self.fold(Xs, s) for s in "LR"}
         self.has_grip = "weapon1h.R" in R.bi
         if self.has_grip:
@@ -140,6 +149,12 @@ class ActionFit:
     def uarm_twist(self, G, side):
         R = self.R; c, u = R.bi["chest"], R.bi["upper_arm." + side]
         rel = (R.rest[c][:3, :3].T @ R.rest[u][:3, :3]).T @ (G[c].T @ G[u])
+        return swing_twist_y(matq(rel))[0]
+
+    def head_yaw(self, G):
+        """twist (rad) of the head about the chest's own Y, the rest relation removed (+ = same sense as the head turning against the chest)"""
+        R = self.R; c, h = R.bi["chest"], R.bi["head"]
+        rel = (R.rest[c][:3, :3].T @ R.rest[h][:3, :3]).T @ (G[c].T @ G[h])
         return swing_twist_y(matq(rel))[0]
 
     def fold_setup(self):
@@ -229,6 +244,8 @@ class ActionFit:
             e += GRIP_W * max(0.0, np.linalg.norm(g[:3, 3] - T[:3, 3]) - GRIP_FREE) ** 2
             Tr = T[:3, :3] / np.linalg.norm(T[:3, :3], axis=0)
             e += GRIP_ROT_W * qangle(matq(g[:3, :3]), matq(Tr)) ** 2
+        if self.yaw_w and "head" in chain:
+            e += self.yaw_w * max(0.0, abs(self.head_yaw(G) - self.head_yaw_ref) - HEAD_YAW_FREE) ** 2
         for b in chain:
             if mids is not None and b in mids:
                 e += LAMBDA * BONE_W[b] * qangle(matq(G[R.bi[b]]), mids[b]) ** 2
@@ -262,7 +279,7 @@ class ActionFit:
         ev = SilEval(R, self.O[i], self.H[i]); ev.set_base(M, chain)
         mids = self.mids(i, chain)
         base = self.q[i, ks].copy()
-        s0, tol = self.sil0[i], TOL
+        s0, tol = self.sil0[i], self.tol
         root = [R.bi[chain[0]]]
 
         def pose(x):
@@ -278,7 +295,7 @@ class ActionFit:
             return float(np.mean([sil_cost(S[d], self.O[i][d], ev.OD[d]) for d in range(5)])), sum(err2(S[d], self.O[i][d]) for d in range(5))
 
         def penal(sv, e2):
-            return 50 * max(0.0, sv - s0 - tol) + 0.02 * max(0, e2 - e2_0 - ERR2_TOL)
+            return 50 * max(0.0, sv - s0 - tol) + 0.02 * max(0, e2 - e2_0 - self.err2_tol)
 
         def energy(x, parts=False):
             q = pose(x); Mx = R.fk(q, self.loc[i], self.sc[i], M=M.copy(), start=root)
@@ -295,7 +312,7 @@ class ActionFit:
         e1, s1, p1, e21 = energy(r.x, True)
         cand = [(e1, s1, p1, e21, pose(r.x)), (e_start, s_start, p_start, e2_start, self.q[i].copy())]
         nfev = int(r.nfev)
-        if not (s1 <= s0 + tol and e21 <= e2_0 + ERR2_TOL):              # second start: the original keys of the chain
+        if not (s1 <= s0 + tol and e21 <= e2_0 + self.err2_tol):              # second start: the original keys of the chain
             cur = base.copy(); base[:] = self.q0[i, ks]
             r2 = minimize(energy, x0, method="Powell", options={"xtol": 1e-3, "ftol": 1e-6, "maxfev": MAXFEV})
             e3, s3, p3, e23 = energy(r2.x, True); cand.append((e3, s3, p3, e23, pose(r2.x))); nfev += int(r2.nfev)
@@ -305,7 +322,7 @@ class ActionFit:
         Mo = R.fk(q_or, self.loc[i], self.sc[i]); so, e2o = sil_e2(Mo)
         qs = self.q[i].copy(); self.q[i] = q_or; po = self.chain_energy_parts(i, Mo, chain, mids, ev.Xs); self.q[i] = qs
         cand.append((po + so + penal(so, e2o), so, po, e2o, q_or))
-        feas = [c for c in cand if c[1] <= s0 + tol and c[3] <= e2_0 + ERR2_TOL]
+        feas = [c for c in cand if c[1] <= s0 + tol and c[3] <= e2_0 + self.err2_tol]
         best = min(feas, key=lambda c: c[0]) if feas else min(cand, key=lambda c: c[1] + 0.02 * c[3])
         self.q[i] = best[4]
         return dict(frame=i, chain=chain_name, sil0=round(s0, 5), sil_start=round(s_start, 5), sil=round(best[1], 5), prior_start=round(p_start, 5),
@@ -322,13 +339,13 @@ class ActionFit:
         self.reverted = []
         for i in range(self.n):
             sv, e2 = self.frame_sil(i, self.q[i], self.loc[i])
-            if sv <= self.sil0[i] + TOL and e2 <= self.e20[i] + ERR2_TOL: continue
+            if sv <= self.sil0[i] + self.tol and e2 <= self.e20[i] + self.err2_tol: continue
             done = False
             for t in (0.75, 0.5, 0.25, 0.0):
                 q = self.q[i].copy(); loc = self.loc[i].copy()
                 q[ks] = qslerp(self.q0[i, ks], self.q[i, ks], t); loc[cl] = (1 - t) * self.loc0[i, cl] + t * self.loc[i, cl]
                 sv2, e22 = self.frame_sil(i, q, loc)
-                if (sv2 <= self.sil0[i] + TOL and e22 <= self.e20[i] + ERR2_TOL) or t == 0.0:
+                if (sv2 <= self.sil0[i] + self.tol and e22 <= self.e20[i] + self.err2_tol) or t == 0.0:
                     self.q[i], self.loc[i] = q, loc; done = True
                     self.reverted.append((i, t)); self.log("guard: frame %d sil %.4f err2 %d -> share %.2f of the new pose: sil %.4f err2 %d (orig %.4f, %d)" %
                                                           (i, sv, e2, t, sv2, e22, self.sil0[i], self.e20[i]))
@@ -382,7 +399,7 @@ class ActionFit:
                    sil0=self.sil0, sil=[f[0] for f in fin], err2_0=self.e20, err2=[f[1] for f in fin], iou0=iou0, iou=[f[2] for f in fin],
                    bones=self.R.bones, q=self.q.tolist(), loc=self.loc.tolist(), scale=self.sc.tolist(), log=logs,
                    item_err=float(self.item_err), reverted=self.reverted,
-                   settings=dict(LAMBDA=LAMBDA, ERR2_TOL=ERR2_TOL, FOLD_W=FOLD_W, GRIP_W=GRIP_W, GRIP_FREE=GRIP_FREE, GRIP_ROT_W=GRIP_ROT_W, SLIDE_W=SLIDE_W, SLIDE_FREE=SLIDE_FREE, TWIST_W=TWIST_W, TWIST_FREE=float(np.degrees(TWIST_FREE)), VALGUS_W=VALGUS_W, TOL=TOL, MAXFEV=MAXFEV,
+                   settings=dict(LAMBDA=LAMBDA, ERR2_TOL=ERR2_TOL, HEAD_YAW_ACTIONS=sorted(HEAD_YAW_ACTIONS), HEAD_YAW_W=HEAD_YAW_W, HEAD_YAW_FREE=float(np.degrees(HEAD_YAW_FREE)), HEAD_TOL=HEAD_TOL, HEAD_ERR2_TOL=HEAD_ERR2_TOL, FOLD_W=FOLD_W, GRIP_W=GRIP_W, GRIP_FREE=GRIP_FREE, GRIP_ROT_W=GRIP_ROT_W, SLIDE_W=SLIDE_W, SLIDE_FREE=SLIDE_FREE, TWIST_W=TWIST_W, TWIST_FREE=float(np.degrees(TWIST_FREE)), VALGUS_W=VALGUS_W, TOL=TOL, MAXFEV=MAXFEV,
                                  PASSES=PASSES, SCALE=SCALE, HEAD_SCALE=HEAD_SCALE, sweeps=sweeps))
         return rep
 
