@@ -327,6 +327,8 @@ if wp:                                                           # a weapon: upr
         print("uo_make_item: inflate %%s by %%s m" %% (wp["class"], wp["inflate"]))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
+    if wp["class"] == "bow" and wp.get("upright", True):          # a bow: upright in the hand in the shooting action (the calibration of the thin line jumps by ~87 degrees; uo_bow_upright.py)
+        run("uo_bow_upright.py")
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
