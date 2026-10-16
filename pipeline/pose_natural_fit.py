@@ -53,6 +53,7 @@ HEAD_YAW_ACTIONS = {int(x) for x in os.environ.get("HEAD_YAW_ACTIONS", "23,24").
 HEAD_YAW_W = float(os.environ.get("HEAD_YAW_W", 3.0))   # head turned about the chest's own axis beyond HEAD_YAW_FREE from the mounted-stand pose, per rad^2
                                                         # (only for HEAD_YAW_ACTIONS; the heads of fighting actions are left to move)
 HEAD_YAW_FREE = np.radians(float(os.environ.get("HEAD_YAW_FREE", 2)))
+HEAD_LAMBDA = float(os.environ.get("HEAD_LAMBDA", 1.0))   # multiplier of the smoothness weight of neck / head in those actions
 HEAD_TOL = float(os.environ.get("HEAD_TOL", 0.004))     # silhouette tolerance per frame of those actions (the horse hides the rider, the sprite outline hardly pins the head)
 HEAD_ERR2_TOL = int(os.environ.get("HEAD_ERR2_TOL", 30))
 MAXFEV = int(os.environ.get("MAXFEV", 400))
@@ -248,7 +249,7 @@ class ActionFit:
             e += self.yaw_w * max(0.0, abs(self.head_yaw(G) - self.head_yaw_ref) - HEAD_YAW_FREE) ** 2
         for b in chain:
             if mids is not None and b in mids:
-                e += LAMBDA * BONE_W[b] * qangle(matq(G[R.bi[b]]), mids[b]) ** 2
+                e += LAMBDA * (HEAD_LAMBDA if self.yaw_w and b in ("neck", "head") else 1.0) * BONE_W[b] * qangle(matq(G[R.bi[b]]), mids[b]) ** 2
         for s in "LR":
             if "clavicle." + s in chain:
                 ex = max(0.0, np.linalg.norm(self.joint_in_chest(M, s) - self.slide_ref[s]) - SLIDE_FREE)
@@ -399,7 +400,7 @@ class ActionFit:
                    sil0=self.sil0, sil=[f[0] for f in fin], err2_0=self.e20, err2=[f[1] for f in fin], iou0=iou0, iou=[f[2] for f in fin],
                    bones=self.R.bones, q=self.q.tolist(), loc=self.loc.tolist(), scale=self.sc.tolist(), log=logs,
                    item_err=float(self.item_err), reverted=self.reverted,
-                   settings=dict(LAMBDA=LAMBDA, ERR2_TOL=ERR2_TOL, HEAD_YAW_ACTIONS=sorted(HEAD_YAW_ACTIONS), HEAD_YAW_W=HEAD_YAW_W, HEAD_YAW_FREE=float(np.degrees(HEAD_YAW_FREE)), HEAD_TOL=HEAD_TOL, HEAD_ERR2_TOL=HEAD_ERR2_TOL, FOLD_W=FOLD_W, GRIP_W=GRIP_W, GRIP_FREE=GRIP_FREE, GRIP_ROT_W=GRIP_ROT_W, SLIDE_W=SLIDE_W, SLIDE_FREE=SLIDE_FREE, TWIST_W=TWIST_W, TWIST_FREE=float(np.degrees(TWIST_FREE)), VALGUS_W=VALGUS_W, TOL=TOL, MAXFEV=MAXFEV,
+                   settings=dict(LAMBDA=LAMBDA, ERR2_TOL=ERR2_TOL, HEAD_YAW_ACTIONS=sorted(HEAD_YAW_ACTIONS), HEAD_YAW_W=HEAD_YAW_W, HEAD_LAMBDA=HEAD_LAMBDA, HEAD_YAW_FREE=float(np.degrees(HEAD_YAW_FREE)), HEAD_TOL=HEAD_TOL, HEAD_ERR2_TOL=HEAD_ERR2_TOL, FOLD_W=FOLD_W, GRIP_W=GRIP_W, GRIP_FREE=GRIP_FREE, GRIP_ROT_W=GRIP_ROT_W, SLIDE_W=SLIDE_W, SLIDE_FREE=SLIDE_FREE, TWIST_W=TWIST_W, TWIST_FREE=float(np.degrees(TWIST_FREE)), VALGUS_W=VALGUS_W, TOL=TOL, MAXFEV=MAXFEV,
                                  PASSES=PASSES, SCALE=SCALE, HEAD_SCALE=HEAD_SCALE, sweeps=sweeps))
         return rep
 

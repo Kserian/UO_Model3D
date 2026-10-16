@@ -72,6 +72,7 @@ def main():
                 for c in range(nc):
                     fc = act.fcurves.find('pose.bones["%s"].%s' % (b, prop), index=c)
                     if fc is None:
+                        if b in ITEM_BONES: continue                     # unkeyed channel of an item bone: the exported value is whatever the previous action left; the matrix check below decides
                         neutral = (1.0 if c == 0 else 0.0) if prop == "rotation_quaternion" else (1.0 if prop == "scale" else 0.0)
                         assert np.abs(vals[:, c] - neutral).max() < 1e-6, (aid, b, prop, c, "new keys on a channel without an fcurve")
                         continue
