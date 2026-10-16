@@ -130,7 +130,7 @@ class ActionFit:
         self.uarm_dir_ref = {s: Gs[R.bi["chest"]].T @ Gs[R.bi["upper_arm." + s]][:, 1] for s in "LR"}
         self.tol, self.err2_tol = (HEAD_TOL, HEAD_ERR2_TOL) if aid in HEAD_YAW_ACTIONS else (TOL, ERR2_TOL)
         self.yaw_w = HEAD_YAW_W if aid in HEAD_YAW_ACTIONS else 0.0
-        qm, lm, sm = R.keys(25); self.head_yaw_ref = self.head_yaw(rot_of(R.fk(qm[0], lm[0], sm[0])))
+        qm, lm, sm = R.keys(25); Gm = rot_of(R.fk(qm[0], lm[0], sm[0])); self.head_yaw_ref = {b: self.head_yaw(Gm, b) for b in ("neck", "head")}
         self.fold_setup(); Xs = R.skin(Ms); self.fold_ref = {s: self.fold(Xs, s) for s in "LR"}
         self.has_grip = "weapon1h.R" in R.bi
         if self.has_grip:
@@ -152,9 +152,9 @@ class ActionFit:
         rel = (R.rest[c][:3, :3].T @ R.rest[u][:3, :3]).T @ (G[c].T @ G[u])
         return swing_twist_y(matq(rel))[0]
 
-    def head_yaw(self, G):
+    def head_yaw(self, G, bone="head"):
         """twist (rad) of the head about the chest's own Y, the rest relation removed (+ = same sense as the head turning against the chest)"""
-        R = self.R; c, h = R.bi["chest"], R.bi["head"]
+        R = self.R; c, h = R.bi["chest"], R.bi[bone]
         rel = (R.rest[c][:3, :3].T @ R.rest[h][:3, :3]).T @ (G[c].T @ G[h])
         return swing_twist_y(matq(rel))[0]
 
@@ -246,7 +246,8 @@ class ActionFit:
             Tr = T[:3, :3] / np.linalg.norm(T[:3, :3], axis=0)
             e += GRIP_ROT_W * qangle(matq(g[:3, :3]), matq(Tr)) ** 2
         if self.yaw_w and "head" in chain:
-            e += self.yaw_w * max(0.0, abs(self.head_yaw(G) - self.head_yaw_ref) - HEAD_YAW_FREE) ** 2
+            for b in ("neck", "head"):                                  # neck too: else the neck takes the turn and waste_neck rises
+                e += self.yaw_w * max(0.0, abs(self.head_yaw(G, b) - self.head_yaw_ref[b]) - HEAD_YAW_FREE) ** 2
         for b in chain:
             if mids is not None and b in mids:
                 e += LAMBDA * (HEAD_LAMBDA if self.yaw_w and b in ("neck", "head") else 1.0) * BONE_W[b] * qangle(matq(G[R.bi[b]]), mids[b]) ** 2
@@ -324,7 +325,9 @@ class ActionFit:
         qs = self.q[i].copy(); self.q[i] = q_or; po = self.chain_energy_parts(i, Mo, chain, mids, ev.Xs); self.q[i] = qs
         cand.append((po + so + penal(so, e2o), so, po, e2o, q_or))
         feas = [c for c in cand if c[1] <= s0 + tol and c[3] <= e2_0 + self.err2_tol]
-        best = min(feas, key=lambda c: c[0]) if feas else min(cand, key=lambda c: c[1] + 0.02 * c[3])
+        if feas: best = min(feas, key=lambda c: c[0])
+        elif self.yaw_w and chain_name == "head": best = min(cand, key=lambda c: c[0])     # the other chains' state may already be over tolerance: the yaw prior still decides
+        else: best = min(cand, key=lambda c: c[1] + 0.02 * c[3])
         self.q[i] = best[4]
         return dict(frame=i, chain=chain_name, sil0=round(s0, 5), sil_start=round(s_start, 5), sil=round(best[1], 5), prior_start=round(p_start, 5),
                     prior=round(best[2], 5), err2_0=int(e2_0), err2=int(best[3]), nfev=nfev, feasible=bool(feas))
