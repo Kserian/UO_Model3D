@@ -1,0 +1,80 @@
+# A bow held the same way in every action: grip (the middle of the bow) in the fist, shaft as calibrated, string side towards the body.
+# The calibrated keys of bow.L (weapon_motion.json) come from silhouettes of a thin line: the shaft's tilt towards / away from the camera and the roll about the shaft are not determined by
+# them (in 18_attack_bow the shaft jumps by ~87 degrees between two frames while the hand hardly moves), and the pivot sits up to 10 cm from the fist. Here, for every pose of bow.L:
+#  - the shaft keeps the calibrated direction (UPRIGHT actions: along UP, about vertical, a little forward),
+#  - the string side of the bow (the side the limb tips curve to) faces the body (from the fist to the spine, taken perpendicular to the shaft), the same side of the hand in every action,
+#  - the bone's head (the grip, the middle of the bow) goes to the centre of the fingers of hand.L.
+# Run on a bow that is bound to bow.L (uo_bind_item.py, PART = "bow"), the bow selected.
+import bpy, json
+import numpy as np
+from mathutils import Matrix, Quaternion, Vector
+
+UPRIGHT = [18]                       # UO action numbers where the shaft is made vertical instead of the calibrated direction (the shooting action)
+UP = (0.0, -0.12, 1.0)               # world axes at direction 0: Y is forward (-Y), Z up
+FIST_SHIFT = 0.0                     # m along the shaft from the fingers' centre (+ = towards the tip) if the grip should sit higher / lower in the fist
+
+rig = bpy.data.objects["UO_Rig"]
+WM = json.loads(bpy.data.texts["weapon_motion.json"].as_string())["bow.L"]
+item = [o for o in bpy.context.selected_objects if o.type == "MESH"][0]
+sc = bpy.context.scene
+FINGERS = [b.name for b in rig.data.bones if b.name.startswith("finger") and b.name.endswith(".L")]
+
+
+def frame(a, b):
+    """right-handed orthonormal frame (columns): first column along a, second towards b"""
+    a = np.asarray(a, float); a /= np.linalg.norm(a)
+    b = np.asarray(b, float); b = b - (b @ a) * a; b /= np.linalg.norm(b)
+    return np.c_[a, b, np.cross(a, b)]
+
+
+rig.data.pose_position = "REST"
+bpy.context.view_layer.update()
+M = np.array(rig.matrix_world)[:3, :3]
+H0 = M @ np.array(Matrix(rig.data.bones[WM["parent"]].matrix_local).to_3x3())            # hand.L axes at rest -> world
+P = np.array([item.matrix_world @ v.co for v in item.data.vertices])
+d = H0 @ np.asarray(WM["dir"], float); d /= np.linalg.norm(d)                             # the class line (shaft, tip up) at rest
+t = (P - P.mean(0)) @ d
+L = np.ptp(t)
+mid = P[np.abs(t - np.median(t)) < 0.1 * L].mean(0)
+ends = P[(t > t.min() + 0.8 * L) | (t < t.min() + 0.2 * L)].mean(0)
+c = ends - mid; c -= (c @ d) * d
+u_src = frame(np.asarray(WM["dir"], float), H0.T @ c)                                      # shaft and string side in hand axes
+print("uo_bow_hold: string side %s (hand axes), shaft %.2f m" % (np.round(H0.T @ c / np.linalg.norm(c), 2), L))
+
+pb = rig.pose.bones["bow.L"]; pb.rotation_mode = "QUATERNION"
+rig.data.pose_position = "POSE"
+keep = rig.animation_data.action
+W = lambda p: np.array(rig.matrix_world @ p)
+n = 0
+for act in [a for a in bpy.data.actions if "uo_action" in a]:
+    an = int(act["uo_action"]); rig.animation_data.action = act; prev = None
+    for i in range(int(act["uo_frames"])):
+        p = WM["poses"].get("%d,%d" % (an, i))
+        if p is None:
+            continue
+        sc.frame_set(1 + 3 * i)                                                                # evaluates the old keys of bow.L; the hand's pose is what is wanted here
+        pb.rotation_quaternion = Quaternion(); pb.location = (0, 0, 0); bpy.context.view_layer.update()
+        Hw = M @ np.array(rig.pose.bones[WM["parent"]].matrix.to_3x3()); Hw = Hw / np.linalg.norm(Hw, axis=0)   # hand.L axes posed -> world
+        r = Vector(p[:3]); ang = r.length
+        q0 = Quaternion(r / ang, ang) if ang > 1e-9 else Quaternion()
+        D = np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
+        D = D / np.linalg.norm(D)
+        F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
+        to_body = W(rig.pose.bones["spine"].head) - F
+        to_body -= (to_body @ D) * D
+        if np.linalg.norm(to_body) < 1e-3:
+            to_body = np.array([0.0, 1.0, 0.0])
+        Q = frame(Hw.T @ D, Hw.T @ to_body) @ u_src.T                                       # turn of the bone in hand axes: shaft -> D, string side -> the body
+        q = Matrix(Q.tolist()).to_quaternion()
+        if prev is not None and q.dot(prev) < 0:
+            q.negate()
+        prev = q
+        pb.rotation_quaternion = q
+        bpy.context.view_layer.update()
+        h = W(pb.head)                                                                         # the grip of the bow with the location 0
+        pb.location = tuple(float(x) for x in Hw.T @ (F - h))                                  # hand axes = the bone's axes: the shift that puts the grip in the fist
+        pb.keyframe_insert("location", frame=1 + 3 * i, group="bow.L")
+        pb.keyframe_insert("rotation_quaternion", frame=1 + 3 * i, group="bow.L")
+        n += 1
+print("uo_bow_hold: %d poses re-keyed" % n)
+rig.animation_data.action = keep
