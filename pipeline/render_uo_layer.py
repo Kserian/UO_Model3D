@@ -27,6 +27,9 @@ OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline":
 SAMPLES = 512                      # Cycles samples per pixel for items (adaptive sampling; the pixel filter stays a 0.01 px box = the pixel centre, no blur): the
                                    # gloss of metal in UO_Look (Principled) is sampled at random, so at 1 sample a flail had 61 % of its pixels off the converged
                                    # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
+FILTER_WIDTH = 0.01                # px: width of the box pixel filter. 0.01 = the pixel centre (the UO look); scene "uo_filter" 1.0 = every pixel averages its area (a thin strand, a bow string, keeps its colour
+                                   # and a coverage instead of dropping out where no pixel centre hits it)
+ALPHA_MIN = 0.5                    # coverage from which a pixel is part of the item (1-bit alpha); scene "uo_alpha" 0.35 with uo_filter 1.0 keeps a thin strand continuous
 OUT_DIR = "//uo_render/"           # PNG output root (vdtool 'canvas' layout + meta.json)
 WRITE_VD = True
 VD_FILE = "//uo_render/%s.vd"      # %s -> LAYER
@@ -98,6 +101,7 @@ DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original
 sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
+FILTER_WIDTH = float(sc.get("uo_filter", FILTER_WIDTH)); ALPHA_MIN = float(sc.get("uo_alpha", ALPHA_MIN)); SAMPLES = int(sc.get("uo_samples", SAMPLES))
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
                                    # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
@@ -556,7 +560,7 @@ def shadow_sun(on):
             m.cycles.emission_sampling = "NONE"
 if EXACT_ANY and sc.render.engine == "CYCLES":
     sc.cycles.pixel_filter_type = "BOX"          # one sample point per pixel centre, like the UO art (no blur)
-    sc.cycles.filter_width = 0.01
+    sc.cycles.filter_width = FILTER_WIDTH
     sc.cycles.use_denoising = False
     sc.cycles.samples = 1 if LAYER == "body" else SAMPLES     # every sample at the pixel centre (filter 0.01 px): more samples only average the
     sc.cycles.use_adaptive_sampling = LAYER != "body" and SAMPLES > 1     # random parts of the shading (the gloss of metal); adaptive with a strict
@@ -619,7 +623,7 @@ def uo_post(px, keep=None):
     keep: pixels that already carry original UO colours (no extra outline)."""
     a = px[..., 3:4]
     rgb = px[..., :3] * a
-    m = px[..., 3] >= 0.5
+    m = px[..., 3] >= ALPHA_MIN
     inner = m.copy()
     inner[1:] &= m[:-1]; inner[:-1] &= m[1:]; inner[:, 1:] &= m[:, :-1]; inner[:, :-1] &= m[:, 1:]
     edge = m & ~inner
