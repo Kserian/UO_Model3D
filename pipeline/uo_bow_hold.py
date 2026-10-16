@@ -12,6 +12,7 @@ import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
 PARALLEL = True                      # the shaft stays upright in every action (like in the walk), it follows the body (pelvis -> neck) only once the body leans more than FREE_LEAN (False = the calibrated direction, except UPRIGHT actions)
+FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FREE_LEAN = 35.0                     # degrees of lean of the body (crouch, step) the bow does not follow
 UPRIGHT = [18]                       # with PARALLEL False: UO action numbers where the shaft is made vertical instead of the calibrated direction
 UP = (0.0, -0.12, 1.0)               # world axes at direction 0: Y is forward (-Y), Z up
@@ -37,7 +38,7 @@ bpy.context.view_layer.update()
 M = np.array(rig.matrix_world)[:3, :3]
 H0 = M @ np.array(Matrix(rig.data.bones[WM["parent"]].matrix_local).to_3x3())            # hand.L axes at rest -> world
 P = np.array([item.matrix_world @ v.co for v in item.data.vertices])
-C0 = M @ np.array(Matrix(rig.data.bones["chest"].matrix_local).to_3x3()); C0 = C0 / np.linalg.norm(C0, axis=0)
+C0 = M @ np.array(Matrix(rig.data.bones[FACING].matrix_local).to_3x3()); C0 = C0 / np.linalg.norm(C0, axis=0)
 d = H0 @ np.asarray(WM["dir"], float); d /= np.linalg.norm(d)                             # the class line (shaft, tip up) at rest
 t = (P - P.mean(0)) @ d
 L = np.ptp(t)
@@ -71,7 +72,7 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         r = Vector(p[:3]); ang = r.length
         q0 = Quaternion(r / ang, ang) if ang > 1e-9 else Quaternion()
         body = W(rig.pose.bones["neck"].head) - W(rig.pose.bones["pelvis"].head)
-        Cw = M @ np.array(rig.pose.bones["chest"].matrix.to_3x3()); Cw = Cw / np.linalg.norm(Cw, axis=0)
+        Cw = M @ np.array(rig.pose.bones[FACING].matrix.to_3x3()); Cw = Cw / np.linalg.norm(Cw, axis=0)
         if PARALLEL:
             bn = body / np.linalg.norm(body); lean = np.degrees(np.arccos(np.clip(bn[2], -1, 1)))
             side = bn - bn[2] * np.array([0.0, 0.0, 1.0])
@@ -80,7 +81,7 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         D = body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
         D = D / np.linalg.norm(D)
         F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
-        to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of the chest (the body faces -Y at rest)
+        to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of FACING (the body faces -Y at rest)
         if an in AIM:
             to_arm = W(rig.pose.bones["upper_arm.L"].head) - F
             to_arm -= (to_arm @ D) * D
