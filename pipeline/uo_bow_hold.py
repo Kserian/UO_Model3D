@@ -1,7 +1,7 @@
 # A bow held the same way in every action: grip (the middle of the bow) in the fist, shaft as calibrated, string side towards the body.
 # The calibrated keys of bow.L (weapon_motion.json) come from silhouettes of a thin line: the shaft's tilt towards / away from the camera and the roll about the shaft are not determined by
 # them (in 18_attack_bow the shaft jumps by ~87 degrees between two frames while the hand hardly moves), and the pivot sits up to 10 cm from the fist. Here, for every pose of bow.L:
-#  - the shaft keeps the calibrated direction (UPRIGHT actions: along UP, about vertical, a little forward),
+#  - the shaft is parallel to the body (pelvis -> neck), straight, in every action (PARALLEL False: the calibrated direction, UPRIGHT actions along UP),
 #  - the string side of the bow (the side the limb tips curve to) faces the body (from the fist to the spine, taken perpendicular to the shaft), the same side of the hand in every action,
 #  - the bone's head (the grip, the middle of the bow) goes to the centre of the fingers of hand.L.
 # Run on a bow that is bound to bow.L (uo_bind_item.py, PART = "bow"), the bow selected.
@@ -9,7 +9,8 @@ import bpy, json
 import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
-UPRIGHT = [18]                       # UO action numbers where the shaft is made vertical instead of the calibrated direction (the shooting action)
+PARALLEL = True                      # the shaft is parallel to the body (pelvis -> neck) in every action, straight, not tilted (False = the calibrated direction, except UPRIGHT actions)
+UPRIGHT = [18]                       # with PARALLEL False: UO action numbers where the shaft is made vertical instead of the calibrated direction
 UP = (0.0, -0.12, 1.0)               # world axes at direction 0: Y is forward (-Y), Z up
 FIST_SHIFT = 0.0                     # m along the shaft from the fingers' centre (+ = towards the tip) if the grip should sit higher / lower in the fist
 
@@ -57,7 +58,8 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         Hw = M @ np.array(rig.pose.bones[WM["parent"]].matrix.to_3x3()); Hw = Hw / np.linalg.norm(Hw, axis=0)   # hand.L axes posed -> world
         r = Vector(p[:3]); ang = r.length
         q0 = Quaternion(r / ang, ang) if ang > 1e-9 else Quaternion()
-        D = np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
+        body = W(rig.pose.bones["neck"].head) - W(rig.pose.bones["pelvis"].head)
+        D = body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
         D = D / np.linalg.norm(D)
         F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
         to_body = W(rig.pose.bones["spine"].head) - F
