@@ -4,7 +4,8 @@
 #  - the shaft is parallel to the body (pelvis -> neck), straight, in every action (PARALLEL False: the calibrated direction, UPRIGHT actions along UP),
 #  - the string side of the bow (the side the limb tips curve to) faces the back of the chest (taken perpendicular to the shaft): the bow stands in the body's own plane in every action
 #    (from the front it is seen edge-on; held out in front the string comes to the archer, the limb tips curve away from the leg when the bow hangs at the side),
-#  - the bone's head (the grip, the middle of the bow) goes to the centre of the fingers of hand.L.
+#  - the handle of the bow (its middle, the belly-most part - the bounds' axis lies a hand's width towards the string) goes to the centre of the fingers of hand.L.
+#  - in AIM actions (held out) the string side faces the archer along the arm.
 # Run on a bow that is bound to bow.L (uo_bind_item.py, PART = "bow"), the bow selected.
 import bpy, json
 import numpy as np
@@ -13,6 +14,7 @@ from mathutils import Matrix, Quaternion, Vector
 PARALLEL = True                      # the shaft is parallel to the body (pelvis -> neck) in every action, straight, not tilted (False = the calibrated direction, except UPRIGHT actions)
 UPRIGHT = [18]                       # with PARALLEL False: UO action numbers where the shaft is made vertical instead of the calibrated direction
 UP = (0.0, -0.12, 1.0)               # world axes at direction 0: Y is forward (-Y), Z up
+AIM = [18, 19]                       # actions where the bow is held out along the aim line: the string side faces the archer along the arm (fist -> shoulder), not the back of the chest
 FIST_SHIFT = 0.0                     # m along the shaft from the fingers' centre (+ = towards the tip) if the grip should sit higher / lower in the fist
 
 rig = bpy.data.objects["UO_Rig"]
@@ -41,6 +43,13 @@ L = np.ptp(t)
 mid = P[np.abs(t - np.median(t)) < 0.1 * L].mean(0)
 ends = P[(t > t.min() + 0.8 * L) | (t < t.min() + 0.2 * L)].mean(0)
 c = ends - mid; c -= (c @ d) * d
+cl = (P - mid) @ (c / np.linalg.norm(c))                                                   # coordinate along the string side
+ts = (P - P.mean(0)) @ d
+hs = (np.abs(ts - np.median(ts)) < 0.06 * L) & (cl < cl[np.abs(ts - np.median(ts)) < 0.06 * L].min() + 0.06)   # the handle: the belly-most part of the middle (not the string across it)
+hc = P[hs].mean(0) + c / np.linalg.norm(c) * 0.025                                         # + half the grip's thickness
+head0 = np.array(rig.matrix_world @ rig.data.bones["bow.L"].head_local)
+o_h = H0.T @ (hc - head0)                                                                    # handle centre from the bone's head, in hand axes: it goes into the fist, not the axis of the bounds
+print("uo_bow_hold: handle %.1f cm along the shaft, %.1f cm towards the string from the bone head" % (100 * (hc - head0) @ d, 100 * (hc - head0) @ (c / np.linalg.norm(c))))
 u_src = frame(np.asarray(WM["dir"], float), H0.T @ c)                                      # shaft and string side in hand axes
 print("uo_bow_hold: string side %s (hand axes), shaft %.2f m" % (np.round(H0.T @ c / np.linalg.norm(c), 2), L))
 
@@ -66,6 +75,11 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         D = D / np.linalg.norm(D)
         F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
         to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of the chest (the body faces -Y at rest)
+        if an in AIM:
+            to_arm = W(rig.pose.bones["upper_arm.L"].head) - F
+            to_arm -= (to_arm @ D) * D
+            if np.linalg.norm(to_arm) > 0.05:
+                to_body = to_arm
         to_body -= (to_body @ D) * D
         if np.linalg.norm(to_body) < 1e-3:
             to_body = np.array([0.0, 1.0, 0.0])
@@ -76,8 +90,8 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         prev = q
         pb.rotation_quaternion = q
         bpy.context.view_layer.update()
-        h = W(pb.head)                                                                         # the grip of the bow with the location 0
-        pb.location = tuple(float(x) for x in Hw.T @ (F - h))                                  # hand axes = the bone's axes: the shift that puts the grip in the fist
+        h = W(pb.head)                                                                         # the bone's head with the location 0
+        pb.location = tuple(float(x) for x in Hw.T @ (F - Hw @ (Q @ o_h) - h))                                  # hand axes = the bone's axes: the shift that puts the grip in the fist
         pb.keyframe_insert("location", frame=1 + 3 * i, group="bow.L")
         pb.keyframe_insert("rotation_quaternion", frame=1 + 3 * i, group="bow.L")
         n += 1
