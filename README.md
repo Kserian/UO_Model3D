@@ -53,7 +53,7 @@ To add them from your own client: copy `anim1_0x0190.vd` to `pipeline/body400.vd
 
 **Rig `UO_Rig`** (54 bones: 19 UO bones, 30 fingers and 5 weapon and shield bones, `.L`/`.R` suffixes; only bones that move the character):
 - `pelvis → spine → chest → neck → head`, `chest → clavicle → upper_arm → forearm → hand`, `pelvis → thigh → shin → foot`.
-  `pelvis` is the root and carries the character's translation. Clavicles raise the shoulder; they do not deform the mesh (Deform off).
+  `pelvis` is the root and carries the character's translation. Clavicles raise the shoulder; they do not deform the mesh (Deform off) and have location keys only in 49 of 210 frames where the silhouette still needs them (attacks, falls, action 17): a shifted clavicle slides the arm along the chest skin and dents the shoulder.
 - `finger1-1` … `finger5-3` (15 bones per hand, `finger1` is the thumb, bone X = curl axis). In every frame the hand is clenched like on the original
   (finger and thumb curl fitted to the UO frames). Gloves (`"gloves"`) follow the fingers.
 - Item-motion bones: `polearm.L`, `axe2h.L`, `bow.L` (children of `hand.L`), `weapon1h.R` (child of `hand.R`), `shield.L` (child of `forearm.L`), keyed in the 35 actions
@@ -63,10 +63,10 @@ To add them from your own client: copy `anim1_0x0190.vd` to `pipeline/body400.vd
 - Weights come from MakeHuman (smooth joints, no candy-wrapper elbows or shoulders).
 - **Girth per frame:** the X/Z scale of `upper_arm`, `forearm`, `hand`, `thigh`, `shin`, `foot`, `head` (Y = 1) makes a
   limb slightly thicker or thinner where the original needs it. The next bone of the chain does not inherit it
-  (Inherit Scale = None), so limb lengths do not change. Items bound to these bones get thicker with the skin.
+  (Inherit Scale = None), so limb lengths do not change. Items bound to these bones get thicker with the skin. The head keeps one scale (1, 1, 0.942) in every frame (action 17, 25 and frame 9/1 kept as before), so a helmet does not pulse.
 
 **Fitted to the frames.** The pose of each of the 210 frames is fitted to all 5 directions of the original at once
-(1050 images), with no shape corrections. Arms (and in some frames pelvis and legs) are fitted per frame (`docs/qa/arm_poses.md`), and the head rotation is smoothed in time so that items rigid on the head do not jump. In the area spell (action 17) the arms move symmetrically and the torso only tilts (`docs/qa/elbow_spell.md`). Weapons, shields and hair are rigid on the hand, forearm and head bones.
+(1050 images), with no shape corrections. Arms (and in some frames pelvis and legs) were fitted per frame, then all poses were re-fitted for **natural motion with the same silhouettes** (`pipeline/pose_natural_fit.py`): smooth in time, no head zig-zag, no twisting or sliding shoulder, elbow a hinge; no frame matches the original worse than before. In the area spell (action 17) the arms move symmetrically and the torso only tilts (`docs/qa/elbow_spell.md`). Weapons, shields and hair are rigid on the hand, forearm and head bones.
 
 **Animations.** Each UO action is a Blender action `NN_name` (with a fake user). 1 UO frame = 3 scene frames (24 fps),
 with smooth interpolation. Walk and run loop. Action properties: `uo_action` (number) and `uo_frames` (frame count).
@@ -136,7 +136,7 @@ frames (text `uo_horse_masks.json`). The horse therefore hides the rider and ite
 | `uo_job.py` | Runs long scripts (render) step by step from a modal operator, so Blender's window does not freeze (progress in the status bar, ESC cancels). Used by `render_uo_layer.py` and `uo_cloth_bake.py` (don't run it directly). |
 | `uo_horse_masks.json`, `uo_original_frames.json` | Data: horse outlines and original frames. |
 
-Tool scripts outside the file (`pipeline/`): `uo_make_item.py` (a free model -> an item in one command, section 3a), `item_sheet.py` / `arm_mirror_action.py` / `arm_sym_fit.py` / `arm_refit.py` / `arm_grid.py` (left arm of an action as the mirror of the right one, fit of an arm to the original frames; `docs/qa/elbow_spell.md`), `uo_render_gump_fit.py` (male / female paperdoll gumps and the item icon of a garment that covers the body, fitted to an original item: `docs/qa/robe_black.md`), `item_gif.py` (a contact sheet of frames and an animated GIF of an item on the original body), `item_qa.py` (clipping and thickness of an item in motion), `uo_conform_item.py` / `item_clearance.py` (a shirt as a shell of the body and the clipping in every frame, `docs/qa/jedi_tunic.md`), `item_thickness.py` (stand-off on frames vs the original sprites), `pose_capture.py` / `robe_calib.py` / `cloak_calib.py` / `cloak_fit_frames.py` (calibration of the physics of loose garments on the originals, `docs/qa/robe_physics.md`), `test_autofit.py` / `test_robe.py` / `test_cloak.py` / `run_qa.py` (tests of the autofit and of robes, and one regression with thresholds: `python pipeline/run_qa.py [--quick]`), `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py`, `rig_restore_fingers.py`, `rig_restore_weapons.py` (one-off rig changes), `weapon_*.py` and `test_weapons.py` / `test_weapon_roll.py` (weapon calibration and tests; they need sprites from the client, only the katana 627 is in the repo).
+Tool scripts outside the file (`pipeline/`): `uo_make_item.py` (a free model -> an item in one command, section 3a), `item_sheet.py` / `arm_mirror_action.py` / `arm_sym_fit.py` / `arm_refit.py` / `arm_grid.py` (left arm of an action as the mirror of the right one, fit of an arm to the original frames; `docs/qa/elbow_spell.md`), `uo_render_gump_fit.py` (male / female paperdoll gumps and the item icon of a garment that covers the body, fitted to an original item: `docs/qa/robe_black.md`), `item_gif.py` (a contact sheet of frames and an animated GIF of an item on the original body), `item_qa.py` (clipping and thickness of an item in motion), `uo_conform_item.py` / `item_clearance.py` (a shirt as a shell of the body and the clipping in every frame, `docs/qa/jedi_tunic.md`), `item_thickness.py` (stand-off on frames vs the original sprites), `pose_capture.py` / `robe_calib.py` / `cloak_calib.py` / `cloak_fit_frames.py` (calibration of the physics of loose garments on the originals, `docs/qa/robe_physics.md`), `test_autofit.py` / `test_robe.py` / `test_cloak.py` / `run_qa.py` (tests of the autofit and of robes, and one regression with thresholds: `python pipeline/run_qa.py [--quick]`), `sync_blend_scripts.py` (copy scripts into the `.blend`), `run_render_headless.py` (render without GUI), `test_*.py` (tests), `body_part_raster.py` / `body_part_qa.py` (body silhouette vs the original), `pose_lib.py` (the rig in numpy: kinematics, skinning and raster identical to Blender's to the pixel; `qa` = IoU and >= 2 px errors of all frames), `pose_natural_fit.py` + `apply_pose_keys.py` (poses re-fitted for natural motion with the same silhouettes, keys written into the `.blend`), `pose_naturalness.py` (how natural the 3D motion is: bone zig-zag, helmet / fist jumps, shoulder twist and sliding), `light_*.py`, `layer_analysis*.py`, `slot_dynamics.py` (analyses of client frames), `build_originals.py` / `pack_originals.py` (original frames into the `.blend`), `export.py` (glb/fbx), `rig_simplify.py`, `rig_restore_fingers.py`, `rig_restore_weapons.py` (one-off rig changes), `weapon_*.py` and `test_weapons.py` / `test_weapon_roll.py` (weapon calibration and tests; they need sprites from the client, only the katana 627 is in the repo).
 
 The scripts live in the `.blend` file, not in objects. Always work in `UO_Body_0x190.blend` (File → Open) and bring your
 items into it, not the other way round.
@@ -368,7 +368,7 @@ people). Each item has its own animation ID.
 - **Exact mode (`EXACT_BODY = True`):** the rendered body layer is identical to the original (all 1050 frames, checked
   with `vdtool verify`).
 - **Pure 3D model (`EXACT_BODY = False`):** mean silhouette IoU **0.899** over 1050 frames (`body_part_qa.py`), **with no shape
-  corrections** (bones only). IoU per action: `docs/qa/body_parts_after_head_smooth.json`. Colours on overlapping pixels are exact with `EXACT_COLORS`.
+  corrections** (bones only). IoU per action: `docs/qa/body_parts_after_natural_fit.json`; pixels off by 2 px or more (real pose errors): 2049 in 1050 frames (`pose_lib.py qa`). Colours on overlapping pixels are exact with `EXACT_COLORS`.
 
 The differences are almost only 1-pixel bands along the edges (the original was drawn from a different 3D model).
 There are no large errors such as an arm in a different place than on the original, so the cut-outs in items hit the
@@ -376,7 +376,7 @@ arm. For comparison: the previous model scored 0.880 without its 1254 correction
 to copy those corrections).
 
 **UO items.** A test of replicas of items from `anim.mul` (`test_items.py`: shirt, plate, trousers, boots, gloves, helmet) on the current rig:
-mean IoU with the original frames **0.722** (shirt 0.715, plate 0.691, trousers 0.802, boots 0.770, gloves 0.579, helmet 0.776; `docs/qa/items_after_head_smooth.json`).
+mean IoU with the original frames **0.723** (shirt 0.715, plate 0.699, trousers 0.801, boots 0.771, gloves 0.572, helmet 0.782; `docs/qa/items_after_natural_fit.json`).
 Hand shape error against the original (model pixels outside the sprite per frame): 3.9 -> 1.4 (left) and 4.3 -> 2.0 (right) after the fingers came back.
 Weapons, robes and cloaks have their own tests (`test_weapons.py`, `test_robe.py`, `test_cloak.py`, `run_qa.py`; results in `docs/qa/`).
 
@@ -434,7 +434,7 @@ CAMERA     : "UO_Camera", orthographic, elevation 28.45 deg, 36 px/m, 136x120 px
 DIRECTIONS : UO_Rig["uo_direction"] = d (0..4) rotates the rig by -45 deg * d; 0 = facing camera, 2 = profile facing
              left, 4 = facing away; 5..7 are mirrors of 3..1 made by the client.
 RIG        : 54 bones: pelvis (root) spine chest neck head; clavicle/upper_arm/forearm/hand .L/.R; thigh/shin/foot .L/.R
-             (clavicles do not deform); finger1-1..finger5-3 .L/.R (finger1 = thumb, local X = curl axis). Item bones polearm.L axe2h.L bow.L (hand.L), weapon1h.R (hand.R), shield.L (forearm.L). No twist, toe or cloth-chain bones.
+             (clavicles do not deform; location keys only in 49 frames); finger1-1..finger5-3 .L/.R (finger1 = thumb, local X = curl axis). Item bones polearm.L axe2h.L bow.L (hand.L), weapon1h.R (hand.R), shield.L (forearm.L). No twist, toe or cloth-chain bones.
              Quaternion rotations, MakeHuman weights. Per-frame girth = pose-bone scale (x, 1, z) on upper_arm,
              forearm, hand, thigh, shin, foot, head; forearm/hand/shin/foot have Inherit Scale = None.
 ACTIONS    : 35 Blender actions "NN_name", props uo_action (0..34) and uo_frames; UO frame i -> scene frame 1 + 3*i.
