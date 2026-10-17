@@ -4,7 +4,7 @@ Each pose was picked by `pipeline/item_collision.py` (share of the lute inside t
 
 | item | actions | pose |
 |---|---|---|
-| carry | 00-03 | horizontal beside the body, headstock forward, strings out, the neck through the middle of the hand solid (`handmass`, no shift out), rigid on hand.R; the neck and the headstock are 1 px (2.8 cm) thicker (`neck_grow`, `pipeline/uo_grow_neck.py`) |
+| carry | 00-03 | horizontal beside the body, headstock forward, strings out, the neck through the middle of the hand solid (`handmass`, no shift out), rigid on hand.R; the neck and the headstock are 1 px (2.8 cm) thicker (`neck_grow`, `pipeline/uo_grow_neck.py`); NOTE: the recipe and `Lute_poses.blend` have this, but `Lute_layer.vd` 00-03 are still the earlier render (the user asked to change only action 21 in the .vd): `render_lute.sh` gives the new ones (the full re-render is commit 89dd07c) |
 | stand | 04 | across the belly, palms of both hands on the neck, 18 deg up; render with `HAND_OVER=0.12 HAND_OVER_GROW=1` (the hands on top of the neck; fidgets 05, 06 also `HAND_OVER_SIDE='.R'`: only the right hand, the left one beside the headstock cut it) |
 | fid1, fid2 | 05, 06 | the same, 1 / 2 px higher, bound to the pelvis (the arms swing, the lute stays) |
 | eat | 34 | like fid1 (the lute stays at the belly while the hand goes to the mouth) |
