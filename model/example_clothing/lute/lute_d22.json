@@ -1,0 +1,24 @@
+{
+ "name": "lute_d22",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "carry": {
+   "grip": 0.55,
+   "action": "22_die_backward",
+   "frame": 16,
+   "lie": true,
+   "front": [
+    0,
+    0,
+    1
+   ],
+   "side": 0.1
+  },
+  "occlude": true
+ }
+}

@@ -1,0 +1,28 @@
+{
+ "name": "lute_m24",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "carry": {
+   "grip": 0.3,
+   "bone2": "hand.L",
+   "front": [
+    0.0,
+    -1.0,
+    0.3
+   ],
+   "shift": [
+    0.143,
+    -0.18,
+    0.058
+   ],
+   "action": "25_mounted_stand",
+   "elev": -8.0
+  },
+  "occlude": true
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "name": "lute_eat",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "carry": {
+   "grip": 0.3,
+   "bone2": "hand.L",
+   "front": [
+    0.0,
+    -1.0,
+    0.3
+   ],
+   "shift": [
+    0.083,
+    -0.14,
+    0.056
+   ],
+   "action": "04_stand",
+   "elev": 18.0,
+   "follow": "pelvis",
+   "bind": "belly"
+  },
+  "occlude": true
+ }
+}

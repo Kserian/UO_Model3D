@@ -1,0 +1,27 @@
+{
+ "name": "lute_h33",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon1h",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "bind": "weapon",
+  "occlude": true,
+  "carry": {
+   "grip": 0.55,
+   "front": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "action": "33_salute",
+   "axis": [
+    0.5,
+    -0.5,
+    1
+   ]
+  }
+ }
+}

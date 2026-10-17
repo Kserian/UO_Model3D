@@ -1,0 +1,25 @@
+{
+ "name": "lute_h07",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon1h",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "bind": "weapon",
+  "occlude": true,
+  "carry": {
+   "grip": 0.65,
+   "class": true,
+   "front": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "action": "07_combat_idle_1h",
+   "out": 40,
+   "vert": 0.3
+  }
+ }
+}

@@ -1,5 +1,5 @@
 {
- "name": "lute_fidget",
+ "name": "lute_fid1",
  "file": "models/lute.glb",
  "weapon": {
   "class": "staff",
@@ -18,7 +18,7 @@
    "shift": [
     0.083,
     -0.14,
-    0.028
+    0.056
    ],
    "action": "04_stand",
    "elev": 18.0,

@@ -1,5 +1,5 @@
 {
- "name": "lute_dead",
+ "name": "lute_m23",
  "file": "models/lute.glb",
  "weapon": {
   "class": "staff",
@@ -8,24 +8,20 @@
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.52,
-   "axis": [
-    0.2,
-    0.0,
-    1.0
-   ],
+   "grip": 0.3,
+   "bone2": "hand.L",
    "front": [
-    -1.0,
     0.0,
-    0.0
+    -1.0,
+    0.3
    ],
    "shift": [
-    -0.03,
-    0.0,
-    0.0
+    0.143,
+    -0.18,
+    0.058
    ],
-   "follow": "pelvis",
-   "bind": "belly"
+   "action": "25_mounted_stand",
+   "elev": 18.0
   },
   "occlude": true
  }

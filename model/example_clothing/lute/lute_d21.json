@@ -1,5 +1,5 @@
 {
- "name": "lute_mounted",
+ "name": "lute_d21",
  "file": "models/lute.glb",
  "weapon": {
   "class": "staff",
@@ -8,20 +8,16 @@
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.3,
-   "bone2": "hand.L",
+   "grip": 0.55,
+   "action": "21_die_forward",
+   "frame": 16,
+   "lie": true,
    "front": [
-    0.0,
-    -1.0,
-    0.3
+    0,
+    0,
+    1
    ],
-   "shift": [
-    0.083,
-    -0.26,
-    0.028
-   ],
-   "action": "25_mounted_stand",
-   "elev": 18.0
+   "side": 0.3
   },
   "occlude": true
  }

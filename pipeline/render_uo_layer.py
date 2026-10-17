@@ -69,6 +69,8 @@ HEAD_HIDES = False                 # the head hides the item even when the item 
 OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs item: thighs, shins, pelvis) never hide it: the item
                                    # wraps them, so their skin in front of the item shell is the item's own edge, not an occluder
                                    # (it cut 1-px strips off the sides of trousers). False = every OCCLUDERS part may hide it
+HAND_OVER = 0.0                    # m: > 0 = a hand hides the item even where it is up to this much BEHIND the item (a hand that grips an instrument held a few cm in front of it: the fingers
+                                   # close over the neck); 0 = a hand hides only what is behind it. Per render run, for the actions where a grip is drawn
 TORSO_HIDE_MARGIN = 0.12           # m: the torso (pelvis, spine, chest, neck, clavicle) hides an item only where the item is at least this much behind it.
                                    # Only when a visible item carries the custom property `uo_behind_torso` (a sword, quiver or cape hanging on the back: from the
                                    # front the chest hides it, from the sides it stays visible). Off otherwise: UO draws other items over the torso even where they
@@ -805,6 +807,9 @@ def body_occlusion(free, margin):
                 near = binary_dilation(sl & (zs <= zi + 0.005), HIDE_ERODE + 1)
                 shrunk = np.where(near, shrunk, hh)
             hold[shrunk] = 0.0
+    if HAND_OVER > 0:                                    # the gripping hand on top of the item
+        occh, zh = raster([body], HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS)
+        hold[occh & (zh < zi + HAND_OVER)] = 0.0
     if TORSO_TRIS is not None:                           # items behind the torso (on the back): clearly behind = hidden
         occt, zt = raster([body], TORSO_TRIS)
         hold[occt & (zt < zi - TORSO_HIDE_MARGIN)] = 0.0

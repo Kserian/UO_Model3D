@@ -6,8 +6,12 @@
 #          the rest of the instrument is centred on the middle between the palms
 #   FOLLOW the bone the instrument will be bound to (None = BONE): hand.R when the hands move it, "pelvis" for an idle where the arms swing but the instrument stays at the belly (bind PART "belly")
 #   ELEV   degrees above the horizontal of the axis (None = as it comes from AXIS / the palms): the headstock is raised or lowered, the direction seen from above is kept
+#   CLASS  True = the axis and the grip point are those of the 1H weapon line (weapon_motion.json weapon1h.R) in the pose of ACTION: a lute held like a sword, to be tilted with OUT / VERT
+#   OUT    degrees: the headstock is tilted towards the body, the bowl swings out (away from the body, world -X: the right hand's side); VERT 0..1: the axis is blended towards vertical
+#   LIE    True = the axis is the long axis of the body (pelvis -> head) in the pose, strings up: the instrument lies beside a body on the ground (deaths); SHIFT puts it beside the body
+#   SIDE   m (with LIE): the grip point is pushed this far away from the body's long axis, to the side of the hand (the instrument lies beside the body, not under it)
 #   SHIFT  m, extra shift of the grip point in world axes (from the middle of the palm); ROLL degrees, turn of the instrument about its own axis (strings towards FRONT = 0)
-import bpy, math
+import bpy, math, json
 import numpy as np
 from mathutils import Vector, Matrix
 
@@ -21,6 +25,11 @@ SHIFT = [0.0, 0.0, 0.0]
 ROLL = 0.0
 BONE2 = None
 FOLLOW = None
+CLASS = False
+OUT = 0.0
+VERT = 0.0
+LIE = False
+SIDE = 0.0
 ELEV = None
 PALM = 0.4                                  # share of the hand bone from the wrist to the middle of the palm
 
@@ -35,6 +44,8 @@ rig.animation_data_create(); rig.animation_data.action = bpy.data.actions[ACTION
 bpy.context.scene.frame_set(FRAME); bpy.context.view_layer.update()
 Pp = rig.matrix_world @ rig.pose.bones[BONE].matrix                         # the same bone in the pose
 Pf = rig.matrix_world @ rig.pose.bones[FOLLOW or BONE].matrix               # the bound bone in the pose
+pelvis_pos = rig.matrix_world @ rig.pose.bones["pelvis"].head
+body_axis = rig.matrix_world.to_3x3() @ (rig.pose.bones["head"].head - rig.pose.bones["pelvis"].head)   # pelvis -> head in the pose
 rig.animation_data.action = saved[1]; rig.data.pose_position = saved[0]; bpy.context.view_layer.update()
 palm = Vector((0, PALM * bone.length, 0))
 G = Pp @ palm + Vector(SHIFT)                                               # grip point in the pose (world)
@@ -49,7 +60,21 @@ if BONE2:                                                                   # bo
     G = (G + G2) / 2; grip = GRIP + span / 2                                 # the middle of the palms sits at the middle of the two grips
     print("uo_place_carry: palms %.2f m apart, grips at %.2f and %.2f m" % (span, GRIP, GRIP + span))
 
+if CLASS:
+    WM = json.loads(bpy.data.texts["weapon_motion.json"].as_string())["weapon1h.R"]
+    AXIS = list(Pp.to_3x3() @ Vector(WM["dir"]))
+    G = Pp @ Vector(WM["pivot"]) + Vector(SHIFT)
+if LIE:
+    AXIS = list(body_axis)
+    if SIDE:
+        ba = body_axis.normalized(); v = G - pelvis_pos; v = v - v.dot(ba) * ba
+        G = G + v.normalized() * SIDE
 a = Vector(AXIS).normalized()
+if OUT:
+    o = Vector((-1, 0, 0)); op = (o - o.dot(a) * a).normalized()
+    a = (a * math.cos(math.radians(OUT)) - op * math.sin(math.radians(OUT))).normalized()
+if VERT:
+    a = (a + Vector((0, 0, VERT))).normalized()
 if ELEV is not None:
     h = Vector((a.x, a.y, 0)).normalized()
     a = (h * math.cos(math.radians(ELEV)) + Vector((0, 0, math.sin(math.radians(ELEV))))).normalized()
