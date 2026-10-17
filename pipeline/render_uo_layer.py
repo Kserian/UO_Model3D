@@ -1034,15 +1034,18 @@ STRING_FILL = {}                                    # scene "uo_string_fill" "27
 for part_ in str(sc.get("uo_string_fill", "")).split(";"):
     if ":" in part_:
         STRING_FILL[int(part_.split(":")[0])] = [int(x) for x in part_.split(":")[1].split(",") if x.strip()]
-STRING_RGB = (16, 16, 16)
+STRING_RGB = tuple(int(x) for x in sc.get("uo_string_rgb", (80, 72, 62)))       # not true black
+STRING_HIDE = float(sc.get("uo_string_hide", 0.04))  # m: the body hides the string where it is more than this in front of the thread (the nock sits in the hand)
 
 
 def string_fill(rgba, a, i):
-    """the thread of the bow (vertices with attribute uo_string_t, binned along the thread every 1 cm, centre of every bin projected) as an 8-connected line, drawn where the frame is still empty"""
+    """the thread of the bow (vertices with attribute uo_string_t, binned along the thread every 1 cm, centre of every bin projected) as an 8-connected line with the depth of the thread.
+    Where the body (whole body, also the torso) is in front of it the thread is hidden - rendered string pixels there are removed - elsewhere the line is drawn in STRING_RGB (empty pixels,
+    and the dark pixels the render made of the string)"""
     if i not in STRING_FILL.get(a, []):
         return rgba
     dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
-    Mc = np.array(cam.calc_matrix_camera(dg, x=W, y=H)) @ np.array(cam.matrix_world.inverted())
+    Mc = np.array(cam.calc_matrix_camera(dg, x=W, y=H)); Vc = np.array(cam.matrix_world.inverted())
     pts = []
     for o in clothes:
         at = o.data.attributes.get("uo_string_t")
@@ -1061,7 +1064,12 @@ def string_fill(rgba, a, i):
             pts.append((k, Pw[sel][b == k].mean(0)))
     pts.sort(key=lambda kv: kv[0])
     out = rgba.copy(); hh, ww = out.shape[:2]
-    scr = [(p3, (lambda q: ((q[0] / q[3] + 1) * 0.5 * W, (1 - q[1] / q[3]) * 0.5 * H))(Mc @ np.append(p3, 1.0))) for _, p3 in pts]
+    _, zbody = raster([body])
+    def proj(p3):
+        hv = Vc @ np.append(p3, 1.0); q = Mc @ hv
+        return ((q[0] / q[3] + 1) * 0.5 * W, (1 - q[1] / q[3]) * 0.5 * H, -hv[2])
+    scr = [(p3, proj(p3)) for _, p3 in pts]
+    line_vis = np.zeros((hh, ww), bool); line_hid = np.zeros((hh, ww), bool)
     for (p0, q0), (p1, q1) in zip(scr[:-1], scr[1:]):
         if np.linalg.norm(p1 - p0) > 0.06:
             continue
@@ -1069,8 +1077,18 @@ def string_fill(rgba, a, i):
         n = max(abs(x1 - x0), abs(y1 - y0), 1)
         for s_ in range(n + 1):
             x = x0 + int(round((x1 - x0) * s_ / n)); y = y0 + int(round((y1 - y0) * s_ / n))
-            if 0 <= x < ww and 0 <= y < hh and out[y, x, 3] == 0:
-                out[y, x] = (*STRING_RGB, 255)
+            if 0 <= x < ww and 0 <= y < hh:
+                z = q0[2] + (q1[2] - q0[2]) * s_ / n
+                if zbody[y, x] > z - STRING_HIDE:
+                    line_vis[y, x] = True
+                else:
+                    line_hid[y, x] = True
+    line_hid &= ~line_vis
+    dark = (out[..., :3].astype(int).sum(-1) < 3 * 50) & (out[..., 3] > 0)
+    near_vis = binary_dilation(line_vis, 1); near_hid = binary_dilation(line_hid, 1) & ~near_vis
+    out[line_vis & (out[..., 3] == 0)] = (*STRING_RGB, 255)                    # the thread, where nothing is drawn yet
+    out[(near_vis & dark)] = (*STRING_RGB, 255)                                # the dark pixels of the rendered thread
+    out[(near_hid & dark) | (line_hid & (out[..., 3] > 0) & (out[..., :3].astype(int).sum(-1) < 3 * 80))] = 0   # the body is in front of the thread
     return out
 
 
