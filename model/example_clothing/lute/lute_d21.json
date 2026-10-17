@@ -21,7 +21,12 @@
     0,
     1
    ],
-   "handmass": true
+   "handmass": true,
+   "shift": [
+    -0.2991,
+    -0.021,
+    0.0
+   ]
   },
   "occlude": true,
   "follow": {
