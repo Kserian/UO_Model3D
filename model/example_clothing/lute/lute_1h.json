@@ -1,0 +1,2 @@
+{"name": "lute_1h", "file": "models/lute.glb",
+ "weapon": {"class": "staff", "part": "weapon1h", "length": 1.0, "tip": "auto", "strings": true, "butt": -0.52}}

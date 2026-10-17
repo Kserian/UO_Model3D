@@ -9,3 +9,4 @@ description: Item pipeline from free 3D models (uo_make_item.py, JSON recipes, a
 - Mesh/weights: densify low-poly (`uo_densify_item.py`), weights like the skin underneath (SMOOTH 4, STIFF 1).
 - Texture quality: 512 samples (adaptive, threshold 0.002, min 64), no `DESPECKLE`, rim `OUTLINE_TARGET` (edge/one pixel deeper = 0.38; an own `uo_outline` wins), Standard tone mapping. `test_items` 0.723, `test_canvas` 16/16 (`docs/qa/render_quality.md`).
 - Light: keep `UO_Look` (Lambert, L = (0.0012, −0.7572, 0.6532), ambient 0.0798). Specular only on metal (`uo_materials.py`). No AO, no ground shadow.
+- Instrument (lute) as a weapon: recipe `weapon` with `"strings": true` (`uo_face_strings.py`) and either `part: weapon1h` + `butt` (grip by the neck) or `"carry": {...}` (`uo_place_carry.py`: pose taken from the action `ACTION`, rigid on hand.R). Different holds per action = several items rendered with `ONLY` into the same OUT_DIR (`model/example_clothing/lute/`).
