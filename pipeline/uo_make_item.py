@@ -13,6 +13,7 @@ RECIPE.json (only "file" and "kind" are required):
    "holes": {"close": 0.06, "grow": 0.025},   # with outer_shell: pinholes closed, rips widened (a torn robe; uo_import_item.py HOLES)
    "bake_normal": 0.0, "bake_ao": 0.0,        # with a baked texture: normal map of the original's geometry blurred over m / its occlusion darkening the colour (uo_import_item.py BAKE_NORMAL, BAKE_AO)
    "bake_texture": 0,          # px (2048): the reduced model gets new UVs and a texture baked from the original (a reduction smears the UVs of a detailed texture; uo_import_item.py BAKE_TEXTURE)
+   "vd_shift": ["18:0:0:+4"],   # --vd: single frames moved by whole pixels, action:dir:frame:dx[:dy], 0-based, dir 5-7 = mirror of the stored 3-1 (vd_shift.py)
    "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1},   # per-item settings of render_uo_layer.py (outline strength, hands / head hide a pixel less, the legs never hide a long robe)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
    "stretch": [0.8, 1.25, 1.0],  # width, depth, height factors about the centre (a model made on a mannequin with other proportions than the UO body); "tune": {"uo_autofit_item.py": {"UNIT": 0.3}} = the file is not in metres
@@ -477,4 +478,8 @@ if __name__ == "__main__":
             im = item_sheet.sheet(render, "all", acts, [0, 2, 4], [0, 0.33, 0.66], 3)
             im.save(os.path.join(out, "preview.png")); print("preview:", os.path.join(out, "preview.png"))
         if a.vd:
-            print("vd:", os.path.join(render, "clothing.vd"))
+            vdf = os.path.join(render, "clothing.vd")
+            if recipe.get("vd_shift"):                       # "vd_shift": ["18:0:0:+4", ...] action:dir:frame:dx[:dy] (vd_shift.py): single frames moved by whole pixels
+                import vd_shift
+                vd_shift.shift(vdf, vdf, recipe["vd_shift"])
+            print("vd:", vdf)
