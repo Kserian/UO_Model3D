@@ -24,6 +24,7 @@
    "elev": 18.0,
    "follow": "pelvis",
    "bind": "belly"
-  }
+  },
+  "occlude": true
  }
 }

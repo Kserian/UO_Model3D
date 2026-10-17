@@ -326,6 +326,9 @@ if wp:                                                           # a weapon: upr
     else:
         run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
         run("uo_bind_item.py", PART=wp.get("bind", wp["part"]))      # "bind": "weapon" = rigid on hand.R instead of the calibrated motion of the weapon bone (actions where the original has no such weapon)
+    if wp.get("occlude"):                                        # the body hides the item exactly where it is in front of it (torso too), the item is never bent away from the limbs (render_uo_layer.py: uo_behind_torso, uo_no_body_gap)
+        for o in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
+            o["uo_behind_torso"] = 1; o["uo_no_body_gap"] = 1
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)

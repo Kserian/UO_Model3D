@@ -22,6 +22,7 @@
    ],
    "action": "04_stand",
    "elev": 18.0
-  }
+  },
+  "occlude": true
  }
 }
