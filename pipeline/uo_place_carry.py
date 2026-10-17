@@ -12,6 +12,7 @@
 #   SIDE   m (with LIE): the grip point is pushed this far away from the body's long axis, to the side of the hand (the instrument lies beside the body, not under it)
 #   LIEYAW degrees (with LIE): the axis is turned about the vertical; FLIP: headstock towards the feet instead of the head
 #   BOXTO  0..1 (with LIE): the bowl is turned this far (share of the way) from lying along the body towards the other hand (hand.L): the bowl nearer the body, towards the left hand
+#   HANDMASS True = the grip point is the centre of the hand solid (the vertices of BONE in the body mesh, in the pose of ACTION), not the point PALM along the bone: the neck runs through the middle of the fist
 #   SHIFT  m, extra shift of the grip point in world axes (from the middle of the palm); ROLL degrees, turn of the instrument about its own axis (strings towards FRONT = 0)
 import bpy, math, json
 import numpy as np
@@ -36,6 +37,7 @@ BOXTO = 0.0
 LIEYAW = 0.0
 FLIP = False
 ELEV = None
+HANDMASS = False
 PALM = 0.4                                  # share of the hand bone from the wrist to the middle of the palm
 
 rig = bpy.data.objects["UO_Rig"]
@@ -49,11 +51,19 @@ rig.animation_data_create(); rig.animation_data.action = bpy.data.actions[ACTION
 bpy.context.scene.frame_set(FRAME); bpy.context.view_layer.update()
 Pp = rig.matrix_world @ rig.pose.bones[BONE].matrix                         # the same bone in the pose
 Pf = rig.matrix_world @ rig.pose.bones[FOLLOW or BONE].matrix               # the bound bone in the pose
+hand_c = None
+if HANDMASS:                                                                # centre of the hand solid, in the bone's own axes
+    body = bpy.data.objects["UO_Body"]; gi = body.vertex_groups[BONE].index
+    ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get()); me = ev.to_mesh()
+    ids = [v.index for v in body.data.vertices if any(g.group == gi and g.weight > 0.5 for g in v.groups)]
+    cen = sum((ev.matrix_world @ me.vertices[i].co for i in ids), Vector()) / len(ids)
+    hand_c = Pp.inverted() @ cen; ev.to_mesh_clear()
+    print("uo_place_carry: hand solid centre in %s axes: %s (%d vertices)" % (BONE, tuple(round(v, 3) for v in hand_c), len(ids)))
 palmL_pos = rig.matrix_world @ rig.pose.bones["hand.L"].head
 pelvis_pos = rig.matrix_world @ rig.pose.bones["pelvis"].head
 body_axis = rig.matrix_world.to_3x3() @ (rig.pose.bones["head"].head - rig.pose.bones["pelvis"].head)   # pelvis -> head in the pose
 rig.animation_data.action = saved[1]; rig.data.pose_position = saved[0]; bpy.context.view_layer.update()
-palm = Vector((0, PALM * bone.length, 0))
+palm = hand_c if hand_c is not None else Vector((0, PALM * bone.length, 0))
 G = Pp @ palm + Vector(SHIFT)                                               # grip point in the pose (world)
 grip = GRIP
 if BONE2:                                                                   # both hands: the axis runs through both palms

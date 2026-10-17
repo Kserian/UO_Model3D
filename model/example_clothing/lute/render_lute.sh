@@ -1,9 +1,10 @@
 #!/bin/bash
 # Re-render the lute .vd from Lute_poses.blend, pose by pose (actions of one pose together), into one folder; the renderer adds the runs up into one clothing.vd.
-# usage: ./render_lute.sh OUT_DIR      (needs bpy 4.2 in the python on PATH, run from the repo root: model/example_clothing/lute/render_lute.sh /tmp/lute)
+# usage: [SAMPLES=1024] ./render_lute.sh OUT_DIR      (needs bpy 4.2 in the python on PATH, run from the repo root: model/example_clothing/lute/render_lute.sh /tmp/lute)
 set -e
 OUT=${1:-/tmp/lute_render}; BLEND=model/example_clothing/lute/Lute_poses.blend; TMP=$(mktemp -d)
-COMMON=("LAYER='clothing'" "CANVAS=(256,256)" "ANCHOR=(128,192)" "OWN_PARTS_NEVER_HIDE=False" "TORSO_HIDE_MARGIN=0.005" "HOLDOUT_MARGIN=0.003")
+SAMPLES=${SAMPLES:-1024}   # Cycles samples per pixel (the renderer default is 512)
+COMMON=("SAMPLES=$SAMPLES" "LAYER='clothing'" "CANVAS=(256,256)" "ANCHOR=(128,192)" "OWN_PARTS_NEVER_HIDE=False" "TORSO_HIDE_MARGIN=0.005" "HOLDOUT_MARGIN=0.003")
 run() {   # pose, python list of action names, extra settings...
   python pipeline/lute_select_pose.py $BLEND "Lute_$1" $TMP/$1.blend > /dev/null
   p=$1; a=$2; shift 2

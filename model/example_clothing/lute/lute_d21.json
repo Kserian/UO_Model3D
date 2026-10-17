@@ -8,19 +8,25 @@
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.88,
+   "grip": 0.6,
    "action": "21_die_forward",
    "frame": 16,
-   "lie": true,
+   "axis": [
+    -0.4134,
+    0.8865,
+    0.2079
+   ],
    "front": [
     0,
     0,
     1
    ],
-   "side": 0.0,
-   "lieyaw": 30,
-   "flip": true
+   "handmass": true
   },
-  "occlude": true
+  "occlude": true,
+  "follow": {
+   "action": "21_die_forward",
+   "frame": 16
+  }
  }
 }

@@ -319,10 +319,14 @@ if wp:                                                           # a weapon: upr
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
     if wp.get("strings"):                                        # a lute: strings to -Y, bowl and headstock back
         run("uo_face_strings.py")
+    if wp.get("neck_grow"):                                      # neck and headstock thicker (uo_grow_neck.py settings: Z0, RAMP, GROW m per side)
+        run("uo_grow_neck.py", **{k.upper(): v for k, v in wp["neck_grow"].items()})
     if wp.get("carry"):                                          # held by the neck across the front of the body (walk, run, stand): rigid on hand.R, settings of uo_place_carry.py
         cfg = dict(wp["carry"]); part = cfg.pop("bind", "weapon")
         run("uo_place_carry.py", **{k.upper(): v for k, v in cfg.items()})
         run("uo_bind_item.py", PART=part)
+        if wp.get("follow") is not None:                         # follows the hand's position, keeps its orientation (uo_follow_hand.py settings: ACTION, FRAME, BONE, LOCAL)
+            run("uo_follow_hand.py", **{k.upper(): v for k, v in dict(wp["follow"]).items()})
     else:
         run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
         run("uo_bind_item.py", PART=wp.get("bind", wp["part"]))      # "bind": "weapon" = rigid on hand.R instead of the calibrated motion of the weapon bone (actions where the original has no such weapon)
