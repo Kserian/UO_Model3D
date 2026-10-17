@@ -18,6 +18,8 @@ CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
 CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 17: 40.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
 CONE_ACTIONS = list(CONE_BY)
+REL_POS = [23, 24]                   # mounted walk / run: the original bow is carried almost rigidly (Yumi and 649 hardly move in the 5 frames): the handle keeps ONE offset from the pelvis (the mean of the original bow's), it moves with the rider's body, not with the jumping hand of our model
+STIFF = {23: 5.0, 24: 5.0}           # px per degree of turn between frames in the shaft fit: ~one shaft direction for the whole action
 ORIGINAL_POS = [23, 24, 25]          # mounted walk / run / stand: the bow sits where the original bow sprites are (the calibrated pose), not at the fist of our body: the arms of our rider differ from the original body
 SHOULDER_SIDE = [23, 24, 25]         # the string side of these faces the shoulder of the holding arm (3D), perpendicular to the shaft
 CONE_FRAMES = {17: [3]}              # clearance only for these frames of the action (the others are fine as fitted)
@@ -195,7 +197,8 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
             ctx.append(make_cost(Hw, HC, side0_, views) + (len(views),))
         Cs = np.array([[c_[0](D) for D in SPH] for c_ in ctx])                                   # (frames, candidate shafts)
         DPc = Cs.copy(); back = np.zeros(Cs.shape, int)
-        TR = np.array([[ang_between(A, B_) for B_ in SPH] for A in SPH]) * LAM_T                 # transition cost between two candidate shafts
+        lam_ = STIFF.get(an, LAM_T)
+        TR = np.array([[ang_between(A, B_) for B_ in SPH] for A in SPH]) * lam_                 # transition cost between two candidate shafts
         for i in range(1, nfr):
             tot = DPc[i - 1][:, None] + TR; back[i] = tot.argmin(0); DPc[i] = Cs[i] + tot.min(0)
         j = int(DPc[-1].argmin()); path = [j]
@@ -207,8 +210,8 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
                 cost_i = ctx[i][0]
                 def tot_(D, i=i):
                     t_ = cost_i(D)
-                    if i > 0: t_ += LAM_T * ang_between(D, Ds[i - 1])
-                    if i < nfr - 1: t_ += LAM_T * ang_between(D, Ds[i + 1])
+                    if i > 0: t_ += lam_ * ang_between(D, Ds[i - 1])
+                    if i < nfr - 1: t_ += lam_ * ang_between(D, Ds[i + 1])
                     return t_
                 cur = tot_(Ds[i])
                 for rad in (np.radians(6.0), np.radians(3.0), np.radians(1.5)):
@@ -228,14 +231,14 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
             ORI[(an, i)] = (D_, ctx[i][1](D_))
             print("uo_bow_hold: fit to the original bow, action %d frame %d: shaft tilt %.0f deg from vertical, chamfer %.1f px over %d views%s" % (an, i, np.degrees(np.arccos(np.clip(D_[2], -1, 1))), ctx[i][0](D_), ctx[i][2], "" if i == 0 else ", turn from the previous frame %.0f deg" % ang_between(Ds[i], Ds[i - 1])))
 rig.animation_data.action = keep
-STATE = {}; ROLL_PHI = {}; n_ = [0]
+STATE = {}; ROLL_PHI = {}; n_ = [0]; RELD = {}; REL_OFF = {}
 
 
 def run_pass(dry):
     global Cw
     for act in [a for a in bpy.data.actions if "uo_action" in a]:
         an = int(act["uo_action"])
-        if dry and an not in ROLL_ONLY and an not in SMOOTH_FRAMES:
+        if dry and an not in ROLL_ONLY and an not in SMOOTH_FRAMES and an not in REL_POS:
             continue
         rig.animation_data.action = act; prev = None
         for i in range(int(act["uo_frames"])):
@@ -259,7 +262,10 @@ def run_pass(dry):
             D = Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float)) if an in CALIBRATED else body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
             D = D / np.linalg.norm(D)
             F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
-            if an in ORIGINAL_POS:
+            if an in REL_OFF:
+                Rp_ = M @ np.array(rig.pose.bones["pelvis"].matrix.to_3x3()); Rp_ = Rp_ / np.linalg.norm(Rp_, axis=0)
+                F = W(rig.pose.bones["pelvis"].head) + Rp_ @ REL_OFF[an]
+            elif an in ORIGINAL_POS:
                 F = HC_.copy()
             if an in AWAY_FROM_HEAD and lean > FREE_LEAN:
                 x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); x = x * x * (3 - 2 * x)
@@ -302,6 +308,8 @@ def run_pass(dry):
                 F = F + sh_
             if dry:
                 STATE.setdefault(an, {})[i] = (Hw.copy(), HC_.copy(), D.copy(), to_body.copy())
+                Rp_ = M @ np.array(rig.pose.bones["pelvis"].matrix.to_3x3()); Rp_ = Rp_ / np.linalg.norm(Rp_, axis=0)
+                RELD.setdefault(an, {})[i] = (Rp_, W(rig.pose.bones["pelvis"].head), HC_.copy())
                 continue
             if an in ROLL_PHI:                                                                      # the roll chosen by the original sprites: the string side turned about the shaft
                 e1_ = to_body - (to_body @ D) * D; e1_ /= np.linalg.norm(e1_)
@@ -344,6 +352,9 @@ if STATE and "VW" in globals():
         prior = 0.02 * np.array([min(np.degrees(x), 360 - np.degrees(x)) for x in PHI])          # the roll of the rule is kept unless the sprites clearly ask for another
         jb = int((tot + prior).argmin()); ROLL_PHI[an] = float(PHI[jb])
         print("uo_bow_hold: roll fit action %d: chamfer sum by roll (deg:px) %s -> %.0f deg" % (an, " ".join("%d:%.0f" % (np.degrees(x), t_) for x, t_ in zip(PHI, tot)), np.degrees(PHI[jb])))
+for an_r, fr_r in [(k_, v_) for k_, v_ in RELD.items() if k_ in REL_POS]:                                                               # one offset of the handle from the pelvis for the whole action
+    REL_OFF[an_r] = np.mean([Rp.T @ (hc_ - pp_) for Rp, pp_, hc_ in fr_r.values()], 0)
+    print("uo_bow_hold: action %d: handle %.1f cm from the pelvis (fixed), original positions scatter %.1f cm" % (an_r, 100 * np.linalg.norm(REL_OFF[an_r]), 100 * np.mean([np.linalg.norm(Rp.T @ (hc_ - pp_) - REL_OFF[an_r]) for Rp, pp_, hc_ in fr_r.values()])))
 run_pass(False)
 n = n_[0]
 print("uo_bow_hold: %d poses re-keyed" % n)
