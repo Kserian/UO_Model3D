@@ -17,6 +17,7 @@ CLEAR_CONE = 90.0                    # degrees: in the CALIBRATED actions the sh
 CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (beyond 12 cm from the fist)
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
 CALIBRATED = [7, 8]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
+AWAY_FROM_HEAD = {22: 10.0}          # action -> degrees: once the body lies, the shaft is turned this much so that its end nearest to the head moves away from it (die backward: the bow lay on the face)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
 FREE_LEAN = 35.0                     # degrees of lean of the body (crouch, step) the bow does not follow
@@ -139,6 +140,15 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         D = Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float)) if an in CALIBRATED else body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
         D = D / np.linalg.norm(D)
         F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
+        if an in AWAY_FROM_HEAD and lean > FREE_LEAN:
+            x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); x = x * x * (3 - 2 * x)
+            hv = W(rig.pose.bones["head"].head) - F
+            ax = np.cross(D, hv)
+            if np.linalg.norm(ax) > 1e-6:
+                ax /= np.linalg.norm(ax); th = np.radians(AWAY_FROM_HEAD[an]) * x
+                sg = 1.0 if D @ hv > 0 else -1.0                                                 # the end of the bow (+D or -D) that is nearer to the head
+                def rot(v, t): return v * np.cos(t) + np.cross(ax, v) * np.sin(t) + ax * (ax @ v) * (1 - np.cos(t))
+                D = min((rot(D, th), rot(D, -th)), key=lambda v: sg * (v @ hv)); D = D / np.linalg.norm(D)
         to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of FACING (the body faces -Y at rest)
         to_body -= (to_body @ D) * D; to_body /= max(np.linalg.norm(to_body), 1e-9)
         if an in AIM:                                                                           # held out along the aim line: the string comes to the archer along the shoulder line (left -> right shoulder),
