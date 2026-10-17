@@ -30,7 +30,7 @@ RECIPE.json (only "file" and "kind" are required):
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
-uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "skin_shell": {"GAP": 0.03, "VNECK": [1.3, 1.56, 0.1], "ZMAX": 1.56} = rebuild a vest as a shell of the body skin (uo_skin_shell.py); "smooth_mesh": {"iterations": 3, "factor": 0.5} = smooth the finished shape (borders stay); "min_piece": 24 = the renderer drops detached bits smaller than 24 px (default 8); "no_body_gap": true = not bent around the limbs by the renderer; "behind_torso": true = the torso hides what is behind it (garments that wrap the trunk); "cut_above" / "cut_below": z (m) at which a part is cut (a collar above the shoulders, a hem over the thighs); "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
+uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "skin_shell": {"GAP": 0.03, "VNECK": [1.3, 1.56, 0.1], "ZMAX": 1.56} = rebuild a vest as a shell of the body skin (uo_skin_shell.py); "smooth_mesh": {"iterations": 3, "factor": 0.5} = smooth the finished shape (borders stay); "min_piece": 24 = the renderer drops detached bits smaller than 24 px (default 8); "no_body_gap": true = not bent around the limbs by the renderer; "behind_torso": true = the torso hides what is behind it (garments that wrap the trunk); "cut_above" / "cut_below": z (m) at which a part is cut (a collar above the shoulders, a hem over the thighs); "widen": {"width": 0.07} = make straps (ribbons) wider in their own plane, thickness and curve stay (a 4 cm strap is 1.5 px at 36 px/m: invisible); "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
 
 Steps (each is one of the scripts that are also in the .blend, see README): uo_import_item.py (clean, join, reduce) -> uo_materials.py (UO look) ->
 uo_prepare_item.py (uo_autofit_item.py size / place from the skin, uo_densify_item.py, uo_fit_item.py push out of the skin, uo_bind_item.py skin weights).
@@ -103,6 +103,42 @@ def thicken(obs, th):
         n = len(Vo); new = c + np.outer(t[k:k + n], u) + f * perp[k:k + n]; k += n
         loc = (np.linalg.inv(Mw) @ np.c_[new, np.ones(n)].T).T[:, :3]
         o.data.vertices.foreach_set("co", loc.astype(np.float32).ravel()); o.data.update()
+
+def widen(obs, th):
+    """make ribbons (straps) wider in their own plane: "width": m (every strap at least this wide, e.g. 0.07 m = 2.5 px at 36 px/m; a strap is 4-5 cm = 1.5 px and vanishes in the render),
+    "rings": mesh rings around a vertex that give the local direction of the ribbon (3), "max": largest factor (3); the thickness and the length stay, the curve of the strap is followed"""
+    import bmesh
+    for o in obs:
+        Mw = np.array(o.matrix_world); R = Mw[:3, :3]
+        bm = bmesh.new(); bm.from_mesh(o.data); bm.verts.ensure_lookup_table(); bm.normal_update()
+        W = np.array([(Mw @ np.append(np.array(v.co), 1.0))[:3] for v in bm.verts])
+        Nw = np.array([R @ np.array(v.normal) for v in bm.verts]); Nw /= np.maximum(np.linalg.norm(Nw, axis=1, keepdims=True), 1e-9)
+        new = W.copy(); fs = []
+        for i, v in enumerate(bm.verts):
+            seen = {v.index}; front = [v]
+            for _ in range(int(th.get("rings", 3))):
+                nxt = []
+                for a in front:
+                    for e in a.link_edges:
+                        b = e.other_vert(a)
+                        if b.index not in seen:
+                            seen.add(b.index); nxt.append(b)
+                front = nxt
+            idx = sorted(seen)
+            if len(idx) < 4:
+                continue
+            P = W[idx]; n = Nw[i]; c = P.mean(0)
+            Q = (P - c) - np.outer((P - c) @ n, n)
+            t = np.linalg.eigh(Q.T @ Q)[1][:, -1]
+            sd = np.cross(n, t); sd /= max(np.linalg.norm(sd), 1e-9)
+            w = float(np.ptp(P @ sd))
+            f = min(float(th.get("max", 3.0)), max(1.0, float(th["width"]) / max(w, 1e-6)))
+            fs.append(f)
+            new[i] = W[i] + (f - 1.0) * float((W[i] - c) @ sd) * sd
+        loc = (np.linalg.inv(Mw) @ np.c_[new, np.ones(len(new))].T).T[:, :3]
+        o.data.vertices.foreach_set("co", loc.astype(np.float32).ravel()); o.data.update(); bm.free()
+        print("uo_make_item: widen %%s to %%.1f cm (factor mean %%.2f, max %%.2f)" %% (o.name, 100 * float(th["width"]), float(np.mean(fs)) if fs else 1.0, max(fs) if fs else 1.0))
+
 rig = bpy.data.objects["UO_Rig"]; rig.data.pose_position = "REST"
 for o in list(bpy.data.collections["Clothing"].all_objects):
     bpy.data.objects.remove(o, do_unlink=True)
@@ -135,6 +171,8 @@ for part in %(parts)r:
     bpy.context.view_layer.update()
     if part.get("thicken"):
         thicken(obs, part["thicken"])
+    if part.get("widen"):
+        widen(obs, part["widen"])
     run("uo_materials.py", **part.get("materials", {}))
     if part.get("scale") or part.get("on_bone"):         # a part that is the wrong size / place for the body (a pauldron of a stylised armour): scaled about its own centre, then its centre put on a bone (+ offset, m)
         import numpy as np
