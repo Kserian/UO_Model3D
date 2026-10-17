@@ -1030,6 +1030,50 @@ view_prefs = bpy.context.preferences.view
 render_display = view_prefs.render_display_type
 
 
+STRING_FILL = {}                                    # scene "uo_string_fill" "27:1,2,3;18:3,4": action -> frames whose bow string is drawn as a continuous 1 px line (a thin thread broke up where the body holds it out)
+for part_ in str(sc.get("uo_string_fill", "")).split(";"):
+    if ":" in part_:
+        STRING_FILL[int(part_.split(":")[0])] = [int(x) for x in part_.split(":")[1].split(",") if x.strip()]
+STRING_RGB = (16, 16, 16)
+
+
+def string_fill(rgba, a, i):
+    """the thread of the bow (vertices with attribute uo_string_t, binned along the thread every 1 cm, centre of every bin projected) as an 8-connected line, drawn where the frame is still empty"""
+    if i not in STRING_FILL.get(a, []):
+        return rgba
+    dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
+    Mc = np.array(cam.calc_matrix_camera(dg, x=W, y=H)) @ np.array(cam.matrix_world.inverted())
+    pts = []
+    for o in clothes:
+        at = o.data.attributes.get("uo_string_t")
+        if at is None:
+            continue
+        t = np.empty(len(o.data.vertices), np.float32); at.data.foreach_get("value", t)
+        ev = o.evaluated_get(dg); me = ev.to_mesh()
+        P = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", P); P = P.reshape(-1, 3)
+        Pw = (np.array(ev.matrix_world) @ np.c_[P, np.ones(len(P))].T).T[:, :3]
+        ev.to_mesh_clear()
+        sel = t > -90
+        if sel.sum() < 5:
+            continue
+        b = np.round(t[sel] / 0.01).astype(int)
+        for k in np.unique(b):
+            pts.append((k, Pw[sel][b == k].mean(0)))
+    pts.sort(key=lambda kv: kv[0])
+    out = rgba.copy(); hh, ww = out.shape[:2]
+    scr = [(p3, (lambda q: ((q[0] / q[3] + 1) * 0.5 * W, (1 - q[1] / q[3]) * 0.5 * H))(Mc @ np.append(p3, 1.0))) for _, p3 in pts]
+    for (p0, q0), (p1, q1) in zip(scr[:-1], scr[1:]):
+        if np.linalg.norm(p1 - p0) > 0.06:
+            continue
+        x0, y0, x1, y1 = int(np.floor(q0[0])), int(np.floor(q0[1])), int(np.floor(q1[0])), int(np.floor(q1[1]))
+        n = max(abs(x1 - x0), abs(y1 - y0), 1)
+        for s_ in range(n + 1):
+            x = x0 + int(round((x1 - x0) * s_ / n)); y = y0 + int(round((y1 - y0) * s_ / n))
+            if 0 <= x < ww and 0 <= y < hh and out[y, x, 3] == 0:
+                out[y, x] = (*STRING_RGB, 255)
+    return out
+
+
 def frame_job():
     """one UO frame per step; uo_job.py hands control back to Blender between two of them (the window stays alive, ESC cancels)"""
     view_prefs.render_display_type = "NONE"             # no Render Result window popping up for every frame
@@ -1086,6 +1130,8 @@ def frame_job():
                     else:
                         px = render_frame(a, i, d, "visible")
                         rgba = uo_post(px, keep=orig_m if (EXACT_COLORS and orig_m is not None) else None)
+                    if LAYER == "clothing" and STRING_FILL:
+                        rgba = string_fill(rgba, a, i)
                     h, w = rgba.shape[:2]
                     frames.append(rgba)
                     png = bpy.data.images.new("uo_tmp_out", w, h, alpha=True)

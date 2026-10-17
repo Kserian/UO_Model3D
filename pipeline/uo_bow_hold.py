@@ -18,9 +18,10 @@ CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
 CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 17: 40.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
 CONE_ACTIONS = list(CONE_BY)
-REL_SMOOTH = {23: (0.25, 0.5, 0.25)}  # mount walk: the handle follows OUR fist (offset from the pelvis frame by frame, smoothed over the looping frames): the original-bow position (fixed or per frame) put it behind the back or in the arm
+REL_SMOOTH = {23: (0.25, 0.5, 0.25), 24: (0.25, 0.5, 0.25)}  # mount walk: the handle follows OUR fist (offset from the pelvis frame by frame, smoothed over the looping frames): the original-bow position (fixed or per frame) put it behind the back or in the arm
 SIDE_FROM = {23: 24}                 # action -> action: the string side of the first is the string side of the second in the PELVIS frame (mount walk turned like mount run)
 REL_POS = [23, 24]                   # mounted walk / run: the original bow is carried almost rigidly (Yumi and 649 hardly move in the 5 frames): the handle keeps ONE offset from the pelvis (the mean of the original bow's), it moves with the rider's body, not with the jumping hand of our model
+FIT_DIRS = {23: [1], 24: [1]}                        # action -> directions whose original sprites the shaft is fitted to (default: all five); for an action patched in one direction only
 STIFF = {23: 5.0, 24: 5.0}           # px per degree of turn between frames in the shaft fit: ~one shaft direction for the whole action
 ORIGINAL_POS = [23, 24, 25]          # mounted walk / run / stand: the bow sits where the original bow sprites are (the calibrated pose), not at the fist of our body: the arms of our rider differ from the original body
 SHOULDER_SIDE = [23, 24, 25]         # the string side of these faces the shoulder of the holding arm (3D), perpendicular to the shaft
@@ -204,7 +205,7 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
             pp = WM["poses"]["%d,%d" % (an, i)]; r = Vector(pp[:3]); ang_ = r.length
             q0 = Quaternion(r / ang_, ang_) if ang_ > 1e-9 else Quaternion()
             HC = W(pb.head) + Hw @ np.asarray(pp[3:], float) + Hw @ (np.array(q0.to_matrix()) @ o_h)    # where the original bow's handle is (the calibrated pose), not the fist
-            views = [k for k in range(VW.n) if VW.key[k][0] == an and VW.key[k][2] == i]
+            views = [k for k in range(VW.n) if VW.key[k][0] == an and VW.key[k][2] == i and (an not in FIT_DIRS or VW.key[k][1] in FIT_DIRS[an])]
             side0_ = sh_const if an in SHOULDER_SIDE else AIM_SIDE[an]
             side0_ = side0_ / np.linalg.norm(side0_)
             ctx.append(make_cost(Hw, HC, side0_, views) + (len(views),))
@@ -459,6 +460,11 @@ if attr is not None:
                 bad.append(f_)
         bmesh.ops.delete(bm, geom=bad, context="FACES_ONLY"); bm.to_mesh(item.data); bm.free(); item.data.update()
         print("uo_bow_hold: %d long faces of the string removed" % len(bad))
+        at_t = item.data.attributes.get("uo_string_t") or item.data.attributes.new("uo_string_t", "FLOAT", "POINT")     # position of every string vertex along the thread (m, at rest): the render can redraw the thread as a line
+        for k_ in range(len(P)):
+            at_t.data[k_].value = -99.0
+        for k_ in sv:
+            at_t.data[k_].value = float(ts[k_])
         for i in sv:                                                                           # the string: the nock follows the hand fully, the ends follow the limb tips (FLEX)
             w = FLEX + (1.0 - FLEX) * float(max(0.0, 1.0 - abs(ts[i] - tm) / half) ** 1.5)
             gp.add([i], w, "REPLACE"); gb.add([i], 1.0 - w, "REPLACE")
