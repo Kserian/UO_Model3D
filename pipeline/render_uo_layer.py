@@ -27,6 +27,8 @@ OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline":
 SAMPLES = 512                      # Cycles samples per pixel for items (adaptive sampling; the pixel filter stays a 0.01 px box = the pixel centre, no blur): the
                                    # gloss of metal in UO_Look (Principled) is sampled at random, so at 1 sample a flail had 61 % of its pixels off the converged
                                    # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
+EDGE_FLOOR = 0                     # 0-255: the 1-px outline of an item is never darker than this per channel (0 = off); a black item (leather, a black hilt) got a pure black rim,
+                                   # which the client draws as a hard hole-like line; scene property uo_edge_floor (24 = a soft dark grey)
 OUT_DIR = "//uo_render/"           # PNG output root (vdtool 'canvas' layout + meta.json)
 WRITE_VD = True
 VD_FILE = "//uo_render/%s.vd"      # %s -> LAYER
@@ -108,6 +110,8 @@ FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
 INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
 EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
+SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
+EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 RIM = dict(edge=0.0, inner=0.0, ne=0, ni=0, paths={})   # OUTLINE_AUTO: brightness sums of the rim / one pixel in, and the frames of this run
@@ -633,6 +637,8 @@ def uo_post(px, keep=None):
         RIM["edge"] += float(y[edge].sum()); RIM["ne"] += int(edge.sum()); RIM["inner"] += float(y[ring].sum()); RIM["ni"] += int(ring.sum())
     else:
         rgb[edge] *= OUTLINE
+        if EDGE_FLOOR:
+            rgb[edge] = np.maximum(rgb[edge], EDGE_FLOOR / 255.0)
     out = np.zeros(px.shape, np.uint8)
     out[..., :3] = np.clip(rgb * 255 + 0.5, 0, 255).astype(np.uint8)
     out[..., 3] = m * 255
@@ -1143,6 +1149,8 @@ def finish():
             inner = m.copy(); inner[1:] &= m[:-1]; inner[:-1] &= m[1:]; inner[:, 1:] &= m[:, :-1]; inner[:, :-1] &= m[:, 1:]
             edge = m & ~inner
             fr[..., :3][edge] = np.clip(fr[..., :3][edge].astype(np.float32) * k + 0.5, 0, 255).astype(np.uint8)
+            if EDGE_FLOOR:
+                fr[..., :3][edge] = np.maximum(fr[..., :3][edge], EDGE_FLOOR)
             h, w = fr.shape[:2]; png = bpy.data.images.new("uo_tmp_out", w, h, alpha=True)
             png.pixels.foreach_set((fr[::-1].astype(np.float32) / 255.0).ravel())
             png.filepath_raw = path; png.file_format = "PNG"; png.save(); bpy.data.images.remove(png)
