@@ -160,7 +160,7 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
 
         best = (1e9, None, None)
         for D in SPH:
-            for phi in np.radians(np.arange(0.0, 360.0, 60.0)):
+            for phi in (0.0,):                                                                  # the roll stays at the string-to-archer side (the sprites hardly tell the roll of a thin bow; a free roll made it twist in the hand)
                 sd = side_for(D, phi); c_ = cost(D, sd)
                 if c_ < best[0]:
                     best = (c_, D, phi)
@@ -172,7 +172,7 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
                 e1 = np.cross(D0, [0.0, 0, 1.0]); e1 = e1 / np.linalg.norm(e1) if np.linalg.norm(e1) > 1e-6 else np.array([1.0, 0, 0]); e2 = np.cross(D0, e1)
                 for dx in (-1, 0, 1):
                     for dy in (-1, 0, 1):
-                        for dp in (-1, 0, 1):
+                        for dp in (0,):
                             if dx == dy == dp == 0:
                                 continue
                             Dn = D0 + rad * (dx * e1 + dy * e2); Dn /= np.linalg.norm(Dn); pn = phi0 + np.radians(dp * dphi)
@@ -267,7 +267,7 @@ print("uo_bow_hold: %d poses re-keyed" % n)
 # triangular profile along the string: the nock follows the fingers of hand.R when the hand is at the face (DRAW_NEAR..DRAW_FAR m from the head), the ends stay on the limbs.
 DRAW_ACTIONS = [18]
 FLEX = 0.10                            # share of the pull the limb tips follow: the tips move 10 % of the pull towards the hand (the bow flexes, the string ends stay on the tips)
-STRING_WIDTH = 0.012                   # m: half width of the string across the bow
+STRING_WIDTH = 0.016                   # m: half width of the string across the bow
 STRING_BAND = 0.022                    # m: thin vertices within this much of the string line are the string
 DRAW_FAR, DRAW_NEAR = 0.30, 0.16       # m, hand.R to head: no pull / full draw
 attr = item.data.attributes.get("uo_string")
@@ -278,6 +278,10 @@ if attr is not None:
         line = np.percentile(cl[mids], 95)
         bdir = np.cross(d, c / np.linalg.norm(c)); bco = (P - P.mean(0)) @ bdir                 # across the bow: the string is a thread (|b| < 1 cm), the knot / binding at the top of the limb is wider
         sv = sv[(cl[sv] > line - STRING_BAND) & (np.abs(bco[sv]) < STRING_WIDTH)]
+        from scipy.spatial import cKDTree                                                        # a ring of the thread must not be split (half moves with the hand, half stays: a fan of dark strips):
+        flagged = np.array([i for i, a_ in enumerate(attr.data) if a_.value > 0.5])               # every thin vertex within 8 mm of a string vertex belongs to the string, too
+        near = cKDTree(P[sv]).query(P[flagged])[0] < 0.008
+        sv = np.union1d(sv, flagged[near])
         print("uo_bow_hold: string line %.1f cm towards the string side, %d string vertices" % (100 * line, len(sv)))
     sv = [int(i) for i in sv]
     if len(sv) > 20:
@@ -294,6 +298,18 @@ if attr is not None:
         rig.data.bones["string.pull"].use_deform = True; rig.data.bones["string.pull"].inherit_scale = "NONE"
         gp = item.vertex_groups.get("string.pull") or item.vertex_groups.new(name="string.pull"); gb = item.vertex_groups["bow.L"]
         svs = set(sv); th_ = float((hc - P.mean(0)) @ d)
+        import bmesh                                                                           # long sliver faces (the string strip is triangulated with fans, a mesh of thin triangles between the string and the limb tips)
+        bm = bmesh.new(); bm.from_mesh(item.data); bm.verts.ensure_lookup_table()              # are collinear at rest and open into a dark sheet when the string is pulled: removed
+        bad = []
+        for f_ in bm.faces:
+            ids = [v_.index for v_ in f_.verts]; ns = sum(1 for k_ in ids if k_ in svs)
+            if ns == 0:
+                continue
+            ln = max((P[ids[a_]] - P[ids[b_]]) @ (P[ids[a_]] - P[ids[b_]]) for a_ in range(len(ids)) for b_ in range(a_))
+            if ln > 0.08 ** 2:
+                bad.append(f_)
+        bmesh.ops.delete(bm, geom=bad, context="FACES_ONLY"); bm.to_mesh(item.data); bm.free(); item.data.update()
+        print("uo_bow_hold: %d long faces of the string removed" % len(bad))
         for i in sv:                                                                           # the string: the nock follows the hand fully, the ends follow the limb tips (FLEX)
             w = FLEX + (1.0 - FLEX) * float(max(0.0, 1.0 - abs(ts[i] - tm) / half) ** 1.5)
             gp.add([i], w, "REPLACE"); gb.add([i], 1.0 - w, "REPLACE")
