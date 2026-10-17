@@ -13,6 +13,7 @@ from mathutils import Matrix, Quaternion, Vector
 
 PARALLEL = True                      # the shaft stays upright in every action (like in the walk), it follows the body (pelvis -> neck) only once the body leans more than FREE_LEAN (False = the calibrated direction, except UPRIGHT actions)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
+FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
 FREE_LEAN = 35.0                     # degrees of lean of the body (crouch, step) the bow does not follow
 UPRIGHT = [18]                       # with PARALLEL False: UO action numbers where the shaft is made vertical instead of the calibrated direction
 UP = (0.0, -0.12, 1.0)               # world axes at direction 0: Y is forward (-Y), Z up
@@ -73,23 +74,27 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         q0 = Quaternion(r / ang, ang) if ang > 1e-9 else Quaternion()
         body = W(rig.pose.bones["neck"].head) - W(rig.pose.bones["pelvis"].head)
         Cw = M @ np.array(rig.pose.bones[FACING].matrix.to_3x3()); Cw = Cw / np.linalg.norm(Cw, axis=0)
-        if PARALLEL:
+        lean = 0.0
+        if PARALLEL:                                                                           # upright; along the body once it leans over (smoothstep 35 -> 60 deg, a fall / death: along the body)
             bn = body / np.linalg.norm(body); lean = np.degrees(np.arccos(np.clip(bn[2], -1, 1)))
             side = bn - bn[2] * np.array([0.0, 0.0, 1.0])
-            a = np.radians(max(0.0, lean - FREE_LEAN))
+            x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); a = np.radians(lean * x * x * (3 - 2 * x))
             body = np.array([0.0, 0.0, 1.0]) * np.cos(a) + (side / np.linalg.norm(side) * np.sin(a) if np.linalg.norm(side) > 1e-6 else 0.0)
         D = body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
         D = D / np.linalg.norm(D)
         F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
         to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of FACING (the body faces -Y at rest)
-        if an in AIM:
-            to_arm = W(rig.pose.bones["upper_arm.L"].head) - F
-            to_arm -= (to_arm @ D) * D
-            to_body -= (to_body @ D) * D; to_body /= np.linalg.norm(to_body)
-            n_arm = np.linalg.norm(to_arm)                                                      # the arm held out: the string comes to the archer along it; bent: the back of the chest (as in the walk)
-            if n_arm > 1e-3:
-                w = float(np.clip((n_arm - 0.3) / 0.2, 0.0, 1.0))
-                to_body = (1 - w) * to_body + w * to_arm / n_arm
+        to_body -= (to_body @ D) * D; to_body /= max(np.linalg.norm(to_body), 1e-9)
+        if an in AIM:                                                                           # held out along the aim line: the string comes to the archer along the shoulder line (left -> right shoulder),
+            sh = W(rig.pose.bones["upper_arm.R"].head) - W(rig.pose.bones["upper_arm.L"].head)   # the same in every frame (the arm is bent at the start and the end of the shot)
+            sh -= (sh @ D) * D
+            if np.linalg.norm(sh) > 1e-3:
+                to_body = sh / np.linalg.norm(sh)
+        if lean > FREE_LEAN:                                                                    # a fall: the string side faces the body (the belly of the bow away from the character)
+            x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); x = x * x * (3 - 2 * x)
+            tc = W(rig.pose.bones["chest"].head) - F; tc -= (tc @ D) * D
+            if np.linalg.norm(tc) > 1e-3:
+                to_body = (1 - x) * to_body + x * tc / np.linalg.norm(tc)
         to_body -= (to_body @ D) * D
         if np.linalg.norm(to_body) < 1e-3:
             to_body = np.array([0.0, 1.0, 0.0])

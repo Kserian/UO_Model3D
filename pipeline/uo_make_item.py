@@ -340,6 +340,8 @@ if wp:                                                           # a weapon: upr
     run("uo_bind_item.py", PART=wp["part"])
     if wp["class"] == "bow" and wp.get("hold", True):             # a bow: grip in the fist, string towards the body in every action, upright in the shooting action (uo_bow_hold.py)
         run("uo_bow_hold.py")
+    for o in [o for o in bpy.context.selected_objects if o.type == "MESH" and wp["class"] == "bow"]:
+        o["uo_no_body_gap"] = 1                                   # a rigid weapon: the renderer must not push it out of the skin (it made a blob where a bow's lower end meets the legs)
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
