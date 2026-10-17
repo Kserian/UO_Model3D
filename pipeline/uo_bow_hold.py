@@ -8,10 +8,12 @@
 #  - in AIM actions (held out) the string side faces the archer along the arm.
 # Run on a bow that is bound to bow.L (uo_bind_item.py, PART = "bow"), the bow selected.
 import bpy, json
+from mathutils.bvhtree import BVHTree
 import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
 PARALLEL = True                      # the shaft stays upright in every action (like in the walk), it follows the body (pelvis -> neck) only once the body leans more than FREE_LEAN (False = the calibrated direction, except UPRIGHT actions)
+CLEAR_CONE = 65.0                    # degrees: in the CALIBRATED actions the shaft is tilted away from the calibrated direction (at most this much) until the bow no longer goes into the body
 CALIBRATED = [7, 8]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
@@ -25,6 +27,7 @@ rig = bpy.data.objects["UO_Rig"]
 WM = json.loads(bpy.data.texts["weapon_motion.json"].as_string())["bow.L"]
 item = [o for o in bpy.context.selected_objects if o.type == "MESH"][0]
 sc = bpy.context.scene
+body_obj = bpy.data.objects["UO_Body"]
 FINGERS = [b.name for b in rig.data.bones if b.name.startswith("finger") and b.name.endswith(".L")]
 
 
@@ -56,6 +59,44 @@ o_h = H0.T @ (hc - head0)                                                       
 print("uo_bow_hold: handle %.1f cm along the shaft, %.1f cm towards the string from the bone head" % (100 * (hc - head0) @ d, 100 * (hc - head0) @ (c / np.linalg.norm(c))))
 u_src = frame(np.asarray(WM["dir"], float), H0.T @ c)                                      # shaft and string side in hand axes
 print("uo_bow_hold: string side %s (hand axes), shaft %.2f m" % (np.round(H0.T @ c / np.linalg.norm(c), 2), L))
+
+
+def clear_of_body(D0, Hw, F, _unused):
+    """candidate shaft directions on cones around D0 (0..CLEAR_CONE degrees, every 8, 12 azimuths): the one with the least penetration of the bow into the body skin (vertices of the
+    bow beyond 12 cm from the fist; depth along the skin normal) plus a small cost per degree of tilt. Returns (D, string side)"""
+    evb = body_obj.evaluated_get(bpy.context.evaluated_depsgraph_get()); mb = evb.to_mesh(); mb.calc_loop_triangles()
+    Bv = [np.array(evb.matrix_world @ v.co) for v in mb.vertices]
+    tri = [tuple(t.vertices) for t in mb.loop_triangles]
+    tree = BVHTree.FromPolygons([tuple(v) for v in Bv], tri)
+    evb.to_mesh_clear()
+    sub = P[::max(1, len(P) // 1200)]
+    off = sub - hc
+    far = np.linalg.norm(off, axis=1) > 0.12
+    e1 = np.cross(D0, [0, 0, 1.0]); e1 = e1 / np.linalg.norm(e1) if np.linalg.norm(e1) > 1e-6 else np.array([1.0, 0, 0]); e2 = np.cross(D0, e1)
+    best = None
+    for ang in [0.0] + list(np.arange(8.0, CLEAR_CONE + 0.1, 8.0)):
+        for az in ([0.0] if ang == 0 else np.arange(0, 360, 30)):
+            a, b = np.radians(ang), np.radians(az)
+            D = D0 * np.cos(a) + np.sin(a) * (e1 * np.cos(b) + e2 * np.sin(b))
+            tb = to_back_of(D)
+            Qc = frame(Hw.T @ D, Hw.T @ tb) @ u_src.T
+            pos = F + (Hw @ Qc @ (H0.T @ off.T)).T
+            pen = 0.0
+            for p_ in pos[far]:
+                loc, nor, _, dist = tree.find_nearest(Vector(p_))
+                if loc is not None and (Vector(loc) - Vector(p_)).dot(nor) > 0:
+                    pen += dist
+            cost = pen * 100.0 + 0.05 * ang
+            if best is None or cost < best[0]:
+                best = (cost, D, tb, ang, pen)
+    print("uo_bow_hold: action %d: shaft tilted %.0f deg from the calibrated one, penetration %.3f" % (an, best[3], best[4]))
+    return best[1], best[2]
+
+
+def to_back_of(D):
+    tb = Cw @ C0.T @ np.array([0.0, 1.0, 0.0]); tb = tb - (tb @ D) * D
+    return tb / max(np.linalg.norm(tb), 1e-9)
+
 
 pb = rig.pose.bones["bow.L"]; pb.rotation_mode = "QUATERNION"
 rig.data.pose_position = "POSE"
@@ -107,6 +148,8 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         to_body -= (to_body @ D) * D
         if np.linalg.norm(to_body) < 1e-3:
             to_body = np.array([0.0, 1.0, 0.0])
+        if an in CALIBRATED:                                                                    # the least tilt from the calibrated direction at which the bow stays out of the posed body
+            D, to_body = clear_of_body(D, Hw, F, lambda D_, T_: to_back_of(D_))
         Q = frame(Hw.T @ D, Hw.T @ to_body) @ u_src.T                                       # turn of the bone in hand axes: shaft -> D, string side -> the body
         q = Matrix(Q.tolist()).to_quaternion()
         if prev is not None and q.dot(prev) < 0:
