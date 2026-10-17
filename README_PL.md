@@ -248,13 +248,14 @@ W oknie Blendera `uo_autofit_item.py` wymaga `scipy` (Blender go nie ma): `impor
 
 Model z kilku przedmiotów i manekinem w pliku (np. uprząż z mieczem na plecach): `"reference": {"keep": ["=nazwa siatki manekina"], "kind": "shirt"}` dopasowuje manekina do ciała, a jego przekształcenie dostają wszystkie `"parts"`
 (`{"name": "paski", "keep": [...], "kind": "harness"}`, `{"name": "miecz", "keep": [...], "rigid": "quiver"}`; `=nazwa` = dokładna nazwa siatki). Rzeczy sztywne na plecach dostają własności `uo_behind_torso` (z przodu zasłania je tułów) i `uo_no_body_gap` (nie są odginane od kończyn).
+Cienkie części znikają przy 36 px/m, więc część może mieć też `"widen": {"width": 0.07}` (paski/wstęgi poszerzone w swojej płaszczyźnie, grubość i krzywizna zostają: pasek 3 cm to 1 px) i `"thicken": {"width": 0.085}` (płaska pochwa lub rękojeść widziana od krawędzi jest co najmniej tak gruba). Siatki z pliku, które nie należą do przedmiotu (nóż, jego pochwa i szmaty), po prostu pomija się we wszystkich częściach. Przykład: `docs/items/witcher_sword_harness.json` i `.md` (uprząż Wiedźmina z mieczem na plecach; oba noże usunięte; pliku `.glb` nie ma w repo, patrz `.md`).
 
 **Luźne ubrania (`kind`: `robe`, `skirt`).** Tkanina wisi od miednicy, a nogi **wypychają ją tam, gdzie sięgają** (powłoka nóg, namiot od pasa, jedna klatka bez pamięci: bez przeskoków i bez przenikania),
 wypchnięcie 5 cm i 0,8 drogi do nóg jak w oryginalnych szatach UO. Pomiar na oryginale 469: IoU dolnej części 0,641 -> 0,757 (`docs/qa/robe_physics.md`). Własność `uo_cloth` ustawia `uo_bind_item.py` (`PART` `robe` / `skirt`), a stosuje `render_uo_layer.py`.
 
 ## 4. Render do klatek i pliku `.vd`
 
-1. Silnik renderowania: **Cycles** (skrypt i tak sam go ustawi, przedmioty 512 próbek adaptacyjnie, warstwa ciała 1 próbka; `docs/qa/render_quality.md`).
+1. Silnik renderowania: **Cycles** (skrypt i tak sam go ustawi, przedmioty 512 próbek adaptacyjnie (właściwość sceny `uo_samples`, np. 1024, ma pierwszeństwo), warstwa ciała 1 próbka; `docs/qa/render_quality.md`).
 2. Otwórz tekst **`render_uo_layer.py`** i ustaw opcje na początku:
    ```python
    LAYER = "clothing"          # "clothing" = warstwa przedmiotu, "body" = ciało, "all" = podgląd razem
@@ -264,7 +265,8 @@ wypchnięcie 5 cm i 0,8 drogi do nóg jak w oryginalnych szatach UO. Pomiar na o
    ONLY = ["04_stand"]         # test jednej akcji; [] = wszystkie 35 akcji
    OUTLINE = 0.38              # ciemny kontur 1 px ciała (1.0 = bez konturu); przedmioty: OUTLINE_TARGET = 0.38 (obwódka dobrana tak,
                                # by krawędź / piksel głębiej zgadzały się z oryginałami UO); właściwość sceny uo_outline ma pierwszeństwo
-   SAMPLES = 512               # próbki Cycles na piksel dla przedmiotów (adaptacyjnie, próg 0,002, min. 64)
+   SAMPLES = 512               # próbki Cycles na piksel dla przedmiotów (adaptacyjnie, próg 0,002, min. 64); właściwość sceny uo_samples ma pierwszeństwo (1024)
+   EDGE_FLOOR = 0              # 0-255: kontur 1 px przedmiotu nie jest ciemniejszy niż to (na kanał; 0 = wyłączone); właściwość sceny uo_edge_floor (24 = miękka ciemna szarość, bez czystej czerni)
    OUT_DIR = "//uo_render/"    # folder obok pliku .blend
    WRITE_VD = True
    VD_FILE = "//uo_render/%s.vd"

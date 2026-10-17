@@ -251,6 +251,7 @@ In the Blender window `uo_autofit_item.py` needs `scipy` (Blender does not ship 
 
 A model of several items with its mannequin in the file (e.g. a harness with a sword on the back): `"reference": {"keep": ["=mannequin mesh name"], "kind": "shirt"}` fits the mannequin to the body and every one of `"parts"` gets its transform
 (`{"name": "straps", "keep": [...], "kind": "harness"}`, `{"name": "sword", "keep": [...], "rigid": "quiver"}`; `=name` = the exact mesh name). Rigid things on the back get the properties `uo_behind_torso` (the torso hides them from the front) and `uo_no_body_gap` (they are not bent away from limbs).
+Thin parts vanish at 36 px/m, so a part can also take `"widen": {"width": 0.07}` (straps/ribbons made wider in their own plane, thickness and curve stay: a 3 cm strap is 1 px) and `"thicken": {"width": 0.085}` (a flat scabbard or hilt seen edge-on is at least that thick). Meshes of the file that do not belong to the item (a knife, its sheath and cloth wraps) are simply left out of every part. Worked example: `docs/items/witcher_sword_harness.json` and `.md` (a Witcher harness with a sword on the back; both knives removed; the `.glb` is not in the repo, see the `.md`).
 
 **Loose garments (`kind`: `robe`, `skirt`).** The cloth hangs from the pelvis and the legs **push it out to where they reach** (a hull of the legs, a tent from the waist, one frame at a time with no memory: no jumps, no clipping),
 5 cm past the legs and 0.8 of the way, as in the original UO robes. Measured on the original 469: lower-body IoU 0.641 -> 0.757 (`docs/qa/robe_physics.md`). The `uo_cloth` property is set by `uo_bind_item.py` (`PART` `robe` / `skirt`) and applied by `render_uo_layer.py`.
@@ -267,7 +268,8 @@ A model of several items with its mannequin in the file (e.g. a harness with a s
    ONLY = ["04_stand"]         # test one action; [] = all 35 actions
    OUTLINE = 0.38              # dark 1-px outline of the body (1.0 = none); items use OUTLINE_TARGET = 0.38 (rim darkened so that
                                # edge / one pixel deeper matches the UO originals); scene property uo_outline overrides it
-   SAMPLES = 512               # Cycles samples per pixel for items (adaptive, threshold 0.002, min 64)
+   SAMPLES = 512               # Cycles samples per pixel for items (adaptive, threshold 0.002, min 64); scene property uo_samples overrides it (1024)
+   EDGE_FLOOR = 0              # 0-255: the 1-px outline of an item is never darker than this per channel (0 = off); scene property uo_edge_floor (24 = soft dark grey, no pure black rim)
    OUT_DIR = "//uo_render/"    # folder next to the .blend
    WRITE_VD = True
    VD_FILE = "//uo_render/%s.vd"
