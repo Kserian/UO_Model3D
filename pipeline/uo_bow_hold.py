@@ -18,7 +18,7 @@ CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
 CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 17: 40.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
 CONE_ACTIONS = list(CONE_BY)
-REL_SMOOTH = {23: (0.0, 1.0, 0.0), 24: (0.0, 1.0, 0.0)}  # mount walk: the handle follows OUR fist (offset from the pelvis frame by frame, smoothed over the looping frames): the original-bow position (fixed or per frame) put it behind the back or in the arm
+REL_CLAMP = {23: 0.05, 24: 0.02}   # mount walk / run: the handle follows OUR fist (offset from the pelvis) but at most this far from the mean offset: steady like the original bow, still at the hand within ~2 px
 SIDE_FROM = {23: 24}                 # action -> action: the string side of the first is the string side of the second in the PELVIS frame (mount walk turned like mount run)
 REL_POS = [23, 24]                   # mounted walk / run: the original bow is carried almost rigidly (Yumi and 649 hardly move in the 5 frames): the handle keeps ONE offset from the pelvis (the mean of the original bow's), it moves with the rider's body, not with the jumping hand of our model
 FIT_DIRS = {23: [1]}                        # action -> directions whose original sprites the shaft is fitted to (default: all five); for an action patched in one direction only
@@ -376,10 +376,11 @@ for an_s in set(SIDE_FROM.values()):                                            
         print("uo_bow_hold: string side of action %d in the pelvis frame (x lateral, y back, z up): %s" % (an_s, np.round(SIDE_VEC[an_s], 2)))
 for an_r, fr_r in [(k_, v_) for k_, v_ in RELD.items() if k_ in REL_POS]:                                                               # one offset of the handle from the pelvis for the whole action
     REL_OFF[an_r] = np.mean([Rp.T @ (hc_ - pp_) for Rp, pp_, hc_, _f in fr_r.values()], 0)
-    if an_r in REL_SMOOTH:                                                                       # per-frame offsets of OUR fist from the pelvis frame, smoothed over the loop: the handle stays in the hand, without its jumps
-        ks_ = sorted(fr_r); offs_ = [fr_r[k_][0].T @ (fr_r[k_][3] - fr_r[k_][1]) for k_ in ks_]; w_ = REL_SMOOTH[an_r]; n_k = len(ks_)
-        REL_OFF[an_r] = {k_: sum(w_[j_] * offs_[(ii_ + j_ - 1) % n_k] for j_ in range(3)) for ii_, k_ in enumerate(ks_)}
-        print("uo_bow_hold: action %d: handle offset from the pelvis frame by frame (smoothed), scatter %.1f cm" % (an_r, 100 * np.mean([np.linalg.norm(REL_OFF[an_r][k_] - np.mean(list(REL_OFF[an_r].values()), 0)) for k_ in ks_])))
+    if an_r in REL_CLAMP:                                                                        # OUR fist in the pelvis frame: the handle keeps the mean offset and follows the fist only within REL_CLAMP m of it (the original bow is carried steadily, our hand swings 7 px and crosses the pelvis in two frames: a bow that follows it jumps 15-25 px and hides behind the torso)
+        ks_ = sorted(fr_r); offs_ = np.array([fr_r[k_][0].T @ (fr_r[k_][3] - fr_r[k_][1]) for k_ in ks_]); mean_ = offs_.mean(0)
+        dev_ = offs_ - mean_; sc_ = np.minimum(1.0, REL_CLAMP[an_r] / np.maximum(np.linalg.norm(dev_, axis=1), 1e-9))
+        REL_OFF[an_r] = {k_: mean_ + dev_[ii_] * sc_[ii_] for ii_, k_ in enumerate(ks_)}
+        print("uo_bow_hold: action %d: handle = mean fist offset from the pelvis + the fist's deviation clamped to %.0f cm; fist deviations (cm) %s" % (an_r, 100 * REL_CLAMP[an_r], np.round(100 * np.linalg.norm(dev_, axis=1), 1)))
         continue
     print("uo_bow_hold: action %d: handle %.1f cm from the pelvis (fixed), original positions scatter %.1f cm" % (an_r, 100 * np.linalg.norm(REL_OFF[an_r]), 100 * np.mean([np.linalg.norm(Rp.T @ (hc_ - pp_) - REL_OFF[an_r]) for Rp, pp_, hc_, _f in fr_r.values()])))
 
