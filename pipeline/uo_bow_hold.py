@@ -7,7 +7,7 @@
 #  - the handle of the bow (its middle, the belly-most part - the bounds' axis lies a hand's width towards the string) goes to the centre of the fingers of hand.L.
 #  - in AIM actions (held out) the string side faces the archer along the arm.
 # Run on a bow that is bound to bow.L (uo_bind_item.py, PART = "bow"), the bow selected.
-import bpy, json
+import bpy, json, os, sys
 from mathutils.bvhtree import BVHTree
 import numpy as np
 from mathutils import Matrix, Quaternion, Vector
@@ -16,7 +16,9 @@ PARALLEL = True                      # the shaft stays upright in every action (
 CLEAR_CONE = 90.0                    # degrees: in the CALIBRATED actions the shaft is tilted away from the calibrated direction (at most this much) until the bow stays out of the body and in front of it
 CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (beyond 12 cm from the fist)
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
-CALIBRATED = [7, 8]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
+CONE_ACTIONS = [7, 8]                # of these the shaft is tilted away from the body (clear_of_body)
+ROLL_FIT = [18]                      # actions whose roll about the shaft is fitted to the sprites of the original bow (env UO_BOW_WP + UO_BOW_VD, recipe "orig"); the shaft is the calibrated one
+CALIBRATED = [7, 8, 18]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
 AWAY_FROM_HEAD = {21: 10.0, 22: 10.0}          # action -> degrees: once the body lies, the shaft is turned this much so that its end nearest to the head moves away from it (the falls: the bow lay on the face)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
@@ -118,6 +120,85 @@ for an in AIM:
         v = W(rig.pose.bones["upper_arm.R"].head) - W(rig.pose.bones["upper_arm.L"].head); v[2] = 0.0
         acc += v / np.linalg.norm(v)
     AIM_SIDE[an] = acc / np.linalg.norm(acc)
+
+ORI = {}                                                                                       # (action, frame) -> (shaft direction, string side) fitted to the sprites of the original bow
+if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
+    sys.path.insert(0, os.environ["UO_SCRIPTS"])
+    import weapon_fit
+    VW = weapon_fit.Views(os.environ["UO_BOW_WP"], os.environ["UO_BOW_VD"])
+    s_orig = float(os.environ.get("UO_BOW_LEN", 0.86)) / L                                     # the original bow is smaller than ours: compared at its size, about the handle
+    sub_ = P[::max(1, len(P) // 400)]; off_h = H0.T @ (sub_ - hc).T
+    RD = {}                                                                                    # the body is turned per UO direction (the camera stays): world matrix of the rig for every direction
+    for d_ in range(5):
+        rig["uo_direction"] = d_; rig.update_tag(); sc.frame_set(sc.frame_current); bpy.context.view_layer.update(); RD[d_] = np.array(rig.matrix_world)
+    rig["uo_direction"] = 0; rig.update_tag(); sc.frame_set(sc.frame_current); bpy.context.view_layer.update()
+    R0inv = np.linalg.inv(RD[0]); RR = {d_: RD[d_] @ R0inv for d_ in range(5)}
+    gold = np.pi * (3 - np.sqrt(5)); k_ = np.arange(500); zz = 1 - 2 * (k_ + 0.5) / 500; rr = np.sqrt(1 - zz * zz)
+    SPH = np.c_[rr * np.cos(gold * k_), rr * np.sin(gold * k_), zz]; SPH = SPH[SPH[:, 2] >= -0.2]    # candidate shaft directions (the bow is symmetric: +D and -D look alike), about 10 degrees apart
+    PRIOR = 2.0                                                                                # px: penalty when the string side does not face the archer
+
+    def fit_frame(an, i, Hw, HC, side0, views):
+        pix_cache = {}
+
+        def cost(D, sd):
+            Qc = frame(Hw.T @ D, Hw.T @ sd) @ u_src.T
+            pos = HC + (Hw @ Qc @ off_h * s_orig).T; pos1 = np.c_[pos, np.ones(len(pos))]
+            tot = 0.0
+            for k in views:
+                pix = (pos1 @ RR[int(VW.key[k][1])].T) @ VW.PX[k, :2].T
+                xi = np.clip(pix[:, 0].astype(int), 0, VW.W - 1); yi = np.clip(pix[:, 1].astype(int), 0, VW.H - 1)
+                d1 = np.minimum(VW.DT[k][yi, xi], 15.0).mean()
+                op = VW.pts[k, :VW.npts[k]]
+                d2 = np.minimum(np.sqrt(((op[:, None, :] - pix[None, :, :]) ** 2).sum(-1)).min(1), 15.0).mean()
+                tot += 0.5 * (d1 + d2)
+            return tot + PRIOR * 0.5 * (1.0 - float(sd @ side0))
+
+        def side_for(D, phi):
+            e1 = side0 - (side0 @ D) * D
+            e1 = e1 / np.linalg.norm(e1) if np.linalg.norm(e1) > 1e-6 else np.cross(D, [1.0, 0, 0]) / max(np.linalg.norm(np.cross(D, [1.0, 0, 0])), 1e-9)
+            return np.cos(phi) * e1 + np.sin(phi) * np.cross(D, e1)
+
+        best = (1e9, None, None)
+        for D in SPH:
+            for phi in np.radians(np.arange(0.0, 360.0, 60.0)):
+                sd = side_for(D, phi); c_ = cost(D, sd)
+                if c_ < best[0]:
+                    best = (c_, D, phi)
+        c0_, D0, phi0 = best
+        for rad, dphi in ((np.radians(6.0), 30.0), (np.radians(3.0), 15.0)):                   # refined around the best
+            improved = True
+            while improved:
+                improved = False
+                e1 = np.cross(D0, [0.0, 0, 1.0]); e1 = e1 / np.linalg.norm(e1) if np.linalg.norm(e1) > 1e-6 else np.array([1.0, 0, 0]); e2 = np.cross(D0, e1)
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        for dp in (-1, 0, 1):
+                            if dx == dy == dp == 0:
+                                continue
+                            Dn = D0 + rad * (dx * e1 + dy * e2); Dn /= np.linalg.norm(Dn); pn = phi0 + np.radians(dp * dphi)
+                            c_ = cost(Dn, side_for(Dn, pn))
+                            if c_ < c0_ - 1e-6:
+                                c0_, D0, phi0, improved = c_, Dn, pn, True
+        return c0_, D0, side_for(D0, phi0)
+
+    for an in ROLL_FIT:
+        act = [a for a in bpy.data.actions if a.get("uo_action") == an][0]; rig.animation_data.action = act
+        nfr = int(act["uo_frames"]); prevD = None
+        for i in range(nfr):
+            sc.frame_set(1 + 3 * i); pb.rotation_quaternion = Quaternion(); pb.location = (0, 0, 0); bpy.context.view_layer.update()
+            Hw = M @ np.array(rig.pose.bones[WM["parent"]].matrix.to_3x3()); Hw = Hw / np.linalg.norm(Hw, axis=0)
+            pp = WM["poses"]["%d,%d" % (an, i)]; r = Vector(pp[:3]); ang_ = r.length
+            q0 = Quaternion(r / ang_, ang_) if ang_ > 1e-9 else Quaternion()
+            HC = W(pb.head) + Hw @ np.asarray(pp[3:], float) + Hw @ (np.array(q0.to_matrix()) @ o_h)    # where the original bow's handle is (the calibrated pose), not the fist
+            views = [k for k in range(VW.n) if VW.key[k][0] == an and VW.key[k][2] == i]
+            cal_D = Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float)); cal_D /= np.linalg.norm(cal_D)
+            c_cal = None
+            cost_, D_, sd_ = fit_frame(an, i, Hw, HC, AIM_SIDE[an], views)
+            if D_[2] < 0:
+                D_ = -D_
+            ORI[(an, i)] = (D_, sd_)
+            print("uo_bow_hold: fit to the original bow, action %d frame %d: shaft tilt %.0f deg from vertical (calibrated stick %.0f deg), chamfer sum %.1f px over %d views" % (an, i, np.degrees(np.arccos(np.clip(D_[2], -1, 1))), np.degrees(np.arccos(np.clip(abs(cal_D[2]), -1, 1))), cost_, len(views)))
+rig.animation_data.action = keep
 for act in [a for a in bpy.data.actions if "uo_action" in a]:
     an = int(act["uo_action"]); rig.animation_data.action = act; prev = None
     for i in range(int(act["uo_frames"])):
@@ -164,7 +245,9 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         to_body -= (to_body @ D) * D
         if np.linalg.norm(to_body) < 1e-3:
             to_body = np.array([0.0, 1.0, 0.0])
-        if an in CALIBRATED:                                                                    # the least tilt from the calibrated direction at which the bow stays out of the posed body
+        if (an, i) in ORI:                                                                      # shaft and string side fitted to the original bow sprites
+            D, to_body = ORI[(an, i)]
+        if an in CONE_ACTIONS:                                                                  # the least tilt from the calibrated direction at which the bow stays out of the posed body
             D, to_body = clear_of_body(D, Hw, F, lambda D_, T_: to_back_of(D_))
         Q = frame(Hw.T @ D, Hw.T @ to_body) @ u_src.T                                       # turn of the bone in hand axes: shaft -> D, string side -> the body
         q = Matrix(Q.tolist()).to_quaternion()
@@ -183,7 +266,9 @@ print("uo_bow_hold: %d poses re-keyed" % n)
 # ---- the string drawn by the second hand: the string vertices (mesh attribute uo_string, set by uo_make_item.py "inflate") are weighted to a bone "string.pull" (child of bow.L) in a
 # triangular profile along the string: the nock follows the fingers of hand.R when the hand is at the face (DRAW_NEAR..DRAW_FAR m from the head), the ends stay on the limbs.
 DRAW_ACTIONS = [18]
-STRING_BAND = 0.035                    # m: thin vertices within this much of the string line are the string
+FLEX = 0.10                            # share of the pull the limb tips follow: the tips move 10 % of the pull towards the hand (the bow flexes, the string ends stay on the tips)
+STRING_WIDTH = 0.012                   # m: half width of the string across the bow
+STRING_BAND = 0.022                    # m: thin vertices within this much of the string line are the string
 DRAW_FAR, DRAW_NEAR = 0.30, 0.16       # m, hand.R to head: no pull / full draw
 attr = item.data.attributes.get("uo_string")
 if attr is not None:
@@ -191,7 +276,8 @@ if attr is not None:
     if len(sv) > 20:                                                                           # thin things are not only the string (limb edges, the wrapping of the grip): the string is the straight line
         mid_t = np.median(ts[sv]); mids = sv[np.abs(ts[sv] - mid_t) < 0.1 * L]                  # on the string side of the limbs, found in the middle of the bow where nothing else is that far out
         line = np.percentile(cl[mids], 95)
-        sv = sv[cl[sv] > line - STRING_BAND]
+        bdir = np.cross(d, c / np.linalg.norm(c)); bco = (P - P.mean(0)) @ bdir                 # across the bow: the string is a thread (|b| < 1 cm), the knot / binding at the top of the limb is wider
+        sv = sv[(cl[sv] > line - STRING_BAND) & (np.abs(bco[sv]) < STRING_WIDTH)]
         print("uo_bow_hold: string line %.1f cm towards the string side, %d string vertices" % (100 * line, len(sv)))
     sv = [int(i) for i in sv]
     if len(sv) > 20:
@@ -207,9 +293,16 @@ if attr is not None:
         bpy.ops.object.mode_set(mode="OBJECT")
         rig.data.bones["string.pull"].use_deform = True; rig.data.bones["string.pull"].inherit_scale = "NONE"
         gp = item.vertex_groups.get("string.pull") or item.vertex_groups.new(name="string.pull"); gb = item.vertex_groups["bow.L"]
-        for i in sv:
-            w = float(max(0.0, 1.0 - abs(ts[i] - tm) / half) ** 1.5)
+        svs = set(sv); th_ = float((hc - P.mean(0)) @ d)
+        for i in sv:                                                                           # the string: the nock follows the hand fully, the ends follow the limb tips (FLEX)
+            w = FLEX + (1.0 - FLEX) * float(max(0.0, 1.0 - abs(ts[i] - tm) / half) ** 1.5)
             gp.add([i], w, "REPLACE"); gb.add([i], 1.0 - w, "REPLACE")
+        for i in range(len(P)):                                                                # the limbs bend: their pull grows with the square of the distance from the handle, 0 in the grip
+            if i in svs:
+                continue
+            w = FLEX * min(1.0, abs(ts[i] - th_) / (L / 2)) ** 2
+            if w > 0.002:
+                gp.add([i], w, "REPLACE"); gb.add([i], 1.0 - w, "REPLACE")
         rig.data.pose_position = "POSE"
         ps = rig.pose.bones["string.pull"]; ps.rotation_mode = "QUATERNION"
         FR = [b.name for b in rig.data.bones if b.name.startswith("finger") and b.name.endswith(".R")]

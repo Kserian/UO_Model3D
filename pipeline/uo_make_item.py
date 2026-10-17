@@ -13,6 +13,7 @@ RECIPE.json (only "file" and "kind" are required):
    "holes": {"close": 0.06, "grow": 0.025},   # with outer_shell: pinholes closed, rips widened (a torn robe; uo_import_item.py HOLES)
    "bake_normal": 0.0, "bake_ao": 0.0,        # with a baked texture: normal map of the original's geometry blurred over m / its occlusion darkening the colour (uo_import_item.py BAKE_NORMAL, BAKE_AO)
    "bake_texture": 0,          # px (2048): the reduced model gets new UVs and a texture baked from the original (a reduction smears the UVs of a detailed texture; uo_import_item.py BAKE_TEXTURE)
+   "orig": {"vd": "anim_0649.vd", "length": 0.86},   # class bow: the original bow animation (vdtool/mul2vd.py of anim.mul, not committed): the roll of the bow in 18_attack_bow is fitted to its sprites
    "vd_shift": ["18:0:0:+4"],   # --vd: single frames moved by whole pixels, action:dir:frame:dx[:dy], 0-based, dir 5-7 = mirror of the stored 3-1 (vd_shift.py)
    "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1},   # per-item settings of render_uo_layer.py (outline strength, hands / head hide a pixel less, the legs never hide a long robe)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
@@ -414,6 +415,12 @@ if __name__ == "__main__":
         recipe.setdefault("prepare", {}); recipe["prepare"].setdefault("FIT", False); recipe["prepare"].setdefault("DENSIFY", False)
     t = time.time()
     blend = os.path.join(out, "item.blend")
+    if recipe.get("orig"):                                    # "orig": {"vd": ".../anim_0649.vd"} the original weapon animation (mul2vd.py): uo_bow_hold.py fits the roll of the bow to its sprites
+        wp = os.path.join(out, "weapon_poses.npz")
+        r0 = subprocess.run([sys.executable, os.path.join(HERE, "weapon_pose_export.py"), os.path.abspath(a.base), wp], capture_output=True, text=True)
+        if r0.returncode:
+            sys.exit("weapon_pose_export failed:\n%s" % r0.stderr[-1500:])
+        os.environ["UO_BOW_WP"] = wp; os.environ["UO_BOW_VD"] = os.path.abspath(recipe["orig"]["vd"]); os.environ["UO_BOW_LEN"] = str(recipe["orig"].get("length", 0.86))
     for line in run_blend(os.path.abspath(a.base), build_stage(recipe, blend), os.path.join(out, "report.txt")):
         if line.startswith(("uo_autofit", "uo_fit", "uo_import", "  WARN", "  AMB")):
             print(line[:260])
