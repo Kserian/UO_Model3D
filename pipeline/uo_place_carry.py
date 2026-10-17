@@ -4,6 +4,7 @@
 #   AXIS   world direction of the headstock (butt -> tip) in the pose; FRONT world direction the strings face (made perpendicular to AXIS); GRIP m from the butt where the hand holds the neck
 #   BONE2  a second hand (hand.L): the instrument is then laid along the line between the two palms (AXIS is ignored), hand.R holding it at GRIP and hand.L at GRIP + the distance of the palms (both hands on the instrument);
 #          the rest of the instrument is centred on the middle between the palms
+#   FOLLOW the bone the instrument will be bound to (None = BONE): hand.R when the hands move it, "pelvis" for an idle where the arms swing but the instrument stays at the belly (bind PART "belly")
 #   ELEV   degrees above the horizontal of the axis (None = as it comes from AXIS / the palms): the headstock is raised or lowered, the direction seen from above is kept
 #   SHIFT  m, extra shift of the grip point in world axes (from the middle of the palm); ROLL degrees, turn of the instrument about its own axis (strings towards FRONT = 0)
 import bpy, math
@@ -19,6 +20,7 @@ GRIP = 0.52
 SHIFT = [0.0, 0.0, 0.0]
 ROLL = 0.0
 BONE2 = None
+FOLLOW = None
 ELEV = None
 PALM = 0.4                                  # share of the hand bone from the wrist to the middle of the palm
 
@@ -26,11 +28,13 @@ rig = bpy.data.objects["UO_Rig"]
 bone = rig.data.bones[BONE]
 saved = (rig.data.pose_position, rig.animation_data.action if rig.animation_data else None)
 rig.data.pose_position = "REST"; bpy.context.view_layer.update()
-Pr = rig.matrix_world @ bone.matrix_local                                   # hand bone at rest (world)
+fbone = rig.data.bones[FOLLOW or BONE]
+Pr = rig.matrix_world @ fbone.matrix_local                                   # the bound bone (hand) at rest (world)
 rig.data.pose_position = "POSE"
 rig.animation_data_create(); rig.animation_data.action = bpy.data.actions[ACTION]
 bpy.context.scene.frame_set(FRAME); bpy.context.view_layer.update()
 Pp = rig.matrix_world @ rig.pose.bones[BONE].matrix                         # the same bone in the pose
+Pf = rig.matrix_world @ rig.pose.bones[FOLLOW or BONE].matrix               # the bound bone in the pose
 rig.animation_data.action = saved[1]; rig.data.pose_position = saved[0]; bpy.context.view_layer.update()
 palm = Vector((0, PALM * bone.length, 0))
 G = Pp @ palm + Vector(SHIFT)                                               # grip point in the pose (world)
@@ -59,6 +63,6 @@ for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
     near = co[np.abs(co[:, 2] - grip) < 0.03]
     c = near[:, :2].mean(0) if len(near) else co[:, :2].mean(0)             # the neck axis at the grip
     M_pose = Matrix.Translation(G) @ Rp.to_4x4() @ Matrix.Translation(-Vector((c[0], c[1], grip)))
-    delta = Pp @ Pr.inverted()                                              # rest -> pose of the hand
+    delta = Pf @ Pr.inverted()                                              # rest -> pose of the bound bone
     ob.matrix_world = delta.inverted() @ M_pose @ ob.matrix_world
 print("uo_place_carry: grip %.2f m, axis %s, strings towards %s in %s" % (GRIP, tuple(round(v, 2) for v in a), tuple(round(v, 2) for v in f), ACTION))

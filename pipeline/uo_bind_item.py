@@ -51,7 +51,7 @@ PARTS = {
 # and moves them differently from the hand: they ride on the weapon bones polearm.L / axe2h.L / bow.L / weapon1h.R (uo_weapon_bones.py,
 # calibrated on the original weapons: model the shaft along the class line, see uo_place_weapon.py) and the shield on shield.L (uo_place_shield.py).
 # "weapon" = rigid in hand.R and "weapon.L" = rigid in hand.L (no calibration).
-RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "weapon1h": "weapon1h.R", "shield": "shield.L", "quiver": "chest",
+RIGID = {"hair": "head", "beard": "head", "hat": "head", "weapon": "hand.R", "weapon.L": "hand.L", "weapon1h": "weapon1h.R", "shield": "shield.L", "quiver": "chest", "belly": "pelvis",
          "hip.L": "thigh.L", "hip.R": "thigh.R",      # a sword / dagger on the belt: stiff on the thigh of its side (it moves with the leg)
          "polearm": "polearm.L", "staff": "polearm.L", "weapon2h": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "crossbow": "bow.L"}
 PARENT = {"hand": "forearm", "forearm": "upper_arm", "upper_arm": "chest", "foot": "shin", "shin": "thigh",

@@ -320,11 +320,12 @@ if wp:                                                           # a weapon: upr
     if wp.get("strings"):                                        # a lute: strings to -Y, bowl and headstock back
         run("uo_face_strings.py")
     if wp.get("carry"):                                          # held by the neck across the front of the body (walk, run, stand): rigid on hand.R, settings of uo_place_carry.py
-        run("uo_place_carry.py", **{k.upper(): v for k, v in wp["carry"].items()})
-        run("uo_bind_item.py", PART="weapon")
+        cfg = dict(wp["carry"]); part = cfg.pop("bind", "weapon")
+        run("uo_place_carry.py", **{k.upper(): v for k, v in cfg.items()})
+        run("uo_bind_item.py", PART=part)
     else:
         run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
-        run("uo_bind_item.py", PART=wp["part"])
+        run("uo_bind_item.py", PART=wp.get("bind", wp["part"]))      # "bind": "weapon" = rigid on hand.R instead of the calibrated motion of the weapon bone (actions where the original has no such weapon)
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
