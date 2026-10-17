@@ -45,14 +45,14 @@ def main():
     rig.data.pose_position = "POSE"
     for a in [int(x[:2]) for x in actions.split(",")]:
         act = acts[a]; rig.animation_data.action = act
-        per, deep, outs = [], 0.0, []
+        per, deep, outs, gaps = [], 0.0, [], []
         for i in range(0, int(act["uo_frames"]), step):
             sc.frame_set(1 + i * STEP_SCENE); rig.update_tag(); bpy.context.view_layer.update()
             dg = bpy.context.evaluated_depsgraph_get()
             eb = body.evaluated_get(dg); mb = eb.to_mesh(); mb.calc_loop_triangles(); M = eb.matrix_world
             bvh = BVHTree.FromPolygons([M @ v.co for v in mb.vertices], [t.vertices[:] for t in mb.loop_triangles]); eb.to_mesh_clear()
             palms = [rig.matrix_world @ (rig.pose.bones[b].head * 0.6 + rig.pose.bones[b].tail * 0.4) for b in ("hand.R", "hand.L")]
-            n_in = n_all = 0
+            n_in = n_all = 0; sd = []
             if ends:
                 eo = items[0].evaluated_get(dg); mo = eo.to_mesh(); Mo = eo.matrix_world
                 tip, but = Mo @ mo.vertices[ends[0]].co, Mo @ mo.vertices[ends[1]].co; eo.to_mesh_clear()
@@ -69,12 +69,14 @@ def main():
                     loc, nrm, fi, d = bvh.find_nearest(p, 0.4)
                     if loc is None:
                         continue
-                    s = (p - loc).dot(nrm); n_all += 1
+                    s = (p - loc).dot(nrm); n_all += 1; sd.append(s)
                     if s < -0.002:
                         n_in += 1; deep = max(deep, -s)
                 eo.to_mesh_clear()
             per.append(n_in / max(n_all, 1))
-        print("%-26s outside the grip: inside mean %5.1f%%  worst frame %5.1f%%  deepest %5.1f mm%s" % (act.name, 100 * np.mean(per), 100 * max(per), 1000 * deep,
+            if sd:
+                gaps.append(float(np.percentile(sd, 5)))
+        print("%-26s outside the grip: inside mean %5.1f%%  worst frame %5.1f%%  deepest %5.1f mm  nearest 5%% of the item %+5.1f cm from the skin%s" % (act.name, 100 * np.mean(per), 100 * max(per), 1000 * deep, 100 * np.mean(gaps) if gaps else 0.0,
               ("   bowl outward of the hand: worst %5.1f mean %5.1f cm" % (min(outs), np.mean(outs))) if outs else ""), flush=True)
     sys.stdout.flush(); os._exit(0)
 

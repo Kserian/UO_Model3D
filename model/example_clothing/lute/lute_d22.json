@@ -8,7 +8,7 @@
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.55,
+   "grip": 0.7,
    "action": "22_die_backward",
    "frame": 16,
    "lie": true,
@@ -17,8 +17,7 @@
     0,
     1
    ],
-   "side": 0.1,
-   "boxto": 0.3
+   "side": 0.4
   },
   "occlude": true
  }
