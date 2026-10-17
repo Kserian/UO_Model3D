@@ -17,11 +17,11 @@
    ],
    "shift": [
     0.143,
-    -0.22,
+    -0.1,
     0.058
    ],
    "action": "25_mounted_stand",
-   "elev": -8.0
+   "elev": 0.0
   },
   "occlude": true
  }

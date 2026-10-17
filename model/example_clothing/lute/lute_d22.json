@@ -17,7 +17,8 @@
     0,
     1
    ],
-   "side": 0.4
+   "side": 0.0,
+   "lieyaw": 30
   },
   "occlude": true
  }

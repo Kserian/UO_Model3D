@@ -10,6 +10,7 @@
 #   OUT    degrees: the headstock is tilted towards the body, the bowl swings out (away from the body, world -X: the right hand's side); VERT 0..1: the axis is blended towards vertical
 #   LIE    True = the axis is the long axis of the body (pelvis -> head) in the pose, strings up: the instrument lies beside a body on the ground (deaths); SHIFT puts it beside the body
 #   SIDE   m (with LIE): the grip point is pushed this far away from the body's long axis, to the side of the hand (the instrument lies beside the body, not under it)
+#   LIEYAW degrees (with LIE): the axis is turned about the vertical; FLIP: headstock towards the feet instead of the head
 #   BOXTO  0..1 (with LIE): the bowl is turned this far (share of the way) from lying along the body towards the other hand (hand.L): the bowl nearer the body, towards the left hand
 #   SHIFT  m, extra shift of the grip point in world axes (from the middle of the palm); ROLL degrees, turn of the instrument about its own axis (strings towards FRONT = 0)
 import bpy, math, json
@@ -32,6 +33,8 @@ VERT = 0.0
 LIE = False
 SIDE = 0.0
 BOXTO = 0.0
+LIEYAW = 0.0
+FLIP = False
 ELEV = None
 PALM = 0.4                                  # share of the hand bone from the wrist to the middle of the palm
 
@@ -68,7 +71,9 @@ if CLASS:
     AXIS = list(Pp.to_3x3() @ Vector(WM["dir"]))
     G = Pp @ Vector(WM["pivot"]) + Vector(SHIFT)
 if LIE:
-    AXIS = list(body_axis)
+    AXIS = list(body_axis * (-1 if FLIP else 1))
+    if LIEYAW:
+        AXIS = list(Matrix.Rotation(math.radians(LIEYAW), 3, 'Z') @ Vector(AXIS))
     if SIDE:
         ba = body_axis.normalized(); v = G - pelvis_pos; v = v - v.dot(ba) * ba
         G = G + v.normalized() * SIDE
