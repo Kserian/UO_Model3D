@@ -318,9 +318,12 @@ for part in %(parts)r:
                     for k in [k for k in o.data.shape_keys.key_blocks if k.name.startswith("uo_")]:
                         o.shape_key_remove(k)
                 print("uo_make_item: %%s -> rigid on %%s" %% (o.name, bone))
+for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_samples, uo_edge_floor, uo_outline, ...)
+    bpy.context.scene[k] = v
+    print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, base=base, ref=ref, parts=parts, out=out_blend)
+''' % dict(here=HERE, base=base, ref=ref, parts=parts, scene=recipe.get("scene", {}), out=out_blend)
 
 
 def build_stage(recipe, out_blend):
