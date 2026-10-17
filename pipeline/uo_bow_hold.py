@@ -16,23 +16,25 @@ PARALLEL = True                      # the shaft stays upright in every action (
 CLEAR_CONE = 90.0                    # degrees: in the CALIBRATED actions the shaft is tilted away from the calibrated direction (at most this much) until the bow stays out of the body and in front of it
 CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (beyond 12 cm from the fist)
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
-CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 17: 40.0, 25: 0.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
+CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 17: 40.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
 CONE_ACTIONS = list(CONE_BY)
+ORIGINAL_POS = [23, 24, 25]          # mounted walk / run / stand: the bow sits where the original bow sprites are (the calibrated pose), not at the fist of our body: the arms of our rider differ from the original body
+SHOULDER_SIDE = [23, 24, 25]         # the string side of these faces the shoulder of the holding arm (3D), perpendicular to the shaft
 CONE_FRAMES = {17: [3]}              # clearance only for these frames of the action (the others are fine as fitted)
 WALK_LEAN = {15: 12.0}               # action -> degrees: the bow hangs slanted in the hand, its top towards the body's midline, the bottom out, the string facing the body
 SMOOTH_FRAMES = {16: {3: (2, 4)}}    # action -> {frame: (a, b)}: the pose of that frame is the mean of the frames a and b (a frame whose clearance search leaned away)
-SHIFT_BY = {25: 0.18}   # action -> m: the bow may also be moved sideways away from the body (a seated rider's thigh is in the way of a hanging bow)
+SHIFT_BY = {}   # action -> m: the bow may also be moved sideways away from the body (a seated rider's thigh is in the way of a hanging bow)
 IN_FRONT_ACTIONS = [7, 8]            # of these the bow must also stay ahead of the chest (held in front, not under the armpit)
 ROLL_ONLY = [17, 27]             # actions whose roll about the shaft (one constant angle for the action) is chosen by the sprites of the original bow, the shaft being as chosen by the rules
-ROLL_FIT = [17, 18, 23, 24, 26, 27]                      # actions whose roll about the shaft is fitted to the sprites of the original bow (env UO_BOW_WP + UO_BOW_VD, recipe "orig"); the shaft is the calibrated one
-CALIBRATED = [7, 8, 17, 18, 23, 24, 26, 27, 28, 29]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
+ROLL_FIT = [17, 18, 23, 24, 25, 26, 27]                      # actions whose roll about the shaft is fitted to the sprites of the original bow (env UO_BOW_WP + UO_BOW_VD, recipe "orig"); the shaft is the calibrated one
+CALIBRATED = [7, 8, 17, 18, 23, 24, 25, 26, 27, 28, 29]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
 AWAY_FROM_HEAD = {21: 10.0, 22: 10.0}          # action -> degrees: once the body lies, the shaft is turned this much so that its end nearest to the head moves away from it (the falls: the bow lay on the face)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
 FREE_LEAN = 35.0                     # degrees of lean of the body (crouch, step) the bow does not follow
 UPRIGHT = [18]                       # with PARALLEL False: UO action numbers where the shaft is made vertical instead of the calibrated direction
 UP = (0.0, -0.12, 1.0)               # world axes at direction 0: Y is forward (-Y), Z up
-AIM = [17, 18, 19, 23, 24, 26, 27, 28]                       # actions where the bow is held out along the aim line: the string side faces the archer along the arm (fist -> shoulder), not the back of the chest
+AIM = [17, 18, 19, 23, 24, 25, 26, 27, 28]                       # actions where the bow is held out along the aim line: the string side faces the archer along the arm (fist -> shoulder), not the back of the chest
 FIST_SHIFT = 0.0                     # m along the shaft from the fingers' centre (+ = towards the tip) if the grip should sit higher / lower in the fist
 
 rig = bpy.data.objects["UO_Rig"]
@@ -188,7 +190,9 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
             q0 = Quaternion(r / ang_, ang_) if ang_ > 1e-9 else Quaternion()
             HC = W(pb.head) + Hw @ np.asarray(pp[3:], float) + Hw @ (np.array(q0.to_matrix()) @ o_h)    # where the original bow's handle is (the calibrated pose), not the fist
             views = [k for k in range(VW.n) if VW.key[k][0] == an and VW.key[k][2] == i]
-            ctx.append(make_cost(Hw, HC, AIM_SIDE[an], views) + (len(views),))
+            side0_ = (W(rig.pose.bones["upper_arm.L"].head) - HC) if an in SHOULDER_SIDE else AIM_SIDE[an]
+            side0_ = side0_ / np.linalg.norm(side0_)
+            ctx.append(make_cost(Hw, HC, side0_, views) + (len(views),))
         Cs = np.array([[c_[0](D) for D in SPH] for c_ in ctx])                                   # (frames, candidate shafts)
         DPc = Cs.copy(); back = np.zeros(Cs.shape, int)
         TR = np.array([[ang_between(A, B_) for B_ in SPH] for A in SPH]) * LAM_T                 # transition cost between two candidate shafts
@@ -255,6 +259,8 @@ def run_pass(dry):
             D = Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float)) if an in CALIBRATED else body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
             D = D / np.linalg.norm(D)
             F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
+            if an in ORIGINAL_POS:
+                F = HC_.copy()
             if an in AWAY_FROM_HEAD and lean > FREE_LEAN:
                 x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); x = x * x * (3 - 2 * x)
                 hv = W(rig.pose.bones["head"].head) - F
