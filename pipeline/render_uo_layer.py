@@ -101,6 +101,7 @@ DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original
 sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
+HOLDOUT_MARGIN = float(sc.get("uo_holdout_margin", HOLDOUT_MARGIN))                    # per item: how far in front of the item the body must be to hide it (> 0)
 TORSO_HIDE_MARGIN = float(sc.get("uo_torso_margin", TORSO_HIDE_MARGIN))             # per item: how far behind the torso a part must be to be hidden by it (uo_behind_torso items)
 FILTER_WIDTH = float(sc.get("uo_filter", FILTER_WIDTH)); ALPHA_MIN = float(sc.get("uo_alpha", ALPHA_MIN)); SAMPLES = int(sc.get("uo_samples", SAMPLES))
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))

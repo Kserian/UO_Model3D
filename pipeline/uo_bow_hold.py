@@ -16,20 +16,23 @@ PARALLEL = True                      # the shaft stays upright in every action (
 CLEAR_CONE = 90.0                    # degrees: in the CALIBRATED actions the shaft is tilted away from the calibrated direction (at most this much) until the bow stays out of the body and in front of it
 CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (beyond 12 cm from the fist)
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
-CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 23: 0.0, 24: 0.0, 25: 0.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
+CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 17: 40.0, 25: 0.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
 CONE_ACTIONS = list(CONE_BY)
-SHIFT_BY = {23: 0.18, 24: 0.18, 25: 0.18}   # action -> m: the bow may also be moved sideways away from the body (a seated rider's thigh is in the way of a hanging bow)
+CONE_FRAMES = {17: [3]}              # clearance only for these frames of the action (the others are fine as fitted)
+WALK_LEAN = {1: 12.0}                # action -> degrees: the bow hangs slanted in the hand, its top towards the body's midline, the bottom out, the string facing the body
+SMOOTH_FRAMES = {16: {3: (2, 4)}}    # action -> {frame: (a, b)}: the pose of that frame is the mean of the frames a and b (a frame whose clearance search leaned away)
+SHIFT_BY = {25: 0.18}   # action -> m: the bow may also be moved sideways away from the body (a seated rider's thigh is in the way of a hanging bow)
 IN_FRONT_ACTIONS = [7, 8]            # of these the bow must also stay ahead of the chest (held in front, not under the armpit)
 ROLL_ONLY = [15, 17, 27]             # actions whose roll about the shaft (one constant angle for the action) is chosen by the sprites of the original bow, the shaft being as chosen by the rules
-ROLL_FIT = [17, 18, 27]                      # actions whose roll about the shaft is fitted to the sprites of the original bow (env UO_BOW_WP + UO_BOW_VD, recipe "orig"); the shaft is the calibrated one
-CALIBRATED = [7, 8, 17, 18, 26, 27, 28, 29]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
+ROLL_FIT = [17, 18, 23, 24, 26, 27]                      # actions whose roll about the shaft is fitted to the sprites of the original bow (env UO_BOW_WP + UO_BOW_VD, recipe "orig"); the shaft is the calibrated one
+CALIBRATED = [7, 8, 17, 18, 23, 24, 26, 27, 28, 29]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
 AWAY_FROM_HEAD = {21: 10.0, 22: 10.0}          # action -> degrees: once the body lies, the shaft is turned this much so that its end nearest to the head moves away from it (the falls: the bow lay on the face)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
 FREE_LEAN = 35.0                     # degrees of lean of the body (crouch, step) the bow does not follow
 UPRIGHT = [18]                       # with PARALLEL False: UO action numbers where the shaft is made vertical instead of the calibrated direction
 UP = (0.0, -0.12, 1.0)               # world axes at direction 0: Y is forward (-Y), Z up
-AIM = [17, 18, 19, 27, 28]                       # actions where the bow is held out along the aim line: the string side faces the archer along the arm (fist -> shoulder), not the back of the chest
+AIM = [17, 18, 19, 23, 24, 26, 27, 28]                       # actions where the bow is held out along the aim line: the string side faces the archer along the arm (fist -> shoulder), not the back of the chest
 FIST_SHIFT = 0.0                     # m along the shaft from the fingers' centre (+ = towards the tip) if the grip should sit higher / lower in the fist
 
 rig = bpy.data.objects["UO_Rig"]
@@ -228,7 +231,7 @@ def run_pass(dry):
     global Cw
     for act in [a for a in bpy.data.actions if "uo_action" in a]:
         an = int(act["uo_action"])
-        if dry and an not in ROLL_ONLY:
+        if dry and an not in ROLL_ONLY and an not in SMOOTH_FRAMES:
             continue
         rig.animation_data.action = act; prev = None
         for i in range(int(act["uo_frames"])):
@@ -276,9 +279,19 @@ def run_pass(dry):
             to_body -= (to_body @ D) * D
             if np.linalg.norm(to_body) < 1e-3:
                 to_body = np.array([0.0, 1.0, 0.0])
+            if an in WALK_LEAN:                                                                     # carried at the side: slanted, top towards the body's midline, string towards the body
+                inw = W(rig.pose.bones["pelvis"].head) - F; inw[2] = 0.0; inw /= max(np.linalg.norm(inw), 1e-9)
+                a_ = np.radians(WALK_LEAN[an]); D = D * np.cos(a_) + inw * np.sin(a_); D /= np.linalg.norm(D)
+                to_body = inw - (inw @ D) * D; to_body /= np.linalg.norm(to_body)
             if (an, i) in ORI:                                                                      # shaft and string side fitted to the original bow sprites
                 D, to_body = ORI[(an, i)]
-            if an in CONE_ACTIONS:                                                                  # the least tilt from the calibrated direction at which the bow stays out of the posed body
+            smoothed_ = False
+            if an in SMOOTH_FRAMES and i in SMOOTH_FRAMES[an] and not dry and an in STATE and all(k_ in STATE[an] for k_ in SMOOTH_FRAMES[an][i]):
+                fa_, fb_ = SMOOTH_FRAMES[an][i]                                                     # the pose of a frame that leaned away: the mean of its neighbours
+                D = STATE[an][fa_][2] + STATE[an][fb_][2]; D /= np.linalg.norm(D)
+                to_body = STATE[an][fa_][3] + STATE[an][fb_][3]; to_body -= (to_body @ D) * D; to_body /= np.linalg.norm(to_body)
+                smoothed_ = True
+            if an in CONE_ACTIONS and not smoothed_ and (an not in CONE_FRAMES or i in CONE_FRAMES[an]):                                                                  # the least tilt from the calibrated direction at which the bow stays out of the posed body
                 D, to_body, sh_ = clear_of_body(D, Hw, F, lambda D_, T_: to_back_of(D_), CONE_BY[an], an in IN_FRONT_ACTIONS, an, i, SHIFT_BY.get(an, 0.0))
                 F = F + sh_
             if dry:
@@ -305,6 +318,8 @@ run_pass(True)                                                                  
 if STATE and "VW" in globals():
     PHI = np.radians(np.arange(0.0, 360.0, 30.0))
     for an, fr in STATE.items():
+        if an not in ROLL_ONLY:
+            continue
         tot = np.zeros(len(PHI))
         for i, (Hw_, HC_, D_, sd_) in fr.items():
             views = [k for k in range(VW.n) if VW.key[k][0] == an and VW.key[k][2] == i]
