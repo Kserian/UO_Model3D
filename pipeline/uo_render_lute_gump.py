@@ -13,6 +13,7 @@ Art: the lute lying on the ground, strings up, seen from above (the client draws
 (ART_RIM) around, the second art its mirror.
 Colours: those of the animation (the item's own texture in the UO look), edge pixels of the gump darkened by OUTLINE, 15-bit levels as the client stores them.
 The body gumps (for the fists) are read from BODY_GUMPS (docs/paperdoll/paperdoll_male_0xc.png / paperdoll_female_0xd.png: the client's gumps 12 / 13).
+--set CUT=False leaves the lute whole (nothing cut out under the fists).
 Writes gump_{male,female}_{1h,2h}.png, art.png, art_mirror.png and the mul entries *.bin (uo_gump_art.py).
 """
 import json, os, sys
@@ -35,6 +36,7 @@ HEADSTOCK_LEFT = True          # 2h: the headstock at the character's right hand
 LUTE_2H = 1.0                  # 2h: the lute's scale (the fists are 0.97 m apart)
 HOLD_CUT = (9, 9, 7)           # the window of a fist (x within +-9 px, y 9 above .. 7 below its middle): the lute is cut out where the body gump's fist lies in it
 HOLD_SHOW = {"male": 2, "female": 3}
+CUT = True                     # False = the lute whole, nothing cut out under the fists (to fit it by hand over the body gump)
 ART_PXM = 34.0
 ART_W = 44
 ART_RIM = 16.0
@@ -134,7 +136,7 @@ def main(src, out):
         P = about_y(V0 - np.array([cxy[0], cxy[1], GRIP_1H]), TILT_1H)
         gx, gy = FIST_1H[gender]
         img = tone(front(P, gx, gy))
-        n = cut_under(img, bm, [(gx, gy)], HOLD_SHOW[gender])
+        n = cut_under(img, bm, [(gx, gy)], HOLD_SHOW[gender]) if CUT else 0
         res[gender + "_1h"] = img
         print("LG %s 1h: fist (%.1f, %.1f), %d px cut under the fist" % (gender, gx, gy, n))
         # 2h: across the belly, the axis along the line from fist to fist, the middle of the lute at the middle of the two fists
@@ -144,7 +146,7 @@ def main(src, out):
         turn = 90.0 + ang if HEADSTOCK_LEFT else ang - 90.0
         P2 = about_y(Pc, turn)
         img2 = tone(front(P2, mid[0], mid[1]))
-        n2 = cut_under(img2, bm, [(lx, ly), (rx, ry)], HOLD_SHOW[gender])
+        n2 = cut_under(img2, bm, [(lx, ly), (rx, ry)], HOLD_SHOW[gender]) if CUT else 0
         res[gender + "_2h"] = img2
         print("LG %s 2h: fists (%.1f, %.1f) (%.1f, %.1f), line %.1f deg, %d px cut" % (gender, lx, ly, rx, ry, ang, n2))
     for name, img in res.items():
