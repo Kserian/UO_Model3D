@@ -1112,6 +1112,10 @@ def frame_job():
                     if os.path.exists(os.path.join(root, "STOP")):      # create an empty file named STOP to cancel
                         raise KeyboardInterrupt("STOP file found in " + root)
                     set_tile(a, i, d)
+                    for o_ in clothes:                               # the thread is drawn as a line (string_fill) in these actions: the mesh of the thread is off
+                        md_ = o_.modifiers.get("uo_nostring")
+                        if md_ is not None:
+                            md_.show_render = i in STRING_FILL.get(a, [])
                     sc.frame_set(1 + i * STEP)
                     if (BODY_GAP > 0 or HAS_CLOTH) and LAYER != "body":
                         body_fix(a, i)

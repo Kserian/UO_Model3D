@@ -466,6 +466,11 @@ if attr is not None:
             at_t.data[k_].value = -99.0
         for k_ in sv:
             at_t.data[k_].value = float(ts[k_])
+        gall = item.vertex_groups.get("uo_string_all") or item.vertex_groups.new(name="uo_string_all")      # the thread without the limbs: a Mask modifier (off) lets the renderer drop it where it draws the thread as a line (uo_string_fill)
+        gall.add([int(k_) for k_ in sv], 1.0, "REPLACE")
+        if "uo_nostring" not in item.modifiers:
+            md_ = item.modifiers.new("uo_nostring", "MASK"); md_.vertex_group = "uo_string_all"; md_.invert_vertex_group = True
+            md_.show_render = False; md_.show_viewport = False
         for i in sv:                                                                           # the string: the nock follows the hand fully, the ends follow the limb tips (FLEX)
             w = FLEX + (1.0 - FLEX) * float(max(0.0, 1.0 - abs(ts[i] - tm) / half) ** 1.5)
             gp.add([i], w, "REPLACE"); gb.add([i], 1.0 - w, "REPLACE")
