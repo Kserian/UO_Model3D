@@ -18,3 +18,4 @@ Each pose was picked by `pipeline/item_collision.py` (share of the lute inside t
 
 Arms on top of the lute (04, 05, 06, 22, 24, 25): render with `HAND_OVER=0.3 HAND_OVER_GROW=1 "HAND_OVER_PARTS=('hand','forearm','upper_arm')"`.
 Render settings: `OWN_PARTS_NEVER_HIDE=False TORSO_HIDE_MARGIN=0.005 HOLDOUT_MARGIN=0.003` (recipe `weapon.occlude`).
+Mounted actions (23-25): render with `HORSE_HOLDOUT=False`. With the holdout the horse (its head / neck in front of the rider's belly) cut the neck of the lute and the top of the bowl out of the layer; the rider is drawn over the mount, so the lute is not hidden by it. 25 also `HAND_OVER=0.3 HAND_OVER_GROW=2 HAND_OVER_SIDE='.R'`.
