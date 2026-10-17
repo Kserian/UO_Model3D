@@ -185,6 +185,17 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
     for an in ROLL_FIT:
         act = [a for a in bpy.data.actions if a.get("uo_action") == an][0]; rig.animation_data.action = act
         nfr = int(act["uo_frames"]); ctx = []
+        sh_const = None
+        if an in SHOULDER_SIDE:                                                                  # ONE string side for the whole action (a per-frame side made the bow turn about its axis)
+            acc_ = np.zeros(3)
+            for i in range(nfr):
+                sc.frame_set(1 + 3 * i); pb.rotation_quaternion = Quaternion(); pb.location = (0, 0, 0); bpy.context.view_layer.update()
+                Hw = M @ np.array(rig.pose.bones[WM["parent"]].matrix.to_3x3()); Hw = Hw / np.linalg.norm(Hw, axis=0)
+                pp = WM["poses"]["%d,%d" % (an, i)]; r = Vector(pp[:3]); ang_ = r.length
+                q0 = Quaternion(r / ang_, ang_) if ang_ > 1e-9 else Quaternion()
+                HCt = W(pb.head) + Hw @ np.asarray(pp[3:], float) + Hw @ (np.array(q0.to_matrix()) @ o_h)
+                v_ = W(rig.pose.bones["upper_arm.L"].head) - HCt; acc_ += v_ / np.linalg.norm(v_)
+            sh_const = acc_ / np.linalg.norm(acc_)
         for i in range(nfr):
             sc.frame_set(1 + 3 * i); pb.rotation_quaternion = Quaternion(); pb.location = (0, 0, 0); bpy.context.view_layer.update()
             Hw = M @ np.array(rig.pose.bones[WM["parent"]].matrix.to_3x3()); Hw = Hw / np.linalg.norm(Hw, axis=0)
@@ -192,7 +203,7 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
             q0 = Quaternion(r / ang_, ang_) if ang_ > 1e-9 else Quaternion()
             HC = W(pb.head) + Hw @ np.asarray(pp[3:], float) + Hw @ (np.array(q0.to_matrix()) @ o_h)    # where the original bow's handle is (the calibrated pose), not the fist
             views = [k for k in range(VW.n) if VW.key[k][0] == an and VW.key[k][2] == i]
-            side0_ = (W(rig.pose.bones["upper_arm.L"].head) - HC) if an in SHOULDER_SIDE else AIM_SIDE[an]
+            side0_ = sh_const if an in SHOULDER_SIDE else AIM_SIDE[an]
             side0_ = side0_ / np.linalg.norm(side0_)
             ctx.append(make_cost(Hw, HC, side0_, views) + (len(views),))
         Cs = np.array([[c_[0](D) for D in SPH] for c_ in ctx])                                   # (frames, candidate shafts)
@@ -355,6 +366,32 @@ if STATE and "VW" in globals():
 for an_r, fr_r in [(k_, v_) for k_, v_ in RELD.items() if k_ in REL_POS]:                                                               # one offset of the handle from the pelvis for the whole action
     REL_OFF[an_r] = np.mean([Rp.T @ (hc_ - pp_) for Rp, pp_, hc_ in fr_r.values()], 0)
     print("uo_bow_hold: action %d: handle %.1f cm from the pelvis (fixed), original positions scatter %.1f cm" % (an_r, 100 * np.linalg.norm(REL_OFF[an_r]), 100 * np.mean([np.linalg.norm(Rp.T @ (hc_ - pp_) - REL_OFF[an_r]) for Rp, pp_, hc_ in fr_r.values()])))
+
+    if "VW" in globals() and an_r in STATE:                                                      # the offset itself is fitted to the sprites of the original bow (chamfer over the frames and 5 directions)
+        def off_cost(off):
+            tot = 0.0
+            for i_, (Hw_, HC__, D_, sd_) in STATE[an_r].items():
+                Rp, pp_, _ = RELD[an_r][i_]
+                Qc = frame(Hw_.T @ D_, Hw_.T @ sd_) @ u_src.T
+                pos = (pp_ + Rp @ off) + (Hw_ @ Qc @ off_h * s_orig).T; pos1 = np.c_[pos, np.ones(len(pos))]
+                for k in [k_ for k_ in range(VW.n) if VW.key[k_][0] == an_r and VW.key[k_][2] == i_]:
+                    pix = (pos1 @ RR[int(VW.key[k][1])].T) @ VW.PX[k, :2].T
+                    xi = np.clip(pix[:, 0].astype(int), 0, VW.W - 1); yi = np.clip(pix[:, 1].astype(int), 0, VW.H - 1)
+                    d1 = np.minimum(VW.DT[k][yi, xi], 15.0).mean(); op = VW.pts[k, :VW.npts[k]]
+                    d2 = np.minimum(np.sqrt(((op[:, None, :] - pix[None, :, :]) ** 2).sum(-1)).min(1), 15.0).mean()
+                    tot += 0.5 * (d1 + d2)
+            return tot
+        base_ = REL_OFF[an_r].copy(); c0_ = off_cost(base_); best_ = (c0_, base_)
+        for step_, rng_ in ((0.04, 4), (0.015, 2)):
+            ctr_ = best_[1].copy()
+            for dx_ in range(-rng_, rng_ + 1):
+                for dy_ in range(-rng_, rng_ + 1):
+                    for dz_ in range(-rng_, rng_ + 1):
+                        cand_ = ctr_ + step_ * np.array([dx_, dy_, dz_]); c_ = off_cost(cand_)
+                        if c_ < best_[0]:
+                            best_ = (c_, cand_)
+        print("uo_bow_hold: action %d: handle offset fitted to the original sprites: chamfer %.1f -> %.1f px, moved %.1f cm" % (an_r, c0_, best_[0], 100 * np.linalg.norm(best_[1] - base_)))
+        REL_OFF[an_r] = best_[1]
 run_pass(False)
 n = n_[0]
 print("uo_bow_hold: %d poses re-keyed" % n)
