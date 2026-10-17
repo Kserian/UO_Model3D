@@ -45,7 +45,7 @@ def main():
     rig.data.pose_position = "POSE"
     for a in [int(x[:2]) for x in actions.split(",")]:
         act = acts[a]; rig.animation_data.action = act
-        per, deep, outs, gaps = [], 0.0, [], []
+        per, deep, outs, gaps, hd = [], 0.0, [], [], []
         for i in range(0, int(act["uo_frames"]), step):
             sc.frame_set(1 + i * STEP_SCENE); rig.update_tag(); bpy.context.view_layer.update()
             dg = bpy.context.evaluated_depsgraph_get()
@@ -59,6 +59,8 @@ def main():
                 boxc = but + (tip - but) * 0.24; pel = rig.matrix_world @ rig.pose.bones["pelvis"].head
                 sdir = Vector((palms[0].x - pel.x, palms[0].y - pel.y, 0)).normalized()
                 outs.append(100 * (Vector((boxc.x - palms[0].x, boxc.y - palms[0].y, 0))).dot(sdir))
+                a0, a1 = but + (tip - but) * 0.3, but + (tip - but) * 0.9; d = a1 - a0                  # the neck segment; how far the gripping palm is from it
+                hd.append(100 * (palms[0] - (a0 + d * max(0.0, min(1.0, (palms[0] - a0).dot(d) / d.dot(d))))).length)
             for o in items:
                 eo = o.evaluated_get(dg); mo = eo.to_mesh(); Mo = eo.matrix_world
                 n = len(mo.vertices)

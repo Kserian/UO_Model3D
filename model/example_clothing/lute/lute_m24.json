@@ -21,7 +21,9 @@
     0.058
    ],
    "action": "25_mounted_stand",
-   "elev": 0.0
+   "elev": 0.0,
+   "follow": "pelvis",
+   "bind": "belly"
   },
   "occlude": true
  }
