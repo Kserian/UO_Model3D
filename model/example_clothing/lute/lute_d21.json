@@ -8,13 +8,13 @@
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.6,
+   "grip": 0.86,
    "action": "21_die_forward",
    "frame": 16,
    "axis": [
-    -0.4134,
-    0.8865,
-    0.2079
+    0.4226,
+    -0.9063,
+    0.0
    ],
    "front": [
     0,
