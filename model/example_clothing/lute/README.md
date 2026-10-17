@@ -5,7 +5,7 @@ Each pose was picked by `pipeline/item_collision.py` (share of the lute inside t
 | item | actions | pose |
 |---|---|---|
 | carry | 00-03 | horizontal beside the body, headstock forward, strings out, the neck through the palm, 5 cm out, rigid on hand.R |
-| stand | 04 | across the belly, palms of both hands on the neck, 18 deg up; render with `HAND_OVER=0.12 HAND_OVER_GROW=1` (the hands on top of the neck, the arms do not cut the headstock) |
+| stand | 04 | across the belly, palms of both hands on the neck, 18 deg up; render with `HAND_OVER=0.12 HAND_OVER_GROW=1` (the hands on top of the neck; fidgets 05, 06 also `HAND_OVER_SIDE='.R'`: only the right hand, the left one beside the headstock cut it) |
 | fid1, fid2 | 05, 06 | the same, 1 / 2 px higher, bound to the pelvis (the arms swing, the lute stays) |
 | eat | 34 | like fid1 (the lute stays at the belly while the hand goes to the mouth) |
 | m23, m24, m25 | 23, 24, 25 | mounted: like stand, 23/24 closer to the torso and towards the left hand, 24 pitched 8 deg down, 25 higher and towards the right hand |

@@ -72,6 +72,7 @@ OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs it
 HAND_OVER = 0.0                    # m: > 0 = a hand hides the item even where it is up to this much BEHIND the item (a hand that grips an instrument held a few cm in front of it: the fingers
                                    # close over the neck); 0 = a hand hides only what is behind it. Per render run, for the actions where a grip is drawn
 HAND_OVER_PARTS = ("hand",)       # the body parts HAND_OVER uses: ("hand", "forearm", "upper_arm") = the whole arm on top of the item
+HAND_OVER_SIDE = None              # ".R" / ".L": only that side's arm hides the item with HAND_OVER (a lute gripped by the right hand, the left hand beside the headstock must not cut it)
 HAND_OVER_GROW = 0                 # px: the area hidden by HAND_OVER is grown by this much (the 3D hand is a pixel smaller than the sprite's; the item then covers a bit of the sprite hand)
 TORSO_HIDE_MARGIN = 0.12           # m: the torso (pelvis, spine, chest, neck, clavicle) hides an item only where the item is at least this much behind it.
                                    # Only when a visible item carries the custom property `uo_behind_torso` (a sword, quiver or cape hanging on the back: from the
@@ -684,11 +685,14 @@ def CONFORM_TRIS():
     return CLOTH_CTX["conform"]
 
 
-def body_part_mask(parts):
+def body_part_mask(parts, side=None):
     """body triangles (loop_triangles order) whose dominant bone is one of `parts` (names without .L / .R)"""
     me = body.data
-    names = [g.name.split(".")[0] for g in body.vertex_groups]
+    full = [g.name for g in body.vertex_groups]
+    names = [g.split(".")[0] for g in full]
     names = ["hand" if n.startswith("finger") else n for n in names]
+    if side:                                         # only the groups of that side (".R" / ".L"): the others get a name no part list contains
+        names = [n if g.endswith(side) else "-" for n, g in zip(names, full)]
     W = np.zeros((len(me.vertices), len(names)))
     for v in me.vertices:
         for g in v.groups:
@@ -730,7 +734,7 @@ OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP 
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
 HANDHEAD_TRIS = body_part_mask({"hand", "head"})                # HIDE_ERODE shrinks what these hide (a hand only next to its sleeve)
 HEAD_TRIS = body_part_mask({"head"})
-HAND_OVER_TRIS = body_part_mask(set(HAND_OVER_PARTS)) if HAND_OVER > 0 else None
+HAND_OVER_TRIS = body_part_mask(set(HAND_OVER_PARTS), HAND_OVER_SIDE) if HAND_OVER > 0 else None
 BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and any(o.get("uo_behind_torso") for o in clothes if not o.hide_render)
 TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if BEHIND_TORSO else None
 print("render_uo_layer: items wrap %s; body parts that may hide them: %s" % (sorted(WORN), sorted(set(OCCLUDERS) - WORN)))
