@@ -20,7 +20,8 @@
     -0.06,
     0.0
    ],
-   "action": "04_stand"
+   "action": "04_stand",
+   "elev": 18.0
   }
  }
 }

@@ -4,6 +4,7 @@
 #   AXIS   world direction of the headstock (butt -> tip) in the pose; FRONT world direction the strings face (made perpendicular to AXIS); GRIP m from the butt where the hand holds the neck
 #   BONE2  a second hand (hand.L): the instrument is then laid along the line between the two palms (AXIS is ignored), hand.R holding it at GRIP and hand.L at GRIP + the distance of the palms (both hands on the instrument);
 #          the rest of the instrument is centred on the middle between the palms
+#   ELEV   degrees above the horizontal of the axis (None = as it comes from AXIS / the palms): the headstock is raised or lowered, the direction seen from above is kept
 #   SHIFT  m, extra shift of the grip point in world axes (from the middle of the palm); ROLL degrees, turn of the instrument about its own axis (strings towards FRONT = 0)
 import bpy, math
 import numpy as np
@@ -18,6 +19,7 @@ GRIP = 0.52
 SHIFT = [0.0, 0.0, 0.0]
 ROLL = 0.0
 BONE2 = None
+ELEV = None
 PALM = 0.4                                  # share of the hand bone from the wrist to the middle of the palm
 
 rig = bpy.data.objects["UO_Rig"]
@@ -44,6 +46,9 @@ if BONE2:                                                                   # bo
     print("uo_place_carry: palms %.2f m apart, grips at %.2f and %.2f m" % (span, GRIP, GRIP + span))
 
 a = Vector(AXIS).normalized()
+if ELEV is not None:
+    h = Vector((a.x, a.y, 0)).normalized()
+    a = (h * math.cos(math.radians(ELEV)) + Vector((0, 0, math.sin(math.radians(ELEV))))).normalized()
 f = Vector(FRONT); f = (f - f.dot(a) * a).normalized()
 f = Matrix.Rotation(math.radians(ROLL), 3, a) @ f
 x = (-f).cross(a).normalized()                                              # model +X in the pose: +Y (back) = -f, X = Y x Z

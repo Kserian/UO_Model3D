@@ -20,7 +20,8 @@
     -0.06,
     0.0
    ],
-   "action": "25_mounted_stand"
+   "action": "25_mounted_stand",
+   "elev": 18.0
   }
  }
 }
