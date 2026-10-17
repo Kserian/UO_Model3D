@@ -10,6 +10,7 @@
 #   OUT    degrees: the headstock is tilted towards the body, the bowl swings out (away from the body, world -X: the right hand's side); VERT 0..1: the axis is blended towards vertical
 #   LIE    True = the axis is the long axis of the body (pelvis -> head) in the pose, strings up: the instrument lies beside a body on the ground (deaths); SHIFT puts it beside the body
 #   SIDE   m (with LIE): the grip point is pushed this far away from the body's long axis, to the side of the hand (the instrument lies beside the body, not under it)
+#   BOXTO  0..1 (with LIE): the bowl is turned this far (share of the way) from lying along the body towards the other hand (hand.L): the bowl nearer the body, towards the left hand
 #   SHIFT  m, extra shift of the grip point in world axes (from the middle of the palm); ROLL degrees, turn of the instrument about its own axis (strings towards FRONT = 0)
 import bpy, math, json
 import numpy as np
@@ -30,6 +31,7 @@ OUT = 0.0
 VERT = 0.0
 LIE = False
 SIDE = 0.0
+BOXTO = 0.0
 ELEV = None
 PALM = 0.4                                  # share of the hand bone from the wrist to the middle of the palm
 
@@ -44,6 +46,7 @@ rig.animation_data_create(); rig.animation_data.action = bpy.data.actions[ACTION
 bpy.context.scene.frame_set(FRAME); bpy.context.view_layer.update()
 Pp = rig.matrix_world @ rig.pose.bones[BONE].matrix                         # the same bone in the pose
 Pf = rig.matrix_world @ rig.pose.bones[FOLLOW or BONE].matrix               # the bound bone in the pose
+palmL_pos = rig.matrix_world @ rig.pose.bones["hand.L"].head
 pelvis_pos = rig.matrix_world @ rig.pose.bones["pelvis"].head
 body_axis = rig.matrix_world.to_3x3() @ (rig.pose.bones["head"].head - rig.pose.bones["pelvis"].head)   # pelvis -> head in the pose
 rig.animation_data.action = saved[1]; rig.data.pose_position = saved[0]; bpy.context.view_layer.update()
@@ -70,6 +73,9 @@ if LIE:
         ba = body_axis.normalized(); v = G - pelvis_pos; v = v - v.dot(ba) * ba
         G = G + v.normalized() * SIDE
 a = Vector(AXIS).normalized()
+if LIE and BOXTO:
+    t = (palmL_pos - G); t = t - t.dot(a) * a                     # towards the left hand, perpendicular to the axis
+    a = (-a * (1 - BOXTO) + t.normalized() * BOXTO).normalized() * -1   # the bowl end (-a) swings that way
 if OUT:
     o = Vector((-1, 0, 0)); op = (o - o.dot(a) * a).normalized()
     a = (a * math.cos(math.radians(OUT)) - op * math.sin(math.radians(OUT))).normalized()

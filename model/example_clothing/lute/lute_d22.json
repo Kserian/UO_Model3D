@@ -17,7 +17,8 @@
     0,
     1
    ],
-   "side": 0.1
+   "side": 0.1,
+   "boxto": 0.3
   },
   "occlude": true
  }
