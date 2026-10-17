@@ -19,3 +19,9 @@ Each pose was picked by `pipeline/item_collision.py` (share of the lute inside t
 Arms on top of the lute (04, 05, 06, 22, 24, 25): render with `HAND_OVER=0.3 HAND_OVER_GROW=1 "HAND_OVER_PARTS=('hand','forearm','upper_arm')"`.
 Render settings: `OWN_PARTS_NEVER_HIDE=False TORSO_HIDE_MARGIN=0.005 HOLDOUT_MARGIN=0.003` (recipe `weapon.occlude`).
 Mounted actions (23-25): render with `HORSE_HOLDOUT=False`. With the holdout the horse (its head / neck in front of the rider's belly) cut the neck of the lute and the top of the bowl out of the layer; the rider is drawn over the mount, so the lute is not hidden by it. 25 also `HAND_OVER=0.3 HAND_OVER_GROW=2 HAND_OVER_SIDE='.R'`.
+
+Files in this folder:
+- `Lute_poses.blend` (bpy 4.2): the body, the rig and every pose as an object `Lute_<item>` (the table above; `Lute_carry` is in the collection Clothing, the others in the collection `Lute_poses`, which is not rendered). Custom properties `uo_actions` and `uo_render_flags` say for which actions and with which extra render settings. `python pipeline/lute_select_pose.py Lute_poses.blend Lute_stand OUT.blend` moves one pose into Clothing.
+- `render_lute.sh OUT_DIR`: the whole render, pose by pose (about 15 minutes), into one `OUT_DIR/clothing.vd`.
+- `frames/`: the rendered PNG frames and `meta.json` of `Lute_layer.vd` (vdtool layout; `python vdtool/vdtool.py pack frames out.vd` packs them again).
+- `Lute_layer.vd`: the result. The source model is `models/lute.glb` (Meshy, from the user); `lute_*.json`: the item recipes.

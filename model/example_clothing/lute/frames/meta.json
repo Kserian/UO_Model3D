@@ -1,0 +1,4391 @@
+{
+ "tool": "render_uo_layer",
+ "anim_type": 2,
+ "actions": 35,
+ "mode": "canvas",
+ "canvas": [
+  256,
+  256
+ ],
+ "anchor": [
+  128,
+  192
+ ],
+ "blocks": [
+  {
+   "action": 0,
+   "dir": 0,
+   "name": "00_walk_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 0,
+   "dir": 1,
+   "name": "00_walk_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 0,
+   "dir": 2,
+   "name": "00_walk_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 0,
+   "dir": 3,
+   "name": "00_walk_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 0,
+   "dir": 4,
+   "name": "00_walk_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 1,
+   "dir": 0,
+   "name": "01_walk_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 1,
+   "dir": 1,
+   "name": "01_walk_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 1,
+   "dir": 2,
+   "name": "01_walk_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 1,
+   "dir": 3,
+   "name": "01_walk_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 1,
+   "dir": 4,
+   "name": "01_walk_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 2,
+   "dir": 0,
+   "name": "02_run_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 2,
+   "dir": 1,
+   "name": "02_run_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 2,
+   "dir": 2,
+   "name": "02_run_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 2,
+   "dir": 3,
+   "name": "02_run_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 2,
+   "dir": 4,
+   "name": "02_run_unarmed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 3,
+   "dir": 0,
+   "name": "03_run_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 3,
+   "dir": 1,
+   "name": "03_run_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 3,
+   "dir": 2,
+   "name": "03_run_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 3,
+   "dir": 3,
+   "name": "03_run_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 3,
+   "dir": 4,
+   "name": "03_run_armed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 4,
+   "dir": 0,
+   "name": "04_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 4,
+   "dir": 1,
+   "name": "04_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 4,
+   "dir": 2,
+   "name": "04_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 4,
+   "dir": 3,
+   "name": "04_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 4,
+   "dir": 4,
+   "name": "04_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 5,
+   "dir": 0,
+   "name": "05_fidget_1",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 5,
+   "dir": 1,
+   "name": "05_fidget_1",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 5,
+   "dir": 2,
+   "name": "05_fidget_1",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 5,
+   "dir": 3,
+   "name": "05_fidget_1",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 5,
+   "dir": 4,
+   "name": "05_fidget_1",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 6,
+   "dir": 0,
+   "name": "06_fidget_2",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 6,
+   "dir": 1,
+   "name": "06_fidget_2",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 6,
+   "dir": 2,
+   "name": "06_fidget_2",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 6,
+   "dir": 3,
+   "name": "06_fidget_2",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 6,
+   "dir": 4,
+   "name": "06_fidget_2",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 7,
+   "dir": 0,
+   "name": "07_combat_idle_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 7,
+   "dir": 1,
+   "name": "07_combat_idle_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 7,
+   "dir": 2,
+   "name": "07_combat_idle_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 7,
+   "dir": 3,
+   "name": "07_combat_idle_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 7,
+   "dir": 4,
+   "name": "07_combat_idle_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 8,
+   "dir": 0,
+   "name": "08_combat_idle_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 8,
+   "dir": 1,
+   "name": "08_combat_idle_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 8,
+   "dir": 2,
+   "name": "08_combat_idle_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 8,
+   "dir": 3,
+   "name": "08_combat_idle_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 8,
+   "dir": 4,
+   "name": "08_combat_idle_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 9,
+   "dir": 0,
+   "name": "09_attack_1h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 9,
+   "dir": 1,
+   "name": "09_attack_1h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 9,
+   "dir": 2,
+   "name": "09_attack_1h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 9,
+   "dir": 3,
+   "name": "09_attack_1h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 9,
+   "dir": 4,
+   "name": "09_attack_1h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 10,
+   "dir": 0,
+   "name": "10_attack_1h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 10,
+   "dir": 1,
+   "name": "10_attack_1h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 10,
+   "dir": 2,
+   "name": "10_attack_1h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 10,
+   "dir": 3,
+   "name": "10_attack_1h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 10,
+   "dir": 4,
+   "name": "10_attack_1h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 11,
+   "dir": 0,
+   "name": "11_attack_1h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 11,
+   "dir": 1,
+   "name": "11_attack_1h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 11,
+   "dir": 2,
+   "name": "11_attack_1h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 11,
+   "dir": 3,
+   "name": "11_attack_1h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 11,
+   "dir": 4,
+   "name": "11_attack_1h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 12,
+   "dir": 0,
+   "name": "12_attack_2h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 12,
+   "dir": 1,
+   "name": "12_attack_2h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 12,
+   "dir": 2,
+   "name": "12_attack_2h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 12,
+   "dir": 3,
+   "name": "12_attack_2h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 12,
+   "dir": 4,
+   "name": "12_attack_2h_bash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 13,
+   "dir": 0,
+   "name": "13_attack_2h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 13,
+   "dir": 1,
+   "name": "13_attack_2h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 13,
+   "dir": 2,
+   "name": "13_attack_2h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 13,
+   "dir": 3,
+   "name": "13_attack_2h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 13,
+   "dir": 4,
+   "name": "13_attack_2h_slash",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 14,
+   "dir": 0,
+   "name": "14_attack_2h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 14,
+   "dir": 1,
+   "name": "14_attack_2h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 14,
+   "dir": 2,
+   "name": "14_attack_2h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 14,
+   "dir": 3,
+   "name": "14_attack_2h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 14,
+   "dir": 4,
+   "name": "14_attack_2h_pierce",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 15,
+   "dir": 0,
+   "name": "15_combat_advance",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 15,
+   "dir": 1,
+   "name": "15_combat_advance",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 15,
+   "dir": 2,
+   "name": "15_combat_advance",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 15,
+   "dir": 3,
+   "name": "15_combat_advance",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 15,
+   "dir": 4,
+   "name": "15_combat_advance",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    },
+    {
+     "file": "07.png"
+    },
+    {
+     "file": "08.png"
+    },
+    {
+     "file": "09.png"
+    }
+   ]
+  },
+  {
+   "action": 16,
+   "dir": 0,
+   "name": "16_spell_directed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 16,
+   "dir": 1,
+   "name": "16_spell_directed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 16,
+   "dir": 2,
+   "name": "16_spell_directed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 16,
+   "dir": 3,
+   "name": "16_spell_directed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 16,
+   "dir": 4,
+   "name": "16_spell_directed",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 17,
+   "dir": 0,
+   "name": "17_spell_area",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 17,
+   "dir": 1,
+   "name": "17_spell_area",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 17,
+   "dir": 2,
+   "name": "17_spell_area",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 17,
+   "dir": 3,
+   "name": "17_spell_area",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 17,
+   "dir": 4,
+   "name": "17_spell_area",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 18,
+   "dir": 0,
+   "name": "18_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 18,
+   "dir": 1,
+   "name": "18_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 18,
+   "dir": 2,
+   "name": "18_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 18,
+   "dir": 3,
+   "name": "18_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 18,
+   "dir": 4,
+   "name": "18_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 19,
+   "dir": 0,
+   "name": "19_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 19,
+   "dir": 1,
+   "name": "19_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 19,
+   "dir": 2,
+   "name": "19_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 19,
+   "dir": 3,
+   "name": "19_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 19,
+   "dir": 4,
+   "name": "19_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 20,
+   "dir": 0,
+   "name": "20_get_hit",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 20,
+   "dir": 1,
+   "name": "20_get_hit",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 20,
+   "dir": 2,
+   "name": "20_get_hit",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 20,
+   "dir": 3,
+   "name": "20_get_hit",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 20,
+   "dir": 4,
+   "name": "20_get_hit",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 21,
+   "dir": 0,
+   "name": "21_die_forward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 21,
+   "dir": 1,
+   "name": "21_die_forward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 21,
+   "dir": 2,
+   "name": "21_die_forward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 21,
+   "dir": 3,
+   "name": "21_die_forward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 21,
+   "dir": 4,
+   "name": "21_die_forward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 22,
+   "dir": 0,
+   "name": "22_die_backward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 22,
+   "dir": 1,
+   "name": "22_die_backward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 22,
+   "dir": 2,
+   "name": "22_die_backward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 22,
+   "dir": 3,
+   "name": "22_die_backward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 22,
+   "dir": 4,
+   "name": "22_die_backward",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    }
+   ]
+  },
+  {
+   "action": 23,
+   "dir": 0,
+   "name": "23_mounted_walk",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 23,
+   "dir": 1,
+   "name": "23_mounted_walk",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 23,
+   "dir": 2,
+   "name": "23_mounted_walk",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 23,
+   "dir": 3,
+   "name": "23_mounted_walk",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 23,
+   "dir": 4,
+   "name": "23_mounted_walk",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 24,
+   "dir": 0,
+   "name": "24_mounted_run",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 24,
+   "dir": 1,
+   "name": "24_mounted_run",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 24,
+   "dir": 2,
+   "name": "24_mounted_run",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 24,
+   "dir": 3,
+   "name": "24_mounted_run",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 24,
+   "dir": 4,
+   "name": "24_mounted_run",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 25,
+   "dir": 0,
+   "name": "25_mounted_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 25,
+   "dir": 1,
+   "name": "25_mounted_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 25,
+   "dir": 2,
+   "name": "25_mounted_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 25,
+   "dir": 3,
+   "name": "25_mounted_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 25,
+   "dir": 4,
+   "name": "25_mounted_stand",
+   "frames": [
+    {
+     "file": "00.png"
+    }
+   ]
+  },
+  {
+   "action": 26,
+   "dir": 0,
+   "name": "26_mounted_attack_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 26,
+   "dir": 1,
+   "name": "26_mounted_attack_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 26,
+   "dir": 2,
+   "name": "26_mounted_attack_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 26,
+   "dir": 3,
+   "name": "26_mounted_attack_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 26,
+   "dir": 4,
+   "name": "26_mounted_attack_1h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 27,
+   "dir": 0,
+   "name": "27_mounted_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 27,
+   "dir": 1,
+   "name": "27_mounted_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 27,
+   "dir": 2,
+   "name": "27_mounted_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 27,
+   "dir": 3,
+   "name": "27_mounted_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 27,
+   "dir": 4,
+   "name": "27_mounted_attack_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 28,
+   "dir": 0,
+   "name": "28_mounted_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 28,
+   "dir": 1,
+   "name": "28_mounted_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 28,
+   "dir": 2,
+   "name": "28_mounted_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 28,
+   "dir": 3,
+   "name": "28_mounted_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 28,
+   "dir": 4,
+   "name": "28_mounted_attack_crossbow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 29,
+   "dir": 0,
+   "name": "29_mounted_attack_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 29,
+   "dir": 1,
+   "name": "29_mounted_attack_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 29,
+   "dir": 2,
+   "name": "29_mounted_attack_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 29,
+   "dir": 3,
+   "name": "29_mounted_attack_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 29,
+   "dir": 4,
+   "name": "29_mounted_attack_2h",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 30,
+   "dir": 0,
+   "name": "30_block",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 30,
+   "dir": 1,
+   "name": "30_block",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 30,
+   "dir": 2,
+   "name": "30_block",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 30,
+   "dir": 3,
+   "name": "30_block",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 30,
+   "dir": 4,
+   "name": "30_block",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 31,
+   "dir": 0,
+   "name": "31_punch",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 31,
+   "dir": 1,
+   "name": "31_punch",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 31,
+   "dir": 2,
+   "name": "31_punch",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 31,
+   "dir": 3,
+   "name": "31_punch",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 31,
+   "dir": 4,
+   "name": "31_punch",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    },
+    {
+     "file": "05.png"
+    },
+    {
+     "file": "06.png"
+    }
+   ]
+  },
+  {
+   "action": 32,
+   "dir": 0,
+   "name": "32_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 32,
+   "dir": 1,
+   "name": "32_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 32,
+   "dir": 2,
+   "name": "32_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 32,
+   "dir": 3,
+   "name": "32_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 32,
+   "dir": 4,
+   "name": "32_bow",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 33,
+   "dir": 0,
+   "name": "33_salute",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 33,
+   "dir": 1,
+   "name": "33_salute",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 33,
+   "dir": 2,
+   "name": "33_salute",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 33,
+   "dir": 3,
+   "name": "33_salute",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 33,
+   "dir": 4,
+   "name": "33_salute",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 34,
+   "dir": 0,
+   "name": "34_eat",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 34,
+   "dir": 1,
+   "name": "34_eat",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 34,
+   "dir": 2,
+   "name": "34_eat",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 34,
+   "dir": 3,
+   "name": "34_eat",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  },
+  {
+   "action": 34,
+   "dir": 4,
+   "name": "34_eat",
+   "frames": [
+    {
+     "file": "00.png"
+    },
+    {
+     "file": "01.png"
+    },
+    {
+     "file": "02.png"
+    },
+    {
+     "file": "03.png"
+    },
+    {
+     "file": "04.png"
+    }
+   ]
+  }
+ ]
+}
