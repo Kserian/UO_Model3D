@@ -8,13 +8,14 @@ Meshes (index = order of `uo_make_item.py --list`):
 | meshes | what | in the recipe |
 |---|---|---|
 | 0 | mannequin shirt (reference, fitted to the body) | `reference` |
-| 1-6, 7, 2-4, 8-10, 14-16 | shoulder strap, side loop, ring, buckles, rivets | `straps` (harness) |
-| 17, 21-25 | sword scabbard, binding bands, tip | `sheath` (rigid, `thicken` 5 cm) |
-| 18, 19 | sword grip and horn pommel | `hilt` (rigid, `thicken` 4.5 cm) |
+| 1, 5, 6 | shoulder strap, side loop | `straps` (harness, `widen` 7 cm: the straps are ~3 cm = 1 px in the render) |
+| 2-4, 7-10, 14-16 | ring, buckles, rivets | `hardware` (harness) |
+| 17, 21-25 | sword scabbard, binding bands, tip | `sheath` (rigid, `thicken` 8.5 cm) |
+| 18, 19 | sword grip and horn pommel | `hilt` (rigid, `thicken` 7 cm) |
 | 20, 26, 27 | scabbard throat clasp, ties | `fittings` (rigid) |
 | 28-31 | knife on the back (grip, horn pommel, sheath) | removed |
 | 32-40 | knife on the chest (sheath and its small parts) | removed |
 | 11-13 | cloth wraps tying the back knife to the scabbard | removed |
 
-Result on the body (stand, attack): `item_qa` mean inside body 1.7%, deepest 57 mm (the scabbard on the back; the render pushes it out), stand-off p90 24 cm (the sword itself).
+Result on the body (stand, attack): `item_qa` mean inside body 1.7%, deepest 62 mm (the scabbard on the back; the render pushes it out), stand-off p90 24 cm (the sword itself).
 Seen edge-on the scabbard is a narrow line (flat model, 36 px/m).

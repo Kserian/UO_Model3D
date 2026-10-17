@@ -12,11 +12,20 @@
    "name": "straps",
    "keep": [
     "=defaultMaterial.001",
+    "=defaultMaterial.005",
+    "=defaultMaterial.006"
+   ],
+   "kind": "harness",
+   "widen": {
+    "width": 0.07
+   }
+  },
+  {
+   "name": "hardware",
+   "keep": [
     "=defaultMaterial.002",
     "=defaultMaterial.003",
     "=defaultMaterial.004",
-    "=defaultMaterial.005",
-    "=defaultMaterial.006",
     "=defaultMaterial.007",
     "=defaultMaterial.008",
     "=defaultMaterial.009",
@@ -39,7 +48,7 @@
    ],
    "rigid": "quiver",
    "thicken": {
-    "width": 0.05
+    "width": 0.085
    }
   },
   {
@@ -50,7 +59,7 @@
    ],
    "rigid": "quiver",
    "thicken": {
-    "width": 0.045
+    "width": 0.07
    }
   },
   {
