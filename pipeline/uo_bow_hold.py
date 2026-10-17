@@ -18,6 +18,7 @@ CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
 CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 17: 40.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
 CONE_ACTIONS = list(CONE_BY)
+REL_SMOOTH = {23: (0.25, 0.5, 0.25)}  # mount walk: the handle follows OUR fist (offset from the pelvis frame by frame, smoothed over the looping frames): the original-bow position (fixed or per frame) put it behind the back or in the arm
 SIDE_FROM = {23: 24}                 # action -> action: the string side of the first is the string side of the second in the PELVIS frame (mount walk turned like mount run)
 REL_POS = [23, 24]                   # mounted walk / run: the original bow is carried almost rigidly (Yumi and 649 hardly move in the 5 frames): the handle keeps ONE offset from the pelvis (the mean of the original bow's), it moves with the rider's body, not with the jumping hand of our model
 STIFF = {23: 5.0, 24: 5.0}           # px per degree of turn between frames in the shaft fit: ~one shaft direction for the whole action
@@ -274,9 +275,10 @@ def run_pass(dry):
             D = Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float)) if an in CALIBRATED else body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
             D = D / np.linalg.norm(D)
             F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
+            Ffist_ = F.copy()
             if an in REL_OFF:
                 Rp_ = M @ np.array(rig.pose.bones["pelvis"].matrix.to_3x3()); Rp_ = Rp_ / np.linalg.norm(Rp_, axis=0)
-                F = W(rig.pose.bones["pelvis"].head) + Rp_ @ REL_OFF[an]
+                F = W(rig.pose.bones["pelvis"].head) + Rp_ @ (REL_OFF[an][i] if isinstance(REL_OFF[an], dict) else REL_OFF[an])
             elif an in ORIGINAL_POS:
                 F = HC_.copy()
             if an in AWAY_FROM_HEAD and lean > FREE_LEAN:
@@ -324,7 +326,7 @@ def run_pass(dry):
             if dry:
                 STATE.setdefault(an, {})[i] = (Hw.copy(), HC_.copy(), D.copy(), to_body.copy())
                 Rp_ = M @ np.array(rig.pose.bones["pelvis"].matrix.to_3x3()); Rp_ = Rp_ / np.linalg.norm(Rp_, axis=0)
-                RELD.setdefault(an, {})[i] = (Rp_, W(rig.pose.bones["pelvis"].head), HC_.copy())
+                RELD.setdefault(an, {})[i] = (Rp_, W(rig.pose.bones["pelvis"].head), HC_.copy(), Ffist_.copy())
                 continue
             if an in ROLL_PHI:                                                                      # the roll chosen by the original sprites: the string side turned about the shaft
                 e1_ = to_body - (to_body @ D) * D; e1_ /= np.linalg.norm(e1_)
@@ -372,14 +374,19 @@ for an_s in set(SIDE_FROM.values()):                                            
         v_ = np.mean([RELD[an_s][i_][0].T @ STATE[an_s][i_][3] for i_ in STATE[an_s]], 0); SIDE_VEC[an_s] = v_ / np.linalg.norm(v_)
         print("uo_bow_hold: string side of action %d in the pelvis frame (x lateral, y back, z up): %s" % (an_s, np.round(SIDE_VEC[an_s], 2)))
 for an_r, fr_r in [(k_, v_) for k_, v_ in RELD.items() if k_ in REL_POS]:                                                               # one offset of the handle from the pelvis for the whole action
-    REL_OFF[an_r] = np.mean([Rp.T @ (hc_ - pp_) for Rp, pp_, hc_ in fr_r.values()], 0)
-    print("uo_bow_hold: action %d: handle %.1f cm from the pelvis (fixed), original positions scatter %.1f cm" % (an_r, 100 * np.linalg.norm(REL_OFF[an_r]), 100 * np.mean([np.linalg.norm(Rp.T @ (hc_ - pp_) - REL_OFF[an_r]) for Rp, pp_, hc_ in fr_r.values()])))
+    REL_OFF[an_r] = np.mean([Rp.T @ (hc_ - pp_) for Rp, pp_, hc_, _f in fr_r.values()], 0)
+    if an_r in REL_SMOOTH:                                                                       # per-frame offsets of OUR fist from the pelvis frame, smoothed over the loop: the handle stays in the hand, without its jumps
+        ks_ = sorted(fr_r); offs_ = [fr_r[k_][0].T @ (fr_r[k_][3] - fr_r[k_][1]) for k_ in ks_]; w_ = REL_SMOOTH[an_r]; n_k = len(ks_)
+        REL_OFF[an_r] = {k_: sum(w_[j_] * offs_[(ii_ + j_ - 1) % n_k] for j_ in range(3)) for ii_, k_ in enumerate(ks_)}
+        print("uo_bow_hold: action %d: handle offset from the pelvis frame by frame (smoothed), scatter %.1f cm" % (an_r, 100 * np.mean([np.linalg.norm(REL_OFF[an_r][k_] - np.mean(list(REL_OFF[an_r].values()), 0)) for k_ in ks_])))
+        continue
+    print("uo_bow_hold: action %d: handle %.1f cm from the pelvis (fixed), original positions scatter %.1f cm" % (an_r, 100 * np.linalg.norm(REL_OFF[an_r]), 100 * np.mean([np.linalg.norm(Rp.T @ (hc_ - pp_) - REL_OFF[an_r]) for Rp, pp_, hc_, _f in fr_r.values()])))
 
     if "VW" in globals() and an_r in STATE:                                                      # the offset itself is fitted to the sprites of the original bow (chamfer over the frames and 5 directions)
         def off_cost(off):
             tot = 0.0
             for i_, (Hw_, HC__, D_, sd_) in STATE[an_r].items():
-                Rp, pp_, _ = RELD[an_r][i_]
+                Rp, pp_, _, _f = RELD[an_r][i_]
                 Qc = frame(Hw_.T @ D_, Hw_.T @ sd_) @ u_src.T
                 pos = (pp_ + Rp @ off) + (Hw_ @ Qc @ off_h * s_orig).T; pos1 = np.c_[pos, np.ones(len(pos))]
                 for k in [k_ for k_ in range(VW.n) if VW.key[k_][0] == an_r and VW.key[k_][2] == i_]:
@@ -411,6 +418,7 @@ FLEX = 0.10                            # share of the pull the limb tips follow:
 STRING_WIDTH = 0.016                   # m: half width of the string across the bow
 STRING_BAND = 0.022                    # m: thin vertices within this much of the string line are the string
 DRAW_FAR, DRAW_NEAR = 0.30, 0.16       # m, hand.R to head: no pull / full draw
+DRAW_RANGE = {27: (0.50, 0.30)}        # per action: the mounted archer does not bring the hand up to the face (hand.R 0.30-0.56 m from the head)
 attr = item.data.attributes.get("uo_string")
 if attr is not None:
     sv = np.array([i for i, a_ in enumerate(attr.data) if a_.value > 0.5])
@@ -472,7 +480,7 @@ if attr is not None:
                 if an in DRAW_ACTIONS:
                     FRh = np.mean([W(rig.pose.bones[b].head) for b in FR], 0)
                     d = float(np.linalg.norm(FRh - W(rig.pose.bones["head"].head)))
-                    g = float(np.clip((DRAW_FAR - d) / (DRAW_FAR - DRAW_NEAR), 0.0, 1.0)); g = g * g * (3 - 2 * g)
+                    far_, near_ = DRAW_RANGE.get(an, (DRAW_FAR, DRAW_NEAR)); g = float(np.clip((far_ - d) / (far_ - near_), 0.0, 1.0)); g = g * g * (3 - 2 * g)
                     Bw = np.array(rig.pose.bones["bow.L"].matrix.to_3x3()); Bw = M @ Bw; Bw = Bw / np.linalg.norm(Bw, axis=0)
                     loc = tuple(float(x) for x in Bw.T @ (g * (FRh - W(ps.head))))
                     print("uo_bow_hold: string action %d frame %d: hand.R %.2f m from the head, pull %.2f (%.2f m)" % (an, i, d, g, g * np.linalg.norm(FRh - W(ps.head))))

@@ -1,7 +1,9 @@
-"""Cut the bow where the original bow sprite has a hole (the hand wraps the grip): in a window around the middle of the original sprite, a pixel of the new frame survives only
-next to a pixel of the ORIGINAL weapon frame (dilated by `dil` px). Outside the window nothing changes.
+"""Cut the bow where the hand is in front of it. In the ORIGINAL bow sprite (anim.mul 649) the bow is drawn behind the fist: along the shaft there are rows where it has no pixel at
+all. Around those rows (`grow` rows more on each side) our bow pixels that lie ON THE ORIGINAL BODY of the same frame (body400.vd: the fist, the forearm) are removed, so the hand
+is drawn in front of the grip. Frames whose original bow has no such gap (the bow is in front of the hand there) and bow pixels in the empty space beside the body are left alone;
+other frames / blocks keep their bytes.
 
-    python vd_hand_cut.py NEW.vd ORIG.vd OUT.vd action:dir:frame ... [--win 0.25] [--dil 2]       # * = all, 0-based
+    python vd_hand_cut.py NEW.vd ORIG_BOW.vd BODY.vd OUT.vd action:dir:frame ... [--grow 3]        # * = all, 0-based
 """
 import os, sys
 import numpy as np
@@ -12,16 +14,16 @@ import vdtool
 CW, CH, AX, AY = 300, 300, 150, 200
 
 
-def canvas(f, pal):
+def canvas_alpha(f, pal):
     rgba = vdtool.frame_rgba(f, pal); h, w = rgba.shape[:2]
-    im = np.zeros((CH, CW, 4), np.uint8); x0, y0 = AX - f["cx"], AY - (f["cy"] + f["h"])
-    im[y0:y0 + h, x0:x0 + w] = rgba
-    return im
+    a = np.zeros((CH, CW), bool); x0, y0 = AX - f["cx"], AY - (f["cy"] + f["h"])
+    a[y0:y0 + h, x0:x0 + w] = rgba[..., 3] > 0
+    return a
 
 
-def cut(new, orig, out, specs, win=0.25, dil=2):
-    at, bn = vdtool.read_vd(new); _, bo = vdtool.read_vd(orig)
-    tab = {(b["action"], b["dir"]): b for b in bo}
+def cut(new, orig, body, out, specs, grow=3):
+    at, bn = vdtool.read_vd(new); _, bo = vdtool.read_vd(orig); _, bb = vdtool.read_vd(body)
+    to = {(b["action"], b["dir"]): b for b in bo}; tb = {(b["action"], b["dir"]): b for b in bb}
     want = {}
     for sp in specs:
         a, d, f = sp.split(":")
@@ -35,23 +37,22 @@ def cut(new, orig, out, specs, win=0.25, dil=2):
         key = (b["action"], b["dir"])
         if not b["frames"]:
             blocks.append(None); continue
+        if key not in want:
+            blocks.append(dict(palette=b["palette"], frames=[dict(cx=f["cx"], cy=f["cy"], idx=f["idx"]) for f in b["frames"]])); continue
         imgs, cent = [], []
         for i, f in enumerate(b["frames"]):
-            rgba = vdtool.frame_rgba(f, b["palette"])
-            if i in want.get(key, ()):
-                o = tab[key]; of = o["frames"][i]; oc = canvas(of, o["palette"]); nc = canvas(f, b["palette"])
-                ys, xs = np.nonzero(oc[..., 3] > 0)
-                if len(ys):
-                    cy = (ys.min() + ys.max()) / 2.0; hh = (ys.max() - ys.min() + 1) * win
-                    near = ndimage.binary_dilation(oc[..., 3] > 0, iterations=dil)
-                    yy = np.arange(CH)[:, None] * np.ones((1, CW))
-                    zone = np.abs(yy - cy) <= hh + 2
-                    kill = zone & (nc[..., 3] > 0) & ~near
-                    n_kill = int(kill.sum())
-                    x0, y0 = AX - f["cx"], AY - (f["cy"] + f["h"])
-                    sub = kill[y0:y0 + rgba.shape[0], x0:x0 + rgba.shape[1]]
-                    rgba = rgba.copy(); rgba[sub, 3] = 0; rgba[sub, :3] = 0
-                    print("action %d dir %d frame %d: %d bow pixels cut around the grip" % (key[0], key[1], i, n_kill))
+            rgba = vdtool.frame_rgba(f, b["palette"]).copy()
+            if i in want[key]:
+                oa = canvas_alpha(to[key]["frames"][i], to[key]["palette"]); ba = canvas_alpha(tb[key]["frames"][i], tb[key]["palette"]); na = canvas_alpha(f, b["palette"])
+                rows = np.nonzero(oa.any(1))[0]
+                gap = [r for r in range(rows.min(), rows.max() + 1) if not oa[r].any()] if len(rows) else []
+                if gap:
+                    zone = np.zeros((CH, CW), bool); zone[max(min(gap) - grow, 0):max(gap) + grow + 1] = True
+                    kill = zone & na & ba
+                    h, w = rgba.shape[:2]; x0, y0 = AX - f["cx"], AY - (f["cy"] + f["h"])
+                    sub = kill[y0:y0 + h, x0:x0 + w]
+                    rgba[sub] = 0
+                    print("action %d dir %d frame %d: original gap %d rows, %d bow pixels on the body cut" % (key[0], key[1], i, len(gap), int(sub.sum())))
             imgs.append(rgba); cent.append((f["cx"], f["cy"]))
         palette, maps = vdtool.build_palette(imgs, b["palette"])
         blocks.append(dict(palette=palette, frames=[dict(cx=c[0], cy=c[1], idx=m) for c, m in zip(cent, maps)]))
@@ -59,9 +60,7 @@ def cut(new, orig, out, specs, win=0.25, dil=2):
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:]; win, dil = 0.25, 2
-    if "--win" in args:
-        k = args.index("--win"); win = float(args[k + 1]); del args[k:k + 2]
-    if "--dil" in args:
-        k = args.index("--dil"); dil = int(args[k + 1]); del args[k:k + 2]
-    cut(args[0], args[1], args[2], args[3:], win, dil)
+    args = sys.argv[1:]; grow = 3
+    if "--grow" in args:
+        k = args.index("--grow"); grow = int(args[k + 1]); del args[k:k + 2]
+    cut(args[0], args[1], args[2], args[3], args[4:], grow)
