@@ -9,16 +9,16 @@ Each pose was picked by `pipeline/item_collision.py` (share of the lute inside t
 | fid1, fid2 | 05, 06 | the same, 1 / 2 px higher, bound to the pelvis (the arms swing, the lute stays) |
 | eat | 34 | like fid1 (the lute stays at the belly while the hand goes to the mouth) |
 | m23, m24, m25 | 23, 24, 25 | mounted: like stand (23: the neck through both palms of its own pose, so it points at the left hand); 24 is bound to the pelvis like the fidgets (the hands bounce in the run and turned a hand-bound lute into the chest; inside the body 11.4 -> 0.6%), 25 higher and towards the right hand |
-| d21, d22 | 21, 22 | the neck through the palm in every frame, lying along the body's long axis (`LIE`), strings up; 21: held in the middle of the neck with the bowl towards the head (`FLIP`), which puts it on the far side of the body in every direction as the user drew it |
+| d21, d22 | 21, 22 | the neck through the palm in every frame, lying along the body's long axis (`LIE`), strings up; 21 (the UO client / the user's viewer call it "Die Backward"): held by the end of the neck (`grip` 0.88) with the bowl towards the head (`FLIP`) and turned 30 deg away from the body (`LIEYAW`): in the lying frames the lute is beside the body, clear of it (inside the body 10.1% -> 0.0%) and the neck is not hidden behind the torso |
 | h15 | 15 | like h07 without the outward tilt (bowl closer to the body), nothing inside the body |
 | h07 | 07, 20 | 1H line, tilted out 40 deg and more upright, rigid on hand.R |
 | h26, h30, h33 | 26, 30, 33 | explicit axis per action (measured), rigid on hand.R; 26: axis chosen from 32 candidates so that the bowl is on the outer side of the hand in (nearly) every frame (`item_collision.py --outward`) |
 | sp | 16, 17 | bound to forearm.R (no turning with the wrist), headstock up and out |
 | handrigid | 08-14, 18, 19, 27-29, 31, 32 | 1h grip (butt -0.65), rigid on hand.R |
 
-Arms on top of the lute (04, 05, 06, 22, 24, 25): render with `HAND_OVER=0.3 HAND_OVER_GROW=1 "HAND_OVER_PARTS=('hand','forearm','upper_arm')"`.
+Arms on top of the lute (04, 05, 06, 22, 23, 24, 25): render with `HAND_OVER=0.3 HAND_OVER_GROW=1 "HAND_OVER_PARTS=('hand','forearm','upper_arm')"`.
 Render settings: `OWN_PARTS_NEVER_HIDE=False TORSO_HIDE_MARGIN=0.005 HOLDOUT_MARGIN=0.003` (recipe `weapon.occlude`).
-Mounted actions (23-25): render with `HORSE_HOLDOUT=False`. With the holdout the horse (its head / neck in front of the rider's belly) cut the neck of the lute and the top of the bowl out of the layer; the rider is drawn over the mount, so the lute is not hidden by it. 25 also `HAND_OVER=0.3 HAND_OVER_GROW=2 HAND_OVER_SIDE='.R'`.
+Mounted actions (23-25): render with `HORSE_HOLDOUT=False`; 23 also `HAND_OVER=0.2 HAND_OVER_GROW=1 HAND_OVER_SIDE='.R' HAND_OVER_PARTS=('hand','forearm','upper_arm')` (the right arm is cut out of the lute in every frame, like 24). With the holdout the horse (its head / neck in front of the rider's belly) cut the neck of the lute and the top of the bowl out of the layer; the rider is drawn over the mount, so the lute is not hidden by it. 25 also `HAND_OVER=0.3 HAND_OVER_GROW=2 HAND_OVER_SIDE='.R'`.
 
 Files in this folder:
 - `Lute_poses.blend` (bpy 4.2): the body, the rig and every pose as an object `Lute_<item>` (the table above; `Lute_carry` is in the collection Clothing, the others in the collection `Lute_poses`, which is not rendered). Custom properties `uo_actions` and `uo_render_flags` say for which actions and with which extra render settings. `python pipeline/lute_select_pose.py Lute_poses.blend Lute_stand OUT.blend` moves one pose into Clothing.
