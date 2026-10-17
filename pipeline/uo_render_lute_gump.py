@@ -34,6 +34,9 @@ FIST_1H = {"male": (48.0, 114.5), "female": (48.0, 113.0)}   # gump pixel of the
 TILT_1H = 12.0                 # deg: the headstock leans out of the body (to the left of the picture)
 HEADSTOCK_LEFT = True          # 2h: the headstock at the character's right hand (left of the picture)
 LUTE_2H = 1.0                  # 2h: the lute's scale (the fists are 0.97 m apart)
+Z_NECK = None                  # 2h: where on the lute (m from the bowl's end, before scaling) the fist on the headstock side holds it, the other fist then holds it 0.97 m / LUTE_2H farther
+                               # along the axis; None = the middle of the lute at the middle of the two fists
+ANG_2H = 0.0                   # 2h: deg the lute is turned about that fist from the line fist - fist (+ = the headstock lower)
 HOLD_CUT = (9, 9, 7)           # the window of a fist (x within +-9 px, y 9 above .. 7 below its middle): the lute is cut out where the body gump's fist lies in it
 HOLD_SHOW = {"male": 2, "female": 3}
 CUT = True                     # False = the lute whole, nothing cut out under the fists (to fit it by hand over the body gump)
@@ -142,10 +145,12 @@ def main(src, out):
         # 2h: across the belly, the axis along the line from fist to fist, the middle of the lute at the middle of the two fists
         mid = np.array([(lx + rx) / 2, (ly + ry) / 2]); d = np.array([rx - lx, ry - ly]); ang = np.degrees(np.arctan2(-(d[1]), d[0]))   # deg above the horizontal (picture y is down)
         # the lute's axis (local z) turned from vertical onto the line: top towards the left (headstock left) or the right
-        Pc = (V0 - np.array([cxy[0], cxy[1], 0.5])) * LUTE_2H
-        turn = 90.0 + ang if HEADSTOCK_LEFT else ang - 90.0
+        zc = 0.5 if Z_NECK is None else Z_NECK
+        Pc = (V0 - np.array([cxy[0], cxy[1], zc])) * LUTE_2H
+        turn = (90.0 + ang if HEADSTOCK_LEFT else ang - 90.0) + (ANG_2H if HEADSTOCK_LEFT else -ANG_2H)
         P2 = about_y(Pc, turn)
-        img2 = tone(front(P2, mid[0], mid[1]))
+        at = mid if Z_NECK is None else np.array([lx, ly] if HEADSTOCK_LEFT else [rx, ry])
+        img2 = tone(front(P2, at[0], at[1]))
         n2 = cut_under(img2, bm, [(lx, ly), (rx, ry)], HOLD_SHOW[gender]) if CUT else 0
         res[gender + "_2h"] = img2
         print("LG %s 2h: fists (%.1f, %.1f) (%.1f, %.1f), line %.1f deg, %d px cut" % (gender, lx, ly, rx, ry, ang, n2))
@@ -180,7 +185,7 @@ if __name__ == "__main__":
     while i < len(a):
         if a[i] == "--set":
             k, v = a[i + 1].split("=", 1); g = globals()
-            g[k] = eval(v) if isinstance(g[k], (tuple, dict, bool)) else type(g[k])(v); i += 2
+            g[k] = eval(v) if isinstance(g[k], (tuple, dict, bool, type(None))) else type(g[k])(v); i += 2
         else:
             pos.append(a[i]); i += 1
     main(pos[0], pos[1])
