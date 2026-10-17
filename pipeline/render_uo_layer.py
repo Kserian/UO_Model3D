@@ -27,9 +27,6 @@ OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline":
 SAMPLES = 512                      # Cycles samples per pixel for items (adaptive sampling; the pixel filter stays a 0.01 px box = the pixel centre, no blur): the
                                    # gloss of metal in UO_Look (Principled) is sampled at random, so at 1 sample a flail had 61 % of its pixels off the converged
                                    # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
-FILTER_WIDTH = 0.01                # px: width of the box pixel filter. 0.01 = the pixel centre (the UO look); scene "uo_filter" 1.0 = every pixel averages its area (a thin strand, a bow string, keeps its colour
-                                   # and a coverage instead of dropping out where no pixel centre hits it)
-ALPHA_MIN = 0.5                    # coverage from which a pixel is part of the item (1-bit alpha); scene "uo_alpha" 0.35 with uo_filter 1.0 keeps a thin strand continuous
 OUT_DIR = "//uo_render/"           # PNG output root (vdtool 'canvas' layout + meta.json)
 WRITE_VD = True
 VD_FILE = "//uo_render/%s.vd"      # %s -> LAYER
@@ -101,9 +98,6 @@ DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original
 sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
-HOLDOUT_MARGIN = float(sc.get("uo_holdout_margin", HOLDOUT_MARGIN))                    # per item: how far in front of the item the body must be to hide it (> 0)
-TORSO_HIDE_MARGIN = float(sc.get("uo_torso_margin", TORSO_HIDE_MARGIN))             # per item: how far behind the torso a part must be to be hidden by it (uo_behind_torso items)
-FILTER_WIDTH = float(sc.get("uo_filter", FILTER_WIDTH)); ALPHA_MIN = float(sc.get("uo_alpha", ALPHA_MIN)); SAMPLES = int(sc.get("uo_samples", SAMPLES))
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
                                    # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
@@ -562,7 +556,7 @@ def shadow_sun(on):
             m.cycles.emission_sampling = "NONE"
 if EXACT_ANY and sc.render.engine == "CYCLES":
     sc.cycles.pixel_filter_type = "BOX"          # one sample point per pixel centre, like the UO art (no blur)
-    sc.cycles.filter_width = FILTER_WIDTH
+    sc.cycles.filter_width = 0.01
     sc.cycles.use_denoising = False
     sc.cycles.samples = 1 if LAYER == "body" else SAMPLES     # every sample at the pixel centre (filter 0.01 px): more samples only average the
     sc.cycles.use_adaptive_sampling = LAYER != "body" and SAMPLES > 1     # random parts of the shading (the gloss of metal); adaptive with a strict
@@ -625,7 +619,7 @@ def uo_post(px, keep=None):
     keep: pixels that already carry original UO colours (no extra outline)."""
     a = px[..., 3:4]
     rgb = px[..., :3] * a
-    m = px[..., 3] >= ALPHA_MIN
+    m = px[..., 3] >= 0.5
     inner = m.copy()
     inner[1:] &= m[:-1]; inner[:-1] &= m[1:]; inner[:, 1:] &= m[:, :-1]; inner[:, :-1] &= m[:, 1:]
     edge = m & ~inner
@@ -1030,68 +1024,6 @@ view_prefs = bpy.context.preferences.view
 render_display = view_prefs.render_display_type
 
 
-STRING_FILL = {}                                    # scene "uo_string_fill" "27:1,2,3;18:3,4": action -> frames whose bow string is drawn as a continuous 1 px line (a thin thread broke up where the body holds it out)
-for part_ in str(sc.get("uo_string_fill", "")).split(";"):
-    if ":" in part_:
-        STRING_FILL[int(part_.split(":")[0])] = [int(x) for x in part_.split(":")[1].split(",") if x.strip()]
-STRING_RGB = tuple(int(x) for x in sc.get("uo_string_rgb", (16, 16, 16)))       # dark, as the render makes the thread
-STRING_HIDE = float(sc.get("uo_string_hide", 0.04))  # m: the body hides the string where it is more than this in front of the thread (the nock sits in the hand)
-
-
-def string_fill(rgba, a, i):
-    """the thread of the bow (vertices with attribute uo_string_t, binned along the thread every 1 cm, centre of every bin projected) as an 8-connected line with the depth of the thread.
-    Where the body (whole body, also the torso) is in front of it the thread is hidden - rendered string pixels there are removed - elsewhere the line is drawn in STRING_RGB (empty pixels,
-    and the dark pixels the render made of the string)"""
-    if i not in STRING_FILL.get(a, []):
-        return rgba
-    dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
-    Mc = np.array(cam.calc_matrix_camera(dg, x=W, y=H)); Vc = np.array(cam.matrix_world.inverted())
-    pts = []
-    for o in clothes:
-        at = o.data.attributes.get("uo_string_t")
-        if at is None:
-            continue
-        t = np.empty(len(o.data.vertices), np.float32); at.data.foreach_get("value", t)
-        ev = o.evaluated_get(dg); me = ev.to_mesh()
-        P = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", P); P = P.reshape(-1, 3)
-        Pw = (np.array(ev.matrix_world) @ np.c_[P, np.ones(len(P))].T).T[:, :3]
-        ev.to_mesh_clear()
-        sel = t > -90
-        if sel.sum() < 5:
-            continue
-        b = np.round(t[sel] / 0.01).astype(int)
-        for k in np.unique(b):
-            pts.append((k, Pw[sel][b == k].mean(0)))
-    pts.sort(key=lambda kv: kv[0])
-    out = rgba.copy(); hh, ww = out.shape[:2]
-    _, zbody = raster([body])
-    def proj(p3):
-        hv = Vc @ np.append(p3, 1.0); q = Mc @ hv
-        return ((q[0] / q[3] + 1) * 0.5 * W, (1 - q[1] / q[3]) * 0.5 * H, -hv[2])
-    scr = [(p3, proj(p3)) for _, p3 in pts]
-    line_vis = np.zeros((hh, ww), bool); line_hid = np.zeros((hh, ww), bool)
-    for (p0, q0), (p1, q1) in zip(scr[:-1], scr[1:]):
-        if np.linalg.norm(p1 - p0) > 0.06:
-            continue
-        x0, y0, x1, y1 = int(np.floor(q0[0])), int(np.floor(q0[1])), int(np.floor(q1[0])), int(np.floor(q1[1]))
-        n = max(abs(x1 - x0), abs(y1 - y0), 1)
-        for s_ in range(n + 1):
-            x = x0 + int(round((x1 - x0) * s_ / n)); y = y0 + int(round((y1 - y0) * s_ / n))
-            if 0 <= x < ww and 0 <= y < hh:
-                z = q0[2] + (q1[2] - q0[2]) * s_ / n
-                if zbody[y, x] > z - STRING_HIDE:
-                    line_vis[y, x] = True
-                else:
-                    line_hid[y, x] = True
-    line_hid &= ~line_vis
-    dark = (out[..., :3].astype(int).sum(-1) < 3 * 50) & (out[..., 3] > 0)
-    near_vis = binary_dilation(line_vis, 1); near_hid = binary_dilation(line_hid, 1) & ~near_vis
-    out[line_vis & (out[..., 3] == 0)] = (*STRING_RGB, 255)                    # the thread, where nothing is drawn yet
-    out[(near_vis & dark)] = (*STRING_RGB, 255)                                # the dark pixels of the rendered thread
-    out[(near_hid & dark) | (line_hid & (out[..., 3] > 0) & (out[..., :3].astype(int).sum(-1) < 3 * 80))] = 0   # the body is in front of the thread
-    return out
-
-
 def frame_job():
     """one UO frame per step; uo_job.py hands control back to Blender between two of them (the window stays alive, ESC cancels)"""
     view_prefs.render_display_type = "NONE"             # no Render Result window popping up for every frame
@@ -1112,10 +1044,6 @@ def frame_job():
                     if os.path.exists(os.path.join(root, "STOP")):      # create an empty file named STOP to cancel
                         raise KeyboardInterrupt("STOP file found in " + root)
                     set_tile(a, i, d)
-                    for o_ in clothes:                               # the thread is drawn as a line (string_fill) in these actions: the mesh of the thread is off
-                        md_ = o_.modifiers.get("uo_nostring")
-                        if md_ is not None:
-                            md_.show_render = i in STRING_FILL.get(a, [])
                     sc.frame_set(1 + i * STEP)
                     if (BODY_GAP > 0 or HAS_CLOTH) and LAYER != "body":
                         body_fix(a, i)
@@ -1152,8 +1080,6 @@ def frame_job():
                     else:
                         px = render_frame(a, i, d, "visible")
                         rgba = uo_post(px, keep=orig_m if (EXACT_COLORS and orig_m is not None) else None)
-                    if LAYER == "clothing" and STRING_FILL:
-                        rgba = string_fill(rgba, a, i)
                     h, w = rgba.shape[:2]
                     frames.append(rgba)
                     png = bpy.data.images.new("uo_tmp_out", w, h, alpha=True)
