@@ -17,7 +17,7 @@ CLEAR_CONE = 90.0                    # degrees: in the CALIBRATED actions the sh
 CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (beyond 12 cm from the fist)
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
 CALIBRATED = [7, 8]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
-AWAY_FROM_HEAD = {22: 10.0}          # action -> degrees: once the body lies, the shaft is turned this much so that its end nearest to the head moves away from it (die backward: the bow lay on the face)
+AWAY_FROM_HEAD = {21: 10.0, 22: 10.0}          # action -> degrees: once the body lies, the shaft is turned this much so that its end nearest to the head moves away from it (the falls: the bow lay on the face)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
 FREE_LEAN = 35.0                     # degrees of lean of the body (crouch, step) the bow does not follow
@@ -179,4 +179,56 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
         pb.keyframe_insert("rotation_quaternion", frame=1 + 3 * i, group="bow.L")
         n += 1
 print("uo_bow_hold: %d poses re-keyed" % n)
+
+# ---- the string drawn by the second hand: the string vertices (mesh attribute uo_string, set by uo_make_item.py "inflate") are weighted to a bone "string.pull" (child of bow.L) in a
+# triangular profile along the string: the nock follows the fingers of hand.R when the hand is at the face (DRAW_NEAR..DRAW_FAR m from the head), the ends stay on the limbs.
+DRAW_ACTIONS = [18]
+STRING_BAND = 0.035                    # m: thin vertices within this much of the string line are the string
+DRAW_FAR, DRAW_NEAR = 0.30, 0.16       # m, hand.R to head: no pull / full draw
+attr = item.data.attributes.get("uo_string")
+if attr is not None:
+    sv = np.array([i for i, a_ in enumerate(attr.data) if a_.value > 0.5])
+    if len(sv) > 20:                                                                           # thin things are not only the string (limb edges, the wrapping of the grip): the string is the straight line
+        mid_t = np.median(ts[sv]); mids = sv[np.abs(ts[sv] - mid_t) < 0.1 * L]                  # on the string side of the limbs, found in the middle of the bow where nothing else is that far out
+        line = np.percentile(cl[mids], 95)
+        sv = sv[cl[sv] > line - STRING_BAND]
+        print("uo_bow_hold: string line %.1f cm towards the string side, %d string vertices" % (100 * line, len(sv)))
+    sv = [int(i) for i in sv]
+    if len(sv) > 20:
+        ts_ = ts[sv]; tm = float(np.median(ts_)); half = float(np.abs(ts_ - tm).max()) + 1e-6
+        nock = P[sv][np.abs(ts_ - tm) < 0.03 * L].mean(0)
+        rig.data.pose_position = "REST"; bpy.context.view_layer.update()
+        bpy.context.view_layer.objects.active = rig
+        bpy.ops.object.mode_set(mode="EDIT")
+        hand_e = rig.data.edit_bones[WM["parent"]]
+        if "string.pull" not in rig.data.edit_bones:
+            eb = rig.data.edit_bones.new("string.pull"); eb.parent = rig.data.edit_bones["bow.L"]; eb.use_connect = False
+            eb.length = 0.05; eb.matrix = Matrix.Translation(rig.matrix_world.inverted() @ Vector(nock)) @ hand_e.matrix.to_3x3().normalized().to_4x4()
+        bpy.ops.object.mode_set(mode="OBJECT")
+        rig.data.bones["string.pull"].use_deform = True; rig.data.bones["string.pull"].inherit_scale = "NONE"
+        gp = item.vertex_groups.get("string.pull") or item.vertex_groups.new(name="string.pull"); gb = item.vertex_groups["bow.L"]
+        for i in sv:
+            w = float(max(0.0, 1.0 - abs(ts[i] - tm) / half) ** 1.5)
+            gp.add([i], w, "REPLACE"); gb.add([i], 1.0 - w, "REPLACE")
+        rig.data.pose_position = "POSE"
+        ps = rig.pose.bones["string.pull"]; ps.rotation_mode = "QUATERNION"
+        FR = [b.name for b in rig.data.bones if b.name.startswith("finger") and b.name.endswith(".R")]
+        for act in [a for a in bpy.data.actions if "uo_action" in a]:
+            an = int(act["uo_action"]); rig.animation_data.action = act
+            frames = range(int(act["uo_frames"])) if an in DRAW_ACTIONS else [0]
+            for i in frames:
+                sc.frame_set(1 + 3 * i); ps.location = (0, 0, 0); ps.rotation_quaternion = Quaternion(); bpy.context.view_layer.update()
+                loc = (0.0, 0.0, 0.0)
+                if an in DRAW_ACTIONS:
+                    FRh = np.mean([W(rig.pose.bones[b].head) for b in FR], 0)
+                    d = float(np.linalg.norm(FRh - W(rig.pose.bones["head"].head)))
+                    g = float(np.clip((DRAW_FAR - d) / (DRAW_FAR - DRAW_NEAR), 0.0, 1.0)); g = g * g * (3 - 2 * g)
+                    Bw = np.array(rig.pose.bones["bow.L"].matrix.to_3x3()); Bw = M @ Bw; Bw = Bw / np.linalg.norm(Bw, axis=0)
+                    loc = tuple(float(x) for x in Bw.T @ (g * (FRh - W(ps.head))))
+                    print("uo_bow_hold: string action %d frame %d: hand.R %.2f m from the head, pull %.2f (%.2f m)" % (an, i, d, g, g * np.linalg.norm(FRh - W(ps.head))))
+                ps.location = loc
+                ps.keyframe_insert("location", frame=1 + 3 * i, group="string.pull")
+                ps.keyframe_insert("rotation_quaternion", frame=1 + 3 * i, group="string.pull")
+        rig.animation_data.action = keep
+        print("uo_bow_hold: string: %d vertices weighted to string.pull" % len(sv))
 rig.animation_data.action = keep

@@ -324,7 +324,7 @@ if wp:                                                           # a weapon: upr
         from mathutils.bvhtree import BVHTree
         for o in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
             bm = bmesh.new(); bm.from_mesh(o.data); bm.transform(o.matrix_world); bm.normal_update()
-            tree = BVHTree.FromBMesh(bm); big, small = float(wp["inflate"]), float(wp.get("inflate_thin", wp["inflate"])); moves = []; ths = []
+            tree = BVHTree.FromBMesh(bm); lay = bm.verts.layers.float.new("uo_string"); big, small = float(wp["inflate"]), float(wp.get("inflate_thin", wp["inflate"])); moves = []; ths = []
             for v in bm.verts:
                 th = 9.0
                 for sg in (-1.0, 1.0):
@@ -332,6 +332,7 @@ if wp:                                                           # a weapon: upr
                     if h[0] is not None:
                         th = min(th, h[3])
                 k = min(1.0, max(0.0, (th - 0.015) / 0.015)); ths.append(th)
+                v[lay] = 1.0 if th < 0.02 else 0.0                       # the thin strands (a bow string): uo_bow_hold.py pulls them with the second hand
                 moves.append(v.normal * (small + (big - small) * k))
             for v, m in zip(bm.verts, moves):
                 v.co += m
