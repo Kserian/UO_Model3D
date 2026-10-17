@@ -13,7 +13,9 @@ import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
 PARALLEL = True                      # the shaft stays upright in every action (like in the walk), it follows the body (pelvis -> neck) only once the body leans more than FREE_LEAN (False = the calibrated direction, except UPRIGHT actions)
-CLEAR_CONE = 65.0                    # degrees: in the CALIBRATED actions the shaft is tilted away from the calibrated direction (at most this much) until the bow no longer goes into the body
+CLEAR_CONE = 90.0                    # degrees: in the CALIBRATED actions the shaft is tilted away from the calibrated direction (at most this much) until the bow stays out of the body and in front of it
+CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (beyond 12 cm from the fist)
+IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
 CALIBRATED = [7, 8]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
@@ -69,6 +71,8 @@ def clear_of_body(D0, Hw, F, _unused):
     tri = [tuple(t.vertices) for t in mb.loop_triangles]
     tree = BVHTree.FromPolygons([tuple(v) for v in Bv], tri)
     evb.to_mesh_clear()
+    fwd = -to_back_of(np.array([0.0, 0.0, 1.0])); fwd[2] = 0.0; fwd /= np.linalg.norm(fwd)    # the way the pelvis faces
+    chest_c = np.array(rig.matrix_world @ rig.pose.bones["chest"].head)
     sub = P[::max(1, len(P) // 1200)]
     off = sub - hc
     far = np.linalg.norm(off, axis=1) > 0.12
@@ -84,12 +88,14 @@ def clear_of_body(D0, Hw, F, _unused):
             pen = 0.0
             for p_ in pos[far]:
                 loc, nor, _, dist = tree.find_nearest(Vector(p_))
-                if loc is not None and (Vector(loc) - Vector(p_)).dot(nor) > 0:
-                    pen += dist
-            cost = pen * 100.0 + 0.05 * ang
+                if loc is not None:
+                    sd = (Vector(p_) - Vector(loc)).dot(nor)                                       # > 0 outside the skin
+                    pen += max(0.0, CLEAR_GAP - sd)
+            behind = float(np.maximum(0.0, IN_FRONT - (pos - chest_c) @ fwd).sum()) / len(pos)
+            cost = pen * 100.0 + behind * 100.0 + 0.05 * ang
             if best is None or cost < best[0]:
                 best = (cost, D, tb, ang, pen)
-    print("uo_bow_hold: action %d: shaft tilted %.0f deg from the calibrated one, penetration %.3f" % (an, best[3], best[4]))
+    print("uo_bow_hold: action %d: shaft tilted %.0f deg from the calibrated one, skin gap shortfall %.3f" % (an, best[3], best[4]))
     return best[1], best[2]
 
 
