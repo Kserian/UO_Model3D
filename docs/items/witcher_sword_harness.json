@@ -1,0 +1,66 @@
+{
+ "name": "witcher_sword_harness",
+ "file": "models/sword_back_harness_-_the_witcher.glb",
+ "reference": {
+  "keep": [
+   "=defaultMaterial"
+  ],
+  "kind": "shirt"
+ },
+ "parts": [
+  {
+   "name": "straps",
+   "keep": [
+    "=defaultMaterial.001",
+    "=defaultMaterial.002",
+    "=defaultMaterial.003",
+    "=defaultMaterial.004",
+    "=defaultMaterial.005",
+    "=defaultMaterial.006",
+    "=defaultMaterial.007",
+    "=defaultMaterial.008",
+    "=defaultMaterial.009",
+    "=defaultMaterial.010",
+    "=defaultMaterial.014",
+    "=defaultMaterial.015",
+    "=defaultMaterial.016"
+   ],
+   "kind": "harness"
+  },
+  {
+   "name": "sheath",
+   "keep": [
+    "=defaultMaterial.017",
+    "=defaultMaterial.021",
+    "=defaultMaterial.022",
+    "=defaultMaterial.023",
+    "=defaultMaterial.024",
+    "=defaultMaterial.025"
+   ],
+   "rigid": "quiver",
+   "thicken": {
+    "width": 0.05
+   }
+  },
+  {
+   "name": "hilt",
+   "keep": [
+    "=defaultMaterial.018",
+    "=defaultMaterial.019"
+   ],
+   "rigid": "quiver",
+   "thicken": {
+    "width": 0.045
+   }
+  },
+  {
+   "name": "fittings",
+   "keep": [
+    "=defaultMaterial.020",
+    "=defaultMaterial.026",
+    "=defaultMaterial.027"
+   ],
+   "rigid": "quiver"
+  }
+ ]
+}
