@@ -1034,7 +1034,7 @@ STRING_FILL = {}                                    # scene "uo_string_fill" "27
 for part_ in str(sc.get("uo_string_fill", "")).split(";"):
     if ":" in part_:
         STRING_FILL[int(part_.split(":")[0])] = [int(x) for x in part_.split(":")[1].split(",") if x.strip()]
-STRING_RGB = tuple(int(x) for x in sc.get("uo_string_rgb", (80, 72, 62)))       # not true black
+STRING_RGB = tuple(int(x) for x in sc.get("uo_string_rgb", (16, 16, 16)))       # dark, as the render makes the thread
 STRING_HIDE = float(sc.get("uo_string_hide", 0.04))  # m: the body hides the string where it is more than this in front of the thread (the nock sits in the hand)
 
 
