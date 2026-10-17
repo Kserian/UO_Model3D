@@ -17,11 +17,13 @@ STEP_SCENE = 3
 
 def main():
     args = sys.argv[1:]
-    blend = os.path.abspath(args.pop(0)); outward = False; actions = "04_stand"; grip_r = 0.14; step = 1
+    blend = os.path.abspath(args.pop(0)); outward = False; last = False; actions = "04_stand"; grip_r = 0.14; step = 1
     while args:
         f = args.pop(0)
         if f == "--actions":
             actions = args.pop(0)
+        elif f == "--last":
+            last = True
         elif f == "--outward":
             outward = True
         elif f == "--grip-r":
@@ -46,7 +48,7 @@ def main():
     for a in [int(x[:2]) for x in actions.split(",")]:
         act = acts[a]; rig.animation_data.action = act
         per, deep, outs, gaps, hd = [], 0.0, [], [], []
-        for i in range(0, int(act["uo_frames"]), step):
+        for i in (range(0, int(act["uo_frames"]), step) if not last else [int(act["uo_frames"]) - 1]):
             sc.frame_set(1 + i * STEP_SCENE); rig.update_tag(); bpy.context.view_layer.update()
             dg = bpy.context.evaluated_depsgraph_get()
             eb = body.evaluated_get(dg); mb = eb.to_mesh(); mb.calc_loop_triangles(); M = eb.matrix_world
