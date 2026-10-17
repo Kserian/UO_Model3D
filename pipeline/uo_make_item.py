@@ -26,7 +26,7 @@ RECIPE.json (only "file" and "kind" are required):
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
-                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), inflate (m: every vertex moved along its normal, thickens a thin bow / shaft that renders as a 1-px line; inflate_thin: the same for strands thinner than 4 mm, a bow string), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
+                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion), length m (null = of the class), inflate (m: every vertex moved along its normal, thickens a thin bow / shaft that renders as a 1-px line; inflate_thin: the same for strands thinner than 15 mm, a bow string), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
@@ -318,23 +318,25 @@ wp = %(weapon)r
 if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
     if wp.get("inflate"):                                        # a thin shaft / bow limb is a 1-px line at 36 px/m: vertices moved along their normals by "inflate" m; a thin strand (a bow string,
-        import bmesh                                             # < 4 mm thick, measured by a ray through the vertex) only by "inflate_thin" m, linearly up to the full amount at 2 cm thickness
+        import bmesh                                             # < 15 mm thick, measured by a ray through the vertex) only by "inflate_thin" m, linearly up to the full amount at 3 cm thickness
         from mathutils import Vector
         from mathutils.bvhtree import BVHTree
         for o in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
             bm = bmesh.new(); bm.from_mesh(o.data); bm.transform(o.matrix_world); bm.normal_update()
-            tree = BVHTree.FromBMesh(bm); big, small = float(wp["inflate"]), float(wp.get("inflate_thin", wp["inflate"])); moves = []
+            tree = BVHTree.FromBMesh(bm); big, small = float(wp["inflate"]), float(wp.get("inflate_thin", wp["inflate"])); moves = []; ths = []
             for v in bm.verts:
                 th = 9.0
                 for sg in (-1.0, 1.0):
                     h = tree.ray_cast(v.co - v.normal * sg * 1e-4, -v.normal * sg, 0.05)
                     if h[0] is not None:
                         th = min(th, h[3])
-                k = min(1.0, max(0.0, (th - 0.004) / 0.016))
+                k = min(1.0, max(0.0, (th - 0.015) / 0.015)); ths.append(th)
                 moves.append(v.normal * (small + (big - small) * k))
             for v, m in zip(bm.verts, moves):
                 v.co += m
             bm.transform(o.matrix_world.inverted()); bm.to_mesh(o.data); bm.free(); o.data.update()
+        import numpy as _np
+        print("uo_make_item: thickness mm percentiles 5/10/20/30/50/80: %%s" %% _np.round(_np.percentile(_np.minimum(ths, 0.2), [5, 10, 20, 30, 50, 80]) * 1000, 1))
         print("uo_make_item: inflate %%s by %%s m (thin strands %%s m)" %% (wp["class"], wp["inflate"], wp.get("inflate_thin", wp["inflate"])))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
