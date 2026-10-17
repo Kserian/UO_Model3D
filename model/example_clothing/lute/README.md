@@ -5,4 +5,4 @@ Lute (Meshy glb from the user, not in the repo: put it at `models/lute.glb`) as 
 - `lute_carry.json`: walk and run (00-03): horizontal beside the body, headstock forward, strings out
 - `lute_1h.json`: every other action, a 1H weapon on weapon1h.R held by the neck (butt -0.52)
 Build each with `python pipeline/uo_make_item.py lute_X.json --out DIR --no-qa`.
-`Lute_hq_sample.vd`: 4 actions (04, 00, 25, 07) rendered with SAMPLES=4096. 4096 vs 512 samples changes the frames by < 0.2 levels (512 is converged); texture detail at 36 px/m is limited by the point-sampled pixel, not by noise.
+`Lute_layer.vd`: all 35 actions from the four items (walk/run 00-03: carry, 04-06: stand, 23-25: mounted, the rest: 1h).
