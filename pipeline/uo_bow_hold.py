@@ -12,6 +12,7 @@ import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
 PARALLEL = True                      # the shaft stays upright in every action (like in the walk), it follows the body (pelvis -> neck) only once the body leans more than FREE_LEAN (False = the calibrated direction, except UPRIGHT actions)
+CALIBRATED = [7, 8]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
 FREE_LEAN = 35.0                     # degrees of lean of the body (crouch, step) the bow does not follow
@@ -61,6 +62,14 @@ rig.data.pose_position = "POSE"
 keep = rig.animation_data.action
 W = lambda p: np.array(rig.matrix_world @ p)
 n = 0
+AIM_SIDE = {}                                                                                # AIM action -> its mean shoulder line (horizontal): the roll of the bow does not wave from frame to frame
+for an in AIM:
+    act = [a for a in bpy.data.actions if a.get("uo_action") == an][0]; rig.animation_data.action = act; acc = np.zeros(3)
+    for i in range(int(act["uo_frames"])):
+        sc.frame_set(1 + 3 * i); bpy.context.view_layer.update()
+        v = W(rig.pose.bones["upper_arm.R"].head) - W(rig.pose.bones["upper_arm.L"].head); v[2] = 0.0
+        acc += v / np.linalg.norm(v)
+    AIM_SIDE[an] = acc / np.linalg.norm(acc)
 for act in [a for a in bpy.data.actions if "uo_action" in a]:
     an = int(act["uo_action"]); rig.animation_data.action = act; prev = None
     for i in range(int(act["uo_frames"])):
@@ -80,13 +89,13 @@ for act in [a for a in bpy.data.actions if "uo_action" in a]:
             side = bn - bn[2] * np.array([0.0, 0.0, 1.0])
             x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); a = np.radians(lean * x * x * (3 - 2 * x))
             body = np.array([0.0, 0.0, 1.0]) * np.cos(a) + (side / np.linalg.norm(side) * np.sin(a) if np.linalg.norm(side) > 1e-6 else 0.0)
-        D = body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
+        D = Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float)) if an in CALIBRATED else body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
         D = D / np.linalg.norm(D)
         F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
         to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of FACING (the body faces -Y at rest)
         to_body -= (to_body @ D) * D; to_body /= max(np.linalg.norm(to_body), 1e-9)
         if an in AIM:                                                                           # held out along the aim line: the string comes to the archer along the shoulder line (left -> right shoulder),
-            sh = W(rig.pose.bones["upper_arm.R"].head) - W(rig.pose.bones["upper_arm.L"].head)   # the same in every frame (the arm is bent at the start and the end of the shot)
+            sh = AIM_SIDE[an].copy()                                                            # the same in every frame (the torso twists during the shot, the bow must not follow it)
             sh -= (sh @ D) * D
             if np.linalg.norm(sh) > 1e-3:
                 to_body = sh / np.linalg.norm(sh)
