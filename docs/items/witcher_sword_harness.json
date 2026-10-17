@@ -18,6 +18,10 @@
    "kind": "harness",
    "widen": {
     "width": 0.07
+   },
+   "skin_wrap": {
+    "GAP": 0.008,
+    "THICK": 0.006
    }
   },
   {
@@ -34,7 +38,11 @@
     "=defaultMaterial.015",
     "=defaultMaterial.016"
    ],
-   "kind": "harness"
+   "kind": "harness",
+   "skin_wrap": {
+    "GAP": 0.008,
+    "THICK": 0.012
+   }
   },
   {
    "name": "sheath",

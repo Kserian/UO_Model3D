@@ -30,7 +30,7 @@ RECIPE.json (only "file" and "kind" are required):
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
-uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "skin_shell": {"GAP": 0.03, "VNECK": [1.3, 1.56, 0.1], "ZMAX": 1.56} = rebuild a vest as a shell of the body skin (uo_skin_shell.py); "smooth_mesh": {"iterations": 3, "factor": 0.5} = smooth the finished shape (borders stay); "min_piece": 24 = the renderer drops detached bits smaller than 24 px (default 8); "no_body_gap": true = not bent around the limbs by the renderer; "behind_torso": true = the torso hides what is behind it (garments that wrap the trunk); "cut_above" / "cut_below": z (m) at which a part is cut (a collar above the shoulders, a hem over the thighs); "widen": {"width": 0.07} = make straps (ribbons) wider in their own plane, thickness and curve stay (a 4 cm strap is 1.5 px at 36 px/m: invisible); "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
+uo_behind_torso / uo_no_body_gap properties are set: the chest hides what hangs behind it, the item is not bent away from limbs; "move": [x, y, z] m nudges a part; "skin_shell": {"GAP": 0.03, "VNECK": [1.3, 1.56, 0.1], "ZMAX": 1.56} = rebuild a vest as a shell of the body skin (uo_skin_shell.py); "smooth_mesh": {"iterations": 3, "factor": 0.5} = smooth the finished shape (borders stay); "min_piece": 24 = the renderer drops detached bits smaller than 24 px (default 8); "no_body_gap": true = not bent around the limbs by the renderer; "behind_torso": true = the torso hides what is behind it (garments that wrap the trunk); "cut_above" / "cut_below": z (m) at which a part is cut (a collar above the shoulders, a hem over the thighs); "skin_wrap": {"GAP": 0.008} = lay straps on the skin: touching it (GAP m), keeping their thickness, none standing off it or poking through (the fit pushes a harness 1.5 cm off the skin and a mannequin's shirt adds more: 3 cm median); "widen": {"width": 0.07} = make straps (ribbons) wider in their own plane, thickness and curve stay (a 4 cm strap is 1.5 px at 36 px/m: invisible); "thicken": {"width": 0.05} = widen a thin long part so that every cross-section direction is at least that wide (a sword: 0.05 m = 2 px), {"factor": 1.3, "own_axis": false} for its hilt on the same axis; "pelvis_share": 0.4 = that share of the weight on the pelvis, the rest on the bone: a sword that follows the leg only partly).
 
 Steps (each is one of the scripts that are also in the .blend, see README): uo_import_item.py (clean, join, reduce) -> uo_materials.py (UO look) ->
 uo_prepare_item.py (uo_autofit_item.py size / place from the skin, uo_densify_item.py, uo_fit_item.py push out of the skin, uo_bind_item.py skin weights).
@@ -138,6 +138,41 @@ def widen(obs, th):
         loc = (np.linalg.inv(Mw) @ np.c_[new, np.ones(len(new))].T).T[:, :3]
         o.data.vertices.foreach_set("co", loc.astype(np.float32).ravel()); o.data.update(); bm.free()
         print("uo_make_item: widen %%s to %%.1f cm (factor mean %%.2f, max %%.2f)" %% (o.name, 100 * float(th["width"]), float(np.mean(fs)) if fs else 1.0, max(fs) if fs else 1.0))
+
+
+def skin_wrap(obs, th):
+    """lay a ribbon (strap) on the skin of the rest pose: every vertex goes to the nearest skin point + the normal * (GAP + its height over the lowest vertex of its 1-ring, at most THICK), so the strap
+    keeps its thickness, touches the skin (GAP m, 0.008) and does not stand off it or poke through it; a vertex is moved at most MAX m (0.05). The weights are set again afterwards (the skin under each vertex)"""
+    import bmesh
+    from mathutils.bvhtree import BVHTree
+    bpy.context.view_layer.update()
+    body = bpy.data.objects["UO_Body"]; dg = bpy.context.evaluated_depsgraph_get(); eb = body.evaluated_get(dg); mb = eb.to_mesh(); mb.calc_loop_triangles()
+    bv = BVHTree.FromPolygons([eb.matrix_world @ v.co for v in mb.vertices], [t.vertices[:] for t in mb.loop_triangles]); eb.to_mesh_clear()
+    gap, thick, mx = float(th.get("GAP", 0.008)), float(th.get("THICK", 0.006)), float(th.get("MAX", 0.05))
+    for o in obs:
+        Mw = o.matrix_world; bm = bmesh.new(); bm.from_mesh(o.data); bm.verts.ensure_lookup_table()
+        n = len(bm.verts); P = [Mw @ v.co for v in bm.verts]; L = [None] * n; N = [None] * n; d = np.full(n, 9.0)
+        for i, p in enumerate(P):
+            loc, nrm, fi, dist = bv.find_nearest(p, 0.5)
+            if loc is not None:
+                L[i], N[i] = loc, nrm; d[i] = dist if (p - loc).dot(nrm) >= 0 else -dist
+        new = list(P); moved = []
+        for i, v in enumerate(bm.verts):
+            if L[i] is None:
+                continue
+            dmin = min([d[i]] + [d[e.other_vert(v).index] for e in v.link_edges])
+            q = L[i] + N[i] * (gap + min(thick, max(0.0, d[i] - dmin)))
+            sh = q - P[i]
+            if sh.length > mx:
+                q = P[i] + sh * (mx / sh.length)
+            new[i] = q; moved.append((q - P[i]).length)
+        Mi = Mw.inverted()
+        for v, q in zip(bm.verts, new):
+            v.co = Mi @ q
+        bm.to_mesh(o.data); bm.free(); o.data.update()
+        ok = d < 9
+        print("uo_make_item: skin_wrap %%s: median height over the skin %%.1f -> %%.1f cm, inside %%.0f -> 0 %%%% of the vertices, moved %%.1f cm on average (max %%.1f)" %% (
+            o.name, 100 * float(np.median(d[ok])), 100 * gap, 100 * float((d[ok] < 0).mean()), 100 * float(np.mean(moved)) if moved else 0.0, 100 * max(moved) if moved else 0.0))
 
 rig = bpy.data.objects["UO_Rig"]; rig.data.pose_position = "REST"
 for o in list(bpy.data.collections["Clothing"].all_objects):
@@ -284,6 +319,12 @@ for part in %(parts)r:
             bind_over = ss.pop("bind", {})                    # settings of uo_bind_item.py for the shell (SMOOTH 0: the weights of the skin under each vertex, not smoothed over the mesh)
             select(obs)
             run("uo_skin_shell.py", **ss)
+            run("uo_bind_item.py", PART=part.get("prepare", {}).get("PART") or "torso", **bind_over)
+        if part.get("skin_wrap"):                        # straps and hardware laid on the skin (skin_wrap above), then bound again to the skin under each vertex
+            sw = dict(part["skin_wrap"]) if isinstance(part["skin_wrap"], dict) else {}
+            bind_over = sw.pop("bind", {"SMOOTH": 0})          # the weights of the skin under each vertex, not smoothed over the mesh: the strap moves with the skin and keeps its gap in motion
+            skin_wrap(obs, sw)
+            select(obs)
             run("uo_bind_item.py", PART=part.get("prepare", {}).get("PART") or "torso", **bind_over)
         if part.get("smooth_mesh"):                      # Laplacian smoothing of the finished rest shape (bumps and waves left by the push-out of the fit); border vertices (armholes, neckline, hem) stay, the skin weights stay
             sm = part["smooth_mesh"] if isinstance(part["smooth_mesh"], dict) else {}
