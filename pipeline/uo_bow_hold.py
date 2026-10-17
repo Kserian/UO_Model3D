@@ -16,16 +16,20 @@ PARALLEL = True                      # the shaft stays upright in every action (
 CLEAR_CONE = 90.0                    # degrees: in the CALIBRATED actions the shaft is tilted away from the calibrated direction (at most this much) until the bow stays out of the body and in front of it
 CLEAR_GAP = 0.025                    # m: the bow keeps this far from the skin (beyond 12 cm from the fist)
 IN_FRONT = 0.10                      # m: every part of the bow is at least this far in front of the chest's centre (not under the armpit, not behind the back)
-CONE_ACTIONS = [7, 8]                # of these the shaft is tilted away from the body (clear_of_body)
-ROLL_FIT = [18, 27]                      # actions whose roll about the shaft is fitted to the sprites of the original bow (env UO_BOW_WP + UO_BOW_VD, recipe "orig"); the shaft is the calibrated one
-CALIBRATED = [7, 8, 18, 23, 24, 25, 26, 27, 28, 29]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
+CONE_BY = {7: 90.0, 8: 90.0, 16: 50.0, 23: 0.0, 24: 0.0, 25: 0.0, 30: 35.0}   # action -> degrees: the shaft is tilted at most this much (around the direction of the rule) until the bow stays out of the posed body
+CONE_ACTIONS = list(CONE_BY)
+SHIFT_BY = {23: 0.18, 24: 0.18, 25: 0.18}   # action -> m: the bow may also be moved sideways away from the body (a seated rider's thigh is in the way of a hanging bow)
+IN_FRONT_ACTIONS = [7, 8]            # of these the bow must also stay ahead of the chest (held in front, not under the armpit)
+ROLL_ONLY = [15, 17, 27]             # actions whose roll about the shaft (one constant angle for the action) is chosen by the sprites of the original bow, the shaft being as chosen by the rules
+ROLL_FIT = [17, 18, 27]                      # actions whose roll about the shaft is fitted to the sprites of the original bow (env UO_BOW_WP + UO_BOW_VD, recipe "orig"); the shaft is the calibrated one
+CALIBRATED = [7, 8, 17, 18, 26, 27, 28, 29]                  # one-frame ready stances: the shaft keeps the direction calibrated on the original bows (a vertical bow would go through the thigh of the crouch)
 AWAY_FROM_HEAD = {21: 10.0, 22: 10.0}          # action -> degrees: once the body lies, the shaft is turned this much so that its end nearest to the head moves away from it (the falls: the bow lay on the face)
 FACING = "pelvis"                    # bone whose back the string faces (not the chest: in the war stance 7 the torso is turned ~70 deg against the legs and the bow turned with it)
 FULL_LEAN = 60.0                     # from this lean of the body (degrees) the bow lies along it
 FREE_LEAN = 35.0                     # degrees of lean of the body (crouch, step) the bow does not follow
 UPRIGHT = [18]                       # with PARALLEL False: UO action numbers where the shaft is made vertical instead of the calibrated direction
 UP = (0.0, -0.12, 1.0)               # world axes at direction 0: Y is forward (-Y), Z up
-AIM = [18, 19, 27, 28]                       # actions where the bow is held out along the aim line: the string side faces the archer along the arm (fist -> shoulder), not the back of the chest
+AIM = [17, 18, 19, 27, 28]                       # actions where the bow is held out along the aim line: the string side faces the archer along the arm (fist -> shoulder), not the back of the chest
 FIST_SHIFT = 0.0                     # m along the shaft from the fingers' centre (+ = towards the tip) if the grip should sit higher / lower in the fist
 
 rig = bpy.data.objects["UO_Rig"]
@@ -66,9 +70,10 @@ u_src = frame(np.asarray(WM["dir"], float), H0.T @ c)                           
 print("uo_bow_hold: string side %s (hand axes), shaft %.2f m" % (np.round(H0.T @ c / np.linalg.norm(c), 2), L))
 
 
-def clear_of_body(D0, Hw, F, _unused):
-    """candidate shaft directions on cones around D0 (0..CLEAR_CONE degrees, every 8, 12 azimuths): the one with the least penetration of the bow into the body skin (vertices of the
-    bow beyond 12 cm from the fist; depth along the skin normal) plus a small cost per degree of tilt. Returns (D, string side)"""
+def clear_of_body(D0, Hw, F, _unused, cone=90.0, in_front=True, an_=-1, fr_=-1, max_shift=0.0):
+    """candidate shaft directions on cones around D0 (0..cone degrees, every 8, 12 azimuths) and, with max_shift, the bow moved sideways away from the body (0..max_shift m, every 3 cm):
+    the one with the least penetration of the bow into the body skin (vertices of the bow beyond 12 cm from the fist keep CLEAR_GAP off it), a bow that must be IN_FRONT of the chest,
+    plus a small cost per degree of tilt and per cm of shift. Returns (D, string side, shift vector)"""
     evb = body_obj.evaluated_get(bpy.context.evaluated_depsgraph_get()); mb = evb.to_mesh(); mb.calc_loop_triangles()
     Bv = [np.array(evb.matrix_world @ v.co) for v in mb.vertices]
     tri = [tuple(t.vertices) for t in mb.loop_triangles]
@@ -76,30 +81,39 @@ def clear_of_body(D0, Hw, F, _unused):
     evb.to_mesh_clear()
     fwd = -to_back_of(np.array([0.0, 0.0, 1.0])); fwd[2] = 0.0; fwd /= np.linalg.norm(fwd)    # the way the pelvis faces
     chest_c = np.array(rig.matrix_world @ rig.pose.bones["chest"].head)
+    pel_c = np.array(rig.matrix_world @ rig.pose.bones["pelvis"].head)
+    out_dir = F - pel_c; out_dir[2] = 0.0; out_dir = out_dir / np.linalg.norm(out_dir) if np.linalg.norm(out_dir) > 1e-6 else np.array([1.0, 0, 0])   # away from the body's axis
+    shift_vs = [np.zeros(3)] + ([out_dir * k_ * np.array([np.cos(az_), 0, 0]) for k_, az_ in []] if False else [])
+    if max_shift > 0:                                                                          # any horizontal direction, 8 around, every 3 cm
+        rot_ = lambda v, t_: np.array([v[0] * np.cos(t_) - v[1] * np.sin(t_), v[0] * np.sin(t_) + v[1] * np.cos(t_), 0.0])
+        shift_vs += [rot_(out_dir, np.radians(az_)) * k_ for k_ in np.arange(0.03, max_shift + 1e-6, 0.03) for az_ in range(0, 360, 45)]
     sub = P[::max(1, len(P) // 1200)]
     off = sub - hc
     far = np.linalg.norm(off, axis=1) > 0.12
     e1 = np.cross(D0, [0, 0, 1.0]); e1 = e1 / np.linalg.norm(e1) if np.linalg.norm(e1) > 1e-6 else np.array([1.0, 0, 0]); e2 = np.cross(D0, e1)
     best = None
-    for ang in [0.0] + list(np.arange(8.0, CLEAR_CONE + 0.1, 8.0)):
+    for ang in [0.0] + list(np.arange(8.0, cone + 0.1, 8.0)):
         for az in ([0.0] if ang == 0 else np.arange(0, 360, 30)):
             a, b = np.radians(ang), np.radians(az)
             D = D0 * np.cos(a) + np.sin(a) * (e1 * np.cos(b) + e2 * np.sin(b))
             tb = to_back_of(D)
             Qc = frame(Hw.T @ D, Hw.T @ tb) @ u_src.T
-            pos = F + (Hw @ Qc @ (H0.T @ off.T)).T
-            pen = 0.0
-            for p_ in pos[far]:
-                loc, nor, _, dist = tree.find_nearest(Vector(p_))
-                if loc is not None:
-                    sd = (Vector(p_) - Vector(loc)).dot(nor)                                       # > 0 outside the skin
-                    pen += max(0.0, CLEAR_GAP - sd)
-            behind = float(np.maximum(0.0, IN_FRONT - (pos - chest_c) @ fwd).sum()) / len(pos)
-            cost = pen * 100.0 + behind * 100.0 + 0.05 * ang
-            if best is None or cost < best[0]:
-                best = (cost, D, tb, ang, pen)
-    print("uo_bow_hold: action %d: shaft tilted %.0f deg from the calibrated one, skin gap shortfall %.3f" % (an, best[3], best[4]))
-    return best[1], best[2]
+            rel = (Hw @ Qc @ (H0.T @ off.T)).T
+            for sv_ in shift_vs:
+                k_sh = float(np.linalg.norm(sv_))
+                pos = F + sv_ + rel
+                pen = 0.0
+                for p_ in pos[far]:
+                    loc, nor, _, dist = tree.find_nearest(Vector(p_))
+                    if loc is not None:
+                        sd = (Vector(p_) - Vector(loc)).dot(nor)                                   # > 0 outside the skin
+                        pen += max(0.0, CLEAR_GAP - sd)
+                behind = float(np.maximum(0.0, IN_FRONT - (pos - chest_c) @ fwd).sum()) / len(pos) if in_front else 0.0
+                cost = pen * 100.0 + behind * 100.0 + 0.05 * ang + 20.0 * k_sh
+                if best is None or cost < best[0]:
+                    best = (cost, D, tb, ang, pen, sv_)
+    print("uo_bow_hold: clearance action %d frame %d: shaft tilted %.0f deg from the rule, moved %.0f cm sideways, skin gap shortfall %.3f" % (an_, fr_, best[3], 100 * np.linalg.norm(best[5]), best[4]))
+    return best[1], best[2], best[5]
 
 
 def to_back_of(D):
@@ -207,68 +221,110 @@ if os.environ.get("UO_BOW_WP") and os.environ.get("UO_BOW_VD"):
             ORI[(an, i)] = (D_, ctx[i][1](D_))
             print("uo_bow_hold: fit to the original bow, action %d frame %d: shaft tilt %.0f deg from vertical, chamfer %.1f px over %d views%s" % (an, i, np.degrees(np.arccos(np.clip(D_[2], -1, 1))), ctx[i][0](D_), ctx[i][2], "" if i == 0 else ", turn from the previous frame %.0f deg" % ang_between(Ds[i], Ds[i - 1])))
 rig.animation_data.action = keep
-for act in [a for a in bpy.data.actions if "uo_action" in a]:
-    an = int(act["uo_action"]); rig.animation_data.action = act; prev = None
-    for i in range(int(act["uo_frames"])):
-        p = WM["poses"].get("%d,%d" % (an, i))
-        if p is None:
+STATE = {}; ROLL_PHI = {}; n_ = [0]
+
+
+def run_pass(dry):
+    global Cw
+    for act in [a for a in bpy.data.actions if "uo_action" in a]:
+        an = int(act["uo_action"])
+        if dry and an not in ROLL_ONLY:
             continue
-        sc.frame_set(1 + 3 * i)                                                                # evaluates the old keys of bow.L; the hand's pose is what is wanted here
-        pb.rotation_quaternion = Quaternion(); pb.location = (0, 0, 0); bpy.context.view_layer.update()
-        Hw = M @ np.array(rig.pose.bones[WM["parent"]].matrix.to_3x3()); Hw = Hw / np.linalg.norm(Hw, axis=0)   # hand.L axes posed -> world
-        r = Vector(p[:3]); ang = r.length
-        q0 = Quaternion(r / ang, ang) if ang > 1e-9 else Quaternion()
-        body = W(rig.pose.bones["neck"].head) - W(rig.pose.bones["pelvis"].head)
-        Cw = M @ np.array(rig.pose.bones[FACING].matrix.to_3x3()); Cw = Cw / np.linalg.norm(Cw, axis=0)
-        lean = 0.0
-        if PARALLEL:                                                                           # upright; along the body once it leans over (smoothstep 35 -> 60 deg, a fall / death: along the body)
-            bn = body / np.linalg.norm(body); lean = np.degrees(np.arccos(np.clip(bn[2], -1, 1)))
-            side = bn - bn[2] * np.array([0.0, 0.0, 1.0])
-            x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); a = np.radians(lean * x * x * (3 - 2 * x))
-            body = np.array([0.0, 0.0, 1.0]) * np.cos(a) + (side / np.linalg.norm(side) * np.sin(a) if np.linalg.norm(side) > 1e-6 else 0.0)
-        D = Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float)) if an in CALIBRATED else body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
-        D = D / np.linalg.norm(D)
-        F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
-        if an in AWAY_FROM_HEAD and lean > FREE_LEAN:
-            x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); x = x * x * (3 - 2 * x)
-            hv = W(rig.pose.bones["head"].head) - F
-            ax = np.cross(D, hv)
-            if np.linalg.norm(ax) > 1e-6:
-                ax /= np.linalg.norm(ax); th = np.radians(AWAY_FROM_HEAD[an]) * x
-                sg = 1.0 if D @ hv > 0 else -1.0                                                 # the end of the bow (+D or -D) that is nearer to the head
-                def rot(v, t): return v * np.cos(t) + np.cross(ax, v) * np.sin(t) + ax * (ax @ v) * (1 - np.cos(t))
-                D = min((rot(D, th), rot(D, -th)), key=lambda v: sg * (v @ hv)); D = D / np.linalg.norm(D)
-        to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of FACING (the body faces -Y at rest)
-        to_body -= (to_body @ D) * D; to_body /= max(np.linalg.norm(to_body), 1e-9)
-        if an in AIM:                                                                           # held out along the aim line: the string comes to the archer along the shoulder line (left -> right shoulder),
-            sh = AIM_SIDE[an].copy()                                                            # the same in every frame (the torso twists during the shot, the bow must not follow it)
-            sh -= (sh @ D) * D
-            if np.linalg.norm(sh) > 1e-3:
-                to_body = sh / np.linalg.norm(sh)
-        if lean > FREE_LEAN:                                                                    # a fall: the string side faces the body (the belly of the bow away from the character)
-            x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); x = x * x * (3 - 2 * x)
-            tc = W(rig.pose.bones["chest"].head) - F; tc -= (tc @ D) * D
-            if np.linalg.norm(tc) > 1e-3:
-                to_body = (1 - x) * to_body + x * tc / np.linalg.norm(tc)
-        to_body -= (to_body @ D) * D
-        if np.linalg.norm(to_body) < 1e-3:
-            to_body = np.array([0.0, 1.0, 0.0])
-        if (an, i) in ORI:                                                                      # shaft and string side fitted to the original bow sprites
-            D, to_body = ORI[(an, i)]
-        if an in CONE_ACTIONS:                                                                  # the least tilt from the calibrated direction at which the bow stays out of the posed body
-            D, to_body = clear_of_body(D, Hw, F, lambda D_, T_: to_back_of(D_))
-        Q = frame(Hw.T @ D, Hw.T @ to_body) @ u_src.T                                       # turn of the bone in hand axes: shaft -> D, string side -> the body
-        q = Matrix(Q.tolist()).to_quaternion()
-        if prev is not None and q.dot(prev) < 0:
-            q.negate()
-        prev = q
-        pb.rotation_quaternion = q
-        bpy.context.view_layer.update()
-        h = W(pb.head)                                                                         # the bone's head with the location 0
-        pb.location = tuple(float(x) for x in Hw.T @ (F - Hw @ (Q @ o_h) - h))                                  # hand axes = the bone's axes: the shift that puts the grip in the fist
-        pb.keyframe_insert("location", frame=1 + 3 * i, group="bow.L")
-        pb.keyframe_insert("rotation_quaternion", frame=1 + 3 * i, group="bow.L")
-        n += 1
+        rig.animation_data.action = act; prev = None
+        for i in range(int(act["uo_frames"])):
+            p = WM["poses"].get("%d,%d" % (an, i))
+            if p is None:
+                continue
+            sc.frame_set(1 + 3 * i)                                                                # evaluates the old keys of bow.L; the hand's pose is what is wanted here
+            pb.rotation_quaternion = Quaternion(); pb.location = (0, 0, 0); bpy.context.view_layer.update()
+            Hw = M @ np.array(rig.pose.bones[WM["parent"]].matrix.to_3x3()); Hw = Hw / np.linalg.norm(Hw, axis=0)   # hand.L axes posed -> world
+            r = Vector(p[:3]); ang = r.length
+            q0 = Quaternion(r / ang, ang) if ang > 1e-9 else Quaternion()
+            HC_ = W(pb.head) + Hw @ np.asarray(p[3:], float) + Hw @ (np.array(q0.to_matrix()) @ o_h)    # the handle of the original bow (calibrated pose)
+            body = W(rig.pose.bones["neck"].head) - W(rig.pose.bones["pelvis"].head)
+            Cw = M @ np.array(rig.pose.bones[FACING].matrix.to_3x3()); Cw = Cw / np.linalg.norm(Cw, axis=0)
+            lean = 0.0
+            if PARALLEL:                                                                           # upright; along the body once it leans over (smoothstep 35 -> 60 deg, a fall / death: along the body)
+                bn = body / np.linalg.norm(body); lean = np.degrees(np.arccos(np.clip(bn[2], -1, 1)))
+                side = bn - bn[2] * np.array([0.0, 0.0, 1.0])
+                x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); a = np.radians(lean * x * x * (3 - 2 * x))
+                body = np.array([0.0, 0.0, 1.0]) * np.cos(a) + (side / np.linalg.norm(side) * np.sin(a) if np.linalg.norm(side) > 1e-6 else 0.0)
+            D = Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float)) if an in CALIBRATED else body if PARALLEL else np.asarray(UP, float) if an in UPRIGHT else Hw @ (np.array(q0.to_matrix()) @ np.asarray(WM["dir"], float))
+            D = D / np.linalg.norm(D)
+            F = np.mean([W(rig.pose.bones[b].head) for b in FINGERS] + [W(rig.pose.bones[b].tail) for b in FINGERS], 0) + D * FIST_SHIFT
+            if an in AWAY_FROM_HEAD and lean > FREE_LEAN:
+                x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); x = x * x * (3 - 2 * x)
+                hv = W(rig.pose.bones["head"].head) - F
+                ax = np.cross(D, hv)
+                if np.linalg.norm(ax) > 1e-6:
+                    ax /= np.linalg.norm(ax); th = np.radians(AWAY_FROM_HEAD[an]) * x
+                    sg = 1.0 if D @ hv > 0 else -1.0                                                 # the end of the bow (+D or -D) that is nearer to the head
+                    def rot(v, t): return v * np.cos(t) + np.cross(ax, v) * np.sin(t) + ax * (ax @ v) * (1 - np.cos(t))
+                    D = min((rot(D, th), rot(D, -th)), key=lambda v: sg * (v @ hv)); D = D / np.linalg.norm(D)
+            to_body = Cw @ C0.T @ np.array([0.0, 1.0, 0.0])                                        # the back of FACING (the body faces -Y at rest)
+            to_body -= (to_body @ D) * D; to_body /= max(np.linalg.norm(to_body), 1e-9)
+            if an in AIM:                                                                           # held out along the aim line: the string comes to the archer along the shoulder line (left -> right shoulder),
+                sh = AIM_SIDE[an].copy()                                                            # the same in every frame (the torso twists during the shot, the bow must not follow it)
+                sh -= (sh @ D) * D
+                if np.linalg.norm(sh) > 1e-3:
+                    to_body = sh / np.linalg.norm(sh)
+            if lean > FREE_LEAN:                                                                    # a fall: the string side faces the body (the belly of the bow away from the character)
+                x = float(np.clip((lean - FREE_LEAN) / (FULL_LEAN - FREE_LEAN), 0.0, 1.0)); x = x * x * (3 - 2 * x)
+                tc = W(rig.pose.bones["chest"].head) - F; tc -= (tc @ D) * D
+                if np.linalg.norm(tc) > 1e-3:
+                    to_body = (1 - x) * to_body + x * tc / np.linalg.norm(tc)
+            to_body -= (to_body @ D) * D
+            if np.linalg.norm(to_body) < 1e-3:
+                to_body = np.array([0.0, 1.0, 0.0])
+            if (an, i) in ORI:                                                                      # shaft and string side fitted to the original bow sprites
+                D, to_body = ORI[(an, i)]
+            if an in CONE_ACTIONS:                                                                  # the least tilt from the calibrated direction at which the bow stays out of the posed body
+                D, to_body, sh_ = clear_of_body(D, Hw, F, lambda D_, T_: to_back_of(D_), CONE_BY[an], an in IN_FRONT_ACTIONS, an, i, SHIFT_BY.get(an, 0.0))
+                F = F + sh_
+            if dry:
+                STATE.setdefault(an, {})[i] = (Hw.copy(), HC_.copy(), D.copy(), to_body.copy())
+                continue
+            if an in ROLL_PHI:                                                                      # the roll chosen by the original sprites: the string side turned about the shaft
+                e1_ = to_body - (to_body @ D) * D; e1_ /= np.linalg.norm(e1_)
+                to_body = np.cos(ROLL_PHI[an]) * e1_ + np.sin(ROLL_PHI[an]) * np.cross(D, e1_)
+            Q = frame(Hw.T @ D, Hw.T @ to_body) @ u_src.T                                       # turn of the bone in hand axes: shaft -> D, string side -> the body
+            q = Matrix(Q.tolist()).to_quaternion()
+            if prev is not None and q.dot(prev) < 0:
+                q.negate()
+            prev = q
+            pb.rotation_quaternion = q
+            bpy.context.view_layer.update()
+            h = W(pb.head)                                                                         # the bone's head with the location 0
+            pb.location = tuple(float(x) for x in Hw.T @ (F - Hw @ (Q @ o_h) - h))                                  # hand axes = the bone's axes: the shift that puts the grip in the fist
+            pb.keyframe_insert("location", frame=1 + 3 * i, group="bow.L")
+            pb.keyframe_insert("rotation_quaternion", frame=1 + 3 * i, group="bow.L")
+            n_[0] += 1
+
+
+run_pass(True)                                                                                 # dry: the shaft and string side by the rules, for the actions whose roll is chosen by the original sprites
+if STATE and "VW" in globals():
+    PHI = np.radians(np.arange(0.0, 360.0, 30.0))
+    for an, fr in STATE.items():
+        tot = np.zeros(len(PHI))
+        for i, (Hw_, HC_, D_, sd_) in fr.items():
+            views = [k for k in range(VW.n) if VW.key[k][0] == an and VW.key[k][2] == i]
+            e1_ = sd_ - (sd_ @ D_) * D_; e1_ /= np.linalg.norm(e1_); e2_ = np.cross(D_, e1_)
+            for j, ph in enumerate(PHI):
+                sd2 = np.cos(ph) * e1_ + np.sin(ph) * e2_
+                Qc = frame(Hw_.T @ D_, Hw_.T @ sd2) @ u_src.T
+                pos = HC_ + (Hw_ @ Qc @ off_h * s_orig).T; pos1 = np.c_[pos, np.ones(len(pos))]
+                for k in views:
+                    pix = (pos1 @ RR[int(VW.key[k][1])].T) @ VW.PX[k, :2].T
+                    xi = np.clip(pix[:, 0].astype(int), 0, VW.W - 1); yi = np.clip(pix[:, 1].astype(int), 0, VW.H - 1)
+                    d1 = np.minimum(VW.DT[k][yi, xi], 15.0).mean()
+                    op = VW.pts[k, :VW.npts[k]]
+                    d2 = np.minimum(np.sqrt(((op[:, None, :] - pix[None, :, :]) ** 2).sum(-1)).min(1), 15.0).mean()
+                    tot[j] += 0.5 * (d1 + d2)
+        prior = 0.02 * np.array([min(np.degrees(x), 360 - np.degrees(x)) for x in PHI])          # the roll of the rule is kept unless the sprites clearly ask for another
+        jb = int((tot + prior).argmin()); ROLL_PHI[an] = float(PHI[jb])
+        print("uo_bow_hold: roll fit action %d: chamfer sum by roll (deg:px) %s -> %.0f deg" % (an, " ".join("%d:%.0f" % (np.degrees(x), t_) for x, t_ in zip(PHI, tot)), np.degrees(PHI[jb])))
+run_pass(False)
+n = n_[0]
 print("uo_bow_hold: %d poses re-keyed" % n)
 
 # ---- the string drawn by the second hand: the string vertices (mesh attribute uo_string, set by uo_make_item.py "inflate") are weighted to a bone "string.pull" (child of bow.L) in a

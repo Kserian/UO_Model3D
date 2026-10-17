@@ -346,6 +346,7 @@ if wp:                                                           # a weapon: upr
     if wp["class"] == "bow" and wp.get("hold", True):             # a bow: grip in the fist, string towards the body in every action, upright in the shooting action (uo_bow_hold.py)
         run("uo_bow_hold.py")
     for o in [o for o in bpy.context.selected_objects if o.type == "MESH" and wp["class"] == "bow"]:
+        o["uo_behind_torso"] = 1                                  # the torso hides the parts of the bow that are behind it (a bow in front of the belly seen from the back is not drawn over the back)
         o["uo_no_body_gap"] = 1                                   # a rigid weapon: the renderer must not push it out of the skin (it made a blob where a bow's lower end meets the legs)
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
