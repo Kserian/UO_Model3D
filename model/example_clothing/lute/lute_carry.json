@@ -1,3 +1,29 @@
-{"name": "lute_carry", "file": "models/lute.glb",
- "weapon": {"class": "staff", "part": "weapon", "length": 1.0, "tip": "auto", "strings": true,
-            "carry": {"grip": 0.52, "axis": [0.2, 0.0, 1.0], "front": [-1.0, 0.0, 0.0], "shift": [-0.03, 0.0, 0.0]}}}
+{
+ "name": "lute_carry",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "carry": {
+   "grip": 0.52,
+   "axis": [
+    0.0,
+    -1.0,
+    0.15
+   ],
+   "front": [
+    -1.0,
+    0.0,
+    0.0
+   ],
+   "shift": [
+    -0.04,
+    0.0,
+    0.0
+   ]
+  }
+ }
+}

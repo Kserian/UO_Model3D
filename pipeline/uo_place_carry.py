@@ -2,6 +2,8 @@
 # body, the instrument lying across the front of the body, the strings out. The hand is rigid on it (uo_bind_item.py PART "weapon" = hand.R).
 # The pose is given in the pose of ACTION, in world axes (the body faces -Y, its left is +X, up is +Z); the script carries it back into the rest pose of the rig, in which the mesh is bound:
 #   AXIS   world direction of the headstock (butt -> tip) in the pose; FRONT world direction the strings face (made perpendicular to AXIS); GRIP m from the butt where the hand holds the neck
+#   BONE2  a second hand (hand.L): the instrument is then laid along the line between the two palms (AXIS is ignored), hand.R holding it at GRIP and hand.L at GRIP + the distance of the palms (both hands on the instrument);
+#          the rest of the instrument is centred on the middle between the palms
 #   SHIFT  m, extra shift of the grip point in world axes (from the middle of the palm); ROLL degrees, turn of the instrument about its own axis (strings towards FRONT = 0)
 import bpy, math
 import numpy as np
@@ -15,6 +17,7 @@ FRONT = [0.0, -1.0, 0.3]
 GRIP = 0.52
 SHIFT = [0.0, 0.0, 0.0]
 ROLL = 0.0
+BONE2 = None
 PALM = 0.4                                  # share of the hand bone from the wrist to the middle of the palm
 
 rig = bpy.data.objects["UO_Rig"]
@@ -29,6 +32,16 @@ Pp = rig.matrix_world @ rig.pose.bones[BONE].matrix                         # th
 rig.animation_data.action = saved[1]; rig.data.pose_position = saved[0]; bpy.context.view_layer.update()
 palm = Vector((0, PALM * bone.length, 0))
 G = Pp @ palm + Vector(SHIFT)                                               # grip point in the pose (world)
+grip = GRIP
+if BONE2:                                                                   # both hands: the axis runs through both palms
+    bone2 = rig.data.bones[BONE2]
+    rig.data.pose_position = "POSE"; rig.animation_data.action = bpy.data.actions[ACTION]
+    bpy.context.scene.frame_set(FRAME); bpy.context.view_layer.update()
+    G2 = rig.matrix_world @ rig.pose.bones[BONE2].matrix @ Vector((0, PALM * bone2.length, 0)) + Vector(SHIFT)
+    rig.animation_data.action = saved[1]; rig.data.pose_position = saved[0]; bpy.context.view_layer.update()
+    AXIS = list(G2 - G); span = (G2 - G).length
+    G = (G + G2) / 2; grip = GRIP + span / 2                                 # the middle of the palms sits at the middle of the two grips
+    print("uo_place_carry: palms %.2f m apart, grips at %.2f and %.2f m" % (span, GRIP, GRIP + span))
 
 a = Vector(AXIS).normalized()
 f = Vector(FRONT); f = (f - f.dot(a) * a).normalized()
@@ -38,9 +51,9 @@ Rp = Matrix(((x.x, -f.x, a.x), (x.y, -f.y, a.y), (x.z, -f.z, a.z)))         # co
 
 for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
     co = np.array([ob.matrix_world @ v.co for v in ob.data.vertices])
-    near = co[np.abs(co[:, 2] - GRIP) < 0.03]
+    near = co[np.abs(co[:, 2] - grip) < 0.03]
     c = near[:, :2].mean(0) if len(near) else co[:, :2].mean(0)             # the neck axis at the grip
-    M_pose = Matrix.Translation(G) @ Rp.to_4x4() @ Matrix.Translation(-Vector((c[0], c[1], GRIP)))
+    M_pose = Matrix.Translation(G) @ Rp.to_4x4() @ Matrix.Translation(-Vector((c[0], c[1], grip)))
     delta = Pp @ Pr.inverted()                                              # rest -> pose of the hand
     ob.matrix_world = delta.inverted() @ M_pose @ ob.matrix_world
 print("uo_place_carry: grip %.2f m, axis %s, strings towards %s in %s" % (GRIP, tuple(round(v, 2) for v in a), tuple(round(v, 2) for v in f), ACTION))
