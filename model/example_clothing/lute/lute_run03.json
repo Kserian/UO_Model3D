@@ -8,11 +8,11 @@
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.66,
+   "grip": 0.74,
    "action": "03_run_armed",
    "frame": 1,
    "axis": [
-    0.25,
+    0.1,
     0,
     1.0
    ],
@@ -23,7 +23,7 @@
    ],
    "handmass": true,
    "shift": [
-    -0.07,
+    0,
     0,
     0
    ]
@@ -32,6 +32,12 @@
   "follow": {
    "action": "03_run_armed",
    "frame": 1
+  },
+  "neck_grow": {
+   "z0": 0.5,
+   "ramp": 0.06,
+   "grow": 0.014,
+   "width_only": true
   }
  }
 }
