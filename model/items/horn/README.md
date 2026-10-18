@@ -1,0 +1,9 @@
+# Horn (instrument) for the right and the left hand
+
+`Horn_right_hand.vd` and `Horn_left_hand.vd`: all 35 actions x 5 directions (1050 frames each), made from one free glTF model of a decorated war horn (`horn.glb`, 37 MB, **not in the repo**: keep it next to the recipes before re-running; record the author's licence when it is known).
+
+Rebuild: `python pipeline/uo_make_item.py model/items/horn/horn_R.json --out OUT --vd` (and `horn_L.json`).
+
+- Right hand: part `weapon1h` (bone `weapon1h.R`, motion calibrated on 13 original 1H weapons). QA: inside the body 4.3 % (worst: area spell), deepest 97 mm.
+- Left hand: part `weapon.L` (grip of `weapon1h.R` mirrored onto `hand.L`, rigid on the hand: no original left-hand 1H item to calibrate on). QA: inside 3.8 %, deepest 88 mm.
+- The bell points up, the mouthpiece sits in the hand; length 0.6 m (`"tip": "+x"` because `auto` cannot choose on a thin shell).

@@ -187,7 +187,7 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"robe"`, `"skirt"` | szata, sukienka, spódnica, kilt | do bioder jak skóra; poniżej **miednica**, a nogi wypychają tkaninę per klatka (`cloth_lib.py`, własność `uo_cloth`; `docs/qa/robe_physics.md`) |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |
       | `"weapon1h"` | miecz, maczuga, młot, topór 1H, kryss, kilof | kość `weapon1h.R` na prawej dłoni, ruch dopasowany do 13 oryginalnych broni (0,7–1,3 px zamiast 1,4–2,1 px); najpierw `uo_place_weapon.py` z `PART = "weapon1h"` |
-      | `"weapon"` / `"weapon.L"` | broń bez kalibracji | sztywno na `hand.R` / `hand.L` |
+      | `"weapon"` / `"weapon.L"` | broń bez kalibracji | sztywno na `hand.R` / `hand.L`; `uo_place_weapon.py` z `PART = "weapon.L"` ustawia przedmiot 1H (róg, latarnię) w lewej ręce na odbitej linii chwytu `weapon1h.R` (wersja lewa to lustrzane odbicie prawej) |
       | `"polearm"` (`"staff"`, `"weapon2h"`) | kij, włócznia, oszczep, widły, halabarda, berdysz, laska, kostur | kość `polearm.L` na lewej dłoni, ruch dopasowany do oryginalnych broni (0,6–1,1 px zamiast 5–6 px); najpierw `uo_place_weapon.py` |
       | `"axe2h"` | topór dwuręczny, siekiera i młot w lewej dłoni | kość `axe2h.L` (jak wyżej, błąd 1,2–1,7 px) |
       | `"shield"` | tarcza | sztywno na `shield.L` (kość tarczy na przedramieniu, ruch jak tarcza z UO) |

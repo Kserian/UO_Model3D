@@ -8,26 +8,34 @@
 # bit / cutting edge of an axe towards +X), thin along Y. The script turns the weapon about its shaft so that +X lies in the plane the original weapon REF_ANIM
 # has at roll 0 of the class (weapon_motion.json: roll.offsets; default the reference weapon of the class); the bone then turns it with the roll per pose
 # (uo_weapon_bones.py). A class without "roll" (bows) keeps the turn of the shortest rotation +Z -> DIR. ROLL_DEG overrides the offset (degrees).
+# PART = "weapon.L": a one-handed thing in the LEFT hand (a horn, a lantern: no original to calibrate on). It takes the grip of weapon1h.R mirrored across the sagittal plane
+# (X of hand.R -> -X of hand.L, the same grip line, the same roll turned the mirror way), so the left version is the mirror image of the right one; uo_bind_item.py with PART =
+# "weapon.L" then makes it rigid on hand.L (the hand bone itself, as the original left-hand items follow it).
 # Running it again places the weapon again.
 import bpy, json, math
 import numpy as np
 from mathutils import Vector, Matrix
 
-PART = "polearm"      # "polearm", "axe2h", "bow" or "weapon1h"
+PART = "polearm"      # "polearm", "axe2h", "bow", "weapon1h" or "weapon.L" (1H in the left hand, mirror of weapon1h)
 REF_ANIM = None       # original weapon whose head orientation to copy (anim id, e.g. 624 halberd, 613 executioner's axe, 623 cutlass); None = the reference of the class
 ROLL_DEG = None       # or: offset of the head about the shaft in degrees (overrides REF_ANIM)
 BUTT = None           # m along the class line where the butt goes (the hand pivot is at 0): None = the class's usual `butt`; e.g. -0.06 = held close to the butt end (a flail's short haft)
-BONE = {"polearm": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "weapon1h": "weapon1h.R"}[PART]
+BONE = {"polearm": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "weapon1h": "weapon1h.R", "weapon.L": "weapon1h.R"}[PART]
+MIRROR = PART == "weapon.L"                                                    # the grip of the right hand mirrored onto hand.L
 
 WM = json.loads(bpy.data.texts["weapon_motion.json"].as_string())[BONE]
 rig = bpy.data.objects["UO_Rig"]
-H = rig.matrix_world @ rig.data.bones[WM["parent"]].matrix_local              # the hand bone (hand.L, hand.R) at rest -> world
-piv = H @ Vector(WM["pivot"]); d = (H.to_3x3() @ Vector(WM["dir"])).normalized()
+mx = (lambda v: Vector((-v[0], v[1], v[2]))) if MIRROR else (lambda v: Vector(v))   # mirror of a vector in the hand's own axes
+HAND = "hand.L" if MIRROR else WM["parent"]
+H = rig.matrix_world @ rig.data.bones[HAND].matrix_local                        # the hand bone (hand.L, hand.R) at rest -> world
+dloc = mx(WM["dir"])
+piv = H @ mx(WM["pivot"]); d = (H.to_3x3() @ dloc).normalized()
 RO = WM.get("roll")
 ru = None
 if RO:                                                                         # where +X of the weapon must point (perpendicular to the shaft)
     delta = math.radians(ROLL_DEG) if ROLL_DEG is not None else RO["offsets"].get(str(REF_ANIM if REF_ANIM is not None else RO["ref"]), 0.0)
-    ru = (H.to_3x3() @ (Matrix.Rotation(delta, 3, Vector(WM["dir"]).normalized()) @ Vector(RO["e1"]))).normalized()
+    ruloc = mx(Matrix.Rotation(delta, 3, Vector(WM["dir"]).normalized()) @ Vector(RO["e1"]))
+    ru = (H.to_3x3() @ ruloc).normalized()
 for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
     co = np.array([ob.matrix_world @ v.co for v in ob.data.vertices])
     z0, ctr = co[:, 2].min(), co[:, :2].mean(0)                                # butt height, shaft axis (middle of the bounds in XY)

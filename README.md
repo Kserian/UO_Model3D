@@ -190,7 +190,7 @@ items into it, not the other way round.
       | `"robe"`, `"skirt"` | robe, dress, skirt, kilt | like the skin down to the hips; below, the **pelvis**, and the legs push the cloth out per frame (`cloth_lib.py`, property `uo_cloth`; `docs/qa/robe_physics.md`) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` (UO hair and beards are rigid) |
       | `"weapon1h"` | sword, mace, hammer, 1H axe, kryss, pickaxe | bone `weapon1h.R` on the right hand, motion fitted to 13 original weapons (0.7-1.3 px instead of 1.4-2.1 px); run `uo_place_weapon.py` with `PART = "weapon1h"` first |
-      | `"weapon"` / `"weapon.L"` | uncalibrated weapon | rigid on `hand.R` / `hand.L` |
+      | `"weapon"` / `"weapon.L"` | uncalibrated weapon | rigid on `hand.R` / `hand.L`; `uo_place_weapon.py` with `PART = "weapon.L"` puts a 1H item (horn, lantern) in the left hand on the mirrored grip line of `weapon1h.R` (the left version is the mirror image of the right one) |
       | `"polearm"` (`"staff"`, `"weapon2h"`) | staff, spear, javelin, pitchfork, halberd, bardiche, crook | bone `polearm.L` on the left hand, motion fitted to the original weapons (0.6-1.1 px instead of 5-6 px); run `uo_place_weapon.py` first |
       | `"axe2h"` | two-handed axe, hatchet / hammer in the left hand | bone `axe2h.L` (same, 1.2-1.7 px error) |
       | `"shield"` | shield | rigid on `shield.L` (shield bone on the forearm, moves like the UO shield) |
