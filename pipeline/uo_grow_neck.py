@@ -1,6 +1,5 @@
 # Thicken the neck and the headstock of the SELECTED instrument (upright, butt z = 0 .. tip z = LENGTH, from uo_orient_weapon.py / uo_face_strings.py): every vertex above Z0 is pushed away from the axis of its slice
 # by GROW m (1 px of the 36 px/m render = 0.028 m across = GROW 0.014 per side), the push fading in over RAMP so that the bowl does not change. The neck of a lute is 2-3 px wide in the 136x120 frames: the held instrument then reads as held.
-#   WIDTH_ONLY: grow only the width (X), not the thickness (Y)
 #   Z0 m: where the neck starts (the bowl ends); RAMP m; GROW m per side; BIN m: height of a slice
 import bpy
 import numpy as np
@@ -9,7 +8,6 @@ Z0 = 0.5
 RAMP = 0.06
 GROW = 0.014
 BIN = 0.02
-WIDTH_ONLY = False    # True: only the width (model X, the plane the strings lie in) grows, the thickness (Y) stays: every vertex above Z0 moves GROW along X away from the middle of its slice
 
 for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
     me = ob.data
@@ -24,9 +22,6 @@ for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
         n = np.linalg.norm(d, axis=1)
         w = np.clip((z[m] - Z0) / RAMP, 0.0, 1.0); w = w * w * (3 - 2 * w)  # smoothstep: 0 at the end of the bowl, 1 on the neck
         push = np.where(n > 1e-4, GROW * w / np.maximum(n, 1e-4), 0.0)
-        if WIDTH_ONLY:
-            new[m, 0] = co[m, 0] + np.where(np.abs(d[:, 0]) > 1e-4, np.sign(d[:, 0]) * GROW * w, 0.0)
-        else:
-            new[m, :2] = co[m, :2] + d * push[:, None]
+        new[m, :2] = co[m, :2] + d * push[:, None]
     me.vertices.foreach_set("co", new.ravel()); me.update()
     print("uo_grow_neck: %s: %d vertices above z %.2f pushed out by up to %.1f mm" % (ob.name, int((z > Z0).sum()), Z0, 1000 * GROW))
