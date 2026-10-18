@@ -10,6 +10,8 @@
 | `equipment_extent.json` | Zasięg klatek każdej animacji ludzi / ekwipunku (`anim`, `anim2`..`anim5`, ID lokalne w pliku) względem zaczepu: `left`, `right`, `up`, `down` w px, z uwzględnieniem lustra kierunków 5–7 | `pipeline/measure_equipment_extent.py` |
 | `layer_analysis.json` | Analiza A: zasięg wysokości, pokrycie części ciała i wystawanie poza sylwetkę ciała dla 385 oryginalnych animacji (`anim`..`anim5`) ubieralnych (`stand`) | `pipeline/layer_analysis.py` (tabele: `docs/qa/layer_analysis.md`, `pipeline/layer_analysis_report.py`) |
 | `item_animations.json` | Przedmioty ubieralne z `tiledata.mul` (animacja, warstwa, nazwa) połączone przez `Bodyconv.def` z plikiem animacji i zasięgiem; statystyki per warstwa | `pipeline/extract_tiledata.py` |
+| `vd_scan.json.gz` | Skan WSZYSTKICH ubieralnych animacji (393, 412 tys. klatek, 35 akcji × 5 kierunków) względem ciała 400: zasięg, pokrycie, wystawanie poza sylwetkę (histogram), per pasmo wysokości i per część ciała 3D; tylko agregaty | `pipeline/vd_scan.py` (`--parts` z `body_part_raster.py`) |
+| `vd_scan_layers.json` | Agregaty per warstwa z tego skanu (stand) | `pipeline/vd_scan_report.py` (tabele: `docs/qa/vd_scan.md`) |
 
 Odtworzenie (z katalogu repo, klient w `uo_client/NelderimServUO/`):
 ```
@@ -23,3 +25,10 @@ psują większe pliki lub nie obsługują RAR5.
 Fakty o kliencie (zmierzone): `anim.mul` i `anim.idx` są bajt w bajt identyczne z kopiami `*_BACKUP_przed_vd`
 (md5 `b1efc293…` / `ca8a8f91…`), więc ciało 400 i ekwipunek w `anim.mul` są oryginalne. `anim2`, `anim4` mają zmiany z 2026-09, ale animacje ubieralne w nich to oryginały gry (potwierdził użytkownik, sesja 8); własne animacje Nelderim (np. 420, 422) są osobno. Animacje w `anim`..`anim5`: 449 z klatkami (417 kompletnych 35×5); 613 ID ubieralnych w `tiledata`,
 392 z klatkami.
+
+Skan wszystkich akcji (animacje z `tiledata` → `Equipconv.def` (typ 400) → `Bodyconv.def`; bez Blendera poza etykietami części):
+```
+python pipeline/body_part_raster.py model/UO_Body_0x190.blend parts.npz        # bpy 4.2, ~1 min
+python pipeline/vd_scan.py uo_client/NelderimServUO scan.json --parts parts.npz  # numba + scipy, ~15 s
+python pipeline/vd_scan_report.py scan.json docs/qa/vd_scan.md client/extract/vd_scan_layers.json
+```

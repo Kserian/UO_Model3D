@@ -8,3 +8,4 @@ description: Downloading/extracting the UO client (anim.mul, idx, tiledata), .vd
 - `.vd`: `python vdtool/mul2vd.py anim.idx anim.mul out <id>`; to PNG: `vdtool/vdtool.py extract`.
 - Nelderim-custom animations (`anim3`/`anim4`, e.g. 420, 422) are not needed; wearable animations in `anim2`/`anim4` are original game assets.
 - **Keep the original body frames** (`client/body_0x190_frames/`, atlas in the `.blend`): `EXACT_BODY` and the measurements rely on them.
+- Scan of all wearable animations (all 35 actions x 5 directions x frames vs body 400): `pipeline/vd_scan.py` + `vd_scan_report.py` -> `client/extract/vd_scan.json.gz`, `docs/qa/vd_scan.md`. Animation id = tiledata `anim` -> `Equipconv.def` (type 400) -> `Bodyconv.def` -> file. Frame offset 0 in a block = placeholder (empty frame), not an error. 393 animations have data, 211 tiledata ids have none, 15 are incomplete.
