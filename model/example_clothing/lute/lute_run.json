@@ -8,11 +8,11 @@
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.85,
+   "grip": 0.66,
    "axis": [
-    0.0,
-    -0.94,
-    0.342
+    0,
+    -1,
+    0
    ],
    "front": [
     -1,
@@ -24,8 +24,15 @@
     0,
     0
    ],
+   "handmass": true,
+   "out": 10,
    "action": "04_stand"
   },
-  "occlude": true
+  "occlude": true,
+  "neck_grow": {
+   "z0": 0.5,
+   "ramp": 0.06,
+   "grow": 0.014
+  }
  }
 }
