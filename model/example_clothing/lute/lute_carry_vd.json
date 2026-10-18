@@ -1,0 +1,36 @@
+{
+ "name": "lute_carry_vd",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "carry": {
+   "grip": 0.52,
+   "axis": [
+    0,
+    -1,
+    0
+   ],
+   "front": [
+    -1,
+    0,
+    0
+   ],
+   "shift": [
+    -0.05,
+    0,
+    0
+   ]
+  },
+  "occlude": true,
+  "neck_grow": {
+   "z0": 0.5,
+   "ramp": 0.06,
+   "grow": 0.014,
+   "width_only": true
+  }
+ }
+}
