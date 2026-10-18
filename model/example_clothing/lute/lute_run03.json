@@ -8,11 +8,11 @@
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.74,
+   "grip": 0.78,
    "action": "03_run_armed",
    "frame": 1,
    "axis": [
-    0.1,
+    0.19,
     0,
     1.0
    ],
