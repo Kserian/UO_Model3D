@@ -11,7 +11,8 @@ run() {   # pose, python list of action names, extra settings...
   python pipeline/run_render_headless.py $TMP/$p.blend "$OUT" "ONLY=$a" "${COMMON[@]}" "$@"
 }
 HANDS=("HAND_OVER=0.12" "HAND_OVER_GROW=1" "HAND_OVER_SIDE='.R'")
-run carry "['00_walk_unarmed','01_walk_armed','02_run_unarmed','03_run_armed']"
+run carry "['00_walk_unarmed','01_walk_armed']"
+run run "['02_run_unarmed','03_run_armed']"
 run stand "['04_stand']" "HAND_OVER=0.3" "HAND_OVER_GROW=2" "HAND_OVER_SIDE='.R'"
 run fid1 "['05_fidget_1']" "${HANDS[@]}"
 run fid2 "['06_fidget_2']" "${HANDS[@]}"

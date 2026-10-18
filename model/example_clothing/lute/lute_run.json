@@ -1,0 +1,31 @@
+{
+ "name": "lute_run",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "carry": {
+   "grip": 0.85,
+   "axis": [
+    0.0,
+    -0.94,
+    0.342
+   ],
+   "front": [
+    -1,
+    0,
+    0
+   ],
+   "shift": [
+    0,
+    0,
+    0
+   ],
+   "action": "04_stand"
+  },
+  "occlude": true
+ }
+}
