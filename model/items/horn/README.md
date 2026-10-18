@@ -1,6 +1,6 @@
 # Horn (instrument) for the right and the left hand
 
-`Horn_right_hand.vd` and `Horn_left_hand.vd`: all 35 actions x 5 directions (1050 frames each), made from one free glTF model of a decorated war horn (`horn.glb`, 37 MB, **not in the repo**: keep it next to the recipes before re-running; record the author's licence when it is known).
+`Horn_right_hand.vd` and `Horn_left_hand.vd`: all 35 actions x 5 directions (1050 frames each), made from one free glTF model of a decorated war horn (`horn.glb`, 37 MB, **not in the repo**: kept in `models/horn.glb` (outside the repo) when re-running; record the author's licence when it is known).
 
 Rebuild: `python pipeline/uo_make_item.py model/items/horn/horn_R.json --out OUT --vd` (and `horn_L.json`).
 
