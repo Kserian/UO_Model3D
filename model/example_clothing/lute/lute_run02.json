@@ -1,5 +1,5 @@
 {
- "name": "lute_run",
+ "name": "lute_run02",
  "file": "models/lute.glb",
  "weapon": {
   "class": "staff",
@@ -9,30 +9,29 @@
   "strings": true,
   "carry": {
    "grip": 0.66,
+   "action": "02_run_unarmed",
+   "frame": 1,
    "axis": [
+    0.25,
     0,
-    -1,
-    0
+    1.0
    ],
    "front": [
     -1,
     0,
     0
    ],
+   "handmass": true,
    "shift": [
-    0,
+    -0.05,
     0,
     0
-   ],
-   "handmass": true,
-   "out": 10,
-   "action": "04_stand"
+   ]
   },
   "occlude": true,
-  "neck_grow": {
-   "z0": 0.5,
-   "ramp": 0.06,
-   "grow": 0.014
+  "follow": {
+   "action": "02_run_unarmed",
+   "frame": 1
   }
  }
 }

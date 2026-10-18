@@ -1,0 +1,37 @@
+{
+ "name": "lute_run03",
+ "file": "models/lute.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "weapon",
+  "length": 1.0,
+  "tip": "auto",
+  "strings": true,
+  "carry": {
+   "grip": 0.66,
+   "action": "03_run_armed",
+   "frame": 1,
+   "axis": [
+    0.25,
+    0,
+    1.0
+   ],
+   "front": [
+    -1,
+    0,
+    0
+   ],
+   "handmass": true,
+   "shift": [
+    -0.07,
+    0,
+    0
+   ]
+  },
+  "occlude": true,
+  "follow": {
+   "action": "03_run_armed",
+   "frame": 1
+  }
+ }
+}
