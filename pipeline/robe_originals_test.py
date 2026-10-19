@@ -1,6 +1,6 @@
 """Phase 4 of docs/plans/original_items_calibration.md: loose garments (robes, dresses, skirts, kilts) on MANY originals instead of robe 469.
 
-    python robe_originals_test.py <client dir> <out.json> [--jobs 3] [--srcs anim:469,anim3:432,...] [--arg "--follow thigh=0.9,0,1,0.5;shin=0.6,0,1,0.6"] [--actions ...]
+    python robe_originals_test.py <client dir> <out.json> [--jobs 3] [--srcs anim:469,anim3:432,...] [--arg "--kappa 0.6" --arg "--margin 0.03"] [--actions ...]
 
 Every original is extracted from the client into a temporary .vd (never into the repo) and run through `test_robe.py --derive` (the tube radii and the hem are measured on ITS stand pose),
 with the same global parameters. Output per original: lower-body IoU, hem width error (wider / narrower), hem height error. The originals are split by position in the sorted list
@@ -36,7 +36,7 @@ def main():
     args = sys.argv[1:]
     jobs, srcs, extra, actions = 3, SRCS, [], None
     for opt in ("--jobs", "--srcs", "--arg", "--actions"):
-        if opt in args:
+        while opt in args:                                                             # --arg may be repeated
             i = args.index(opt)
             v = args[i + 1]
             del args[i:i + 2]
@@ -45,7 +45,7 @@ def main():
             elif opt == "--srcs":
                 srcs = v.split(",")
             elif opt == "--arg":
-                extra += ["--follow", v] if not v.startswith("--") else v.split(None, 1)
+                extra += v.split(None, 1)
             else:
                 actions = v
     client, out = args
