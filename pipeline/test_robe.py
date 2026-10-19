@@ -80,7 +80,9 @@ if env.get("ROBE_FOLLOW"):                                               # "thig
 if env.get("ROBE_DROP"):
     text, n = re.subn(r"^CLOTH_DROP = [0-9.]+", "CLOTH_DROP = %s" % env["ROBE_DROP"], text, count=1, flags=re.M); assert n == 1
 if env.get("ROBE_MARGIN"):
-    text, n = re.subn(r"^CLOTH_MARGIN, CLOTH_KAPPA = .*?(#.*)?$", "CLOTH_MARGIN, CLOTH_KAPPA = %s, %s" % (env["ROBE_MARGIN"], env["ROBE_KAPPA"]), text, count=1, flags=re.M); assert n == 1
+    text, n = re.subn(r"^CLOTH_MARGIN = [0-9.]+", "CLOTH_MARGIN = %s" % env["ROBE_MARGIN"], text, count=1, flags=re.M); assert n == 1
+if env.get("ROBE_KAPPA"):
+    text, n = re.subn(r"^CLOTH_KAPPA = [0-9.]+", "CLOTH_KAPPA = %s" % env["ROBE_KAPPA"], text, count=1, flags=re.M); assert n == 1
 text = re.sub(r"^PART = .*$", "PART = %r" % env["ROBE_PART"], text, count=1, flags=re.M)
 exec(compile(text, "uo_bind_item.py", "exec"), {"__name__": "__main__"})
 print("test_robe: %d vertices, PART %s" % (len(item.data.vertices), env["ROBE_PART"]))
@@ -155,7 +157,7 @@ def run(a, tmp):
         prof = sprite_profile({(b["action"], b["dir"]): b for b in bl}, a.hip)
         a.hem = prof.pop("hem") + a.hem_offset             # the lowest sprite row is the FRONT edge of the hem: lower on screen than the hem height (robe 469: 0.007 -> the hand-set 0.08)
         prof_path = os.path.join(tmp, "profile.json"); json.dump(prof, open(prof_path, "w"))
-    env = dict(os.environ, UO_TEST_SCRIPTS=HERE, ROBE_PART=a.part, ROBE_HIP=str(a.hip), ROBE_HEM=str(a.hem), ROBE_FOLLOW=a.follow or "", ROBE_MARGIN=str(a.margin) if a.margin is not None else "", ROBE_KAPPA=str(a.kappa), ROBE_DROP=str(a.drop) if a.drop is not None else "", ROBE_PROFILE=prof_path or "")
+    env = dict(os.environ, UO_TEST_SCRIPTS=HERE, ROBE_PART=a.part, ROBE_HIP=str(a.hip), ROBE_HEM=str(a.hem), ROBE_FOLLOW=a.follow or "", ROBE_MARGIN=str(a.margin) if a.margin is not None else "", ROBE_KAPPA=str(a.kappa) if a.kappa is not None else "", ROBE_DROP=str(a.drop) if a.drop is not None else "", ROBE_PROFILE=prof_path or "")
     actions = a.actions.split(",")
     cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, tmp, "--pre", pre, 'LAYER="clothing"', "ONLY=%r" % (actions,),
            "CANVAS=(256, 256)", "ANCHOR=(128, 192)"] + a.set
@@ -171,7 +173,7 @@ def run(a, tmp):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--part", default="robe"); ap.add_argument("--follow"); ap.add_argument("--margin", type=float); ap.add_argument("--drop", type=float); ap.add_argument("--kappa", type=float, default=0.8); ap.add_argument("--hip", type=float, default=0.95); ap.add_argument("--hem", type=float, default=0.08)
+    ap.add_argument("--part", default="robe"); ap.add_argument("--follow"); ap.add_argument("--margin", type=float); ap.add_argument("--drop", type=float); ap.add_argument("--kappa", type=float); ap.add_argument("--hip", type=float, default=0.95); ap.add_argument("--hem", type=float, default=0.08)
     ap.add_argument("--hem-offset", type=float, default=0.073, help="with --derive: added to the hem height read from the lowest sprite row")
     ap.add_argument("--derive", action="store_true", help="radii and hem of the tube from the stand pose of --sprite (needed for any original but robe 469)")
     ap.add_argument("--sprite", default=os.path.join(HERE, "body13", "mul", "anim_0469.vd")); ap.add_argument("--actions", default=DEFAULT_ACTIONS)
