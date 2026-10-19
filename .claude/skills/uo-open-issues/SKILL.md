@@ -3,7 +3,7 @@ name: uo-open-issues
 description: Open issues of UO_Model3D (slots, robe, cloak, pauldrons, body 401, glb/fbx) and what NOT to do. Use when planning work or unsure whether a change is allowed.
 ---
 
-**Do not:** per-frame corrections, further tuning of `test_items` replicas, further body silhouette fitting (pose keys change only through `pose_natural_fit.py`: natural motion first, silhouette not worse), changes to light direction/ambient, AO or ground shadow.
+**Do not:** fit the replica thickness (or any slot default) from the original sprites again: Phase 2 (`docs/qa/layer_priors.md`) showed a flat sprite resolves only 1 px (2.8 cm) and the prior-derived thickness gave +0.0004 IoU on 27 originals (Gate 2 failed); per-frame corrections, further tuning of `test_items` replicas, further body silhouette fitting (pose keys change only through `pose_natural_fit.py`: natural motion first, silhouette not worse), changes to light direction/ambient, AO or ground shadow.
 
 **Open:**
 - Robe physics is calibrated on one robe (469), checked on 447 and 970; no kilt test. Cloak (`docs/qa/cloak_physics.md`) has no side waving and no real-model test.

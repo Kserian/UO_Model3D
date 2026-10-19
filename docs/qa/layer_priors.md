@@ -93,3 +93,23 @@ Filter: 371 animations used, 21 dropped:
 | Waist | torso | 8 | [0.14, 0.2, 0.26] | 3 | [1.0, 1.0, 1.0] | [1.0, 1.0, 1.8] | [1.0, 1.0, 2.6] | [1.0, 1.5, 2.0] | [1.13, 1.19, 1.24] | [0.88, 0.94, 1.04] |
 | Waist | forearm | 8 | [0.04, 0.06, 0.12] | 0 | None | None | None | [4.0, 4.0, 4.0] | [1.09, 1.11, 1.14] | [0.94, 0.98, 1.04] |
 | Waist | thigh | 8 | [0.0, 0.06, 0.18] | 3 | [1.0, 1.0, 1.0] | [1.2, 2.0, 2.0] | [1.2, 2.0, 3.6] | [1.4, 2.0, 3.8] | [0.88, 0.9, 0.94] | [0.54, 0.68, 0.88] |
+
+## Phase 2: does a thickness from the originals beat the hand-set one? (`prior_thickness_test.py`, `docs/qa/prior_thickness.json`)
+
+Replicas of 27 originals (the 5 hand-tuned ones of `test_items` + `arms`, `legs` + 20 new ones, the second group of `test_items.py`; helm left out: its shape is the item), actions stand + attack_1h_slash, IoU against the original sprite.
+`prior` = leave-one-out: median stand standoff p50 of the OTHER animations of the same layer / 36 px per m = 0.0278 m for every layer (the measure sits at its 1 px floor everywhere, see Gate 1).
+`hand` = the slot default of `ITEMS` (shirt / pants 0.012, boots 0.015, arms 0.025, plate / tunics / leggings / gloves 0.03).
+
+| layer | items | IoU hand | IoU prior | prior - hand | IoU uniform 0.02 | 0.02 - hand |
+|---|---|---|---|---|---|---|
+| Arms | 5 | 0.593 | 0.591 | -0.002 | 0.592 | -0.001 |
+| Gloves | 3 | 0.566 | 0.569 | +0.003 | 0.572 | +0.005 |
+| InnerTorso | 6 | 0.749 | 0.747 | -0.002 | 0.736 | -0.014 |
+| Pants | 6 | 0.802 | 0.809 | +0.008 | 0.817 | +0.015 |
+| Shirt | 3 | 0.716 | 0.723 | +0.006 | 0.724 | +0.007 |
+| Shoes | 4 | 0.653 | 0.644 | -0.009 | 0.656 | +0.003 |
+
+All 27: hand 0.6938, prior 0.6942 (+0.0004), uniform 0.012 0.6838, 0.02 0.6957, 0.03 0.6921, 0.04 0.6735. The 5 hand-tuned originals alone: hand 0.7384, prior 0.7412.
+
+**Gate 2: NOT passed.** The mean IoU of the prior is +0.0004 over the hand-set values (noise level; the best thickness differs by item inside a slot, 0.012 ... 0.04, and the IoU moves by <= 0.03), and the slot Shoes goes down (boots +0.021, thigh boots / sandals / shoes -0.018 / -0.030 / -0.010).
+Decision per the plan: keep the hand-set thicknesses and skip Phase 5 for the thickness defaults. A flat sprite cannot give a thickness finer than 1 px (2.8 cm); the hand-set values (1.2-3 cm) are inside that resolution. Do not retry thickness fits on the replicas (they are body shells: the IoU measures the pipeline, see `uo-open-issues`).
