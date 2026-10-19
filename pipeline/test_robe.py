@@ -105,7 +105,7 @@ def measure(frames_root, sprites, canvas, anchor, hip, imgs_for=()):
                 rl, gl = r[row_hip:], g[row_hip:]
                 inter, union = (rl & gl).sum(), max((rl | gl).sum(), 1)
                 # width of the hem: mean over the lowest 8 rows of the sprite
-                ys = np.nonzero(g.any(1))[0]; hem_rows = list(range(ys.max() - 7, ys.max() + 1))
+                ys = np.nonzero(g.any(1))[0]; hem_rows = [y for y in range(ys.max() - 7, ys.max() + 1) if g[y].any()]      # rows without sprite pixels (gaps between the legs of a skirt) are skipped
                 wr = [(np.ptp(np.nonzero(r[y])[0]) + 1) if r[y].any() else 0 for y in hem_rows]; wg = [np.ptp(np.nonzero(g[y])[0]) + 1 for y in hem_rows]
                 rows.append(dict(a=a, d=d, i=i, iou=inter / union, iou_all=(r & g).sum() / max((r | g).sum(), 1), hem_dw=float(np.mean(wr) - np.mean(wg)),
                                  hem_y=float((np.nonzero(r.any(1))[0].max() if r.any() else ys.max()) - ys.max())))
