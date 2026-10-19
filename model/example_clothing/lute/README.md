@@ -38,3 +38,5 @@ Walk 00 and 01, direction 0 only: the PNG frames are shifted 1 px right and 1 px
 Stand 04: re-rendered at 2000 samples with `HAND_OVER_PARTS=('hand','forearm')` (right side only: the wrist is over the lute, a few px of the lute lay over it); only the 5 blocks of action 4 differ in the vd.
 
 Stand 04: single-pixel notches in the neck (a transparent pixel with 3 opaque 4-neighbours: where the body stood in front of the neck by one pixel, the viewer showed the red body through it) are filled with the colour of their neighbours, all 5 directions (7 pixels); only action 4 differs in the vd. The geometry was not changed (smoothing the junction of the bowl and the neck did not move the notch: it is a body cut, not the mesh).
+
+Stand 04, direction 0: two dark pixels inside the neck (the outline darkening next to the filled notches; (128,166) and (138,166) of the 256x256 frame) got the colour of their left / right neighbours; only that block of action 4 differs.
