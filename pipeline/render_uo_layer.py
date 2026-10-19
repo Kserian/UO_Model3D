@@ -234,6 +234,9 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
             leg = lambda sd: (1 - ws) * (Vh @ skin["thigh." + sd].T)[:, :3] + ws * (Vh @ skin["shin." + sd].T)[:, :3]
             d0 = np.clip((prm["z_top"] - Vr[:, 2]) / 0.2, 0, 1)[:, None] * ((1 - side)[:, None] * leg("L") + side[:, None] * leg("R") - Pp)
         d0 = d0 * share
+        sim = cloth_sim_table().get("%d_%d" % (a, i))
+        if sim is not None and len(sim) == len(o.data.vertices):               # the simulated riding cloth (uo_cloth_sim.py mounted=1): what it did on top of the legs' lie
+            d0 = d0 + sim[first].astype(np.float64)
         return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     d0 = cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
                       z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))

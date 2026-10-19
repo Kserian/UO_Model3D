@@ -10,7 +10,7 @@ DIFFERENCE between the simulation and the target (cloth_sim.npz next to the item
 pushes whatever is still inside the body out, as before. Mounted actions (23-29) are not simulated (the hem follows the legs there), nor the falls 21, 22 when the scene has uo_cloth_lie > 0.
 
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the pose of the loop), looping actions (walk, run, stand, combat idle) CYCLES cycles and the last one is
-kept, so the loop closes without a jump. Settings (key=value): fabric (silk, cotton, wool, denim, leather: mass, stiffness, bending, damping at once; the keys below override it), pushw (1; the pin holds skinned + pushw x the push of the legs: 0 = the cloth hangs from the pelvis and the legs push it out by collision only, the result is still stored against the full target), gravity (1; x the scene's gravity: a heavier fall of the free cloth), mscale (1; x the mass of a vertex: Blender's presets assume ~0.3 kg per vertex, a 24k-vertex robe hangs with ~0.01 kg = mscale 0.033; free cloth, goal 0.2, thick 0.006, dist 0.002: docs/qa/robe_physics_free.md), goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3 per vertex), density (kg/m2 of the cloth; > 0 = the mass of a vertex is density x area of the item / vertices, so a fine mesh weighs what the fabric weighs; the fabrics set it, 0 = mass as given), tension / compression (15), shear (5), bending (0.5),
+kept, so the loop closes without a jump. Settings (key=value): fabric (silk, cotton, wool, denim, leather: mass, stiffness, bending, damping at once; the keys below override it), mounted (0; 1 = the riding actions 23-29 are simulated too: the target is the rider's, the hanging part lies along the legs as render_uo_layer.py CLOTH_MOUNTED does, and the cloth collides with the horse proxy Horse_a<action>_f<frame>), pushw (1; the pin holds skinned + pushw x the push of the legs: 0 = the cloth hangs from the pelvis and the legs push it out by collision only, the result is still stored against the full target), gravity (1; x the scene's gravity: a heavier fall of the free cloth), mscale (1; x the mass of a vertex: Blender's presets assume ~0.3 kg per vertex, a 24k-vertex robe hangs with ~0.01 kg = mscale 0.033; free cloth, goal 0.2, thick 0.006, dist 0.002: docs/qa/robe_physics_free.md), goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3 per vertex), density (kg/m2 of the cloth; > 0 = the mass of a vertex is density x area of the item / vertices, so a fine mesh weighs what the fabric weighs; the fabrics set it, 0 = mass as given), tension / compression (15), shear (5), bending (0.5),
 damp_air (1), tdamp (5), dist (0.005), preroll (40), cycles (3), self_collision (0), friction (0), arm_goal (0.7; -1 = sleeves as the rest above the waist; 0-1 = their own goal), arm_x (0.19 m from the middle: where the sleeves start), arm_zmin (the sleeves are the vertices above this height; default 0.05 m below the waist: long bell sleeves that hang below it need e.g. 0.55), thick (0.02 m: the outer thickness of the body as a collider; a fast leg tunnels through the cloth with a thin one: leg pixels through the robe in the run 466 at 0.005 m, 196 at 0.02, 147 with dist 0.02 too but 3 x slower), smooth (0 m; > 0 = the simulation's move averaged over this distance in space, 2 passes: neighbouring pleats that cross each other in the simulation opened slits
 through which the legs showed; 0.04 m on docs/qa/robe_black.md: leg pixels through the robe in walk 44 -> 12), in_max (0.01 m: below the waist the cloth may move at most this much TOWARDS the axis of the pelvis against the target: the target already holds it just outside the legs' reach, and a
 simulated hem that lagged inwards let a foot come out through it in the run; < 0 = no limit), max_move (0.12 m: the most the cloth may differ from the kinematic target, soft limit; 0 = none). Measured on the replica of the original robe 469 (robe_cloth_sim_test.py, hybrid=1):
@@ -25,6 +25,7 @@ import cloth_lib as cl                                                      # no
 from bpy_compat import action_fcurves                                       # noqa: E402 (Blender 5.x: no Action.fcurves)
 
 STEP = 3
+MOUNTED = False                                                                 # key mounted=1: the riding actions 23-29 are simulated too (against the horse of the frame)
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
 FABRIC = {            # Blender's own cloth presets (scripts/presets/cloth: Cotton, Denim, Leather, Silk) as mass / tension / compression / shear / bending / damping; wool is ours, between cotton and denim
     "silk":    dict(mass=0.15, tension=5.0,  compression=5.0,  shear=5.0,  bending=0.05, tdamp=1.0),
@@ -33,13 +34,13 @@ FABRIC = {            # Blender's own cloth presets (scripts/presets/cloth: Cott
     "denim":   dict(mass=1.0,  tension=40.0, compression=40.0, shear=40.0, bending=10.0, tdamp=25.0),
     "leather": dict(mass=0.4,  tension=80.0, compression=80.0, shear=80.0, bending=150.0, tdamp=25.0),
 }
-CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, mscale=1.0, pushw=1.0, gravity=1.0, dist=0.005, preroll=40, cycles=3,
+CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, mscale=1.0, mounted=0.0, pushw=1.0, gravity=1.0, dist=0.005, preroll=40, cycles=3,
            self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
 
 def skip(a):
     """actions not simulated: riding (the hem follows the legs there) and the falls when the item lies along the legs (render_uo_layer.py CLOTH_LIE, scene property uo_cloth_lie)"""
-    return 23 <= a <= 29 or (a in (21, 22) and float(bpy.context.scene.get("uo_cloth_lie", 0)) > 0)
+    return (23 <= a <= 29 and not MOUNTED) or (a in (21, 22) and float(bpy.context.scene.get("uo_cloth_lie", 0)) > 0)
 
 
 def run_parallel(blend, out, only, jobs, extra):
@@ -83,7 +84,8 @@ def main():
             cfg.update(FABRIC[fab])
         elif "=" in a:
             k, v = a.split("=", 1); own[k] = float(v); extra.append(a)
-    cfg.update(own)                                                             # fabric preset first, then the settings named one by one
+    global MOUNTED
+    cfg.update(own); MOUNTED = bool(cfg["mounted"])                                                             # fabric preset first, then the settings named one by one
     out = out or os.path.join(os.path.dirname(blend), "cloth_sim.npz")
     if jobs > 1:
         return run_parallel(blend, out, only, jobs, extra)
@@ -131,12 +133,33 @@ def main():
         return cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
                             z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
 
+    state = {"a": 0}
+
+    def mounted_lie():
+        """what render_uo_layer.cloth_push gives the hanging part in the mounted actions (CLOTH_MOUNTED = 1): it follows the legs of the skin under it, rest-world coordinates"""
+        dg = bpy.context.evaluated_depsgraph_get(); evr = rig.evaluated_get(dg)
+        skin = {n: Mr0 @ np.array(evr.pose.bones[n].matrix) @ inv_local[n] @ np.linalg.inv(Mr0) for n in names}
+        Vh = np.c_[Vr, np.ones(nv)]; Pp = (Vh @ skin["pelvis"].T)[:, :3]; d0 = np.zeros_like(Vr)
+        if all(("uo_leg_" + nm) in item.data.attributes for nm in cl.Capsules.NAMES):
+            for nm in cl.Capsules.NAMES:
+                w = np.empty(nv, np.float32); item.data.attributes["uo_leg_" + nm].data.foreach_get("value", w)
+                d0 += w[:, None] * ((Vh @ skin[nm].T)[:, :3] - Pp)
+        else:
+            side = np.clip(Vr[:, 0] / 0.06, -1, 1) * 0.5 + 0.5; ws = np.clip((0.58 - Vr[:, 2]) / 0.15, 0, 1)[:, None]
+            leg = lambda sd: (1 - ws) * (Vh @ skin["thigh." + sd].T)[:, :3] + ws * (Vh @ skin["shin." + sd].T)[:, :3]
+            d0 = np.clip((prm["z_top"] - Vr[:, 2]) / 0.2, 0, 1)[:, None] * ((1 - side)[:, None] * leg("L") + side[:, None] * leg("R") - Pp)
+        return d0
+
     def kinematic():
         """the item as the renderer draws it before the simulation: skinned + the push of the legs, world coordinates; and the target the pin holds: skinned + pushw x the push"""
         dg = bpy.context.evaluated_depsgraph_get(); ev = item.evaluated_get(dg)
         c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c)
         M = np.array(item.matrix_world)
-        sk = c.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]; push = hull_push_now()
+        sk = c.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]
+        if 23 <= state["a"] <= 29:                                              # riding: the hanging part lies along the legs (the same d0 as render_uo_layer.cloth_push), the pin holds all of it
+            push = mounted_lie()
+            return sk + push, sk + push
+        push = hull_push_now()
         return sk + push, sk + cfg["pushw"] * push
 
     # --- the simulated copy -------------------------------------------------------------------------------------------------------------------------------------------
@@ -180,7 +203,7 @@ def main():
         a = int(act["uo_action"])
         if skip(a) or (only is not None and act.name not in only):
             continue
-        t0 = time.time(); rig.animation_data.action = act; rig["uo_direction"] = 0
+        t0 = time.time(); rig.animation_data.action = act; rig["uo_direction"] = 0; state["a"] = a
         nfr = int(act["uo_frames"]); loop = a in LOOP
         period = nfr * STEP if loop else (nfr - 1) * STEP + 1
         for fc in action_fcurves(act):
@@ -219,6 +242,21 @@ def main():
         for fc in action_fcurves(sim.data.shape_keys.animation_data.action):
             for kp in fc.keyframe_points:
                 kp.interpolation = "LINEAR"
+        horses = []
+        if 23 <= a <= 29:                                                       # riding: the horse proxy of the UO frame is a collider while that frame lasts (hidden objects do not collide: visibility keyed, constant)
+            horses = [(j, bpy.data.objects.get("Horse_a%d_f%d" % (a, j))) for j in range(nfr)]
+            horses = [(j, h) for j, h in horses if h is not None]
+            for j, h in horses:
+                if not any(m.type == "COLLISION" for m in h.modifiers):
+                    h.modifiers.new("Collision", "COLLISION")
+                h.collision.thickness_outer = cfg["thick"]; h.collision.use_culling = False; h.collision.damping = 0.5; h.collision.cloth_friction = cfg["friction"]
+                h.animation_data_create()
+                for ui in range(int(np.floor((f0 - 1) / STEP)), int(np.ceil((f1 - 1) / STEP)) + 1):
+                    h.hide_viewport = min(max(ui, 0), nfr - 1) != j; h.keyframe_insert("hide_viewport", frame=1 + ui * STEP - 1)
+                for fc in action_fcurves(h.animation_data.action):
+                    for kp in fc.keyframe_points:
+                        kp.interpolation = "CONSTANT"
+            print("uo_cloth_sim: action %d: %d horse colliders" % (a, len(horses)), flush=True)
         sc.frame_start = f0; sc.frame_end = f1; cm.point_cache.frame_start = f0; cm.point_cache.frame_end = f1
         sc.frame_set(f0)
         base = 1 + (cyc - 1) * period if loop else 1
@@ -242,6 +280,8 @@ def main():
                 if cfg["max_move"] > 0:                                          # the cloth never wanders further than this from the body (a fast fall or blow lets it lag far behind and leaves the body bare)
                     n = np.maximum(np.linalg.norm(d, axis=1), 1e-9); d = d * (cfg["max_move"] * np.tanh(n / cfg["max_move"]) / n)[:, None]
                 res["%d_%d" % (a, i)] = d.astype(np.float32)
+        for j, h in horses:
+            h.animation_data_clear(); h.hide_viewport = True
         d = np.array([np.linalg.norm(res["%d_%d" % (a, i)], axis=1).max() for i in range(nfr)])
         print("action %2d %-26s %d frames, loop %s, %.0f s, largest cloth move %.2f m" % (a, act.name, nfr, loop, time.time() - t0, d.max()), flush=True)
     if cfg["smooth"] > 0 and res:                                               # the move averaged in space (rest positions): pleats move together, they do not cut through each other
