@@ -167,7 +167,7 @@ def main():
     st.quality = int(cfg["quality"]); st.mass = mass; st.tension_stiffness = cfg["tension"]; st.compression_stiffness = cfg["compression"]; st.shear_stiffness = cfg["shear"]
     st.bending_stiffness = cfg["bending"]; st.air_damping = cfg["damp_air"]; st.tension_damping = st.compression_damping = st.shear_damping = cfg["tdamp"]
     st.vertex_group_mass = "goal"; st.pin_stiffness = 1.0
-    cs = cm.collision_settings; cs.use_collision = True; cs.distance_min = cfg["dist"]; cs.collision_quality = 4; cs.use_self_collision = bool(cfg["self_collision"])
+    cs = cm.collision_settings; cs.use_collision = not cfg.get("nocollide"); cs.distance_min = cfg["dist"]; cs.collision_quality = 4; cs.use_self_collision = bool(cfg["self_collision"])
     if cfg["self_collision"]:
         cs.self_distance_min = 0.004
     body.modifiers.new("Collision", "COLLISION"); body.collision.thickness_outer = cfg["thick"]; body.collision.use_culling = False; body.collision.damping = 0.5; body.collision.cloth_friction = cfg["friction"]
@@ -223,6 +223,12 @@ def main():
         want = {base + i * STEP: i for i in range(nfr)}
         for f in range(f0, f1 + 1):
             sc.frame_set(f)
+            if cfg.get("trace"):
+                ev = sim.evaluated_get(bpy.context.evaluated_depsgraph_get()); c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c); c = c.reshape(-1, 3)
+                if cfg.get("trace") == 2 and f == f1:
+                    bev = body.evaluated_get(bpy.context.evaluated_depsgraph_get()); bc = np.empty(len(bev.data.vertices) * 3, np.float32); bev.data.vertices.foreach_get("co", bc); Mb2 = np.array(body.matrix_world)
+                    np.savez(out + ".trace.npz", c=c, T=T[0], Vr=Vr, body=bc.reshape(-1, 3) @ Mb2[:3, :3].T + Mb2[:3, 3], arm=np.array(0))
+                lo = Vr[:, 2] < 0.4; print("trace f%d: hem z mean %.3f (rest %.3f), radius %.3f (rest %.3f), key sum %.2f" % (f, c[lo, 2].mean(), Vr[lo, 2].mean(), np.hypot(c[lo, 0], c[lo, 1]).mean(), np.hypot(Vr[lo, 0], Vr[lo, 1]).mean(), sum(k.value for k in keys)), flush=True)
             if f in want:
                 ev = sim.evaluated_get(bpy.context.evaluated_depsgraph_get())
                 c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c)
