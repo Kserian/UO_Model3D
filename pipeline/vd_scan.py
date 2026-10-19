@@ -39,7 +39,9 @@ C_PIN = C_HIST + NH                              # NP columns: inside-body pixel
 C_POUT = C_PIN + 9                               # NP columns: outside-body pixels per nearest body part
 C_PHIST = C_POUT + 9                             # NP x NHP columns: distance histogram of the outside pixels per part
 NP, NHP = 9, 24
-NCOL = C_PHIST + NP * NHP
+C_PYMAX = C_PHIST + NP * NHP                     # NP columns: lowest row of the item pixels nearest to a part (y - AY + 512, 0 = none)
+C_PYMIN = C_PYMAX + NP                           # NP columns: 512 - (highest row y - AY) (0 = none)
+NCOL = C_PYMIN + NP
 PARTS = ["head", "neck", "torso", "upper_arm", "forearm", "hand", "thigh", "shin", "foot"]
 GROUP = {"chest": "torso", "spine": "torso", "pelvis": "torso", "clavicle": "torso", "upper_arm": "upper_arm", "forearm": "forearm", "hand": "hand",
          "thigh": "thigh", "shin": "shin", "foot": "foot", "head": "head", "neck": "neck"}
@@ -171,6 +173,9 @@ def measure(m, B, dist, near, top, bot, rec):
             else:
                 b = NB
             g = near[y, x]
+            if g < NP:
+                rec[C_PYMAX + g] = max(rec[C_PYMAX + g], y - AY + 512)
+                rec[C_PYMIN + g] = max(rec[C_PYMIN + g], 512 - (y - AY))
             if B[y, x]:
                 rec[C_IN] += 1
                 rec[C_BIN + b] += 1
@@ -336,8 +341,11 @@ def measure_src(cl, src, a, R, parts):
                 bcov.append(round(float((Ro[s, C_BIN + bi] / den[s]).mean()), 3) if s.any() else None)
             rec["band_cover"] = bcov
             if parts:
-                pc, po = {}, {}
+                pc, po, py = {}, {}, {}
                 for gi, g in enumerate(PARTS):
+                    has = Ro[:, C_PYMAX + gi] > 0
+                    if has.any():                                   # mean over the frames of the highest / lowest item row at this part, px from the anchor
+                        py[g] = [round(float((512 - Ro[has, C_PYMIN + gi]).mean()), 1), round(float((Ro[has, C_PYMAX + gi] - 512).mean()), 1)]
                     den = np.concatenate([body_part[x[0]][x[2], gi] for x in recs])[ok]
                     sel = den > 0
                     if sel.any():
@@ -345,7 +353,7 @@ def measure_src(cl, src, a, R, parts):
                     h = Ro[:, C_PHIST + gi * NHP:C_PHIST + (gi + 1) * NHP].sum(0)
                     if h.any():
                         po[g] = dict(n=round(float(Ro[:, C_POUT + gi].mean()), 1), p50=pct(h, 50), p90=pct(h, 90), max=int(np.nonzero(h)[0].max()))
-                rec["cover_part"], rec["out_part"] = pc, po
+                rec["cover_part"], rec["out_part"], rec["part_y"] = pc, po, py
     return rec
 
 

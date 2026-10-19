@@ -12,6 +12,7 @@
 | `item_animations.json` | Przedmioty ubieralne z `tiledata.mul` (animacja, warstwa, nazwa) połączone przez `Bodyconv.def` z plikiem animacji i zasięgiem; statystyki per warstwa | `pipeline/extract_tiledata.py` |
 | `vd_scan.json.gz` | Skan ubieralnych animacji z `anim`..`anim5` (392, 411 tys. klatek, 35 akcji × 5 kierunków; 131 ID leży w `AnimationFrame*.uop` i nie jest badane) względem ciała 400: zasięg, pokrycie, wystawanie poza sylwetkę (histogram), per pasmo wysokości i per część ciała 3D; tylko agregaty | `pipeline/vd_scan.py` (`--parts` z `body_part_raster.py`) |
 | `vd_scan_layers.json` | Agregaty per warstwa z tego skanu (stand) | `pipeline/vd_scan_report.py` (tabele: `docs/qa/vd_scan.md`) |
+| `layer_priors.json` | Priory per slot (warstwa) i część ciała: z, pokrycie, wystawanie, koniec rękawa / dołu, rozrzut między przedmiotami; filtr jakości danych | `pipeline/layer_priors.py` (tabele: `docs/qa/layer_priors.md`) |
 
 Odtworzenie (z katalogu repo, klient w `uo_client/NelderimServUO/`):
 ```
