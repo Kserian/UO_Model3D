@@ -395,6 +395,7 @@ klatki `client/`, sprite'y przedmiotów `pipeline/body13/mul/` (z `anim.mul`), w
 
 Żeby odtworzyć oryginalne klatki w `.blend`: `python build_originals.py`, potem `python pack_originals.py --blend ../model/UO_Body_0x190.blend` (w `pipeline/`).
 Pomiary: `body_part_raster.py` + `body_part_qa.py` (sylwetka ciała), `test_items.py` (przedmioty), `test_canvas.py` (płótno), `layer_analysis.py`, `light_*.py`, `slot_dynamics.py`.
+Ubieralne animacje klienta wobec ciała 400 (bez Blendera poza etykietami części): `vd_scan.py` / `vd_scan_report.py` (wszystkie 35 akcji x 5 kierunków x klatki 392 ubieralnych animacji z `anim.mul`..`anim5.mul`; `docs/qa/vd_scan.md`; 131 kolejnych ID leży w `AnimationFrame*.uop`, czytnik `uop.py`, nie badane), `layer_priors.py` (priory per slot, `docs/qa/layer_priors.md`; grubość z oryginałów NIE pobiła ręcznej), `prior_thickness_test.py`, `item_envelope_qa.py` (jaka część przedmiotu leży poza sumą oryginałów jego slotu, `docs/qa/item_envelope.md`), `robe_originals_test.py` (luźne ubrania na 17 oryginałach, `docs/qa/robe_originals.md`).
 
 ## 11. Ograniczenia i częste problemy
 

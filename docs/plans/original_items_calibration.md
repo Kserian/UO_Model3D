@@ -92,3 +92,10 @@ Open issues: robe physics calibrated on robe 469 (checked on 447 and 970), no ki
 - Gate 1 or Gate 2 fails: report with the numbers and stop; do not force the priors into the pipeline.
 - Any baseline in Phase 0 differs from `docs/qa/baselines.md`: stop and report.
 - A needed change would touch pose keys, light, or require a per-frame fix: stop and ask the user.
+
+## Status (2026-10-19)
+
+- Phase 0 done (baseline = `baselines.md`). Phase 1 done: `vd_scan.py`, `layer_priors.py`, Gate 1 passed on body layers (24 of 25 cells; the priors only say "thinner than about 1 px"). 131 wearable ids live in `AnimationFrame*.uop` (gargoyle and a few new human items): not examined.
+- Phase 2: Gate 2 NOT passed (27 originals, +0.0004 IoU, Shoes down) -> hand-set thicknesses kept, Phase 5 skipped for the thickness defaults.
+- Phase 3 done: `item_envelope_qa.py` (informational). Phase 4 done on 17 originals: `CLOTH_DROP` 2.0 accepted (`docs/qa/robe_originals.md`); the later `anim3/4/5` garments (0.55-0.65) are not fitted by one global setting; kilt / skirt first values in `baselines.md`.
+- Phase 6 (third-party `.vd`): waits for files from the user. Phase 7: docs, skills and the full `run_qa.py` (all green) done.

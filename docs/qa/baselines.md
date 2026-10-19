@@ -26,3 +26,5 @@ Second group of original replicas (`test_items.py --items <name>`, not in the de
 Envelope (`item_envelope_qa.py`, informational, no threshold): share of the item outside the union of the originals of its slot, mean over frames: six replicas 0.000-0.013 (gloves 0.138), example shirt 0.008; a wrong slot 0.42-0.72 (`docs/qa/item_envelope.md`).
 
 Loose garments on 17 originals (`robe_originals_test.py`, `docs/qa/robe_originals.md`): classic robes / dresses / skirts 0.74-0.78 lower-body IoU, later `anim3/4/5` garments 0.55-0.65 (hem 9-11 px too wide); `CLOTH_DROP` 1.0 -> 2.0 raised both halves (+0.005), informational, no threshold.
+
+Kilt / skirt replicas (`robe_originals_test.py --srcs anim:455,anim:449,anim:971`, derived radii, 6 actions; informational, first values, no threshold): kilt 455 0.738, skirt 449 0.763, knee skirt 971 0.752 lower-body IoU.

@@ -398,7 +398,7 @@ they are in git history up to commit `b86c314` (`git show b86c314:pipeline/body1
 the frames in `client/`, item sprites `pipeline/body13/mul/` (from `anim.mul`), the client extract `client/extract/`.
 
 To restore the original frames in the `.blend`: `python build_originals.py`, then `python pack_originals.py --blend ../model/UO_Body_0x190.blend` (in `pipeline/`).
-Measurements: `body_part_raster.py` + `body_part_qa.py` (body silhouette), `test_items.py` (items), `test_canvas.py` (canvas), `layer_analysis.py`, `light_*.py`, `slot_dynamics.py`.
+Measurements: `body_part_raster.py` + `body_part_qa.py` (body silhouette), `test_items.py` (items), `test_canvas.py` (canvas), `layer_analysis.py`, `light_*.py`, `slot_dynamics.py`. The wearables of the client against the body 400 (no Blender needed except for the part labels): `vd_scan.py` / `vd_scan_report.py` (all 35 actions x 5 directions x frames of the 392 wearable animations of `anim.mul`..`anim5.mul`; `docs/qa/vd_scan.md`; 131 more ids live in `AnimationFrame*.uop`, reader `uop.py`, not examined), `layer_priors.py` (per-slot priors, `docs/qa/layer_priors.md`; the thickness from the originals did NOT beat the hand-set one), `prior_thickness_test.py`, `item_envelope_qa.py` (share of an item outside the union of the originals of its slot, `docs/qa/item_envelope.md`), `robe_originals_test.py` (loose garments on 17 originals, `docs/qa/robe_originals.md`).
 
 ## 11. Limitations and common problems
 
