@@ -10,7 +10,7 @@ DIFFERENCE between the simulation and the target (cloth_sim.npz next to the item
 pushes whatever is still inside the body out, as before. Mounted actions (23-29) are not simulated (the hem follows the legs there), nor the falls 21, 22 when the scene has uo_cloth_lie > 0.
 
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the pose of the loop), looping actions (walk, run, stand, combat idle) CYCLES cycles and the last one is
-kept, so the loop closes without a jump. Settings (key=value): fabric (silk, cotton, wool, denim, leather: mass, stiffness, bending, damping at once; the keys below override it), mounted (0; 1 = the riding actions 23-29 are simulated too: the target is the rider's, the hanging part lies along the legs as render_uo_layer.py CLOTH_MOUNTED does, and the cloth collides with the horse proxy Horse_a<action>_f<frame>; horse=0: no collision with the horse, the renderer's HORSE_HOLDOUT only cuts the cloth where the horse is in front), pushw (1; the pin holds skinned + pushw x the push of the legs: 0 = the cloth hangs from the pelvis and the legs push it out by collision only, the result is still stored against the full target), gravity (1; x the scene's gravity: a heavier fall of the free cloth), mscale (1; x the mass of a vertex: Blender's presets assume ~0.3 kg per vertex, a 24k-vertex robe hangs with ~0.01 kg = mscale 0.033; free cloth, goal 0.2, thick 0.006, dist 0.002: docs/qa/robe_physics_free.md), goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3 per vertex), density (kg/m2 of the cloth; > 0 = the mass of a vertex is density x area of the item / vertices, so a fine mesh weighs what the fabric weighs; the fabrics set it, 0 = mass as given), tension / compression (15), shear (5), bending (0.5),
+kept, so the loop closes without a jump. Settings (key=value): fabric (silk, cotton, wool, denim, leather: mass, stiffness, bending, damping at once; the keys below override it), env (0; kappa of a last pass that keeps the simulated cloth inside-out of the shadow of the legs, cloth_lib.hull_push on the simulated points: a leg in full stride does not come out of the hem), env_margin (0.02 m beyond the legs' reach), env_tent (0 = no tent: the cloth above is not pulled out), mounted (0; 1 = the riding actions 23-29 are simulated too: the target is the rider's, the hanging part lies along the legs as render_uo_layer.py CLOTH_MOUNTED does, and the cloth collides with the horse proxy Horse_a<action>_f<frame>; horse=0: no collision with the horse, the renderer's HORSE_HOLDOUT only cuts the cloth where the horse is in front), pushw (1; the pin holds skinned + pushw x the push of the legs: 0 = the cloth hangs from the pelvis and the legs push it out by collision only, the result is still stored against the full target), gravity (1; x the scene's gravity: a heavier fall of the free cloth), mscale (1; x the mass of a vertex: Blender's presets assume ~0.3 kg per vertex, a 24k-vertex robe hangs with ~0.01 kg = mscale 0.033; free cloth, goal 0.2, thick 0.006, dist 0.002: docs/qa/robe_physics_free.md), goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3 per vertex), density (kg/m2 of the cloth; > 0 = the mass of a vertex is density x area of the item / vertices, so a fine mesh weighs what the fabric weighs; the fabrics set it, 0 = mass as given), tension / compression (15), shear (5), bending (0.5),
 damp_air (1), tdamp (5), dist (0.005), preroll (40), cycles (3), self_collision (0), friction (0), arm_goal (0.7; -1 = sleeves as the rest above the waist; 0-1 = their own goal), arm_x (0.19 m from the middle: where the sleeves start), arm_zmin (the sleeves are the vertices above this height; default 0.05 m below the waist: long bell sleeves that hang below it need e.g. 0.55), thick (0.02 m: the outer thickness of the body as a collider; a fast leg tunnels through the cloth with a thin one: leg pixels through the robe in the run 466 at 0.005 m, 196 at 0.02, 147 with dist 0.02 too but 3 x slower), smooth (0 m; > 0 = the simulation's move averaged over this distance in space, 2 passes: neighbouring pleats that cross each other in the simulation opened slits
 through which the legs showed; 0.04 m on docs/qa/robe_black.md: leg pixels through the robe in walk 44 -> 12), in_max (0.01 m: below the waist the cloth may move at most this much TOWARDS the axis of the pelvis against the target: the target already holds it just outside the legs' reach, and a
 simulated hem that lagged inwards let a foot come out through it in the run; < 0 = no limit), max_move (0.12 m: the most the cloth may differ from the kinematic target, soft limit; 0 = none). Measured on the replica of the original robe 469 (robe_cloth_sim_test.py, hybrid=1):
@@ -34,7 +34,7 @@ FABRIC = {            # Blender's own cloth presets (scripts/presets/cloth: Cott
     "denim":   dict(mass=1.0,  tension=40.0, compression=40.0, shear=40.0, bending=10.0, tdamp=25.0),
     "leather": dict(mass=0.4,  tension=80.0, compression=80.0, shear=80.0, bending=150.0, tdamp=25.0),
 }
-CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, mscale=1.0, mounted=0.0, horse=1.0, pushw=1.0, gravity=1.0, dist=0.005, preroll=40, cycles=3,
+CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, mscale=1.0, mounted=0.0, horse=1.0, env=0.0, env_margin=0.02, env_tent=0.0, pushw=1.0, gravity=1.0, dist=0.005, preroll=40, cycles=3,
            self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
 
@@ -122,11 +122,22 @@ def main():
     Mi = np.array(item.matrix_basis); Vr = co.reshape(-1, 3).astype(np.float64) @ Mi[:3, :3].T + Mi[:3, 3]
     rig.data.pose_position = "POSE"; bpy.context.view_layer.update()
 
-    def hull_push_now():
+    def leg_state():
         dg = bpy.context.evaluated_depsgraph_get(); evr = rig.evaluated_get(dg)
         skin = {n: Mr0 @ np.array(evr.pose.bones[n].matrix) @ inv_local[n] @ np.linalg.inv(Mr0) for n in names}
         heads = np.array([(skin[names[k]] @ np.append(caps.head[j], 1))[:3] for j, k in enumerate(caps.idx)])
         tails = np.array([(skin[names[k]] @ np.append(caps.tail[j], 1))[:3] for j, k in enumerate(caps.idx)])
+        return skin, heads, tails
+
+    def envelope(X):
+        """the simulated cloth never pokes out of the shadow of the legs (cloth_lib.hull_push on the simulated points, in the rest frame of the pelvis): a leg in full stride does not come out of the hem"""
+        skin, heads, tails = leg_state(); S = skin["pelvis"]
+        Xr = (np.c_[X, np.ones(len(X))] @ np.linalg.inv(S).T)[:, :3]
+        return X + cl.hull_push(Xr, S, heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=cfg["env_margin"], kappa=cfg["env"], z_top=prm["z_top"], z_hem=prm["z_hem"],
+                                ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0), use_tent=bool(cfg["env_tent"]))
+
+    def hull_push_now():
+        skin, heads, tails = leg_state()
         if prm.get("hull") == "rel":
             return cl.hull_push_rel(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], caps.head[sel], caps.tail[sel], centre_xy=tuple(prm["centre"]), kappa=prm["kappa"],
                                     z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
@@ -272,7 +283,10 @@ def main():
             if f in want:
                 ev = sim.evaluated_get(bpy.context.evaluated_depsgraph_get())
                 c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c)
-                i = want[f]; d = c.reshape(-1, 3).astype(np.float64) - T[i]
+                i = want[f]; c = c.reshape(-1, 3).astype(np.float64)
+                if cfg["env"] > 0:
+                    c = envelope(c)
+                d = c - T[i]
                 if cfg["in_max"] >= 0:                                           # below the waist: not more than in_max towards the axis of the pelvis (a foot through a lagging hem)
                     c0, up = AX[i]; rr = T[i] - c0; rr = rr - np.outer(rr @ up, up); ru = rr / np.maximum(np.linalg.norm(rr, axis=1, keepdims=True), 1e-9)
                     din = (d * ru).sum(1); low = Vr[:, 2] < prm["z_top"] - 0.05
