@@ -23,4 +23,4 @@ Mounted head yaw (`head_scan.py`, `pose_natural_fit.py` with HEAD_YAW_W=100 HEAD
 
 Second group of original replicas (`test_items.py --items <name>`, not in the default run; Phase 2, `docs/qa/prior_thickness.json`, stand + attack_1h_slash, hand-set thickness): mean IoU of the 22 new ones 0.684, of all 27 0.694; they are informational (no threshold).
 
-Envelope (, informational, no threshold): share of the item outside the union of the originals of its slot, mean over frames: six replicas 0.000-0.013 (gloves 0.138), example shirt 0.008; a wrong slot 0.42-0.72 ().
+Envelope (`item_envelope_qa.py`, informational, no threshold): share of the item outside the union of the originals of its slot, mean over frames: six replicas 0.000-0.013 (gloves 0.138), example shirt 0.008; a wrong slot 0.42-0.72 (`docs/qa/item_envelope.md`).
