@@ -10,8 +10,8 @@ Run all: `python pipeline/run_qa.py` (`--quick` skips items and canvas). Needs b
 | natural motion | `pose_naturalness.py` | mean zig-zag (deg) of head / neck / hand.R, shoulder slide R (cm) | not above the last value | 4.8 / 8.7 / 24.2, 2.5 |
 | canvas | `test_canvas.py` | every case pixel-identical to reference | all OK | OK |
 | autofit | `test_autofit.py` | mean vertex error, 12 foreign replicas | <= 20 mm | 13.6 mm |
-| robe | `test_robe.py` | lower-body IoU vs original robe 469 | >= 0.74 | 0.757 |
-| cloak | `test_cloak.py` | silhouette IoU vs original cloak 468 (swing from `pipeline/cloak_pitch.json`) | >= 0.47 | 0.507 |
+| robe | `test_robe.py` | lower-body IoU vs original robe 469 | >= 0.74 | 0.761 (CLOTH_DROP 2.0; 0.757 before) |
+| cloak | `test_cloak.py` | silhouette IoU vs original cloak 468 (swing from `pipeline/cloak_pitch.json`) | >= 0.47 | 0.508 |
 | materials | `test_materials.py` | "RESULT OK" | - | OK |
 | import | `test_import_item.py` | chain from a foreign file runs, bbox as before | no error | OK |
 
@@ -24,3 +24,5 @@ Mounted head yaw (`head_scan.py`, `pose_natural_fit.py` with HEAD_YAW_W=100 HEAD
 Second group of original replicas (`test_items.py --items <name>`, not in the default run; Phase 2, `docs/qa/prior_thickness.json`, stand + attack_1h_slash, hand-set thickness): mean IoU of the 22 new ones 0.684, of all 27 0.694; they are informational (no threshold).
 
 Envelope (`item_envelope_qa.py`, informational, no threshold): share of the item outside the union of the originals of its slot, mean over frames: six replicas 0.000-0.013 (gloves 0.138), example shirt 0.008; a wrong slot 0.42-0.72 (`docs/qa/item_envelope.md`).
+
+Loose garments on 17 originals (`robe_originals_test.py`, `docs/qa/robe_originals.md`): classic robes / dresses / skirts 0.74-0.78 lower-body IoU, later `anim3/4/5` garments 0.55-0.65 (hem 9-11 px too wide); `CLOTH_DROP` 1.0 -> 2.0 raised both halves (+0.005), informational, no threshold.
