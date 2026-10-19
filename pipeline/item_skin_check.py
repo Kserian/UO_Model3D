@@ -14,7 +14,7 @@ below the hem). On the sheet the hole pixels are marked by small green circles.
 import os, sys, glob, subprocess
 import numpy as np
 
-COLS = {"hand": (1, 0, 0), "head": (0, 1, 0), "arm": (1, 1, 0), "torso": (1, 0, 1), "leg": (0, 1, 1)}
+COLS = {"hand": (1, 0, 0), "head": (0, 1, 0), "arm": (1, 1, 0), "torso": (1, 0, 1), "leg": (0, 1, 1), "foot": (1, 1, 1)}
 
 
 def colour_scene():
@@ -40,7 +40,7 @@ def colour_scene():
 
     def part(n):
         b = n.split(".")[0]
-        return "hand" if (b == "hand" or b.startswith("finger")) else "head" if b == "head" else "arm" if b in ("upper_arm", "forearm") else "leg" if b in ("thigh", "shin", "foot") else "torso"
+        return "hand" if (b == "hand" or b.startswith("finger")) else "head" if b == "head" else "arm" if b in ("upper_arm", "forearm") else "leg" if b in ("thigh", "shin") else "foot" if b == "foot" else "torso"
     order = list(COLS)
     me.materials.clear()
     for k in order:
@@ -60,8 +60,14 @@ def masks(a):
     return arm, tor
 
 
+def foot_mask(a):
+    """feet (white): a robe / skirt hem that ends above the feet shows them legitimately below it, so they are counted apart and not in the leg numbers"""
+    r, g, b, al = a[..., 0], a[..., 1], a[..., 2], a[..., 3] > 0
+    return al & (r > 235) & (g > 235) & (b > 235)
+
+
 def leg_mask(a):
-    """legs (cyan): a robe / skirt hem that ends above the feet shows them legitimately below it, so this is reported apart (arm / torso are what must stay covered)"""
+    """legs without the feet (thigh, shin; cyan): arm / torso are what must stay covered, the legs are a robe's to cover down to the hem"""
     r, g, b, al = a[..., 0], a[..., 1], a[..., 2], a[..., 3] > 0
     return al & (r < 110) & (g > 200) & (b > 200)
 
@@ -94,17 +100,17 @@ def main():
     for act in sorted(os.listdir(os.path.join(out, "all", "frames"))):
         if acts and act not in acts:
             continue
-        arm = tor = leg = fr = bad = 0
+        arm = tor = leg = fr = bad = ft = 0
         sp = np.zeros(6, int)
         for f in sorted(glob.glob(os.path.join(out, "all", "frames", act, "dir*", "*.png"))):
             im = np.array(Image.open(f).convert("RGBA")).astype(int); m1, m2 = masks(im)
-            leg += int(leg_mask(im).sum()); arm += int(m1.sum()); tor += int(m2.sum()); fr += 1; bad += int((m1.sum() + m2.sum()) > 0)
+            ft += int(foot_mask(im).sum()); leg += int(leg_mask(im).sum()); arm += int(m1.sum()); tor += int(m2.sum()); fr += 1; bad += int((m1.sum() + m2.sum()) > 0)
             it = item_mask(f)
             if it is not None:
                 for k, m in enumerate((m1, m2, leg_mask(im))):
                     sp[k] += int((m & it).sum()); sp[3 + k] += int((m & ~it).sum())
         tot = [tot[0] + fr, tot[1] + arm, tot[2] + tor, tot[3] + bad, tot[4] + leg]
-        print("%-26s frames %4d  arm px %4d  torso px %4d  frames with any %d  (leg px %d)" % (act, fr, arm, tor, bad, leg))
+        print("%-26s frames %4d  arm px %4d  torso px %4d  frames with any %d  (leg px %d, not counted: foot px %d)" % (act, fr, arm, tor, bad, leg, ft))
         if split:
             stot += sp
             print("%-26s   through the cloth: arm %4d torso %4d leg %4d | in holes: arm %4d torso %4d leg %4d" % (("",) + tuple(sp)))
