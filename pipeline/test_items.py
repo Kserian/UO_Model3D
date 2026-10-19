@@ -34,6 +34,33 @@ ITEMS = {      # name: sprite id, bones covered, thickness m, cut (bone, keep fr
     "gloves": dict(anim=530, parts=["hand", "forearm"], thickness=0.03, cut=["forearm", 0.4], part="gloves"),
     "helm":   dict(anim=563, parts=["head"], thickness=0.02, cut=None, part="helm"),
 }
+# second group (Phase 2 of docs/plans/original_items_calibration.md): more originals per slot, NOT in the default run (the 6 above stay comparable with
+# docs/qa/items_after_natural_fit.json). Thickness = the slot default of the hand-set items above; zrange = lowest / highest sprite row in 04_stand (client/extract/vd_scan.json.gz)
+# -> z, +0.04 m at the hem and -0.04 m at the waist like the hand-set ones (shirt 0.99 -> 1.03, plate 0.64 -> 0.68, pants 1.21 -> 1.17, boots 0.61 -> 0.57).
+TORSO = ["pelvis", "spine", "chest", "clavicle", "neck"]
+ITEMS.update({
+    "shirt_fancy": dict(anim=435, parts=TORSO + ["upper_arm", "forearm"], thickness=0.012, cut=None, zrange=[0.87, 9], part="chest"),
+    "shirt_check": dict(anim=911, parts=TORSO + ["upper_arm", "thigh"], thickness=0.012, cut=None, cut_far=["upper_arm", 0.4], zrange=[0.71, 9], part="chest"),
+    "tunic_stud":  dict(anim=521, parts=TORSO + ["upper_arm", "thigh"], thickness=0.03, cut=None, cut_far=["upper_arm", 0.6], zrange=[0.58, 9], part="chest"),
+    "tunic_leath": dict(anim=542, parts=TORSO + ["upper_arm", "thigh"], thickness=0.03, cut=None, cut_far=["upper_arm", 0.6], zrange=[0.58, 9], part="chest"),
+    "tunic_ring":  dict(anim=548, parts=TORSO + ["upper_arm", "thigh"], thickness=0.03, cut=None, cut_far=["upper_arm", 0.6], zrange=[0.65, 9], part="chest"),
+    "tunic_chain": dict(anim=538, parts=TORSO + ["upper_arm", "forearm", "thigh"], thickness=0.03, cut=None, zrange=[0.65, 9], part="chest"),
+    "tunic_bone":  dict(anim=554, parts=TORSO + ["upper_arm", "thigh"], thickness=0.03, cut=None, cut_far=["upper_arm", 0.5], zrange=[0.58, 9], part="chest"),
+    "pants_short": dict(anim=430, parts=["pelvis", "thigh", "shin"], thickness=0.012, cut=None, zrange=[0.36, 1.17], part="legs"),
+    "legs_chain":  dict(anim=540, parts=["pelvis", "thigh", "shin"], thickness=0.03, cut=None, zrange=[0.08, 1.17], part="legs"),
+    "legs_leath":  dict(anim=543, parts=["pelvis", "thigh", "shin"], thickness=0.03, cut=None, zrange=[0.08, 1.17], part="legs"),
+    "legs_ring":   dict(anim=549, parts=["pelvis", "thigh", "shin"], thickness=0.03, cut=None, zrange=[0.08, 1.17], part="legs"),
+    "boots_thigh": dict(anim=476, parts=["thigh", "shin", "foot"], thickness=0.015, cut=None, zrange=[-9, 0.85], part="boots"),
+    "sandals":     dict(anim=479, parts=["shin", "foot"], thickness=0.015, cut=None, zrange=[-9, 0.47], part="boots"),
+    "shoes":       dict(anim=480, parts=["foot"], thickness=0.015, cut=None, zrange=[-9, 0.25], part="boots"),
+    "gloves_leath": dict(anim=545, parts=["hand", "forearm"], thickness=0.03, cut=["forearm", 0.4], part="gloves"),
+    "gloves_bone": dict(anim=557, parts=["hand"], thickness=0.03, cut=None, part="gloves"),
+    "arms_stud":   dict(anim=523, parts=["upper_arm", "forearm", "clavicle"], thickness=0.025, cut=None, part="arms"),
+    "arms_leath":  dict(anim=544, parts=["upper_arm", "forearm", "clavicle"], thickness=0.025, cut=None, part="arms"),
+    "arms_ring":   dict(anim=550, parts=["upper_arm", "forearm", "clavicle"], thickness=0.025, cut=None, part="arms"),
+    "arms_bone":   dict(anim=556, parts=["forearm"], thickness=0.025, cut=None, part="arms"),
+})
+EXTRA_ITEMS = "arms,legs," + ",".join(k for k in ITEMS if "_" in k or k in ("sandals", "shoes"))
 DEFAULT_ITEMS = "shirt,plate,pants,boots,gloves,helm"
 DEFAULT_ACTIONS = "04_stand,00_walk_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward,25_mounted_stand"
 
