@@ -36,3 +36,5 @@ Lute_layer.vd, the full 2000-sample render (`SAMPLES=2000 render_lute.sh`, 21 mi
 Walk 00 and 01, direction 0 only: the PNG frames are shifted 1 px right and 1 px up (the offset x +1, y -1 the user set in the viewer, because the lute was not centred in the hand in that direction; the 3D pose is the same). `Lute_layer.vd` = `python vdtool/vdtool.py pack` of `frames/` (a folder with meta.json beside frames/; the packing reproduces the vd byte for byte): only those 20 frames differ.
 
 Stand 04: re-rendered at 2000 samples with `HAND_OVER_PARTS=('hand','forearm')` (right side only: the wrist is over the lute, a few px of the lute lay over it); only the 5 blocks of action 4 differ in the vd.
+
+Stand 04: single-pixel notches in the neck (a transparent pixel with 3 opaque 4-neighbours: where the body stood in front of the neck by one pixel, the viewer showed the red body through it) are filled with the colour of their neighbours, all 5 directions (7 pixels); only action 4 differs in the vd. The geometry was not changed (smoothing the junction of the bowl and the neck did not move the notch: it is a body cut, not the mesh).
