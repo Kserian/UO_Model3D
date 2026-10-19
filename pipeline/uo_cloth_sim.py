@@ -27,12 +27,15 @@ from bpy_compat import action_fcurves                                       # no
 STEP = 3
 MOUNTED = False                                                                 # key mounted=1: the riding actions 23-29 are simulated too (against the horse of the frame)
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
-FABRIC = {            # Blender's own cloth presets (scripts/presets/cloth: Cotton, Denim, Leather, Silk) as mass / tension / compression / shear / bending / damping; wool is ours, between cotton and denim
-    "silk":    dict(mass=0.15, tension=5.0,  compression=5.0,  shear=5.0,  bending=0.05, tdamp=1.0),
-    "cotton":  dict(mass=0.3,  tension=15.0, compression=15.0, shear=15.0, bending=0.5,  tdamp=5.0),
-    "wool":    dict(mass=0.5,  tension=25.0, compression=25.0, shear=20.0, bending=2.0,  tdamp=10.0),
-    "denim":   dict(mass=1.0,  tension=40.0, compression=40.0, shear=40.0, bending=10.0, tdamp=25.0),
-    "leather": dict(mass=0.4,  tension=80.0, compression=80.0, shear=80.0, bending=150.0, tdamp=25.0),
+FABRIC = {            # mass / stiffness / bending / damping per fabric, after Blender's cloth presets (scripts/presets/cloth: Cotton, Denim, Leather, Silk; wool is ours, between cotton and denim).
+                      # The in-plane stiffness (tension, compression, shear) is 5 for all of them, not the presets' 15-80: with the leg-hull target stretched under the legs (edges up to 2 x),
+                      # a stiffer cloth is pulled up towards the waist by the pin and does not fall back (cotton at 15: the hem +0.26 m in the walk, wool at 25: +0.47 m, at 5: +0.04 m); mass, bending
+                      # and damping are what tell the fabrics apart. Stiffer values can be given as keys (tension=...).
+    "silk":    dict(mass=0.15, tension=5.0, compression=5.0, shear=5.0, bending=0.05, tdamp=1.0),
+    "cotton":  dict(mass=0.3,  tension=5.0, compression=5.0, shear=5.0, bending=0.5,  tdamp=5.0),
+    "wool":    dict(mass=0.5,  tension=5.0, compression=5.0, shear=5.0, bending=2.0,  tdamp=10.0),
+    "denim":   dict(mass=1.0,  tension=5.0, compression=5.0, shear=5.0, bending=10.0, tdamp=25.0),
+    "leather": dict(mass=0.4,  tension=5.0, compression=5.0, shear=5.0, bending=150.0, tdamp=25.0),
 }
 CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, mscale=1.0, dscale=1.0, bscale=1.0, cq=4.0, cull=0.0, usenormal=0.0, mounted=0.0, horse=1.0, env=0.0, env_margin=0.02, env_tent=0.0, pushw=1.0, gravity=1.0, dist=0.005, preroll=40, cycles=3,
            self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
