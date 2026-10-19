@@ -4,13 +4,14 @@ Regenerate: `body_part_raster.py ../model/UO_Body_0x190.blend parts.npz`, `vd_sc
 Sanity: for the stand action the per-part cover equals `client/extract/layer_analysis.json` (frame 0 only; median |diff| 0.000, p95 0.031 over 3465 values).
 Reading: the standoff outside the silhouette is a LOWER bound of the item thickness (inside the silhouette the item hides the body) and is integer (1 px = 2.78 cm). Clothing (shirt, pants, shoes, gloves, arms, helm, torso armour) has p50 = 1 px at every part with p10-p90 = 1-1: there is no spread to calibrate a thickness from; only loose parts (cloak, robes, dresses, hair, hand-held items) stand out further. Bands are proportional to the body bbox of the frame (head ... feet); parts are the nearest part of OUR 3D body.
 
-393 animations with frames (anim 160, anim2 26, anim3 58, anim4 90, anim5 59), 211 tiledata animations without data in the client; 412001 frames over 35 actions x 5 directions.
-Complete (all 35 x 5 blocks): 378; incomplete: 15 (anim3:619: 1 actions, anim3:625: 2 actions, anim4:421: 6 actions, anim4:432: 5 actions, anim4:433: 5 actions, anim5:602: 1 actions, anim5:603: 1 actions, anim5:631: 30 actions, anim:619: 1 actions, anim:622: 1 actions, anim:629: 2 actions, anim:638: 2 actions, anim:800: 26 actions, anim:803: 23 actions, anim:906: 23 actions).
+392 animations with frames (anim 159, anim2 26, anim3 58, anim4 90, anim5 59), 87 tiledata animations without data in the client; 410951 frames over 35 actions x 5 directions.
+Not examined: 131 wearable tiledata animations are in `AnimationFrame1..4.uop` (client 7.x prefers them over anim*.mul; reader: `uop.py`): 120 with gargoyle action numbering (gargoyle items, horns, wings, talons, new shields - by decision) and 11 with human numbering whose frame counts do not match the body 400 (stand 6-11 frames vs 1).
+Complete (every action that the animation has, all 5 directions): 377; incomplete: 15 (anim3:619: 1 actions, anim3:625: 2 actions, anim4:421: 6 actions, anim4:432: 5 actions, anim4:433: 5 actions, anim5:602: 1 actions, anim5:603: 1 actions, anim5:631: 30 actions, anim:619: 1 actions, anim:622: 1 actions, anim:629: 2 actions, anim:638: 2 actions, anim:800: 26 actions, anim:803: 23 actions, anim:906: 23 actions).
 Frame count differs from the body 400 in some blocks: anim2:570 (21 actions), anim4:655 (2 actions).
 Frames without image (placeholder or empty): 1295 in 80 animations.
 Pixels outside the 256x256 canvas (anchor 128,192): anim2:570 28164 px, anim3:620 1026 px, anim4:464 152 px.
 
-Tiledata animations with no frames (item invisible in this client), by layer: 0 1, 15 26, Arms 10, Backpack 1, Bracelet 3, Cloak 3, Earrings 4, FacialHair 4, Gloves 12, Hair 28, Helm 9, InnerTorso 10, MiddleTorso 3, Neck 15, OneHanded 35, OuterLegs 1, OuterTorso 8, Pants 12, Ring 3, Shirt 5, Shoes 6, Talisman 13, TwoHanded 48, Waist 2.
+Tiledata animations with no frames (item invisible in this client), by layer: 0 1, 15 26, Arms 1, Backpack 1, Bracelet 3, Cloak 1, Earrings 2, Gloves 2, Helm 5, InnerTorso 1, MiddleTorso 1, Neck 15, OneHanded 3, OuterLegs 1, OuterTorso 4, Pants 1, Ring 3, Shoes 3, Talisman 13, TwoHanded 1.
 
 ## Stand (action 4), per layer: median [p10-p90] between animations
 
@@ -28,7 +29,7 @@ Tiledata animations with no frames (item invisible in this client), by layer: 0 
 | Neck | 11 | 0.021 [0.017-0.044] | 0.018 [0.000-0.062] | 1.68 [1.62-1.74] | 1.43 [1.37-1.46] | 1.0 [0.0-1.0] | 1.0 [0.0-1.0] | 1.0 [0.0-1.0] |
 | OneHanded | 53 | 0.017 [0.006-0.046] | 0.602 [0.419-0.814] | 1.49 [1.21-1.74] | 0.67 [0.39-0.77] | 5.0 [1.0-8.0] | 12.0 [3.0-20.8] | 14.0 [4.0-26.8] |
 | OuterLegs | 7 | 0.309 [0.253-0.475] | 0.210 [0.189-0.289] | 1.24 [1.21-1.30] | 0.48 [0.06-0.51] | 1.0 [1.0-1.0] | 3.0 [2.6-3.0] | 5.0 [4.6-6.0] |
-| OuterTorso | 26 | 0.881 [0.665-0.990] | 0.213 [0.123-0.328] | 1.87 [1.68-1.98] | -0.02 [-0.10-0.09] | 1.0 [1.0-2.0] | 2.5 [2.0-6.0] | 6.0 [4.0-11.5] |
+| OuterTorso | 25 | 0.868 [0.648-0.969] | 0.212 [0.123-0.333] | 1.87 [1.68-1.95] | -0.02 [-0.09-0.09] | 1.0 [1.0-2.0] | 3.0 [2.0-6.4] | 6.0 [4.0-12.4] |
 | Pants | 30 | 0.384 [0.167-0.434] | 0.108 [0.062-0.231] | 1.21 [1.18-1.27] | 0.07 [0.01-0.58] | 1.0 [1.0-1.0] | 1.0 [1.0-3.0] | 2.0 [1.9-4.0] |
 | Shirt | 13 | 0.368 [0.140-0.441] | 0.071 [0.010-0.165] | 1.68 [1.65-1.71] | 0.83 [0.59-1.06] | 1.0 [1.0-1.0] | 1.0 [1.0-2.0] | 2.0 [1.2-3.8] |
 | Shoes | 10 | 0.143 [0.088-0.226] | 0.198 [0.034-0.262] | 0.50 [0.28-0.64] | -0.09 [-0.09--0.06] | 1.0 [1.0-1.0] | 1.0 [1.0-1.1] | 1.5 [1.0-2.2] |
@@ -73,15 +74,15 @@ Tiledata animations with no frames (item invisible in this client), by layer: 0 
 | OuterLegs | forearm | 0.21 [0.12-0.23] | 0 | - | - |
 | OuterLegs | hand | 0.21 [0.20-0.23] | 0 | - | - |
 | OuterLegs | thigh | 0.87 [0.81-1.00] | 7 | 1.0 [1.0-1.0] | 3.0 [2.6-4.0] |
-| OuterTorso | head | 0.81 [0.02-1.00] | 15 | 1.0 [1.0-1.0] | 2.0 [1.0-3.6] |
-| OuterTorso | neck | 0.92 [0.49-1.00] | 0 | - | - |
-| OuterTorso | torso | 0.98 [0.89-1.00] | 26 | 1.0 [1.0-1.0] | 2.0 [1.0-4.0] |
-| OuterTorso | upper_arm | 0.96 [0.93-1.00] | 23 | 1.0 [1.0-1.0] | 1.0 [1.0-2.0] |
-| OuterTorso | forearm | 0.82 [0.24-1.00] | 23 | 1.0 [1.0-1.0] | 1.0 [1.0-2.0] |
-| OuterTorso | hand | 0.26 [0.20-0.99] | 8 | 1.0 [1.0-7.4] | 2.0 [1.7-11.8] |
-| OuterTorso | thigh | 1.00 [0.93-1.00] | 25 | 1.0 [1.0-2.0] | 3.0 [2.0-5.2] |
-| OuterTorso | shin | 1.00 [0.82-1.00] | 24 | 1.0 [1.0-2.7] | 3.0 [2.0-8.9] |
-| OuterTorso | foot | 0.60 [0.09-1.00] | 24 | 1.0 [1.0-2.0] | 3.0 [2.0-5.4] |
+| OuterTorso | head | 0.80 [0.02-1.00] | 14 | 1.0 [1.0-1.0] | 1.5 [1.0-3.7] |
+| OuterTorso | neck | 0.92 [0.48-1.00] | 0 | - | - |
+| OuterTorso | torso | 0.98 [0.89-1.00] | 25 | 1.0 [1.0-1.0] | 2.0 [1.0-4.0] |
+| OuterTorso | upper_arm | 0.95 [0.92-1.00] | 22 | 1.0 [1.0-1.0] | 1.0 [1.0-2.0] |
+| OuterTorso | forearm | 0.82 [0.24-1.00] | 22 | 1.0 [1.0-1.0] | 1.5 [1.0-2.0] |
+| OuterTorso | hand | 0.23 [0.20-0.99] | 7 | 1.0 [1.0-9.2] | 2.0 [2.0-13.4] |
+| OuterTorso | thigh | 1.00 [0.92-1.00] | 24 | 1.0 [1.0-2.0] | 3.0 [2.0-5.4] |
+| OuterTorso | shin | 1.00 [0.81-1.00] | 23 | 1.0 [1.0-2.8] | 3.0 [2.0-9.6] |
+| OuterTorso | foot | 0.59 [0.08-1.00] | 23 | 1.0 [1.0-2.0] | 3.0 [2.0-5.6] |
 | Pants | torso | 0.34 [0.28-0.42] | 18 | 1.0 [1.0-1.0] | 1.0 [1.0-2.3] |
 | Pants | forearm | 0.12 [0.10-0.19] | 0 | - | - |
 | Pants | hand | 0.18 [0.11-0.22] | 2 | 1.0 [1.0-1.0] | 2.0 [2.0-2.0] |
@@ -118,7 +119,7 @@ Tiledata animations with no frames (item invisible in this client), by layer: 0 
 | Neck | 11 | -58 | 58 | -74 | 27 | 0.021 | 0.016 |
 | OneHanded | 53 | -108 | 94 | -121 | 54 | 0.025 | 0.658 |
 | OuterLegs | 7 | -43 | 42 | -60 | 21 | 0.342 | 0.254 |
-| OuterTorso | 26 | -128 | 128 | -192 | 64 | 0.821 | 0.243 |
+| OuterTorso | 25 | -128 | 128 | -192 | 64 | 0.816 | 0.240 |
 | Pants | 30 | -69 | 65 | -84 | 34 | 0.360 | 0.135 |
 | Shirt | 13 | -66 | 64 | -82 | 35 | 0.362 | 0.071 |
 | Shoes | 10 | -30 | 34 | -56 | 18 | 0.143 | 0.198 |
@@ -129,41 +130,41 @@ Tiledata animations with no frames (item invisible in this client), by layer: 0 
 
 | action | name | animations | median cover | median standoff p90 | blocks with frame-count mismatch |
 |---|---|---|---|---|---|
-| 0 | walk_unarmed | 274 | 0.126 | 2.0 | 0 |
-| 1 | walk_armed | 275 | 0.128 | 2.0 | 1 |
-| 2 | run_unarmed | 275 | 0.130 | 2.0 | 1 |
-| 3 | run_armed | 275 | 0.129 | 2.0 | 1 |
-| 4 | stand | 275 | 0.126 | 2.0 | 1 |
-| 5 | fidget_1 | 274 | 0.125 | 2.0 | 0 |
-| 6 | fidget_2 | 274 | 0.125 | 2.0 | 0 |
-| 7 | combat_idle_1h | 274 | 0.133 | 2.0 | 0 |
-| 8 | combat_idle_2h | 275 | 0.136 | 2.0 | 1 |
-| 9 | attack_1h_slash | 275 | 0.132 | 2.0 | 1 |
-| 10 | attack_1h_pierce | 275 | 0.126 | 2.0 | 1 |
-| 11 | attack_1h_bash | 275 | 0.125 | 2.0 | 1 |
-| 12 | attack_2h_bash | 275 | 0.135 | 2.0 | 1 |
-| 13 | attack_2h_slash | 275 | 0.129 | 2.0 | 1 |
-| 14 | attack_2h_pierce | 275 | 0.133 | 2.0 | 1 |
-| 15 | combat_advance | 274 | 0.133 | 2.0 | 0 |
-| 16 | spell_directed | 274 | 0.133 | 2.0 | 0 |
-| 17 | spell_area | 274 | 0.118 | 2.0 | 0 |
-| 18 | attack_bow | 275 | 0.131 | 2.0 | 2 |
-| 19 | attack_crossbow | 275 | 0.130 | 2.0 | 2 |
-| 20 | get_hit | 275 | 0.123 | 2.0 | 1 |
-| 21 | die_forward | 275 | 0.141 | 2.0 | 1 |
-| 22 | die_backward | 275 | 0.130 | 2.0 | 1 |
-| 23 | mounted_walk | 275 | 0.131 | 2.0 | 1 |
-| 24 | mounted_run | 275 | 0.128 | 2.0 | 1 |
-| 25 | mounted_stand | 275 | 0.134 | 2.0 | 1 |
-| 26 | mounted_attack_1h | 275 | 0.130 | 2.0 | 1 |
-| 27 | mounted_attack_bow | 275 | 0.134 | 2.0 | 1 |
-| 28 | mounted_attack_crossbow | 274 | 0.133 | 2.0 | 0 |
-| 29 | mounted_attack_2h | 274 | 0.125 | 2.0 | 0 |
-| 30 | block | 274 | 0.131 | 2.0 | 0 |
-| 31 | punch | 274 | 0.130 | 2.0 | 0 |
-| 32 | bow | 274 | 0.137 | 2.0 | 0 |
-| 33 | salute | 274 | 0.126 | 2.0 | 0 |
-| 34 | eat | 274 | 0.130 | 2.0 | 0 |
+| 0 | walk_unarmed | 273 | 0.124 | 2.0 | 0 |
+| 1 | walk_armed | 274 | 0.127 | 2.0 | 1 |
+| 2 | run_unarmed | 274 | 0.129 | 2.0 | 1 |
+| 3 | run_armed | 274 | 0.127 | 2.0 | 1 |
+| 4 | stand | 274 | 0.125 | 2.0 | 1 |
+| 5 | fidget_1 | 273 | 0.124 | 2.0 | 0 |
+| 6 | fidget_2 | 273 | 0.124 | 2.0 | 0 |
+| 7 | combat_idle_1h | 273 | 0.132 | 2.0 | 0 |
+| 8 | combat_idle_2h | 274 | 0.134 | 2.0 | 1 |
+| 9 | attack_1h_slash | 274 | 0.131 | 2.0 | 1 |
+| 10 | attack_1h_pierce | 274 | 0.124 | 2.0 | 1 |
+| 11 | attack_1h_bash | 274 | 0.125 | 2.0 | 1 |
+| 12 | attack_2h_bash | 274 | 0.134 | 2.0 | 1 |
+| 13 | attack_2h_slash | 274 | 0.128 | 2.0 | 1 |
+| 14 | attack_2h_pierce | 274 | 0.133 | 2.0 | 1 |
+| 15 | combat_advance | 273 | 0.132 | 2.0 | 0 |
+| 16 | spell_directed | 273 | 0.132 | 2.0 | 0 |
+| 17 | spell_area | 273 | 0.117 | 2.0 | 0 |
+| 18 | attack_bow | 274 | 0.130 | 2.0 | 2 |
+| 19 | attack_crossbow | 274 | 0.130 | 2.0 | 2 |
+| 20 | get_hit | 274 | 0.122 | 2.0 | 1 |
+| 21 | die_forward | 274 | 0.141 | 2.0 | 1 |
+| 22 | die_backward | 274 | 0.129 | 2.0 | 1 |
+| 23 | mounted_walk | 274 | 0.131 | 2.0 | 1 |
+| 24 | mounted_run | 274 | 0.128 | 2.0 | 1 |
+| 25 | mounted_stand | 274 | 0.132 | 2.0 | 1 |
+| 26 | mounted_attack_1h | 274 | 0.129 | 2.0 | 1 |
+| 27 | mounted_attack_bow | 274 | 0.134 | 2.0 | 1 |
+| 28 | mounted_attack_crossbow | 273 | 0.132 | 2.0 | 0 |
+| 29 | mounted_attack_2h | 273 | 0.125 | 2.0 | 0 |
+| 30 | block | 273 | 0.129 | 2.0 | 0 |
+| 31 | punch | 273 | 0.130 | 2.0 | 0 |
+| 32 | bow | 273 | 0.136 | 2.0 | 0 |
+| 33 | salute | 273 | 0.126 | 2.0 | 0 |
+| 34 | eat | 273 | 0.130 | 2.0 | 0 |
 
 ## Outliers in the stand frames (outside the Tukey fences of their layer on cover or standoff p90; layers with >= 5 animations)
 
@@ -189,9 +190,9 @@ Tiledata animations with no frames (item invisible in this client), by layer: 0 
 | OneHanded | anim:649 | cover | 0.073 | -0.01..0.05 | bow, bow |
 | OneHanded | anim:651 | cover | 0.064 | -0.01..0.05 | crossbow, crossbow |
 | OuterLegs | anim4:443 | standoff p90 | 2.000 | 3.00..3.00 | Hakama, Hakama |
-| OuterTorso | anim3:444 | cover | 0.582 | 0.60..1.10 | Dress_Wed_Human_Fema |
-| OuterTorso | anim3:597 | cover | 0.371 | 0.60..1.10 | tabard |
-| OuterTorso | anim4:457 | cover | 0.551 | 0.60..1.10 | Hakama-Shita, Hakama-Shita |
+| OuterTorso | anim3:444 | cover | 0.582 | 0.59..1.10 | Dress_Wed_Human_Fema |
+| OuterTorso | anim3:597 | cover | 0.371 | 0.59..1.10 | tabard |
+| OuterTorso | anim4:457 | cover | 0.551 | 0.59..1.10 | Hakama-Shita, Hakama-Shita |
 | OuterTorso | anim2:570 | standoff p90 | 47.000 | 0.50..4.50 | Parrot_Epaulets_Sout, Parrot_Epaulets_East |
 | OuterTorso | anim3:481 | standoff p90 | 8.000 | 0.50..4.50 | Dress_Wedding_Human_, Dress_Wedding_Human_ |
 | OuterTorso | anim:994 | standoff p90 | 9.000 | 0.50..4.50 |  |

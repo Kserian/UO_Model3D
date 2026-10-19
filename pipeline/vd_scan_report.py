@@ -48,9 +48,13 @@ def main():
     nfr = sum(sum(r["frames"]) for v in A.values() for r in v["actions"].values())
     w("%d animations with frames (%s), %d tiledata animations without data in the client; %d frames over 35 actions x 5 directions." % (
         len(A), ", ".join("%s %d" % kv for kv in sorted(Counter(s.split(":")[0] for s in A).items())), len(scan["no_frames"]), nfr))
+    iu = scan.get("in_uop", {})
+    w("Not examined: %d wearable tiledata animations are in `AnimationFrame1..4.uop` (client 7.x prefers them over anim*.mul; reader: `uop.py`): %d with gargoyle action numbering "
+      "(gargoyle items, horns, wings, talons, new shields - by decision) and %d with human numbering whose frame counts do not match the body 400 (stand 6-11 frames vs 1)." % (
+          len(iu), sum(1 for v in iu.values() if max(v["actions"], default=0) > 34), sum(1 for v in iu.values() if max(v["actions"], default=0) <= 34)))
     inc = {s: [a for a, r in v["actions"].items() if 0 in r["frames"]] for s, v in A.items()}
     inc = {s: a for s, a in inc.items() if a}
-    w("Complete (all 35 x 5 blocks): %d; incomplete: %d (%s)." % (len(A) - len(inc), len(inc), ", ".join("%s: %d actions" % (s, len(a)) for s, a in sorted(inc.items()))))
+    w("Complete (every action that the animation has, all 5 directions): %d; incomplete: %d (%s)." % (len(A) - len(inc), len(inc), ", ".join("%s: %d actions" % (s, len(a)) for s, a in sorted(inc.items()))))
     mism = Counter(s for s, v in A.items() for r in v["actions"].values() if r["frame_count_mismatch"])
     w("Frame count differs from the body 400 in some blocks: %s." % (", ".join("%s (%d actions)" % kv for kv in mism.items()) or "none"))
     empty = Counter({s: sum(r["empty"] for r in v["actions"].values()) for s, v in A.items()})

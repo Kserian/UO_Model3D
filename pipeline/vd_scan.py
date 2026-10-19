@@ -6,12 +6,14 @@
 is then also assigned to the body part nearest to it (as in `layer_analysis.py`) and `cover_part` / `out_part` are written per part.
 
 Which animations: every wearable tile of `tiledata.mul` (flag 0x00400000, animation id != 0) -> `Equipconv.def` (body type 400: equipment id -> convert-to id)
--> `Bodyconv.def` (file anim2..anim5 and id there; no line = the same id in anim.mul) -> blocks `35000 + (id - 400) * 175 + action * 5 + dir`
-(35 actions x 5 directions; directions 5-7 are mirrors). Layer 25 (mounts / creatures) is skipped.
+-> the id itself when `AnimationFrame1..4.uop` has it (the client prefers them), else `Bodyconv.def` (file anim2..anim5 and id there; no line = the same id in anim.mul)
+-> blocks `35000 + (id - 400) * 175 + action * 5 + dir` (35 actions x 5 directions; directions 5-7 are mirrors). Layer 25 (mounts / creatures) is skipped.
+Animations that live in the .uop (see `uop.py`: gargoyle items, horns, wings, new shields, a few new human items) are NOT examined: the gargoyle ones by decision, the human
+ones because their frame counts / numbering do not match the body 400 of anim.mul (stand: 6-11 frames vs 1); they are only listed (`in_uop`).
 Every frame is put on a 256x256 canvas (anchor 128,192, 36 px/m) next to the SAME frame of the original body 400 (frame k of the item -> frame
 k * n_body // n_item of the body when the counts differ) and measured: bbox (px from the anchor), area, share of the body silhouette that the item covers,
-pixels outside the silhouette and their distance to it (histogram, 1 px = 2.78 cm), the same in 6 height bands (and, with --parts, in 9 body parts) of the body bbox (+ above / below), pixels outside
-the canvas. Per (animation, action) the numbers are pooled over the directions and frames and written as JSON (aggregates only, no pixels).
+pixels outside the silhouette and their distance to it (histogram, 1 px = 2.78 cm), the same in 6 height bands (and, with --parts, in 9 body parts) of the body bbox
+(+ above / below), pixels outside the canvas. Per (animation, action) the numbers are pooled over the directions and frames and written as JSON (aggregates only, no pixels).
 """
 import json, mmap, os, struct, sys
 from concurrent.futures import ProcessPoolExecutor
@@ -22,6 +24,7 @@ from scipy import ndimage
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from extract_tiledata import read_items, read_bodyconv, LAYERS, WEARABLE
+import uop
 
 CW, CH, AX, AY = 256, 256, 128, 192
 N_ACT, N_DIR = 35, 5
@@ -53,15 +56,16 @@ def read_equipconv(path, body=400):
 
 
 def resolve(client):
-    """wearable animations: {src 'file:id': dict(layers, items, ids)}"""
+    """wearable animations: {src: dict(layers, items, anim_ids)}; src = 'uop:<id>' or '<file>:<id>' (anim.mul .. anim5.mul)"""
     econv = read_equipconv(os.path.join(client, "Equipconv.def"))
     bconv = read_bodyconv(os.path.join(client, "Bodyconv.def"))
+    tiles = [(tid, layer, anim, name) for tid, flags, layer, anim, name in read_items(os.path.join(client, "tiledata.mul"))
+             if flags & WEARABLE and anim and layer < 25]
+    in_uop = {b for b, _ in uop.Frames(client, {econv.get(a, a) for _, _, a, _ in tiles}).index}
     res = {}
-    for tid, flags, layer, anim, name in read_items(os.path.join(client, "tiledata.mul")):
-        if not (flags & WEARABLE and anim) or layer >= 25:
-            continue
+    for tid, layer, anim, name in tiles:
         a = econv.get(anim, anim)
-        src = "%s:%d" % bconv.get(a, ("anim", a))
+        src = "uop:%d" % a if a in in_uop else "%s:%d" % bconv.get(a, ("anim", a))
         r = res.setdefault(src, dict(layers=set(), items=[], anim_ids=set()))
         r["layers"].add(layer)
         r["items"].append((tid, name))
@@ -84,13 +88,13 @@ class Client:
         return self.c[tag]
 
     def block(self, tag, body, a, d):
-        """(mmap, offset of the block) or None"""
+        """(mmap, offset of the block, length) or None"""
         f = self.get(tag)
         if f is None:
             return None
         idx, mm = f
         e = 35000 + (body - 400) * 175 + a * 5 + d
-        if e >= len(idx):
+        if a >= N_ACT or e >= len(idx):
             return None
         look, length, _ = idx[e]
         if look < 0 or length <= 0 or look + length > len(mm):
@@ -224,9 +228,9 @@ def load_parts(path):
     return out
 
 
-def body_reference(cl, a, d, parts):
-    """masks, distance maps (uint8), nearest-part maps (uint8, 255 = unknown), body bbox rows of the original body 400 frames of block (a, d); None when missing"""
-    blk = cl.block("anim", 400, a, d)
+def body_reference(cl, a, d, parts, tag="anim", body=400):
+    """masks, distance maps (uint8), nearest-part maps (uint8, 255 = unknown), body bbox rows of the frames of reference body (tag, body) for block (a, d); None when missing"""
+    blk = cl.block(tag, body, a, d)
     if blk is None:
         return None
     mm, look, length = blk
@@ -241,7 +245,7 @@ def body_reference(cl, a, d, parts):
     top, bot = np.full(n, -1, np.int32), np.full(n, -1, np.int32)
     for k in range(n):
         dist[k] = np.minimum(ndimage.distance_transform_edt(~masks[k]), 255)
-        G = parts.get((a, d, k))
+        G = parts.get((a, d, k)) if (tag, body) == ("anim", 400) else None     # part labels are those of OUR (human) body
         if G is not None and (G >= 0).any():
             _, (iy, ix) = ndimage.distance_transform_edt(G < 0, return_indices=True)
             near[k] = G[iy, ix]
@@ -257,11 +261,8 @@ def pct(h, q):
     return int(np.searchsorted(c, q / 100 * c[-1])) if c[-1] else 0
 
 
-def do_action(args):
-    client, a, srcs, parts_path = args
-    cl = Client(client)
-    parts = load_parts(parts_path)
-    ref = {d: body_reference(cl, a, d, parts) for d in range(N_DIR)}
+def make_ref(cl, a, parts, tag, bid):
+    ref = {d: body_reference(cl, a, d, parts, tag, bid) for d in range(N_DIR)}
     body_area = {d: (ref[d][0].sum((1, 2)) if ref[d] else None) for d in range(N_DIR)}
     body_band = {}
     for d in range(N_DIR):
@@ -278,70 +279,88 @@ def do_action(args):
             bb.append(c)
         body_band[d] = np.array(bb)
     body_part = {d: np.array([[((ref[d][2][k] == g) & ref[d][0][k]).sum() for g in range(NP)] for k in range(len(ref[d][0]))]) for d in range(N_DIR) if ref[d]}
+    return ref, body_area, body_band, body_part
+
+
+def measure_src(cl, src, a, R, parts):
+    """record of animation src, action a against reference R = make_ref(...); None when the animation has no frames in this action"""
+    ref, body_area, body_band, body_part = R
+    tag, _, sid = src.partition(":")
+    recs, nfr, bodyfr, bad, mism = [], [], [], 0, 0
+    for d in range(N_DIR):
+        blk = cl.block(tag, int(sid), a, d)
+        n = frame_count(*blk) if blk else 0
+        nfr.append(n)
+        if not n:
+            continue
+        mm, look, length = blk
+        r = ref[d]
+        nb = len(r[0]) if r else 0
+        bodyfr.append(nb)
+        if nb and nb != n:
+            mism += 1
+        bmap = np.array([(k * nb // n) if nb else -1 for k in range(n)], np.int32)
+        rc = np.zeros((n, NCOL), np.int64)
+        if r:
+            bad += scan_block(mm, look, length, n, r[0], r[1], r[2], r[3], r[4], bmap, rc)
+        else:
+            z = np.zeros((1, CH, CW), bool)
+            bad += scan_block(mm, look, length, n, z, np.zeros((1, CH, CW), np.uint8), np.full((1, CH, CW), 255, np.uint8), np.full(1, -1, np.int32), np.full(1, -1, np.int32), bmap, rc)
+        area_b = np.array([body_area[d][j] if j >= 0 else 0 for j in bmap]) if r else np.zeros(n)
+        recs.append((d, rc, bmap, area_b))
+    if not recs:
+        return None
+    R = np.concatenate([x[1] for x in recs])
+    ok = R[:, C_OK] == 1
+    rec = dict(frames=nfr, body_frames=[len(ref[d][0]) if ref[d] else 0 for d in range(N_DIR)], frame_count_mismatch=mism, broken=int(bad),
+               empty=int((~ok).sum()))
+    if ok.any():
+        Ro = R[ok]
+        hist = Ro[:, C_HIST:C_HIST + NH].sum(0)
+        ab = np.concatenate([x[3] for x in recs])[ok]
+        has_b = ab > 0
+        rec.update(
+            x0=int(Ro[:, C_X0].min()), x1=int(Ro[:, C_X1].max()), y0=int(Ro[:, C_Y0].min()), y1=int(Ro[:, C_Y1].max()),
+            area=round(float(Ro[:, C_AREA].mean()), 1),
+            cover=round(float((Ro[has_b, C_IN] / ab[has_b]).mean()), 4) if has_b.any() else None,
+            out_frac=round(float((Ro[:, C_OUT] / Ro[:, C_AREA]).mean()), 4),
+            out_px=round(float(Ro[:, C_OUT].mean()), 1),
+            dist=dict(p50=pct(hist, 50), p90=pct(hist, 90), p99=pct(hist, 99), max=int(np.nonzero(hist)[0].max()) if hist.any() else 0),
+            clip=int(R[:, C_CLIP].sum()),
+            band_out=[round(float(v), 1) for v in Ro[:, C_BOUT:C_BOUT + NB + 2].mean(0)])
+        if has_b.any():
+            bcov = []
+            for bi in range(NB):
+                den = np.concatenate([body_band[x[0]][x[2], bi] for x in recs])[ok]
+                s = den > 0
+                bcov.append(round(float((Ro[s, C_BIN + bi] / den[s]).mean()), 3) if s.any() else None)
+            rec["band_cover"] = bcov
+            if parts:
+                pc, po = {}, {}
+                for gi, g in enumerate(PARTS):
+                    den = np.concatenate([body_part[x[0]][x[2], gi] for x in recs])[ok]
+                    sel = den > 0
+                    if sel.any():
+                        pc[g] = round(float((Ro[sel, C_PIN + gi] / den[sel]).mean()), 3)
+                    h = Ro[:, C_PHIST + gi * NHP:C_PHIST + (gi + 1) * NHP].sum(0)
+                    if h.any():
+                        po[g] = dict(n=round(float(Ro[:, C_POUT + gi].mean()), 1), p50=pct(h, 50), p90=pct(h, 90), max=int(np.nonzero(h)[0].max()))
+                rec["cover_part"], rec["out_part"] = pc, po
+    return rec
+
+
+
+
+def do_action(args):
+    client, a, srcs, parts_path = args
+    cl = Client(client)
+    ref = make_ref(cl, a, load_parts(parts_path), "anim", 400)
+    parts = parts_path
     out = {}
     for src in srcs:
-        tag, _, sid = src.partition(":")
-        recs, nfr, bodyfr, bad, mism = [], [], [], 0, 0
-        for d in range(N_DIR):
-            blk = cl.block(tag, int(sid), a, d)
-            n = frame_count(*blk) if blk else 0
-            nfr.append(n)
-            if not n:
-                continue
-            mm, look, length = blk
-            r = ref[d]
-            nb = len(r[0]) if r else 0
-            bodyfr.append(nb)
-            if nb and nb != n:
-                mism += 1
-            bmap = np.array([(k * nb // n) if nb else -1 for k in range(n)], np.int32)
-            rc = np.zeros((n, NCOL), np.int64)
-            if r:
-                bad += scan_block(mm, look, length, n, r[0], r[1], r[2], r[3], r[4], bmap, rc)
-            else:
-                z = np.zeros((1, CH, CW), bool)
-                bad += scan_block(mm, look, length, n, z, np.zeros((1, CH, CW), np.uint8), np.full((1, CH, CW), 255, np.uint8), np.full(1, -1, np.int32), np.full(1, -1, np.int32), bmap, rc)
-            area_b = np.array([body_area[d][j] if j >= 0 else 0 for j in bmap]) if r else np.zeros(n)
-            recs.append((d, rc, bmap, area_b))
-        if not recs:
-            continue
-        R = np.concatenate([x[1] for x in recs])
-        ok = R[:, C_OK] == 1
-        rec = dict(frames=nfr, body_frames=[len(ref[d][0]) if ref[d] else 0 for d in range(N_DIR)], frame_count_mismatch=mism, broken=int(bad),
-                   empty=int((~ok).sum()))
-        if ok.any():
-            Ro = R[ok]
-            hist = Ro[:, C_HIST:C_HIST + NH].sum(0)
-            ab = np.concatenate([x[3] for x in recs])[ok]
-            has_b = ab > 0
-            rec.update(
-                x0=int(Ro[:, C_X0].min()), x1=int(Ro[:, C_X1].max()), y0=int(Ro[:, C_Y0].min()), y1=int(Ro[:, C_Y1].max()),
-                area=round(float(Ro[:, C_AREA].mean()), 1),
-                cover=round(float((Ro[has_b, C_IN] / ab[has_b]).mean()), 4) if has_b.any() else None,
-                out_frac=round(float((Ro[:, C_OUT] / Ro[:, C_AREA]).mean()), 4),
-                out_px=round(float(Ro[:, C_OUT].mean()), 1),
-                dist=dict(p50=pct(hist, 50), p90=pct(hist, 90), p99=pct(hist, 99), max=int(np.nonzero(hist)[0].max()) if hist.any() else 0),
-                clip=int(R[:, C_CLIP].sum()),
-                band_out=[round(float(v), 1) for v in Ro[:, C_BOUT:C_BOUT + NB + 2].mean(0)])
-            if has_b.any():
-                bcov = []
-                for bi in range(NB):
-                    den = np.concatenate([body_band[x[0]][x[2], bi] for x in recs])[ok]
-                    s = den > 0
-                    bcov.append(round(float((Ro[s, C_BIN + bi] / den[s]).mean()), 3) if s.any() else None)
-                rec["band_cover"] = bcov
-                if parts:
-                    pc, po = {}, {}
-                    for gi, g in enumerate(PARTS):
-                        den = np.concatenate([body_part[x[0]][x[2], gi] for x in recs])[ok]
-                        sel = den > 0
-                        if sel.any():
-                            pc[g] = round(float((Ro[sel, C_PIN + gi] / den[sel]).mean()), 3)
-                        h = Ro[:, C_PHIST + gi * NHP:C_PHIST + (gi + 1) * NHP].sum(0)
-                        if h.any():
-                            po[g] = dict(n=round(float(Ro[:, C_POUT + gi].mean()), 1), p50=pct(h, 50), p90=pct(h, 90), max=int(np.nonzero(h)[0].max()))
-                    rec["cover_part"], rec["out_part"] = pc, po
-        out[src] = rec
+        rec = measure_src(cl, src, a, ref, parts)
+        if rec:
+            out[src] = rec
     return a, out
 
 
@@ -365,8 +384,12 @@ def main():
     ani = resolve(client)
     if files:
         ani = {k: v for k, v in ani.items() if k.split(":")[0] in files}
-    srcs = sorted(ani)
-    print("%d wearable animations, %d actions" % (len(srcs), len(actions)), flush=True)
+    ub = [int(x.partition(":")[2]) for x in ani if x.startswith("uop:")]
+    fr = uop.Frames(client, ub)
+    in_uop = {x: dict(layers=sorted(LAYERS.get(l, str(l)) for l in ani[x]["layers"]), items=[n for _, n in ani[x]["items"]][:3], actions=fr.actions(int(x.partition(":")[2])))
+              for x in sorted(ani) if x.startswith("uop:")}
+    srcs = sorted(x for x in ani if not x.startswith("uop:"))
+    print("%d wearable animations in anim*.mul, %d in the .uop (not examined), %d actions" % (len(srcs), len(in_uop), len(actions)), flush=True)
     res = {s: dict(layers=sorted(LAYERS.get(l, str(l)) for l in ani[s]["layers"]), anim_ids=sorted(ani[s]["anim_ids"]),
                    n_items=len(ani[s]["items"]), items=[n for _, n in ani[s]["items"]][:4], actions={}) for s in srcs}
     with ProcessPoolExecutor(jobs) as ex:
@@ -376,7 +399,8 @@ def main():
             print("action %d: %d animations" % (a, len(o)), flush=True)
     missing = {s: dict(layers=r["layers"], anim_ids=r["anim_ids"], n_items=r["n_items"], items=r["items"]) for s, r in res.items() if not r["actions"]}
     res = {s: r for s, r in res.items() if r["actions"]}
-    json.dump(dict(canvas=[CW, CH], anchor=[AX, AY], bands=NB, parts=PARTS, actions=actions, animations=res, no_frames=missing), open(out, "w"), separators=(",", ":"))
+    json.dump(dict(canvas=[CW, CH], anchor=[AX, AY], bands=NB, parts=PARTS, actions=actions, animations=res, no_frames=missing, in_uop=in_uop),
+              open(out, "w"), separators=(",", ":"))
     print("%d animations with frames -> %s" % (len(res), out))
 
 

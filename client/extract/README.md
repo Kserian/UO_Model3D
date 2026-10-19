@@ -10,7 +10,7 @@
 | `equipment_extent.json` | Zasięg klatek każdej animacji ludzi / ekwipunku (`anim`, `anim2`..`anim5`, ID lokalne w pliku) względem zaczepu: `left`, `right`, `up`, `down` w px, z uwzględnieniem lustra kierunków 5–7 | `pipeline/measure_equipment_extent.py` |
 | `layer_analysis.json` | Analiza A: zasięg wysokości, pokrycie części ciała i wystawanie poza sylwetkę ciała dla 385 oryginalnych animacji (`anim`..`anim5`) ubieralnych (`stand`) | `pipeline/layer_analysis.py` (tabele: `docs/qa/layer_analysis.md`, `pipeline/layer_analysis_report.py`) |
 | `item_animations.json` | Przedmioty ubieralne z `tiledata.mul` (animacja, warstwa, nazwa) połączone przez `Bodyconv.def` z plikiem animacji i zasięgiem; statystyki per warstwa | `pipeline/extract_tiledata.py` |
-| `vd_scan.json.gz` | Skan WSZYSTKICH ubieralnych animacji (393, 412 tys. klatek, 35 akcji × 5 kierunków) względem ciała 400: zasięg, pokrycie, wystawanie poza sylwetkę (histogram), per pasmo wysokości i per część ciała 3D; tylko agregaty | `pipeline/vd_scan.py` (`--parts` z `body_part_raster.py`) |
+| `vd_scan.json.gz` | Skan ubieralnych animacji z `anim`..`anim5` (392, 411 tys. klatek, 35 akcji × 5 kierunków; 131 ID leży w `AnimationFrame*.uop` i nie jest badane) względem ciała 400: zasięg, pokrycie, wystawanie poza sylwetkę (histogram), per pasmo wysokości i per część ciała 3D; tylko agregaty | `pipeline/vd_scan.py` (`--parts` z `body_part_raster.py`) |
 | `vd_scan_layers.json` | Agregaty per warstwa z tego skanu (stand) | `pipeline/vd_scan_report.py` (tabele: `docs/qa/vd_scan.md`) |
 
 Odtworzenie (z katalogu repo, klient w `uo_client/NelderimServUO/`):
