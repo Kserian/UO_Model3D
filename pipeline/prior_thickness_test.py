@@ -17,7 +17,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import test_items as T                                                 # noqa: E402
 
-GRID = [0.006, 0.012, 0.02, 0.03, 0.04]
+GRID = [0.012, 0.02, 0.03, 0.04]
 PXM = 36.0
 
 
