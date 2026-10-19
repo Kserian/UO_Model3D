@@ -10,7 +10,7 @@ DIFFERENCE between the simulation and the target (cloth_sim.npz next to the item
 pushes whatever is still inside the body out, as before. Mounted actions (23-29) are not simulated (the hem follows the legs there), nor the falls 21, 22 when the scene has uo_cloth_lie > 0.
 
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the pose of the loop), looping actions (walk, run, stand, combat idle) CYCLES cycles and the last one is
-kept, so the loop closes without a jump. Settings (key=value): goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3), tension / compression (15), shear (5), bending (0.5),
+kept, so the loop closes without a jump. Settings (key=value): fabric (silk, cotton, wool, denim, leather: mass, stiffness, bending, damping at once; the keys below override it), goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3), tension / compression (15), shear (5), bending (0.5),
 damp_air (1), tdamp (5), dist (0.005), preroll (40), cycles (3), self_collision (0), friction (0), arm_goal (0.7; -1 = sleeves as the rest above the waist; 0-1 = their own goal), arm_x (0.19 m from the middle: where the sleeves start), arm_zmin (the sleeves are the vertices above this height; default 0.05 m below the waist: long bell sleeves that hang below it need e.g. 0.55), thick (0.02 m: the outer thickness of the body as a collider; a fast leg tunnels through the cloth with a thin one: leg pixels through the robe in the run 466 at 0.005 m, 196 at 0.02, 147 with dist 0.02 too but 3 x slower), smooth (0 m; > 0 = the simulation's move averaged over this distance in space, 2 passes: neighbouring pleats that cross each other in the simulation opened slits
 through which the legs showed; 0.04 m on docs/qa/robe_black.md: leg pixels through the robe in walk 44 -> 12), in_max (0.01 m: below the waist the cloth may move at most this much TOWARDS the axis of the pelvis against the target: the target already holds it just outside the legs' reach, and a
 simulated hem that lagged inwards let a foot come out through it in the run; < 0 = no limit), max_move (0.12 m: the most the cloth may differ from the kinematic target, soft limit; 0 = none). Measured on the replica of the original robe 469 (robe_cloth_sim_test.py, hybrid=1):
@@ -26,6 +26,13 @@ from bpy_compat import action_fcurves                                       # no
 
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
+FABRIC = {            # Blender's own cloth presets (scripts/presets/cloth: Cotton, Denim, Leather, Silk) as mass / tension / compression / shear / bending / damping; wool is ours, between cotton and denim
+    "silk":    dict(mass=0.15, tension=5.0,  compression=5.0,  shear=5.0,  bending=0.05, tdamp=1.0),
+    "cotton":  dict(mass=0.3,  tension=15.0, compression=15.0, shear=15.0, bending=0.5,  tdamp=5.0),
+    "wool":    dict(mass=0.5,  tension=25.0, compression=25.0, shear=20.0, bending=2.0,  tdamp=10.0),
+    "denim":   dict(mass=1.0,  tension=40.0, compression=40.0, shear=40.0, bending=10.0, tdamp=25.0),
+    "leather": dict(mass=0.4,  tension=80.0, compression=80.0, shear=80.0, bending=150.0, tdamp=25.0),
+}
 CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, dist=0.005, preroll=40, cycles=3,
            self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
@@ -60,7 +67,7 @@ def run_parallel(blend, out, only, jobs, extra):
 
 def main():
     args = sys.argv[1:]
-    blend = os.path.abspath(args.pop(0)); out = None; only = None; cfg = dict(CFG); jobs = 1; extra = []
+    blend = os.path.abspath(args.pop(0)); out = None; only = None; cfg = dict(CFG); jobs = 1; extra = []; own = {}
     while args:
         a = args.pop(0)
         if a == "--out":
@@ -69,8 +76,14 @@ def main():
             v = args.pop(0); only = None if v == "all" else set(v.split(","))
         elif a == "--jobs":
             jobs = int(args.pop(0))
+        elif a.startswith("fabric="):
+            fab = a.split("=", 1)[1]; extra.append(a)
+            if fab not in FABRIC:
+                raise SystemExit("fabric %s unknown: %s" % (fab, ", ".join(FABRIC)))
+            cfg.update(FABRIC[fab])
         elif "=" in a:
-            k, v = a.split("=", 1); cfg[k] = float(v); extra.append(a)
+            k, v = a.split("=", 1); own[k] = float(v); extra.append(a)
+    cfg.update(own)                                                             # fabric preset first, then the settings named one by one
     out = out or os.path.join(os.path.dirname(blend), "cloth_sim.npz")
     if jobs > 1:
         return run_parallel(blend, out, only, jobs, extra)
