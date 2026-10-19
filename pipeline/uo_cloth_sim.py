@@ -10,7 +10,7 @@ DIFFERENCE between the simulation and the target (cloth_sim.npz next to the item
 pushes whatever is still inside the body out, as before. Mounted actions (23-29) are not simulated (the hem follows the legs there), nor the falls 21, 22 when the scene has uo_cloth_lie > 0.
 
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the pose of the loop), looping actions (walk, run, stand, combat idle) CYCLES cycles and the last one is
-kept, so the loop closes without a jump. Settings (key=value): fabric (silk, cotton, wool, denim, leather: mass, stiffness, bending, damping at once; the keys below override it), goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3), tension / compression (15), shear (5), bending (0.5),
+kept, so the loop closes without a jump. Settings (key=value): fabric (silk, cotton, wool, denim, leather: mass, stiffness, bending, damping at once; the keys below override it), goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3 per vertex), density (kg/m2 of the cloth; > 0 = the mass of a vertex is density x area of the item / vertices, so a fine mesh weighs what the fabric weighs; the fabrics set it, 0 = mass as given), tension / compression (15), shear (5), bending (0.5),
 damp_air (1), tdamp (5), dist (0.005), preroll (40), cycles (3), self_collision (0), friction (0), arm_goal (0.7; -1 = sleeves as the rest above the waist; 0-1 = their own goal), arm_x (0.19 m from the middle: where the sleeves start), arm_zmin (the sleeves are the vertices above this height; default 0.05 m below the waist: long bell sleeves that hang below it need e.g. 0.55), thick (0.02 m: the outer thickness of the body as a collider; a fast leg tunnels through the cloth with a thin one: leg pixels through the robe in the run 466 at 0.005 m, 196 at 0.02, 147 with dist 0.02 too but 3 x slower), smooth (0 m; > 0 = the simulation's move averaged over this distance in space, 2 passes: neighbouring pleats that cross each other in the simulation opened slits
 through which the legs showed; 0.04 m on docs/qa/robe_black.md: leg pixels through the robe in walk 44 -> 12), in_max (0.01 m: below the waist the cloth may move at most this much TOWARDS the axis of the pelvis against the target: the target already holds it just outside the legs' reach, and a
 simulated hem that lagged inwards let a foot come out through it in the run; < 0 = no limit), max_move (0.12 m: the most the cloth may differ from the kinematic target, soft limit; 0 = none). Measured on the replica of the original robe 469 (robe_cloth_sim_test.py, hybrid=1):
@@ -27,13 +27,13 @@ from bpy_compat import action_fcurves                                       # no
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
 FABRIC = {            # Blender's own cloth presets (scripts/presets/cloth: Cotton, Denim, Leather, Silk) as mass / tension / compression / shear / bending / damping; wool is ours, between cotton and denim
-    "silk":    dict(mass=0.15, tension=5.0,  compression=5.0,  shear=5.0,  bending=0.05, tdamp=1.0),
-    "cotton":  dict(mass=0.3,  tension=15.0, compression=15.0, shear=15.0, bending=0.5,  tdamp=5.0),
-    "wool":    dict(mass=0.5,  tension=25.0, compression=25.0, shear=20.0, bending=2.0,  tdamp=10.0),
-    "denim":   dict(mass=1.0,  tension=40.0, compression=40.0, shear=40.0, bending=10.0, tdamp=25.0),
-    "leather": dict(mass=0.4,  tension=80.0, compression=80.0, shear=80.0, bending=150.0, tdamp=25.0),
+    "silk":    dict(density=0.08, mass=0.15, tension=5.0,  compression=5.0,  shear=5.0,  bending=0.05, tdamp=1.0),
+    "cotton":  dict(density=0.2, mass=0.3,  tension=15.0, compression=15.0, shear=15.0, bending=0.5,  tdamp=5.0),
+    "wool":    dict(density=0.35, mass=0.5,  tension=25.0, compression=25.0, shear=20.0, bending=2.0,  tdamp=10.0),
+    "denim":   dict(density=0.4, mass=1.0,  tension=40.0, compression=40.0, shear=40.0, bending=10.0, tdamp=25.0),
+    "leather": dict(density=0.9, mass=0.4,  tension=80.0, compression=80.0, shear=80.0, bending=150.0, tdamp=25.0),
 }
-CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, dist=0.005, preroll=40, cycles=3,
+CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, dist=0.005, preroll=40, cycles=3,
            self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
 
@@ -161,7 +161,10 @@ def main():
     for wv in np.unique(np.round(w, 3)):
         pin.add([int(i) for i in np.nonzero(np.round(w, 3) == wv)[0]], float(wv), "REPLACE")
     cm = sim.modifiers.new("Cloth", "CLOTH"); st = cm.settings
-    st.quality = int(cfg["quality"]); st.mass = cfg["mass"]; st.tension_stiffness = cfg["tension"]; st.compression_stiffness = cfg["compression"]; st.shear_stiffness = cfg["shear"]
+    area = sum(pl.area for pl in item.data.polygons)
+    mass = cfg["density"] * area / nv if cfg["density"] > 0 else cfg["mass"]
+    print("uo_cloth_sim: mass %.6f kg per vertex (%s; area %.2f m2, %d vertices)" % (mass, "density %.2f kg/m2" % cfg["density"] if cfg["density"] > 0 else "as given", area, nv), flush=True)
+    st.quality = int(cfg["quality"]); st.mass = mass; st.tension_stiffness = cfg["tension"]; st.compression_stiffness = cfg["compression"]; st.shear_stiffness = cfg["shear"]
     st.bending_stiffness = cfg["bending"]; st.air_damping = cfg["damp_air"]; st.tension_damping = st.compression_damping = st.shear_damping = cfg["tdamp"]
     st.vertex_group_mass = "goal"; st.pin_stiffness = 1.0
     cs = cm.collision_settings; cs.use_collision = True; cs.distance_min = cfg["dist"]; cs.collision_quality = 4; cs.use_self_collision = bool(cfg["self_collision"])
