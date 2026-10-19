@@ -46,12 +46,15 @@ for lay in list(bm.verts.layers.deform):
 bmesh.ops.delete(bm, geom=[v for v in bm.verts if not keep[v.index]], context="VERTS")
 # the skirt tube: waist -> hem, ellipse, radii measured on the original robe (stand): half width 0.215 -> 0.30, half depth 0.22
 N, K = 40, 28
+PROF = json.load(open(env["ROBE_PROFILE"])) if env.get("ROBE_PROFILE") else None
 z_top, z_hem = float(env["ROBE_HIP"]) + 0.07, float(env["ROBE_HEM"])
 ring = []
 for k in range(K + 1):
     z = z_top + (z_hem - z_top) * k / K
     t = (z_top - z) / (z_top - z_hem)
     ax = 0.215 + (0.30 - 0.215) * t ** 0.8; ay = 0.17 + (0.22 - 0.17) * min(1, t * 3)
+    if env.get("ROBE_PROFILE"):                                          # radii measured on another original (--derive): half width / depth by height
+        ax = float(np.interp(z, PROF["z"][::-1], PROF["ax"][::-1])); ay = float(np.interp(z, PROF["z"][::-1], PROF["ay"][::-1]))
     ring.append([bm.verts.new((ax * np.cos(2 * np.pi * i / N), -0.02 + ay * np.sin(2 * np.pi * i / N), z)) for i in range(N)])
 for k in range(K):
     for i in range(N):
@@ -124,11 +127,35 @@ def summarize(rows):
     return out
 
 
+def sprite_profile(sprites, hip):
+    """half width (dirs 0 and 4 = front / back) and half depth (dir 2 = profile) of the stand silhouette by height (m), from the hip to the hem, and the hem height"""
+    cos = np.cos(np.radians(28.4557))
+    G = {d: sprite_canvas(sprites[(4, d)], 0, (128, 192), (256, 256))[..., 3] > 0 for d in range(5)}
+    rows = np.nonzero(np.any([g.any(1) for g in G.values()], 0))[0]
+    hem = 0.07 - (rows[-1] + 1 - 192) / (36 * cos)
+    zs = np.linspace(hip + 0.07, hem, 29)
+    def half(d):
+        w = []
+        for z in zs:
+            r = int(round(192 - (z - 0.07) * 36 * cos)); xs = np.nonzero(G[d][min(max(r, 0), 255)])[0]
+            w.append((xs.max() - xs.min() + 1) / 72.0 if xs.size else 0.0)
+        return np.array(w)
+    ax = (half(0) + half(4)) / 2; ay = half(2)
+    sm = lambda v: np.array([np.median(v[max(i - 1, 0):i + 2]) for i in range(len(v))])
+    return dict(z=[float(z) for z in zs], ax=[float(x) for x in sm(ax)], ay=[float(x) for x in sm(ay)], hem=float(hem))
+
+
 def run(a, tmp):
     os.makedirs(tmp, exist_ok=True)
     pre = os.path.join(tmp, "pre.py"); open(pre, "w").write("exec(%r)\n" % PRE)
     blend = os.path.abspath(os.path.join(HERE, "..", "model", "UO_Body_0x190.blend"))
-    env = dict(os.environ, UO_TEST_SCRIPTS=HERE, ROBE_PART=a.part, ROBE_HIP=str(a.hip), ROBE_HEM=str(a.hem), ROBE_FOLLOW=a.follow or "", ROBE_MARGIN=str(a.margin) if a.margin is not None else "", ROBE_KAPPA=str(a.kappa), ROBE_DROP=str(a.drop) if a.drop is not None else "")
+    prof_path = None
+    if a.derive:                                                         # radii and hem of the tube from the stand pose of --sprite
+        _, bl = vdtool.read_vd(a.sprite)
+        prof = sprite_profile({(b["action"], b["dir"]): b for b in bl}, a.hip)
+        a.hem = prof.pop("hem")
+        prof_path = os.path.join(tmp, "profile.json"); json.dump(prof, open(prof_path, "w"))
+    env = dict(os.environ, UO_TEST_SCRIPTS=HERE, ROBE_PART=a.part, ROBE_HIP=str(a.hip), ROBE_HEM=str(a.hem), ROBE_FOLLOW=a.follow or "", ROBE_MARGIN=str(a.margin) if a.margin is not None else "", ROBE_KAPPA=str(a.kappa), ROBE_DROP=str(a.drop) if a.drop is not None else "", ROBE_PROFILE=prof_path or "")
     actions = a.actions.split(",")
     cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, tmp, "--pre", pre, 'LAYER="clothing"', "ONLY=%r" % (actions,),
            "CANVAS=(256, 256)", "ANCHOR=(128, 192)"] + a.set
@@ -145,6 +172,7 @@ def run(a, tmp):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", default="robe"); ap.add_argument("--follow"); ap.add_argument("--margin", type=float); ap.add_argument("--drop", type=float); ap.add_argument("--kappa", type=float, default=0.8); ap.add_argument("--hip", type=float, default=0.95); ap.add_argument("--hem", type=float, default=0.08)
+    ap.add_argument("--derive", action="store_true", help="radii and hem of the tube from the stand pose of --sprite (needed for any original but robe 469)")
     ap.add_argument("--sprite", default=os.path.join(HERE, "body13", "mul", "anim_0469.vd")); ap.add_argument("--actions", default=DEFAULT_ACTIONS)
     ap.add_argument("--tmp"); ap.add_argument("--out"); ap.add_argument("--img"); ap.add_argument("--set", action="append", default=[])
     a = ap.parse_args()
