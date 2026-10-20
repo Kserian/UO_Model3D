@@ -27,6 +27,10 @@ OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline":
 SAMPLES = 512                      # Cycles samples per pixel for items (adaptive sampling; the pixel filter stays a 0.01 px box = the pixel centre, no blur): the
                                    # gloss of metal in UO_Look (Principled) is sampled at random, so at 1 sample a flail had 61 % of its pixels off the converged
                                    # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
+CONTRAST = 1.0                     # per item (scene "uo_contrast", e.g. 1.6): a contrast curve on the item's own pixels, rgb = pivot + k x (rgb - pivot), after the outline: the UO robes are painted with dark creases and bright
+                                   # lights (luminance spread in the sleeves 54, ours 31: the sleeves and hands of a smooth shell read thicker than the original's); 1.8 = 52, 1.5 = 45. 1 = off. Not the light: the body and
+                                   # the other items are untouched
+CONTRAST_PIVOT = 0.49              # 0..1: the grey that stays (scene "uo_contrast_pivot"; 0.49 = 125/255, about the median of a grey robe)
 EDGE_FLOOR = 0                     # 0-255: the 1-px outline of an item is never darker than this per channel (0 = off); a black item (leather, a black hilt) got a pure black rim,
                                    # which the client draws as a hard hole-like line; scene property uo_edge_floor (24 = a soft dark grey)
 OUT_DIR = "//uo_render/"           # PNG output root (vdtool 'canvas' layout + meta.json)
@@ -112,6 +116,7 @@ EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
+CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 RIM = dict(edge=0.0, inner=0.0, ne=0, ni=0, paths={})   # OUTLINE_AUTO: brightness sums of the rim / one pixel in, and the frames of this run
@@ -642,6 +647,9 @@ def uo_post(px, keep=None):
         rgb[edge] *= OUTLINE
         if EDGE_FLOOR:
             rgb[edge] = np.maximum(rgb[edge], EDGE_FLOOR / 255.0)
+    if CONTRAST != 1.0:                                # contrast curve on the item's own pixels (not those that carry original UO colours)
+        sel = m if keep is None else (m & ~keep)
+        rgb[sel] = np.clip(CONTRAST_PIVOT + CONTRAST * (rgb[sel] - CONTRAST_PIVOT), 0.0, 1.0)
     out = np.zeros(px.shape, np.uint8)
     out[..., :3] = np.clip(rgb * 255 + 0.5, 0, 255).astype(np.uint8)
     out[..., 3] = m * 255

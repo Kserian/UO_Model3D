@@ -308,6 +308,22 @@ in the output folder (e.g. `uo_render/clothing/STOP`) or press Ctrl+C. Finished 
 **Several items:** render each one separately. Keep one item in `Clothing` and change `VD_FILE`, e.g.
 `"//uo_render/helm.vd"`.
 
+**Per-item render options** (scene properties of `render_uo_layer.py`; in a recipe of `uo_make_item.py` under `"scene"`, or set once in the `.blend`). They change one item, never the body or the light of other items:
+
+| Option | Default | What it does | Measured effect |
+|---|---|---|---|
+| `uo_contrast` | 1 (off) | Contrast curve on the item's own pixels, after the outline: `rgb = pivot + k x (rgb - pivot)`. k > 1 widens the brightness range (darker creases, brighter lights); the item reads thinner and more painted, like the UO originals. Not a light change: the body and other items are untouched | Silk robe, sleeves in the walk: brightness spread (std) 31 -> 45 (k 1.5) -> 52 (k 1.8); original robe 469: 54. Dark pixels around the hands 30% -> 55-59% (469: 56%). Side effects: gold trim gets more saturated, mean brightness 109 -> 98 (469: 113) |
+| `uo_contrast_pivot` | 0.49 | The grey (0..1) that stays unchanged under `uo_contrast`; 0.49 is about the median of a grey robe | Raise it to keep the mean brightness higher |
+| `uo_outline` | auto (rim 0.38) | Strength of the dark 1-px outline of this item (1.0 = none) | A light grey robe: 0.6-0.8 |
+| `uo_edge_floor` | 0 | The outline is never darker than this per channel (0-255) | 24 = no pure black rim on a black item |
+| `uo_samples` | 512 | Cycles samples for this item | 1024 for gloss of metal, dark leather |
+| `uo_inner_line` | 0 | 1-px dark line between a sleeve and the torso (needs `uo_conform_item.py`) | Sleeve brightness spread 30 -> 40, but it reads as a drawn line around the arm: not recommended |
+| `uo_hide_erode` | 0 | Hands and head hide the item 1 px less | 1 for robes: fewer skin holes at the cuffs and the collar |
+| `uo_legs_under` | 0 | The legs never hide the item | 1 for a long robe |
+| `uo_cloth_lie` | 0 | Falls (21, 22): share in which the robe lies along the legs; 0 = the cloth simulation runs there | 1.0 = lies along the legs |
+
+Tried and not useful for the look of sleeves and hands (silk robe, 2026-10): own shadow strength (`SHADOW` 0.4 -> 0.1), normal map strength, texture contrast (`GREY_CLOTH`), occlusion shading (`OCCLUSION`) all left the spread at about 31; moving the UO light to the left, right or above gave only 34-36 and darkened the whole robe. The UO light sits almost on the camera axis, so thin arms get almost flat shading.
+
 ## 5. Cutting
 
 - **Hidden by the body:** a clothing layer contains only what the body does not hide, as in UO. With `EXACT_BODY = True`

@@ -305,6 +305,22 @@ renderu blokuje inne akcje). W trybie tła (`blender -b`, moduł `bpy`) utwórz 
 **Kilka przedmiotów:** każdy renderuj osobno. W `Clothing` zostaw jeden przedmiot i zmień `VD_FILE`, np.
 `"//uo_render/helm.vd"`.
 
+**Opcje renderu dla jednego przedmiotu** (właściwości sceny `render_uo_layer.py`; w recepturze `uo_make_item.py` w `"scene"` albo ustawione raz w `.blend`). Zmieniają tylko ten przedmiot, nigdy ciała ani światła innych przedmiotów:
+
+| Opcja | Domyślnie | Co robi | Zmierzony efekt |
+|---|---|---|---|
+| `uo_contrast` | 1 (wyłączone) | Krzywa kontrastu na pikselach przedmiotu, po obrysie: `rgb = pivot + k x (rgb - pivot)`. k > 1 poszerza zakres jasności (ciemniejsze zagięcia, jaśniejsze światła); przedmiot wygląda cieniej i bardziej „malowany”, jak oryginały UO. To nie zmiana światła: ciało i inne przedmioty bez zmian | Szata silk, rękawy w marszu: rozrzut jasności (odch. std.) 31 -> 45 (k 1,5) -> 52 (k 1,8); oryginalna szata 469: 54. Ciemne piksele wokół dłoni 30% -> 55-59% (469: 56%). Skutki uboczne: złota lamówka bardziej nasycona, średnia jasność 109 -> 98 (469: 113) |
+| `uo_contrast_pivot` | 0,49 | Szarość (0..1), która zostaje bez zmian przy `uo_contrast`; 0,49 to w przybliżeniu mediana szarej szaty | Podnieś, żeby średnia jasność spadała mniej |
+| `uo_outline` | auto (rąb 0,38) | Siła ciemnego obrysu 1 px tego przedmiotu (1,0 = brak) | Jasnoszara szata: 0,6-0,8 |
+| `uo_edge_floor` | 0 | Obrys nie jest ciemniejszy niż to na kanał (0-255) | 24 = brak czarnego rąbka na czarnym przedmiocie |
+| `uo_samples` | 512 | Próbki Cycles dla tego przedmiotu | 1024 dla połysku metalu, ciemnej skóry |
+| `uo_inner_line` | 0 | Ciemna linia 1 px między rękawem a tułowiem (wymaga `uo_conform_item.py`) | Rozrzut jasności rękawa 30 -> 40, ale wygląda jak kreska wokół ramienia: nie polecana |
+| `uo_hide_erode` | 0 | Dłonie i głowa zasłaniają przedmiot o 1 px mniej | 1 dla szat: mniej dziur ze skóry przy mankietach i kołnierzu |
+| `uo_legs_under` | 0 | Nogi nigdy nie zasłaniają przedmiotu | 1 dla długiej szaty |
+| `uo_cloth_lie` | 0 | Upadki (21, 22): w jakim stopniu szata leży wzdłuż nóg; 0 = działa tam symulacja tkaniny | 1,0 = leży wzdłuż nóg |
+
+Wypróbowane i bezużyteczne dla wyglądu rękawów i dłoni (szata silk, 2026-10): siła własnego cienia (`SHADOW` 0,4 -> 0,1), siła mapy normalnych, kontrast tekstury (`GREY_CLOTH`), cieniowanie od zakrycia (`OCCLUSION`) zostawiały rozrzut na ok. 31; przesunięcie światła UO w lewo, w prawo albo do góry dało tylko 34-36 i przyciemniło całą szatę. Światło UO leży prawie na osi kamery, więc wąskie ramiona dostają prawie płaskie cieniowanie.
+
 ## 5. Docinanie
 
 - **Zasłanianie przez ciało:** warstwa ubrania zawiera tylko to, czego ciało nie zasłania, tak jak w UO.
