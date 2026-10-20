@@ -325,6 +325,8 @@ in the output folder (e.g. `uo_render/clothing/STOP`) or press Ctrl+C. Finished 
 | `uo_legs_under` | 0 | The legs never hide the item | 1 for a long robe |
 | `uo_cloth_lie` | 0 | Falls (21, 22): share in which the robe lies along the legs; 0 = the cloth simulation runs there | 1.0 = lies along the legs |
 
+**Base look of a robe or skirt.** `uo_make_item.py` gives a recipe with `"kind": "robe"` or `"skirt"` `uo_shade_sleeve` 0.4, `uo_shade_width` 4 and `uo_contrast` 1.5 unless the recipe's own `"scene"` says otherwise (e.g. `"scene": {"uo_contrast": 1}` turns the curve off). Measured on the silk robe in the walk, sleeve zone: brightness spread 31 -> 46 (original robe 469: 54), the share of dark pixels around the hands 38% -> 55% (469: 56%), the darkest 5% of the sleeve 49 -> 9 (469: 8). The shadow needs `"conform"` (the sleeve / torso labels); the contrast works without it. Other kinds (shirt, armour, weapons) get nothing: the renderer's own defaults are off.
+
 Tried and not useful for the look of sleeves and hands (silk robe, 2026-10): own shadow strength (`SHADOW` 0.4 -> 0.1), normal map strength, texture contrast (`GREY_CLOTH`), occlusion shading (`OCCLUSION`) all left the spread at about 31; moving the UO light to the left, right or above gave only 34-36 and darkened the whole robe. The UO light sits almost on the camera axis, so thin arms get almost flat shading.
 
 ## 5. Cutting

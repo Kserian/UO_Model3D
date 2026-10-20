@@ -13,7 +13,7 @@ RECIPE.json (only "file" and "kind" are required):
    "holes": {"close": 0.06, "grow": 0.025},   # with outer_shell: pinholes closed, rips widened (a torn robe; uo_import_item.py HOLES)
    "bake_normal": 0.0, "bake_ao": 0.0,        # with a baked texture: normal map of the original's geometry blurred over m / its occlusion darkening the colour (uo_import_item.py BAKE_NORMAL, BAKE_AO)
    "bake_texture": 0,          # px (2048): the reduced model gets new UVs and a texture baked from the original (a reduction smears the UVs of a detailed texture; uo_import_item.py BAKE_TEXTURE)
-   "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1},   # per-item settings of render_uo_layer.py (outline strength, hands / head hide a pixel less, the legs never hide a long robe; "uo_contrast": 1.6 = a contrast curve on the item (darker creases, brighter lights: sleeves and hands read thinner, README section 4); "uo_samples": 1024 = more Cycles samples; "uo_edge_floor": 24 = the 1-px outline is never darker than 24/255 per channel, no pure black rim)
+   "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1},   # per-item settings of render_uo_layer.py (outline strength, hands / head hide a pixel less, the legs never hide a long robe; "uo_contrast": 1.5 = a contrast curve on the item (darker creases, brighter lights: sleeves and hands read thinner, README section 4; kind robe / skirt get uo_contrast 1.5, uo_shade_sleeve 0.4, uo_shade_width 4 unless the recipe says otherwise); "uo_samples": 1024 = more Cycles samples; "uo_edge_floor": 24 = the 1-px outline is never darker than 24/255 per channel, no pure black rim)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
    "stretch": [0.8, 1.25, 1.0],  # width, depth, height factors about the centre (a model made on a mannequin with other proportions than the UO body); "tune": {"uo_autofit_item.py": {"UNIT": 0.3}} = the file is not in metres
    "decimate": 30000,          # vertices above which the model is reduced
@@ -41,6 +41,16 @@ import argparse, json, os, re, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+ROBE_SCENE = {"uo_shade_sleeve": 0.4, "uo_shade_width": 4.0, "uo_contrast": 1.5}    # base look of a robe / skirt (2026-10, README section 4): smooth contact shadow at the sleeve-torso junction (needs "conform") and a contrast curve
+
+
+def scene_of(recipe):
+    """the scene properties of the renderer for a recipe: the base look of a robe / skirt, then the recipe's own "scene" (which wins; e.g. {"uo_contrast": 1} turns the curve off)"""
+    base = dict(ROBE_SCENE) if recipe.get("kind") in ("robe", "skirt") else {}
+    base.update(recipe.get("scene", {}))
+    return base
+
+
 PREVIEW_ACTIONS = "04_stand,00_walk_unarmed,02_run_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward"
 WEAPON_ACTIONS = {"weapon1h": "07_combat_idle_1h,09_attack_1h_slash,10_attack_1h_pierce,11_attack_1h_bash,03_run_armed,21_die_forward",
                   "polearm": "08_combat_idle_2h,13_attack_2h_slash,14_attack_2h_pierce,12_attack_2h_bash,03_run_armed,21_die_forward",
@@ -365,7 +375,7 @@ for k, v in %(scene)r.items():                                    # "scene": pro
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, base=base, ref=ref, parts=parts, scene=recipe.get("scene", {}), out=out_blend)
+''' % dict(here=HERE, base=base, ref=ref, parts=parts, scene=scene_of(recipe), out=out_blend)
 
 
 def build_stage(recipe, out_blend):
@@ -409,7 +419,7 @@ for k, v in %(scene)r.items():                                    # "scene": pro
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=recipe.get("scene", {}), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):

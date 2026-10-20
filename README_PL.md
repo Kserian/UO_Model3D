@@ -322,6 +322,8 @@ renderu blokuje inne akcje). W trybie tła (`blender -b`, moduł `bpy`) utwórz 
 | `uo_legs_under` | 0 | Nogi nigdy nie zasłaniają przedmiotu | 1 dla długiej szaty |
 | `uo_cloth_lie` | 0 | Upadki (21, 22): w jakim stopniu szata leży wzdłuż nóg; 0 = działa tam symulacja tkaniny | 1,0 = leży wzdłuż nóg |
 
+**Bazowy wygląd szaty lub spódnicy.** `uo_make_item.py` daje recepturze z `"kind": "robe"` lub `"skirt"` `uo_shade_sleeve` 0,4, `uo_shade_width` 4 i `uo_contrast` 1,5, chyba że własne `"scene"` receptury mówi inaczej (np. `"scene": {"uo_contrast": 1}` wyłącza krzywą). Zmierzone na szacie silk w marszu, strefa rękawa: rozrzut jasności 31 -> 46 (oryginalna szata 469: 54), udział ciemnych pikseli wokół dłoni 38% -> 55% (469: 56%), najciemniejsze 5% rękawa 49 -> 9 (469: 8). Cień wymaga `"conform"` (etykiety rękaw / tułów); kontrast działa bez niego. Inne rodzaje (koszula, zbroja, broń) nic nie dostają: własne wartości domyślne renderera są wyłączone.
+
 Wypróbowane i bezużyteczne dla wyglądu rękawów i dłoni (szata silk, 2026-10): siła własnego cienia (`SHADOW` 0,4 -> 0,1), siła mapy normalnych, kontrast tekstury (`GREY_CLOTH`), cieniowanie od zakrycia (`OCCLUSION`) zostawiały rozrzut na ok. 31; przesunięcie światła UO w lewo, w prawo albo do góry dało tylko 34-36 i przyciemniło całą szatę. Światło UO leży prawie na osi kamery, więc wąskie ramiona dostają prawie płaskie cieniowanie.
 
 ## 5. Docinanie
