@@ -9,7 +9,7 @@ Not imported, not run by another script, not named in README, skills or docs. Al
 |---|---|---|
 | `action_overlay.py` | overlay sheet of the 3D body against the original frames | diagnostic |
 | `arm_mismatch.py` | arm-region mismatch per frame | diagnostic |
-| `hand_fit_joint.py` | hand / finger pose shared by frames of an action | imported by `hand_fit.py` only in its docstring |
+| `hand_fit_joint.py` | hand / finger pose shared by frames of an action | uses `hand_fit.py`; nothing uses it |
 | `iou_action.py` | silhouette IoU per frame of one action | 12 lines, `body_part_qa.py` does more |
 | `item_look.py` | shading / noise of an item against the sprites | diagnostic |
 | `light_fit.py` | light fit on 880 original frames | result is in `uo-open-issues`: "do not change the light" |
@@ -21,7 +21,7 @@ Not imported, not run by another script, not named in README, skills or docs. Al
 | `uo_render_weapon_gump.py` | weapon paperdoll gump and item art (364 lines) | imports `uo_grey_metal.py`, `uo_hue_preview.py` (only users of them) |
 | `weapon_motion_add.py` | put a fitted class into `weapon_motion.json` | part of the weapon calibration chain |
 
-Scripts used only by one of the unreferenced ones: `flail_fit.py` (by `uo_flail.py`, which is itself named nowhere in docs), `light_items.py`, `uo_grey_metal.py`, `uo_hue_preview.py`, `body_silhouette_qa.py`, `test_density.py`.
+Scripts used only by one of the unreferenced ones: `hand_fit.py` (by `hand_fit_joint.py`), `uo_grey_metal.py`, `uo_hue_preview.py` (by `uo_render_weapon_gump.py`), `flail_fit.py` (calibration of the flail simulation `uo_flail.py`, which the renderer uses: keep). `light_items.py`, `body_silhouette_qa.py`, `test_density.py` are named in comments of other scripts (measurement tools, not dead).
 
 ## 2. Dead links: documents removed in `95ffe57` ("remove docs folder (requested by user)")
 README.md, README_PL.md and the skills still point to them (20 / 21 / 10 mentions):
@@ -43,7 +43,7 @@ Fixed in this commit: the robe paragraph of both READMEs, `cloth_lib.py` rows, t
 - Remote branches: `ccr-a6e2abad-4gys94`, `model-fixing4`, `model_fixing5`, `main`.
 
 ## 5. Proposal
-1. Delete the 13 unreferenced scripts and their 6 helpers (or move to `pipeline/archive/`), keep `split_model.py` and `stretch_glb.py` if foreign-model work continues.
+1. Delete the 13 unreferenced scripts and the helpers only they use (`hand_fit.py`, `uo_grey_metal.py`, `uo_hue_preview.py`) (or move to `pipeline/archive/`), keep `split_model.py` and `stretch_glb.py` if foreign-model work continues.
 2. Remove the dead `docs/...` links from README (EN, PL) and the skills, keeping the facts the sentences carry.
 3. Update the `uo_cloth_sim.py` docstring and make t1 the default CFG (needs a re-test of `test_robe.py`, threshold 0.74).
 4. Decide whether the screenshots PDF stays in the repo.
