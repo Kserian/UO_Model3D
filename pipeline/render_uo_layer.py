@@ -27,6 +27,11 @@ OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline":
 SAMPLES = 512                      # Cycles samples per pixel for items (adaptive sampling; the pixel filter stays a 0.01 px box = the pixel centre, no blur): the
                                    # gloss of metal in UO_Look (Principled) is sampled at random, so at 1 sample a flail had 61 % of its pixels off the converged
                                    # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
+SHADE_BODY = 0.0                   # per item (scene "uo_shade_body", 0..1): contact shadow of the body parts in front of the item (hands, arms, head: what hides the item): the item pixels near them are darkened by up to this
+                                   # share, smoothly over SHADE_WIDTH px (no line): the sides of a robe next to the hands. Per frame, in the posed picture
+SHADE_SLEEVE = 0.0                 # per item (scene "uo_shade_sleeve", 0..1): the same where a sleeve and the torso part of the item meet (needs uo_conform_item.py: attribute uo_region): the torso next to the arm
+                                   # (the armpit, the side) and the inside of the sleeve next to the torso
+SHADE_WIDTH = 3.0                  # px (1 px = 2.8 cm): width of those gradients (scene "uo_shade_width")
 CONTRAST = 1.0                     # per item (scene "uo_contrast", e.g. 1.6): a contrast curve on the item's own pixels, rgb = pivot + k x (rgb - pivot), after the outline: the UO robes are painted with dark creases and bright
                                    # lights (luminance spread in the sleeves 54, ours 31: the sleeves and hands of a smooth shell read thicker than the original's); 1.8 = 52, 1.5 = 45. 1 = off. Not the light: the body and
                                    # the other items are untouched
@@ -116,6 +121,7 @@ EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
+SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
 CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
@@ -973,6 +979,30 @@ def inner_line(px, lab, k):
     return px
 
 
+def contact_shade(px, free, lab):
+    """SHADE_BODY / SHADE_SLEEVE: smooth contact shadows (1 - s (1 - d / SHADE_WIDTH)^2 within SHADE_WIDTH px of the occluder): near the body parts that hide the item (pixels of the unhidden render
+    `free` that the item layer `px` lacks), and where the sleeve and the torso part meet (labels `lab`: sleeve 1, torso 0)"""
+    from scipy.ndimage import distance_transform_edt
+    on = px[..., 3] >= 0.5
+    f = np.ones(on.shape, np.float32)
+
+    def near(src):
+        d = distance_transform_edt(~src)
+        t = np.clip(1.0 - d / SHADE_WIDTH, 0.0, 1.0)
+        return t * t
+    if SHADE_BODY > 0:
+        hid = (free[..., 3] >= 0.5) & ~on
+        if hid.any():
+            f *= 1.0 - SHADE_BODY * near(hid)
+    if SHADE_SLEEVE > 0 and lab is not None:
+        sl = on & (lab == 1); to = on & (lab == 0)
+        if sl.any() and to.any():
+            f[to] *= 1.0 - SHADE_SLEEVE * near(sl)[to]
+            f[sl] *= 1.0 - SHADE_SLEEVE * near(to)[sl]
+    px = px.copy(); px[on, :3] *= f[on][:, None]
+    return px
+
+
 def edge_smooth(px, passes):
     """EDGE_SMOOTH: 1-px spikes of the outline dropped, 1-px notches filled with the mean colour of their neighbours"""
     px = px.copy()
@@ -1076,10 +1106,11 @@ def frame_job():
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
-                        if INNER_LINE > 0:
-                            lab = region_labels(a, i, d)
-                            if lab is not None:
-                                px = inner_line(px, lab, INNER_LINE)
+                        lab = region_labels(a, i, d) if (INNER_LINE > 0 or SHADE_SLEEVE > 0) else None
+                        if INNER_LINE > 0 and lab is not None:
+                            px = inner_line(px, lab, INNER_LINE)
+                        if SHADE_BODY > 0 or SHADE_SLEEVE > 0:
+                            px = contact_shade(px, free, lab)
                         if EDGE_SMOOTH > 0:
                             px = edge_smooth(px, EDGE_SMOOTH)
                         rgba = uo_post(px)
