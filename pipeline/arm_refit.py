@@ -1,4 +1,4 @@
-"""Local refit (Powell, random starts) of one arm of the UO rig against the ORIGINAL body frames, 5 directions at once. Experimental, see docs/qa/elbow_spell.md.
+"""Local refit (Powell, random starts) of one arm of the UO rig against the ORIGINAL body frames, 5 directions at once. Experimental.
 
     python arm_refit.py ../model/UO_Body_0x190.blend OUT.json --action 17 --side L --frames 1,2 [--apply]   (env FLEX_MAX, NRAND, MAXFEV)
 

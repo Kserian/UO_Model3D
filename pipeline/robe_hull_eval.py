@@ -2,10 +2,10 @@
 
     python robe_hull_eval.py POSES.npz [--garments 469,447,970,455,971] [--rel-kappa 0.15,0.25,0.4,0.6]
 
-POSES.npz from pose_capture.py. Per garment a replica tube whose rest shape is fitted on the stand frames without hull (as in robe_physics.md), then robe_calib.evaluate on all actions except
+POSES.npz from pose_capture.py. Per garment a replica tube whose rest shape is fitted on the stand frames without hull, then robe_calib.evaluate on all actions except
 the mounted 23-29: no hull / the production hull (absolute: the legs push the cloth out to their reach + margin; margin / kappa by hem height as in uo_bind_item.py) /
 `hull_push_rel` (EXPERIMENT, not used in production: only what the legs reach beyond their REST reach pushes, by kappa times the excess). Sprites: body13/mul/anim_0447 (dress), 0455 (kilt),
-0469 (robe), 0970 (shroud), 0971 (skirt), all from anim.mul. Result and why the relative hull was not adopted: docs/qa/robe_physics.md, "Sesja 16".
+0469 (robe), 0970 (shroud), 0971 (skirt), all from anim.mul.
 """
 import argparse, os, sys
 import numpy as np

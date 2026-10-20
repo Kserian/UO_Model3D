@@ -6,7 +6,7 @@ and it does not slide or tear when the arms move.
 ITEM.blend is the output of uo_make_item.py (the item in the collection Clothing, placed and sized by uo_autofit_item.py, "prepare": {"FIT": false, "DENSIFY": false};
 uo_make_item.py "conform" does that and runs this script). Its fit and weights are replaced. Why: a model made on another mannequin (the Jedi tunic: sleeves 9-18 cm
 above the UO arms, the chest of the UO body through its front and back) cannot be pushed into place in the rest pose: the push of uo_fit_item.py moved parts up to
-21 cm, the sleeves stayed off the arms and in the actions the arms came out of them (docs/qa/jedi_tunic.md). Here:
+21 cm, the sleeves stayed off the arms and in the actions the arms came out of them. Here:
   1. sleeves onto the arms: per side the centre line of the sleeve (centroids of slices) is turned and moved onto the line of the UO arm (shoulder -> wrist); the move
      fades in over BLEND from the root of the sleeve and out beyond the radius of the sleeve tube, so the torso part stays where it is;
   2. wrap: the item is pulled onto the body like a membrane, to h = GAP + a little of the model's looseness (LOOSE_K, at most LOOSE_MAX) and folds (FOLD_MAX):
@@ -35,10 +35,10 @@ FOLD_SMOOTH = 12      # passes that make the smooth part of the stand-off (bigge
 MOVE = (0.0, 0.0, 0.0) # m: the whole item is moved by this first
 SLEEVES = True        # step 1
 SLEEVE_END = -1.0     # m: >= 0 = each sleeve is shortened or lengthened along its arm (only its last SLEEVE_SPAN before the end is squeezed / stretched, the cuff keeps its shape) so that it ends this far past the
-                      # wrist (the head of the hand bone): a bell sleeve of a longer-armed mannequin hid the hands (docs/qa/robe_black.md: 9 cm past the wrist -> 0.02). < 0 = as the model
+                      # wrist (the head of the hand bone): a bell sleeve of a longer-armed mannequin hid the hands. < 0 = as the model
 SLEEVE_SPAN = 0.25    # m
 SLEEVE_CUFF = -1.0    # m: >= 0 = the end of each sleeve is narrowed to at most this far from the axis of the forearm (a bell sleeve: its wide mouth seen from the front, arms forward on
-                      # the reins, was a ring round the hand, docs/qa/robe_black.md; the original robes have narrow sleeves). < 0 = as the model
+                      # the reins, was a ring round the hand; the original robes have narrow sleeves). < 0 = as the model
 CUFF_SPAN = 0.20      # m: along the forearm before the end of the sleeve over which the narrowing grows from none to full
 BLEND = 0.10          # m: along the sleeve from its root, over which it goes from where the model has it to the UO arm
 TUBE_MARGIN = 0.05    # m: beyond the radius of the sleeve tube the move fades out over this (the side of the torso under the arm stays)
@@ -61,12 +61,12 @@ STRETCH = 1.25        # the most an edge may be stretched against the model whil
 WRAP_FLATTEN = 0.2    # share of the smoothing across the surface (0 = only along it)
 WRAP_STEP = 0.01      # m: the most a vertex moves in one pass (the smoothing keeps up: no vertex flies off on its own)
 SPACE_SMOOTH = 0.0    # m: > 0 = the move of the wrap is averaged over everything within this distance in SPACE (not along the mesh): a model of separate overlapping panels (a closure of two
-                      # flaps, knots on it, a stand-up collar: the robe of docs/qa/robe_black.md) moves as one piece, its panels do not cut through each other and open holes
+                      # flaps, knots on it, a stand-up collar) moves as one piece, its panels do not cut through each other and open holes
 SPACE_PASSES = 2      # passes of that averaging
 FINAL_ITERS = 40      # passes of the last push out of the skin (to 0.9 GAP; inside an arm away from its bone)
 OCCLUSION = 0.0       # 0..1: > 0 = the colour darker where the item's own folds, frills and layers (and the body) close the view around a point: x (1 - OCCLUSION x share of OCC_RAYS rays
                       # over the half sphere of the normal that hit within OCC_DIST), in the rest shape after the wrap (attribute uo_shade, uo_hood_cover.py occlusion_share). The UO light gives
-                      # a smooth shell next to no shading (it comes from about the camera); the user asked for depth on the dress (2026-10-14, docs/qa/dress_meshy.md). 0 = off
+                      # a smooth shell next to no shading (it comes from about the camera); the user asked for depth on the dress (2026-10-14). 0 = off
 OCC_RAYS = 24
 OCC_DIST = 0.06       # m
 SHADE_MIN = 0.35      # the darkening never takes the colour below this share (deep shade, never black)
@@ -178,7 +178,7 @@ def align_sleeves(X, rig, G):
         if sel.sum() < 50:
             print("uo_conform_item: no sleeve on side %s" % sd); continue
         sel, dropped = sleeve_piece(X, G, sel, J)                       # a ball gown: the top of its skirt is also out past the shoulder and above J - 0.6 (taken for the sleeve,
-        if dropped:                                                     # it was squeezed onto the arm and the sleeve tore, docs/qa/dress_meshy.md)
+        if dropped:                                                     # it was squeezed onto the arm and the sleeve tore)
             print("uo_conform_item: sleeve %s: %d vertices out past the shoulder left out (not joined to the sleeve: the skirt)" % (sd, dropped))
         S = X[sel]
         far = S[np.argmax(np.linalg.norm(S - J, axis=1))]

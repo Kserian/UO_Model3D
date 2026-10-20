@@ -21,7 +21,7 @@ FILE = ""             # path of the model to import ("" = take the SELECTED mesh
 KIND = "shirt"        # shirt, plate, arms, pants, legs, boots, gloves, helm, neck, hair, beard, hat ("" = do not scale or move; only clean + join)
 SCALE = 0.0           # > 0: uniform scale you give (the item is then only moved), 0 = from the height of KIND
 PLACE = "wrap"        # "wrap": the item is only cleaned, joined and reduced here, its units, size and place are found from the skin by uo_autofit_item.py (called by uo_prepare_item.py);
-                      # "height": the old way, one height per KIND (EXTENTS below) - right only for items shaped like the typical original (docs/qa/autofit.md)
+                      # "height": the old way, one height per KIND (EXTENTS below) - right only for items shaped like the typical original
 STRETCH = (1.0, 1.0, 1.0)   # (width, depth, height) factors about the centre of the model, before the fit: a model made on a mannequin with other proportions than the UO body (a vest much wider and shallower than the
                       # torso: (0.8, 1.25, 1.0)). Recipe of uo_make_item.py: "stretch": [0.8, 1.25, 1.0]
 TURN = 0              # deg around the vertical axis (180 when the item came in back to front)
@@ -36,7 +36,7 @@ ARM_BLEND = 0.12      # m: the width of the shoulder over which the turn fades f
 OUTER_SHELL = False   # a model that is a CLOSED SOLID cloth (a cloth simulator exports garments ~1.5 cm thick: outer layer + inner layer): only the outer layer is kept, before the reduction. Reducing the
                       # solid pastes the two layers into each other (cracks, torn patches, the inner lining showing through); a single sheet reduces cleanly and fits to the skin. Recipe: "outer_shell": true
 OUTER_REMESH = 0.0    # m: > 0 (0.006) = before OUTER_SHELL the solid is rebuilt by Blender's voxel remesh: a garment exported as separate panels (sewing patterns that only touch, 284 of them
-                      # in docs/qa/robe_black.md) becomes ONE continuous sheet, so the seams cannot open when the sleeves are turned onto the arms or the item is wrapped. The UVs are lost:
+                      # a robe made by a cloth simulator) becomes ONE continuous sheet, so the seams cannot open when the sleeves are turned onto the arms or the item is wrapped. The UVs are lost:
                       # the texture is baked from the original (BAKE_TEXTURE, 2048 when not given). Recipe: "outer_shell": 0.006
 HOLES = None          # {"close": 0.06, "grow": 0.025, "max": 1.5, "close_above": 0.78}: with OUTER_SHELL, the holes of the sheet (rips of a torn robe): a rim shorter than `close` m is closed
                       # (a pinhole: 1-px black noise in the sprites), one up to `max` m is widened by `grow` m all round (the rips shrank with the reduction and the shortened hem and read as
@@ -44,7 +44,7 @@ HOLES = None          # {"close": 0.06, "grow": 0.025, "max": 1.5, "close_above"
                       # roots of the sleeves stay whole: widened rips there read as the sleeve torn off), and every one longer than `slit` times its width (a slit along a hanging
                       # belt end opened over the belly when the body bent forward), and every one on a sleeve (`sleeve`: the line shoulder -> cuff of the model, |x| and z in its own
                       # coordinates, and a radius; the elbows read as poking through). Closed holes get the cloth around them in the baked texture (their faces take the
-                      # UVs of the nearest rim). docs/qa/robe_ragged.md. Recipe: "holes": {...}
+                      # UVs of the nearest rim). Recipe: "holes": {...}
 BAKE_NORMAL = 0.0     # with BAKE_TEXTURE: > 0 = a tangent normal map of the ORIGINAL'S GEOMETRY is baked too (its own normal map, the weave, is left out: noise at UO size), blurred over this
                       # many m, and lights the item (uo_materials.py NORMAL_MAP): the sculpted folds of the model shade the reduced shell. Recipe: "bake_normal": 0.01
 BAKE_AO = 0.0         # with BAKE_TEXTURE: 0..1 = the ambient occlusion of the original (folds, the hollows between them, AO_DIST m) darkens the baked colour by up to this share. Recipe: "bake_ao": 0.5
@@ -63,7 +63,7 @@ PERCENT = 0.5         # the height is measured between the PERCENT and 100 - PER
 # (the ground is z = 0), and the PART of uo_bind_item.py that belongs to the KIND
 EXTENTS = {"shirt": (0.999, 1.656, "chest"), "plate": (0.651, 1.643, "chest"), "arms": (0.929, 1.694, "arms"), "pants": (0.057, 1.170, "legs"),
            "legs": (-0.107, 1.138, "legs"), "boots": (-0.069, 0.563, "boots"), "gloves": (0.797, 1.245, "gloves"), "helm": (1.504, 1.903, "helm"),
-           # medians over the original animations of the layer (docs/qa/layer_analysis.md, pipeline/layer_analysis.py).
+           # medians over the original animations of the layer.
            # hair / beard / hat: the TOP is reliable (hair 1.88-1.93 m for 80 % of the 37 hairstyles), the bottom depends on the style (hair 1.34-1.64):
            # for a long hairstyle give SCALE yourself instead of letting the height decide
            "hair": (1.52, 1.89, "hair"), "beard": (1.52, 1.72, "beard"), "hat": (1.52, 1.92, "hat"), "neck": (1.48, 1.64, "neck"),
@@ -535,7 +535,7 @@ except ImportError:
     if PLACE == "wrap" and KIND:
         PLACE = "height"
         print("uo_import_item: WARNING - scipy is not installed in this Python, so the size and place come from ONE HEIGHT per KIND (PLACE = height), which only suits items shaped like the "
-              "typical original (docs/qa/autofit.md). For the fit to the skin install scipy into Blender's Python or run  python pipeline/uo_make_item.py recipe.json  outside the window.")
+              "typical original. For the fit to the skin install scipy into Blender's Python or run  python pipeline/uo_make_item.py recipe.json  outside the window.")
 FILE = os.environ.get("UO_IMPORT_FILE", FILE)
 KIND = os.environ.get("UO_IMPORT_KIND", KIND)
 SKIP = [k for k in os.environ.get("UO_IMPORT_SKIP", "").split(",") if k] or SKIP

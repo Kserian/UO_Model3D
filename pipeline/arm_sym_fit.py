@@ -6,7 +6,7 @@ torso: sym = spine / chest only pitch about the local X free, free = spine / che
 
 Objective: 1 - IoU of the pure-3D body silhouette vs the sprite over 5 directions + the same above TOP rows + a small prior; so the numbers can be compared with
 `body_part_qa.py`-style IoU (whole silhouette). OUT.json: per frame the values of every changed channel and the cost before / after.
-Needs: pip install numpy scipy pillow "bpy==4.2.*". See docs/qa/elbow_spell.md.
+Needs: pip install numpy scipy pillow "bpy==4.2.*".
 """
 import sys, os, json
 import numpy as np

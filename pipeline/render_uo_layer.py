@@ -27,6 +27,15 @@ OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline":
 SAMPLES = 512                      # Cycles samples per pixel for items (adaptive sampling; the pixel filter stays a 0.01 px box = the pixel centre, no blur): the
                                    # gloss of metal in UO_Look (Principled) is sampled at random, so at 1 sample a flail had 61 % of its pixels off the converged
                                    # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
+SHADE_BODY = 0.0                   # per item (scene "uo_shade_body", 0..1): contact shadow of the body parts in front of the item (hands, arms, head: what hides the item): the item pixels near them are darkened by up to this
+                                   # share, smoothly over SHADE_WIDTH px (no line): the sides of a robe next to the hands. Per frame, in the posed picture
+SHADE_SLEEVE = 0.0                 # per item (scene "uo_shade_sleeve", 0..1): the same where a sleeve and the torso part of the item meet (needs uo_conform_item.py: attribute uo_region): the torso next to the arm
+                                   # (the armpit, the side) and the inside of the sleeve next to the torso
+SHADE_WIDTH = 3.0                  # px (1 px = 2.8 cm): width of those gradients (scene "uo_shade_width")
+CONTRAST = 1.0                     # per item (scene "uo_contrast", e.g. 1.6): a contrast curve on the item's own pixels, rgb = pivot + k x (rgb - pivot), after the outline: the UO robes are painted with dark creases and bright
+                                   # lights (luminance spread in the sleeves 54, ours 31: the sleeves and hands of a smooth shell read thicker than the original's); 1.8 = 52, 1.5 = 45. 1 = off. Not the light: the body and
+                                   # the other items are untouched
+CONTRAST_PIVOT = 0.49              # 0..1: the grey that stays (scene "uo_contrast_pivot"; 0.49 = 125/255, about the median of a grey robe)
 EDGE_FLOOR = 0                     # 0-255: the 1-px outline of an item is never darker than this per channel (0 = off); a black item (leather, a black hilt) got a pure black rim,
                                    # which the client draws as a hard hole-like line; scene property uo_edge_floor (24 = a soft dark grey)
 OUT_DIR = "//uo_render/"           # PNG output root (vdtool 'canvas' layout + meta.json)
@@ -46,10 +55,10 @@ CLOTH_MOUNTED = 1.0                # loose garments (robe, skirt: custom propert
                                    # the pelvis would leave them bare; the original robes lie along the legs. 0 = hang and push like on foot.
 CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share in which the hanging part follows the legs as in riding (CLOTH_MOUNTED) instead of hanging from the pelvis
                                    # pushed out by the legs: a robe lying on the ground lies along the legs (the original robe 469 is a narrow shape with a notch between them, the hull and
-                                   # the simulation made one wide lump; docs/qa/robe_black.md). 0 = off; scene property uo_cloth_lie (uo_cloth_sim.py does not simulate these actions then)
+                                   # the simulation made one wide lump). 0 = off; scene property uo_cloth_lie (uo_cloth_sim.py does not simulate these actions then)
 CLOTH_LIE_DROP = 1.0               # with CLOTH_LIE: below the waist the lying garment falls by gravity onto what is under it (the posed legs / body, else the ground): its height above
                                    # that support is cut to this share (smoothed over the cloth; full 0.3 m under the waist, as far as the body lies). The front between the legs is
-                                   # weighted to both of them and stood up over the raised knees as a sail (docs/qa/robe_ragged.md). 1 = off; scene property uo_cloth_lie_drop
+                                   # weighted to both of them and stood up over the raised knees as a sail. 1 = off; scene property uo_cloth_lie_drop
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
@@ -63,11 +72,11 @@ OCCLUDERS = ["head", "upper_arm", "forearm", "hand", "thigh", "shin", "foot"]   
                                    # items are worn over it and a torso poking through is a model error, not an occluder
 HIDE_ERODE = 0                     # px: the area where a HAND or the HEAD hides an item is shrunk by this much. The 3D hand / head stand 1-2 px off the
                                    # original sprite, and where they cut the item the ORIGINAL body shows through (EXACT_BODY): a wrist or a shoulder of the
-                                   # original in a hole of a sleeve or a collar (docs/qa/robe_black.md). 0 = off; scene property uo_hide_erode
+                                   # original in a hole of a sleeve or a collar. 0 = off; scene property uo_hide_erode
 LEGS_UNDER = False                 # the legs (thighs, shins, feet) never hide the item: a long robe covers them in the client, and a leg that comes out in front of it in 3D (a foot
-                                   # lifted in a fall, a knee through the front slit) cut a hole that showed the ORIGINAL legs (docs/qa/robe_black.md). Scene property uo_legs_under
+                                   # lifted in a fall, a knee through the front slit) cut a hole that showed the ORIGINAL legs. Scene property uo_legs_under
 HEAD_HIDES = False                 # the head hides the item even when the item is skinned to it: a hood stands off the head, and through its face opening the inside of its back
-                                   # wall is behind the face (with the head "worn" it was drawn over the face; docs/qa/autofit.md "Kaptur"). Scene property uo_head_hides
+                                   # wall is behind the face (with the head "worn" it was drawn over the face). Scene property uo_head_hides
 OWN_PARTS_NEVER_HIDE = True        # body parts an item is skinned to (a legs item: thighs, shins, pelvis) never hide it: the item
                                    # wraps them, so their skin in front of the item shell is the item's own edge, not an occluder
                                    # (it cut 1-px strips off the sides of trousers). False = every OCCLUDERS part may hide it
@@ -81,11 +90,11 @@ DESPECKLE = 0                      # clothing: single dark pixels inside the ite
                                    # at SAMPLES it only erased dark texture detail (17 % of the pixels of a textured mask); per item: scene "uo_despeckle"
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
                                    # poking through or a gap in the item mesh, not a real occluder. 0 = off; scene property uo_fill_holes (a torn robe whose
-                                   # rips should show the body: 0, docs/qa/robe_ragged.md)
+                                   # rips should show the body: 0)
 INNER_LINE = 0.0                   # clothing: > 0 = the torso pixels of an item that touch its sleeve (point attribute uo_region of uo_conform_item.py) are darkened to this share: a 1-px
                                    # line that sets the sleeves off the torso like the original robes (an extra label render per frame). 0 = off; scene property uo_inner_line
 EDGE_SMOOTH = 0                    # clothing: passes of outline smoothing (a pixel with at most 1 of its 4 neighbours in the item is dropped, an empty one with 3-4 is filled with the colour
-                                   # around): the 1-px spikes and notches of a ragged hem. 0 = off; scene property uo_edge_smooth (docs/qa/robe_ragged.md)
+                                   # around): the 1-px spikes and notches of a ragged hem. 0 = off; scene property uo_edge_smooth
 BODY_GAP = 0.006                   # m: every frame, parts of the bound items closer than this to the arms, hands, legs or
                                    # head of the posed body are pushed out (smoothly) before rendering - otherwise a forearm
                                    # poking through a sleeve in motion cuts a hole in the item. 0 = off
@@ -102,7 +111,7 @@ MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
-                                   # a flail held in the hand: arms and hands cut it far more than the original (docs/qa/flail.md)
+                                   # a flail held in the hand: arms and hands cut it far more than the original
 HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
 CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
 LIE_W = {}
@@ -112,6 +121,8 @@ EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
+SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
+CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 RIM = dict(edge=0.0, inner=0.0, ne=0, ni=0, paths={})   # OUTLINE_AUTO: brightness sums of the rim / one pixel in, and the frames of this run
@@ -138,7 +149,7 @@ def fix_mesh(o):
 
 
 # Loose garments (robe, skirt; uo_bind_item.py PART "robe" sets the custom property `uo_cloth`): the hanging part follows the pelvis only and the legs push it out to where
-# they reach (cloth_lib.hull_push, calibrated on the original robes: docs/qa/robe_physics.md). Computed per UO frame together with BODY_GAP, before it.
+# they reach (cloth_lib.hull_push, calibrated on the original robes). Computed per UO frame together with BODY_GAP, before it.
 CLOTH_CTX = {}
 
 
@@ -234,6 +245,9 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
             leg = lambda sd: (1 - ws) * (Vh @ skin["thigh." + sd].T)[:, :3] + ws * (Vh @ skin["shin." + sd].T)[:, :3]
             d0 = np.clip((prm["z_top"] - Vr[:, 2]) / 0.2, 0, 1)[:, None] * ((1 - side)[:, None] * leg("L") + side[:, None] * leg("R") - Pp)
         d0 = d0 * share
+        sim = cloth_sim_table().get("%d_%d" % (a, i))
+        if sim is not None and len(sim) == len(o.data.vertices):               # the simulated riding cloth (uo_cloth_sim.py mounted=1): what it did on top of the legs' lie
+            d0 = d0 + sim[first].astype(np.float64)
         return (d0 @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     d0 = cl.hull_push(Vr, skin["pelvis"], heads[sel], tails[sel], caps.radius[sel], centre_xy=tuple(prm["centre"]), margin=prm["margin"], kappa=prm["kappa"],
                       z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
@@ -639,6 +653,9 @@ def uo_post(px, keep=None):
         rgb[edge] *= OUTLINE
         if EDGE_FLOOR:
             rgb[edge] = np.maximum(rgb[edge], EDGE_FLOOR / 255.0)
+    if CONTRAST != 1.0:                                # contrast curve on the item's own pixels (not those that carry original UO colours)
+        sel = m if keep is None else (m & ~keep)
+        rgb[sel] = np.clip(CONTRAST_PIVOT + CONTRAST * (rgb[sel] - CONTRAST_PIVOT), 0.0, 1.0)
     out = np.zeros(px.shape, np.uint8)
     out[..., :3] = np.clip(rgb * 255 + 0.5, 0, 255).astype(np.uint8)
     out[..., 3] = m * 255
@@ -962,6 +979,30 @@ def inner_line(px, lab, k):
     return px
 
 
+def contact_shade(px, free, lab):
+    """SHADE_BODY / SHADE_SLEEVE: smooth contact shadows (1 - s (1 - d / SHADE_WIDTH)^2 within SHADE_WIDTH px of the occluder): near the body parts that hide the item (pixels of the unhidden render
+    `free` that the item layer `px` lacks), and where the sleeve and the torso part meet (labels `lab`: sleeve 1, torso 0)"""
+    from scipy.ndimage import distance_transform_edt
+    on = px[..., 3] >= 0.5
+    f = np.ones(on.shape, np.float32)
+
+    def near(src):
+        d = distance_transform_edt(~src)
+        t = np.clip(1.0 - d / SHADE_WIDTH, 0.0, 1.0)
+        return t * t
+    if SHADE_BODY > 0:
+        hid = (free[..., 3] >= 0.5) & ~on
+        if hid.any():
+            f *= 1.0 - SHADE_BODY * near(hid)
+    if SHADE_SLEEVE > 0 and lab is not None:
+        sl = on & (lab == 1); to = on & (lab == 0)
+        if sl.any() and to.any():
+            f[to] *= 1.0 - SHADE_SLEEVE * near(sl)[to]
+            f[sl] *= 1.0 - SHADE_SLEEVE * near(to)[sl]
+    px = px.copy(); px[on, :3] *= f[on][:, None]
+    return px
+
+
 def edge_smooth(px, passes):
     """EDGE_SMOOTH: 1-px spikes of the outline dropped, 1-px notches filled with the mean colour of their neighbours"""
     px = px.copy()
@@ -1065,10 +1106,11 @@ def frame_job():
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
-                        if INNER_LINE > 0:
-                            lab = region_labels(a, i, d)
-                            if lab is not None:
-                                px = inner_line(px, lab, INNER_LINE)
+                        lab = region_labels(a, i, d) if (INNER_LINE > 0 or SHADE_SLEEVE > 0) else None
+                        if INNER_LINE > 0 and lab is not None:
+                            px = inner_line(px, lab, INNER_LINE)
+                        if SHADE_BODY > 0 or SHADE_SLEEVE > 0:
+                            px = contact_shade(px, free, lab)
                         if EDGE_SMOOTH > 0:
                             px = edge_smooth(px, EDGE_SMOOTH)
                         rgba = uo_post(px)

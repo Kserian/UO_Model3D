@@ -4,7 +4,7 @@
 
 ITEM.blend is the output of uo_make_item.py with "kind": "hood" (uo_make_item.py runs this script for a hood, recipe "hood_cover": false = off, {"GAP": 0.015} = settings).
 Why: the hood of a free model sits right after uo_autofit_item.py, but the ears of the UO head stand out of its sides (Meshy hood: 52 head skin vertices outside
-the hood, both ears; docs/qa/autofit.md "Kaptur"). The push of uo_fit_item.py (out along the skin normal, vertex by vertex) bent the sides of the hood unevenly
+the hood, both ears). The push of uo_fit_item.py (out along the skin normal, vertex by vertex) bent the sides of the hood unevenly
 (mirror p90 2.6 -> 19 mm) and is off for a hood (uo_prepare_item.py FIT None). Here the hood is seen from the head centre C (head bone + 8 cm up):
   1. the head skin behind the face (y > C - FACE_Y; the face opening stays as the model made it) and its mirror image (so both sides get the same push);
   2. each hood vertex whose direction from C is within CONE of a skin point needs to be at least GAP farther from C than that skin point;

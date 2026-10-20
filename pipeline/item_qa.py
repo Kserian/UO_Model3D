@@ -7,7 +7,7 @@ BODY_GAP and the cloth push of render_uo_layer.py) and every item vertex gets it
   inside    share of the vertices more than 2 mm inside the skin (the render pushes these out by BODY_GAP, but a lot of them means bad weights or a shell that is too tight),
   depth     the deepest vertex (mm),
   stand-off the distance from the skin of the vertices that are outside, p50 / p90 / max (cm): the "thickness". The original items stand 5.6-8.1 cm (plate) / 5.6 (shirt) from the
-            silhouette at p90 (docs/qa/layer_analysis.md); LIMIT_BY_KIND of uo_fit_item.py keeps the item under its slot's limit in the rest pose.
+            silhouette at p90; LIMIT_BY_KIND of uo_fit_item.py keeps the item under its slot's limit in the rest pose.
 Prints the worst actions. Items of a loose garment (custom property uo_cloth) are measured before the legs push them out, so their `inside` counts the legs poking through.
 """
 import sys, os, json

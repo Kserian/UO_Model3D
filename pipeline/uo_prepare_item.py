@@ -5,8 +5,8 @@
 #                  they do not bend.
 #   distance       uo_fit_item.py GAP_BY_KIND: how far from the skin (tight cloth 1.5 cm, armour / helmets / sleeves 3 cm).
 #   skinning       uo_bind_item.py PART: which bones the item follows (and RIGID presets: hair on the head).
-# The settings are measured where noted in the scripts (docs/qa/slot_geometry.md); weights stay "as the skin under the item" (SMOOTH 4, STIFF 1): the originals
-# do not tell another policy from it (docs/qa/bind_sweep.json: SMOOTH 0..12 and STIFF 0.5..4 change the IoU with the sprites by +-0.002 at most).
+# The settings are measured where noted in the scripts; weights stay "as the skin under the item" (SMOOTH 4, STIFF 1): the originals
+# do not tell another policy from it.
 import json
 import os
 import re
@@ -16,17 +16,17 @@ KIND = "shirt"        # slot: shirt, plate, arms, pants, legs, boots, gloves, he
 AUTOFIT = True        # first uo_autofit_item.py: units, size and place from the skin the slot covers (False: the item already stands where it should)
 DENSIFY = True        # False: keep the mesh as it is
 FIT = None            # False: skip uo_fit_item.py (the item already sits right); None = by slot: not for a hood (a stiff shell round the head: the push out of the head bent
-                      # its sides unevenly, mirror p90 2.6 -> 19 mm, the hood looked crooked from the front; docs/qa/autofit.md "Kaptur")
+                      # its sides unevenly, mirror p90 2.6 -> 19 mm, the hood looked crooked from the front)
 HEM = None            # m: a robe / skirt that is longer than the body (made on a taller mannequin) has its part below HEM_FROM shortened (uniformly, folds and embroidery squeezed) so that the hem lands this high above the ground
                       # (the original robes end at 0.0-0.2 m; a hem below the ground would hang under the feet of the sprite). None = leave. Recipe: "prepare": {"HEM": 0.02}
 HEM_FROM = 0.70       # m: the shortening starts here (the sleeves of the model end above it)
 HEM_FLARE = None      # {"factor": 0.7, "from": 0.95, "r_min": 0.12}: a skirt flared wider than the UO robes (a model that trails on the floor, then shortened by HEM: the hem stands ~1.1 m wide from the
                       # front, the original robe 469 ~0.6 m) is narrowed about its axis: the distance from the axis beyond r_min m is scaled from 1 at `from` m down to `factor` at the hem
-                      # (linear in height; the axis = centre of the cloth at HEM_FROM). docs/qa/robe_ragged.md. Recipe: "prepare": {"HEM_FLARE": {...}}
+                      # (linear in height; the axis = centre of the cloth at HEM_FROM). Recipe: "prepare": {"HEM_FLARE": {...}}
 HEM_BAND = None       # {"height": 0.09, "fade": 0.02, "skip_front": 20, "edge": 5}: a gold band along the whole hem (an embroidered band that the model has only on some panels breaks off
                       # between the legs in the sprites): up to `height` m above the LOCAL hem (lowest point per angle around the skirt), fading over `fade` m, none within `skip_front`
                       # degrees of the front (-Y; the opening of a robe, soft over `edge` degrees). Point attribute uo_hem_band + the item's material mixes in the gold of its own texture
-                      # (mottled like embroidery; texels already gold are kept). docs/qa/robe_black.md. Recipe: "prepare": {"HEM_BAND": {...}}
+                      # (mottled like embroidery; texels already gold are kept). Recipe: "prepare": {"HEM_BAND": {...}}
 PART = None           # skin weights of uo_bind_item.py: None = those of the slot (SLOTS below); e.g. "torso" for a cuirass whose pauldrons are a separate part (stays on pelvis / spine / chest / neck, does not stretch with the arms)
 
 # KIND -> (PART of uo_bind_item.py, densify?, class). class: "tight" (cloth / leather close to the skin), "hard" (armour, thick: keeps its distance, 3 cm),
@@ -36,7 +36,7 @@ SLOTS = {
     "plate":  ("chest", True, "hard"),  "arms":  ("arms", True, "hard"),  "legs":  ("legs", True, "hard"),   "helm":   ("helm", True, "hard"),
     "neck":   ("neck", True, "hard"),
     "robe":   ("robe", True, "loose"), "skirt": ("skirt", True, "loose"), "cloak": ("cloak", True, "loose"),
-    "waist":  ("belt", True, "tight"), "vest": ("chest", True, "tight"), "hood": ("hood", True, "hard"),   # hood: a hood with a cowl round the neck (keeps its shape off the head); belt / sash (Waist), waistcoat / doublet (MiddleTorso): measured ranges, settings by analogy (docs/qa/autofit.md)
+    "waist":  ("belt", True, "tight"), "vest": ("chest", True, "tight"), "hood": ("hood", True, "hard"),   # hood: a hood with a cowl round the neck (keeps its shape off the head); belt / sash (Waist), waistcoat / doublet (MiddleTorso): measured ranges, settings by analogy
     "harness": ("torso", True, "tight"),   # straps over the trunk (follow pelvis / spine / chest / neck only)
     "quiver": ("quiver", False, "rigid"),  # a quiver, a sword on the back: rigid on the chest (custom properties uo_no_body_gap, uo_behind_torso: render_uo_layer.py)
     "hair":   ("hair", False, "rigid"), "beard": ("beard", False, "rigid"), "hat":   ("hat", False, "rigid"),

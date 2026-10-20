@@ -4,7 +4,7 @@
 
 uo_render_paperdoll.py fits a belt to the waist; a robe covers the whole body and the arms of the drawn paperdoll bodies (gumps 12 / 13: arms out, elbows bent) stand otherwise than the
 rest pose of the 3D body (arms straight, 40 deg from the vertical). So per gender the arms are posed (the same angle out at both shoulders and bend at both elbows, in the front plane) and the
-render is scaled / moved (x and y apart) so that the silhouette of the item matches the original gump of the same kind of item (plain robe 50469 / 60469 for a robe; docs/qa/robe_black.md).
+render is scaled / moved (x and y apart) so that the silhouette of the item matches the original gump of the same kind of item (plain robe 50469 / 60469 for a robe).
 The search uses the item's triangles projected flat (fast), the final image is rendered like uo_render_paperdoll.py (UO_Look, the Sun of the own shadow, the body a holdout for the back of
 the item, 4 x 4 supersampling) twice: textured and with the light alone (compose(): flat grey cloth times the light, the texture's gold as a cleaned mask). The grey of the item is mapped to
 the levels of the original gump (p5 / p50 / p95 of its luminance), coloured parts (gold) keep their colour. PD_SAVE_RAW=1 also writes the raw renders (raw_*.npy, shade_*.npy).
@@ -45,7 +45,7 @@ OUTLINE_GOLD = 0.75                          # the outline on gold edge pixels (
 COVER_PX = 4                                               # px: the body gump's skin this close to the item (not the fists, head, feet) is covered by it (the original covers all of the body
                                                            # but the hands, head and feet; a bare shoulder / forearm showed through)   # smooth_cloth(): px, share of the evening, px, the outline's share of the colour
 DESPECKLE_PASSES = int(os.environ.get("PD_DESPECKLE_PASSES", "3"))   # repeated: small clusters of dark pixels shrink from their edges
-PXM = 90.5                                   # gump px per m and the body axis / floor of the gump of body 12 (uo_render_paperdoll.py, docs/qa/belt_swords.md)
+PXM = 90.5                                   # gump px per m and the body axis / floor of the gump of body 12 (uo_render_paperdoll.py)
 GW, GH = 260, 237
 GX0, GY_FEET = 94.5, 221.0
 SS = 4
@@ -467,7 +467,7 @@ def disk(r):
 
 def compose(tex, sh, k):
     """the item from two renders on the gump grid times k: tex (textured) and sh (white_albedo: the light alone). The texture's small pattern, its dark seams and stray specks of gold were
-    noise, black dashes and a dark patch at the gump scale (docs/qa/robe_black.md); so the cloth is a flat grey times the light, and the gold a cleaned mask of the texture's gold (whole gump
+    noise, black dashes and a dark patch at the gump scale; so the cloth is a flat grey times the light, and the gold a cleaned mask of the texture's gold (whole gump
     pixels: a mixed edge pixel got the grey's or the gold's levels by chance, a dotted edge) times its colour times the light"""
     m = tex[..., 3] > 0.5
     f = np.sqrt(m.sum() / GOLD_AREA); r = lambda v: max(1, int(round(v * f)))

@@ -4,7 +4,7 @@
 
 Copies, per key of the action, from the chosen side to the other for clavicle, upper_arm, forearm, hand and the finger bones: rotation q = (w, x, -y, -z) (the rest
 matrices of the L / R bones are exact mirrors M B M, M = diag(-1, 1, 1), so the local rotation mirrors this way), scale as it is, location (-x, y, z). The torso, head and legs are not touched.
-Prints the error of the mirror in the chest frame (m) before saving. See docs/qa/elbow_spell.md.
+Prints the error of the mirror in the chest frame (m) before saving.
 """
 import sys, os
 import numpy as np

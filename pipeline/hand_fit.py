@@ -6,7 +6,7 @@
 Parameters of the right hand (the left one is its mirror, q -> (w, x, -y, -z)): hand rotation (3, rotation vector on the key), hand scale (uniform + along the bone, 2), thumb: base rotation (3) + flexion of the
 two outer joints (2), fingers 2-5: flexion (about the local X of the finger bones = the curl axis, joints 1:2:3 = 1:1:0.8) and spread (about the local Z of the first joint) (2 each).
 Objective: (1 - IoU of the pure-3D body silhouette vs the sprite) + EDGE_W * (1 - F-score of the outline / depth-jump pixels of the model vs the dark pixels of the sprite), counted only in discs (HAND_R px) around both hands (projected head / tail of the hand bones), summed over
-5 directions; small prior on the parameters. Arms, torso and legs are not touched. See docs/qa/elbow_spell.md.
+5 directions; small prior on the parameters. Arms, torso and legs are not touched.
 Needs: pip install numpy scipy pillow "bpy==4.2.*".
 """
 import sys, os, json

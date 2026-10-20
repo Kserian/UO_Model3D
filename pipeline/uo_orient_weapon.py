@@ -6,7 +6,7 @@
 #    (TIP = "auto"; give "+axis" / "-axis" like "-y" when the model has a narrow butt and a wide head, e.g. a mace or a hammer: there the tip is the heavy end, say TIP = "heavy");
 # 3. the widest side perpendicular to the shaft goes to +X (the blade's flat, the side of the stock); a round shaft keeps whatever it had;
 # 4. scaled so that the length along the shaft is LENGTH m (by CLASS, LENGTHS below: the typical original of the class, measured) unless LENGTH > 0 is given; the butt end at the origin.
-# Then: uo_place_weapon.py (PART weapon1h / polearm / axe2h / bow) and uo_bind_item.py with the same PART. See docs/qa/weapons_free_models.md.
+# Then: uo_place_weapon.py (PART weapon1h / polearm / axe2h / bow) and uo_bind_item.py with the same PART.
 import bpy
 import numpy as np
 from mathutils import Matrix
@@ -16,7 +16,7 @@ LENGTH = 0.0          # m, total length along the shaft; 0 = from CLASS
 TIP = "auto"          # "auto" (narrower end), "heavy" (the end with more vertices / mass is the head: mace, hammer, axe), or "+x", "-x", "+y", "-y", "+z", "-z" (model axis the tip points to)
 FLAT = True           # turn the widest side perpendicular to the shaft to +X
 LENGTHS = {"sword": 1.1, "dagger": 0.5, "mace": 1.2, "axe": 1.35, "axe2h": 1.4, "polearm": 2.5, "staff": 2.4, "spear": 2.7, "bow": 1.34, "crossbow": 1.1, "gun": 1.2}
-# measured on the original weapons of the client (docs/qa/weapons_free_models.md): the longest bounding-box diagonal over all frames of the animation, m. 1H blades 0.83 katana /
+# measured on the original weapons of the client: the longest bounding-box diagonal over all frames of the animation, m. 1H blades 0.83 katana /
 # 0.97 cutlass / 1.12 scimitar / 1.21 broadsword / 1.31 viking sword; maces, hammers, clubs 1.06-1.29; 1H axes 1.34-1.39; 2H axes 1.39-1.65; bardiche 2.37, halberd 2.51, long spear
 # 2.70; quarter staff 2.27, black staff 2.78; bow 1.34; crossbow 1.09, heavy crossbow 1.44. The dagger (0.5) is not measured.
 
