@@ -7,7 +7,7 @@ read as magenta and are left out). The clothing layer cannot show this: there th
 Prints per action the arm / torso pixels and the frames with any; --sheet writes OUT_DIR/marked_<action>.png (5 directions x frames, the counted pixels circled:
 black = arm, orange = torso, blue = leg). Torso pixels next to the head (the neck above a collar) do not count; the pelvis under a short hem does (look at the sheet).
 Runs the render (about 7 min for all actions); OUT_DIR/all/frames is reused when it is there.
---split (an item with holes on purpose, a torn robe: docs/qa/robe_ragged.md): the item is also rendered alone (layer clothing, the body does not hide it) and each counted skin pixel is
+--split (an item with holes on purpose, a torn robe): the item is also rendered alone (layer clothing, the body does not hide it) and each counted skin pixel is
 split: THROUGH the cloth (the item is there, the skin is in front of it: the body pierces the item, a fault) or in a HOLE (no item at that pixel: seen through a rip of the model, or
 below the hem). On the sheet the hole pixels are marked by small green circles.
 """

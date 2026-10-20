@@ -84,7 +84,7 @@ def solve(X0, edges, rest_len, free, heads, tails, radius, gap=0.012, iters=30, 
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Leg hull: the hanging cloth is pushed out, around the vertical axis of the waist, to where the legs reach - the "shadow" of the legs at every height, not their contact.
-# Measured on the original robes (docs/qa/robe_physics.md): the hem of a robe follows the legs in stride, and a robe never pokes out of the hem line of the legs.
+# Measured on the original robes: the hem of a robe follows the legs in stride, and a robe never pokes out of the hem line of the legs.
 # For every height z of the garment (in the rest frame of the pelvis) and every angle around the axis, h(angle, z) = the farthest reach of the legs in that direction at that
 # height (the support function of the circles in which the capsules of the legs cut the plane); a vertex at radius rho < h + MARGIN is pushed out by KAPPA * (h + MARGIN - rho).
 # One field per frame, looked up for any mesh (no topology needed), smooth in angle and height, no iteration, no memory of the frame before.
@@ -204,7 +204,7 @@ def cloak_bend(V, z_top, z_hem, y_top, d0, d1):
 
 # Conformed garments (uo_conform_item.py: custom property uo_conform, point attribute uo_region): every frame each vertex is kept `gap` outside the skin, pushed along the skin
 # normal and spread over the item, so the skin never comes through it. All the skin counts for every part of the item (torso, legs, head, both arms and hands): sparing a
-# sleeve the torso or the other arm (a body-to-body contact) left the arm and the chest showing through the sleeves in the spells (docs/qa/jedi_tunic.md). The regions stay in
+# sleeve the torso or the other arm (a body-to-body contact) left the arm and the chest showing through the sleeves in the spells. The regions stay in
 # the data (0 torso part, 1 / 2 sleeves, 3 / 4 their roots), each with its own set of bones here.
 _ALL = {"pelvis", "spine", "chest", "neck", "clavicle.L", "clavicle.R", "head", "thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R",
         "upper_arm.L", "forearm.L", "hand.L", "upper_arm.R", "forearm.R", "hand.R"}

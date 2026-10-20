@@ -1,4 +1,4 @@
-"""Blender's cloth simulation against the leg hull, on the replica of the original robe 469 (EXPERIMENT: nothing in the render uses it; result in docs/qa/robe_physics.md, "Sesja 16, symulacja").
+"""Blender's cloth simulation against the leg hull, on the replica of the original robe 469 (EXPERIMENT: nothing in the render uses it).
 
     python robe_cloth_sim_test.py sim   POSES.npz OUT.npz ACTIONS [key=value ...]     # bpy: simulate the replica tube (robe_calib.tube, rest shape fitted on the stand frames)
     python robe_cloth_sim_test.py score POSES.npz OUT.npz [OUT2.npz ...]               # numpy: lower-body IoU of the simulated frames, of the hull and of the rigid pelvis hang

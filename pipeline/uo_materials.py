@@ -27,23 +27,23 @@ METAL_AT = 0.5
 SPEC_STRENGTH = 1.0   # highlight = SPEC_STRENGTH * albedo * max(N.L, 0) ^ SPEC_POWER, added to the UO light (linear light; the metal tints its own highlight).
 SPEC_POWER = 16       # Measured on the metal-named wearable animations of the client (light_items.py, 41 animations, body normals as the proxy): mail / ring / chain
                       # SPEC_STRENGTH 0.7, power 11; the brightest quartile (plate, helms) 2.0, power 19; cloth and leather: Lambert only (0.3, no better than none).
-                      # 1.0 / 16 is in between; use 2.0 / 19 for shiny plate, 0.7 / 11 for mail. Docs: docs/qa/light_shadow.md
+                      # 1.0 / 16 is in between; use 2.0 / 19 for shiny plate, 0.7 / 11 for mail.
 TEXTURE_PX = 0        # > 0: a texture larger than this (px, the longer side) is scaled down to it: a fine weave or noise texture rendered at 36 px/m aliases into white speckles, which UO cloth does not have
                       # (the colour of the cloth is its average); 0 = leave the textures. A recipe of uo_make_item.py: "materials": {"TEXTURE_PX": 64}. Do not use for cut-out textures (hair cards, lace).
 GREY_CLOTH = None     # {"value": 0.55, "keep_sat": 0.25, "hue": (0.04, 0.2), "contrast": 1.0, "fill": 0.0, "flatten": 0.0}: ("fill" m: gaps in the gold up to this size closed with gold; "flatten" m: the grey relative to the cloth around, panels of another cloth do not stand out) the cloth of the texture (pixels that are not saturated gold / yellow) becomes grey,
                       # its median at "value" (0-1 of the stored texture), the texture's own light and dark kept (ratio to the median ** contrast); gold pixels (saturation
                       # >= keep_sat, hue in the range, 0-1 = 0-360 deg) stay as they are, blended softly at their edge. A black robe with gold embroidery made grey like
-                      # the hue-able UO robes (docs/qa/robe_black.md). Recipe: "materials": {"GREY_CLOTH": {...}}
+                      # the hue-able UO robes. Recipe: "materials": {"GREY_CLOTH": {...}}
 TEXTURE_FILTER = True # box-average every colour / normal texture that is finer than the sprite (more than FILTER_TEXELS_PER_M texels per metre of the item): at one sample per pixel
                       # a 1 m coat on a 1024 px texture is sampled every ~25th texel and comes out as noise, and the thin dark details (laces, buttons, stitches) appear and disappear
                       # from frame to frame. Averaged, they stay as one soft dark pixel line. Skipped for cut-out textures (Alpha used) and for small textures.
 FILTER_TEXELS_PER_M = 54.0   # = 1.5 texels per UO pixel (36 px/m)
 TEXTURE_BLUR = 0.0    # m: > 0 = after TEXTURE_FILTER the colour textures are blurred (Gauss, sigma this many m of the item at FILTER_TEXELS_PER_M): only the large stains and the baked shading
-                      # of the folds stay, the mottle of a scanned texture goes (it read as pixel noise; docs/qa/robe_ragged.md). Normal maps are left. Recipe: "materials": {"TEXTURE_BLUR": 0.045}
+                      # of the folds stay, the mottle of a scanned texture goes (it read as pixel noise). Normal maps are left. Recipe: "materials": {"TEXTURE_BLUR": 0.045}
 NORMAL_MAP = True     # a normal map of the model lights the item (UO_Look_N: the UO light on the mapped normal): weave, folds and raised straps give the shading the flat shell lacks.
                       # False = the old behaviour (the map is dropped). The map is filtered like the colour (renormalised)
 NORMAL_STRENGTH = 1.0
-SHADOW = 0.4          # own shadow (docs/qa/light_shadow.md: the UO sprites are lit  S = ambient + (1 - ambient) * c * s  in the shade of the body / of the item itself, s = 0.4 measured):
+SHADOW = 0.4          # own shadow (the UO sprites are lit  S = ambient + (1 - ambient) * c * s  in the shade of the body / of the item itself, s = 0.4 measured):
                       # the item gets s of the light as emission (no shadow) and 1 - s as a diffuse BSDF lit by a Sun with the UO light direction that casts shadows (render_uo_layer.py makes
                       # the Sun). Folds, a sleeve over the chest, an arm over the coat get their shade. 0 = off (UO_Look: Lambert, no shadows)
 FLAT_GREY = None      # 0..1: one plain grey instead of the model's colours and textures (an item the game tints with a hue: a sword, a blade; 0.55 = mid grey, the hue then shows). None = the model's colour

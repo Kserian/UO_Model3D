@@ -15,7 +15,7 @@ ball at the far end. uo_make_item.py runs this for a recipe with "flail": {...} 
    (STEP per UO frame, interpolated). A looping action (walk, run, stand, idle) runs CYCLES times, the last one is kept; any other starts after PREROLL s
    hanging still in its first pose. The nodes per action and frame go to flail_sim.npz next to the item ("<action>_<frame>": (n, 3) armature space),
    render_uo_layer.py moves the chain and ball by them (rotation of each piece = the turn of its segment carried down the chain from the haft: no twist jumps).
-Calibration against an original flail .vd: flail_fit.py (docs/qa/flail.md).
+Calibration against an original flail .vd: flail_fit.py.
 """
 import json, os, sys
 import numpy as np

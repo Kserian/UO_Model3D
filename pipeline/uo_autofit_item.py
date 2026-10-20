@@ -1,12 +1,12 @@
 # Size and place the SELECTED item on the UO body by what the item has to do: wrap the skin it covers, at a small distance, without the skin poking out.
 # uo_import_item.py scales an item from ONE number per KIND (the height of a typical original), which is only right for items shaped like that original: a chest piece
-# that stops at the ribs, a cuirass with huge pauldrons or a short jacket came out too big or too small (docs/qa/autofit.md). This script instead looks at the
+# that stops at the ribs, a cuirass with huge pauldrons or a short jacket came out too big or too small. This script instead looks at the
 # skin of the slot's body parts (PARTS_BY_KIND) and finds the uniform scale and the move (3 numbers, optionally a half turn) for which
 #   - the item's inner surface lies about `GAP` from the skin where it covers it (distance from every skin point to the nearest item surface point), and
 #   - no skin point lies on the outer side of the surface it is nearest to (the skin pokes through): that costs 3x more than a gap that is too large,
 #   - where the item does not cover the skin at all (the item is short, the neck / arm holes) nothing is asked, so a short item is not stretched to cover everything.
 # The vertical place of an item that fits equally well anywhere on the torso (a short cuirass) is settled by the edge of the slot that is stable in the original items
-# (EDGE_BY_KIND: top of shirts, trousers, hair, bottom of boots, gloves, arm guards; docs/AUDYT_2026-10-03.md, point 5), a weak pull of the same weight as ~5 cm of misfit.
+# (EDGE_BY_KIND: top of shirts, trousers, hair, bottom of boots, gloves, arm guards), a weak pull of the same weight as ~5 cm of misfit.
 # The size units are found first (a file in cm, mm): the unit that puts the longest side of the item in 0.15..3 m (UNIT = 0 -> automatic).
 # Run it with the item(s) selected, after uo_import_item.py with FIT = "wrap" (which only converts units and puts the item near the body), before uo_fit_item.py
 # (that one pushes whatever is still in the skin out). Rest Position. Prints the result and the alternatives that were nearly as good ("AMBIGUOUS").
@@ -55,9 +55,9 @@ CAP = 0.10            # m, skin farther than this from the item is "not covered"
 CAP_WIDE = 0.40       # the same for the first, coarse stage
 EDGE_WEIGHT = 0.05    # 1/m^2: tie-breaker only (10 cm off costs as much as a 2 cm misfit): the wrap itself fixes the height of every item that has any structure
 SCALE_PRIOR = 0.04    # a pull towards the size the model was made in (after the units): 20 % off costs as much as a 1 cm misfit of every skin point. Models are authored 1:1 far
-                      # more often than not (the helmet of docs/qa/autofit.md came out 41 % too big without it); 0 = the data alone (test_autofit.py measures with 0)
+                      # more often than not (a helmet came out 41 % too big without it); 0 = the data alone (test_autofit.py measures with 0)
 # how far from the skin an item may stand (m) before it counts as too thick: the p90 of the distance of the item's pixels from the body silhouette in the original
-# items of the slot (docs/qa/layer_analysis.md: plate / InnerTorso 5.6-8.1 cm, shirt 5.6, pants 3.9-5.6, arms 4.7-10, helm 8.3, hair 5.6-7.9, boots 3.3) with a margin;
+# items of the slot (measured: plate / InnerTorso 5.6-8.1 cm, shirt 5.6, pants 3.9-5.6, arms 4.7-10, helm 8.3, hair 5.6-7.9, boots 3.3) with a margin;
 # beyond it the part is pulled back by a smaller scale (OUT_WEIGHT) - big pauldrons and flares are what makes an item "too thick"
 PRIOR_BY_KIND = {"gloves": 0.0, "arms": 0.0}   # pairs far from the middle (two gloves, two sleeves): the prior pulled the fit onto one of the two; the data alone finds both (test_autofit.py)
 OUT_BY_KIND = {"shirt": 0.09, "plate": 0.12, "harness": 0.09, "pants": 0.08, "legs": 0.09, "arms": 0.10, "boots": 0.07, "gloves": 0.07, "helm": 0.12, "hat": 0.12,

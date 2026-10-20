@@ -6,7 +6,7 @@ other arm is fitted too (a fit of one arm with the other one wrong only moves th
     python arm_sym_fit.py IN.blend OUT.blend --action 21 --apply a.json,b.json                 (writes the keys, same layout; save with bpy 4.2)
 
 Objective: as arm_sym_fit.py (1 - IoU whole + above TOP rows, mean of 5 directions) + small priors (elbow flex 0..FLEX, rotations near the key); starts: the key, the key with
-the elbows bent differently, random arm directions. See docs/qa/arm_poses.md.  Needs: numpy scipy pillow "bpy==4.2.*".
+the elbows bent differently, random arm directions.  Needs: numpy scipy pillow "bpy==4.2.*".
 """
 import sys, os, json
 import numpy as np
@@ -21,7 +21,7 @@ from arm_refit import setup, ROOT, TOP, rotvec
 
 NRAND, MAXFEV = int(os.environ.get("NRAND", 6)), int(os.environ.get("MAXFEV", 1500))
 TOP_W = float(os.environ.get("TOP_W", 1.0))            # weight of the rows above the shoulder line (arm_refit.py: 1.0)
-EDGE_W = float(os.environ.get("EDGE_W", 0.0))          # extra weight of the >= 2 px errors (round 2 of docs/qa/arm_poses.md)
+EDGE_W = float(os.environ.get("EDGE_W", 0.0))          # extra weight of the >= 2 px errors
 CHAIN = ["clavicle", "upper_arm", "forearm", "hand"]
 
 

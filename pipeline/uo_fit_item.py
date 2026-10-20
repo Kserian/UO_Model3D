@@ -24,13 +24,13 @@ MIN_GAP = -1.0        # m, no part of the item closer to the skin than this (0 =
 # MIN_GAP by KIND, measured on thin body-hugging replicas against the original sprites (test_items.py --fit, IoU at 0.015 / 0.03 / 0.045):
 # close-fitting cloth and leather is best at 0.015 (shirt .746/.727/.681, pants .801/.793/.747, boots .771/.755/.693, gloves .579/.576/.526); thick armour,
 # helmets and sleeves at 0.03 (plate .702/.725/.706, helm .770/.783/.658, arms .615/.619/.598, legs .667/.673/.651). The sprites agree: shirts, trousers, boots
-# stand 1 px (2.8 cm) off the silhouette of the body, plate / helmets / robes 2-4 px (docs/qa/layer_analysis.md). "neck" (gorget, a hard slot in uo_prepare_item.py) is 0.03 by
+# stand 1 px (2.8 cm) off the silhouette of the body, plate / helmets / robes 2-4 px. "neck" (gorget, a hard slot in uo_prepare_item.py) is 0.03 by
 # its class, not measured.
 GAP_BY_KIND = {"shirt": 0.015, "pants": 0.015, "boots": 0.015, "gloves": 0.015, "plate": 0.03, "legs": 0.03, "arms": 0.03, "helm": 0.03, "neck": 0.03, "robe": 0.02, "skirt": 0.02, "cloak": 0.03, "waist": 0.015, "vest": 0.02, "hood": 0.03}
 MAX_GAP = 0.0         # m, > 0: pull parts standing off more than this towards the skin (0 = off)
 LIMIT = -1.0          # m, soft limit of how far from the skin any part of the item may stand: what is farther is brought closer (S -> LIMIT + (S - LIMIT) * LIMIT_K), smoothly over the
                       # mesh, so details are squashed, not cut. This is what keeps big pauldrons, flared cuffs and fat collars "UO-thin": the original items of a slot stand
-                      # out of the body silhouette by this much at most (docs/qa/layer_analysis.md: plate 5.6-8.1 cm, shirt 5.6, helm 8.3); < 0 = LIMIT_BY_KIND, 0 = off
+                      # out of the body silhouette by this much at most (plate 5.6-8.1 cm, shirt 5.6, helm 8.3); < 0 = LIMIT_BY_KIND, 0 = off
 LIMIT_K = 0.3         # what is left of the excess: 0 = cut off at LIMIT, 1 = no limit
 LIMIT_BY_KIND = {"shirt": 0.07, "plate": 0.05, "harness": 0.06, "arms": 0.07, "pants": 0.06, "legs": 0.07, "boots": 0.05, "gloves": 0.05, "helm": 0.10, "neck": 0.06, "waist": 0.05, "vest": 0.07, "hood": 0.12}
 RADIUS = 0.04         # m, smallest area a push spreads over

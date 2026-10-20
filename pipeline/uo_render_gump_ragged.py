@@ -1,4 +1,4 @@
-"""Paperdoll gumps (male / female) and the item icon (art) of the torn robe (docs/qa/robe_ragged.md): a plain grey robe with holes on purpose, a hood lying on the back, no gold.
+"""Paperdoll gumps (male / female) and the item icon (art) of the torn robe: a plain grey robe with holes on purpose, a hood lying on the back, no gold.
 
     PD_OUT=DIR PD_REF_MALE=50469.png PD_REF_FEMALE=60469.png PD_BODY_MALE=12.png PD_BODY_FEMALE=13.png PD_ART_REF=7939.png \
         python run_script_in_blend.py ITEM.blend uo_render_gump_ragged.py

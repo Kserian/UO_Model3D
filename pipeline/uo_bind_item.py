@@ -41,7 +41,7 @@ PARTS = {
     "belt":      (["pelvis", "spine", "chest", "thigh.L", "thigh.R"], {}),     # belt with straps and hangers that reach down over the hips: what hangs below the waist follows the thigh under it
     # loose garments (robe, dress, skirt, kilt): above the hips like "all"; the hanging part follows the PELVIS only (it does not stick to the legs like trousers): the weight
     # of thighs, shins and feet goes to the pelvis. The legs push it out when they reach it: render_uo_layer.py does that per frame (custom property `uo_cloth`, set below;
-    # cloth_lib.hull_push, calibrated on the original robes, docs/qa/robe_physics.md). FOLLOW also takes (share, t0, t1, end share): share near the joint -> end share along the bone.
+    # cloth_lib.hull_push, calibrated on the original robes). FOLLOW also takes (share, t0, t1, end share): share near the joint -> end share along the bone.
     "robe":      (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),
     "skirt":     (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),
     "cloak":     (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),   # cape from the shoulders: hangs from the chest, the rest follows the pelvis; swings back per action (render_uo_layer.py)

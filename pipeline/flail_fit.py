@@ -4,7 +4,7 @@ thick blob: the item opened by one pixel) and the whole item (symmetric mean dis
     python flail_fit.py OURS_FRAMES OURS_ANCHOR ORIG_FRAMES ORIG_ANCHOR [--actions 01_walk_armed,...] [--json out.json]
 
     OURS_ANCHOR / ORIG_ANCHOR: "x,y" of the canvas anchor (render_uo_layer CANVAS anchor 128,192; vdtool extract prints it, e.g. 92,103).
-Prints per action: frames, mean ball distance (px), mean item distance (px); and the total. docs/qa/flail.md.
+Prints per action: frames, mean ball distance (px), mean item distance (px); and the total.
 """
 import argparse, glob, json, os
 import numpy as np
