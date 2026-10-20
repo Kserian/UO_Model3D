@@ -120,7 +120,7 @@ Bryła decyduje, **co** jest za koniem, a **gdzie** koń jest, wyznacza dokładn
 | `uo_prepare_item.py` | Jeden krok dla slotu (`KIND`): `uo_densify_item.py` → `uo_fit_item.py` → `uo_bind_item.py` z ustawieniami tego slotu (tabela `SLOTS`). Wyniki i uzasadnienie: `docs/qa/slot_geometry.md`. |
 | `uo_autofit_item.py` | Jednostki, skala i miejsce zaznaczonego przedmiotu z kształtu skóry slotu (nie z jednej wysokości na slot): `docs/qa/autofit.md`. Wywołuje go `uo_prepare_item.py` (`AUTOFIT`). |
 | `uo_orient_weapon.py` | Stawia obcą broń pionowo (czubek w górę, płaska strona na +X, długość klasy: miecz 1 m, muszkiet 1,3 m...), przed `uo_place_weapon.py`. |
-| `cloth_lib.py` | Luźne ubrania (szata, spódnica): powłoka nóg i namiot od pasa, per klatka, numpy (`docs/qa/robe_physics.md`); używa go `render_uo_layer.py` dla przedmiotów z własnością `uo_cloth`. |
+| `cloth_lib.py` | Luźne ubrania (szata, spódnica): powłoka nóg i namiot od pasa, per klatka, numpy; wypchnięcie przez nogi w `render_uo_layer.py` dla przedmiotów z własnością `uo_cloth` i cel symulacji tkaniny (`uo_cloth_sim.py`). |
 | `uo_bind_item.py` | Podpina zaznaczony przedmiot do ciała jednym uruchomieniem: parent, Armature i wagi (rozdział 3). |
 | `uo_weapon_bones.py` | Dodaje kości broni (lewa dłoń: `polearm.L`, `axe2h.L`, `bow.L`; prawa: `weapon1h.R`) i klucze ich ruchu z `weapon_motion.json` (uruchamiane już w pliku; do ponownego wgrania ruchu). |
 | `uo_place_weapon.py` | Stawia zaznaczoną broń (trzon po osi +Z, czubek w górę) na linii chwytu jej klasy, przed `uo_bind_item.py`. Głowicę (ostrze, topór) modeluj jako płaską płytkę w płaszczyźnie XZ, szeroką stroną na +X; skrypt obraca broń wokół trzonu tak jak w oryginalnej broni `REF_ANIM` (np. 624 halabarda, 613 topór kata, 623 szabla), a kość kręci nią dalej wg zmierzonego rollu (`weapon_motion.json`, pole `roll`). Łuki: roll nieokreślony. |
@@ -184,7 +184,7 @@ do niego swoje przedmioty, a nie odwrotnie.
       | `"neck"` | obojczyk zbroi, kołnierz | neck, chest, head |
       | `"all"` | cała zbroja w jednym obiekcie | skóra pod spodem, wszystkie kości |
       | `"cloak"` | peleryna | wisi od klatki piersiowej i **odchyla się do tyłu wokół ramion** zależnie od akcji (bieg, jazda: leci za plecami; tabela z oryginału 468, `docs/qa/cloak_physics.md`) |
-      | `"robe"`, `"skirt"` | szata, sukienka, spódnica, kilt | do bioder jak skóra; poniżej **miednica**, a nogi wypychają tkaninę per klatka (`cloth_lib.py`, własność `uo_cloth`; `docs/qa/robe_physics.md`) |
+      | `"robe"`, `"skirt"` | szata, sukienka, spódnica, kilt | do bioder jak skóra; poniżej **miednica**, a nogi wypychają tkaninę per klatka (`cloth_lib.py`, własność `uo_cloth`), potem symulacja tkaniny (`uo_cloth_sim.py`) |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` (w UO włosy i brody są sztywne) |
       | `"weapon1h"` | miecz, maczuga, młot, topór 1H, kryss, kilof | kość `weapon1h.R` na prawej dłoni, ruch dopasowany do 13 oryginalnych broni (0,7–1,3 px zamiast 1,4–2,1 px); najpierw `uo_place_weapon.py` z `PART = "weapon1h"` |
       | `"weapon"` / `"weapon.L"` | broń bez kalibracji | sztywno na `hand.R` / `hand.L`; `uo_place_weapon.py` z `PART = "weapon.L"` ustawia przedmiot 1H (róg, latarnię) w lewej ręce na odbitej linii chwytu `weapon1h.R` (wersja lewa to lustrzane odbicie prawej) |
@@ -250,8 +250,19 @@ Model z kilku przedmiotów i manekinem w pliku (np. uprząż z mieczem na plecac
 (`{"name": "paski", "keep": [...], "kind": "harness"}`, `{"name": "miecz", "keep": [...], "rigid": "quiver"}`; `=nazwa` = dokładna nazwa siatki). Rzeczy sztywne na plecach dostają własności `uo_behind_torso` (z przodu zasłania je tułów) i `uo_no_body_gap` (nie są odginane od kończyn).
 Cienkie części znikają przy 36 px/m, więc część może mieć też `"widen": {"width": 0.07}` (paski/wstęgi poszerzone w swojej płaszczyźnie, grubość i krzywizna zostają: pasek 3 cm to 1 px), `"skin_wrap": {"GAP": 0.008}` (paski położone na skórze, przylegają z zachowaniem grubości i mają wagi skóry pod każdym wierzchołkiem: samo dopasowanie zostawia uprząż 3 cm od skóry) i `"thicken": {"width": 0.085}` (płaska pochwa lub rękojeść widziana od krawędzi jest co najmniej tak gruba). Siatki z pliku, które nie należą do przedmiotu (nóż, jego pochwa i szmaty), po prostu pomija się we wszystkich częściach. Przykład: `docs/items/witcher_sword_harness.json` i `.md` (uprząż Wiedźmina z mieczem na plecach; oba noże usunięte; pliku `.glb` nie ma w repo, patrz `.md`).
 
-**Luźne ubrania (`kind`: `robe`, `skirt`).** Tkanina wisi od miednicy, a nogi **wypychają ją tam, gdzie sięgają** (powłoka nóg, namiot od pasa, jedna klatka bez pamięci: bez przeskoków i bez przenikania),
-wypchnięcie 5 cm i 0,8 drogi do nóg jak w oryginalnych szatach UO. Pomiar na oryginale 469: IoU dolnej części 0,641 -> 0,757 (`docs/qa/robe_physics.md`). Własność `uo_cloth` ustawia `uo_bind_item.py` (`PART` `robe` / `skirt`), a stosuje `render_uo_layer.py`.
+**Luźne ubrania (`kind`: `robe`, `skirt`).** Tkanina wisi od miednicy, a symulacja tkaniny Blendera (`pipeline/uo_cloth_sim.py`, domyślnie włączona w `uo_make_item.py`; `"sim": {...}` w recepturze = jej ustawienia, `--no-sim` = wyłączona) pozwala nogom wypychać ją jak prawdziwy materiał. Każdy wierzchołek jest trzymany słabą sprężyną (waga pinu `goal`) przy celu kinematycznym = przedmiot skinowany szkieletem + `pushw` x wypchnięcie przez nogi (powłoka nóg, `cloth_lib.hull_push`); tkanina koliduje z ustawionym ciałem, a wynik zapisuje się jako różnica względem pełnego celu (`cloth_sim.npz`), którą dodaje `render_uo_layer.py`. Cel nie musi pasować do sprite'a oryginalnej szaty 469: liczy się fizyka (kolizje, zachowanie rąbka) i wygląd. Pierwsza wersja bez symulacji (sama powłoka nóg, jedna klatka bez pamięci, `cloth_lib.py`, własność `uo_cloth` z `uo_bind_item.py`) dała IoU dolnej części ciała 0,641 -> 0,757 względem oryginału 469 i nadal jest celem symulacji.
+
+Ustawienia, które zadziałały na gęstej siatce (24 tys. wierzchołków; zestaw t1, **jeszcze nie domyślne** w `uo_cloth_sim.py`, podaj je w `"sim"`): `mscale 0.0333 goal 0.2 pushw 0.5 gravity 1.5 in_max -1 max_move 0 smooth 0.04 arm_goal 0.95 preroll 20 cycles 2 thick 0.02 dist 0.005`; jazda konno: dodaj `mounted 1 horse 1` (zastępczy korpus konia jest colliderem; wariantu, w którym koń tylko wycina tkaninę, nie robiliśmy). Masa i sztywność tkaniny Blendera zależą od liczby wierzchołków, więc `mscale` skaluje masę wierzchołka do siatki.
+
+| `fabric` | Masa | Zginanie | Tłumienie | Policzone |
+|---|---|---|---|---|
+| `silk` | 0,15 | 0,05 | 1 | pełne 35 akcji x 5 kierunków |
+| `cotton` | 0,3 | 0,5 | 5 | pełne 35 akcji x 5 kierunków |
+| `wool` | 0,5 | 2 | 10 | pełne 35 akcji x 5 kierunków |
+| `denim` | 1,0 | 10 | 25 | nie liczone |
+| `leather` | 0,4 | 150 | 25 | nie liczone |
+
+Sztywność w płaszczyźnie (tension, compression, shear) wynosi 5 dla wszystkich: presety Blendera (15-80) są podciągane przez pin i rąbek się unosił (cotton +0,26 m, wool +0,47 m w chodzie; przy 5: +0,04 / +0,05 m, silk +0,04). Wolna tkanina bez pinu (goal 0) rozpadała się albo unosiła rąbek; potrzebny jest margines kolizji 0,02 m (`thick`), 0,006 m przepuszcza nogi (piksele nóg przez tkaninę w chodzie i biegu, silk: 723 z t1 wobec 1862 przy cienkim). Co próbowaliśmy, z pomiarami: `docs/qa/robe_variants_2026-10.md` / `.pdf`; rendery każdego wariantu z ustawieniami: `docs/qa/robe_variants_screenshots_2026-10.pdf`. Zostaje: nogi widać w upadkach (die forward), spódnica ok. 1,7 x szersza przy rąbku niż w oryginalnej szacie 469, rękawy ok. 10% grubsze.
 
 ## 4. Render do klatek i pliku `.vd`
 
