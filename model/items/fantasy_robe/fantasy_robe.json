@@ -1,0 +1,4 @@
+{"name": "fantasy_robe", "file": "model/items/fantasy_robe/fantasy_robe.glb", "kind": "robe",
+ "prepare": {"HEM": 0.20, "HEM_FLARE": {"factor": 0.70}},
+ "conform": {"GAP": 0.010, "LOOSE_K": 0.0, "FOLD_MAX": 0.004, "POSE_GAP": 0.006, "SLEEVE_CUFF": 0.032, "CUFF_SPAN": 0.25},
+ "sim": {"fabric": "silk", "mscale": 0.0333, "goal": 0.2, "pushw": 1.0, "gravity": 1.5, "in_max": -1, "max_move": 0, "smooth": 0.04, "arm_goal": 0.95, "preroll": 20, "cycles": 2, "thick": 0.02, "dist": 0.005, "env": 1.0, "env_margin": 0.01, "mounted": 1, "horse": 1}}
