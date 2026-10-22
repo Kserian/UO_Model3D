@@ -38,6 +38,10 @@ CONTRAST = 1.0                     # per item (scene "uo_contrast", e.g. 1.6): a
 CONTRAST_PIVOT = 0.49              # 0..1: the grey that stays (scene "uo_contrast_pivot"; 0.49 = 125/255, about the median of a grey robe)
 EDGE_FLOOR = 0                     # 0-255: the 1-px outline of an item is never darker than this per channel (0 = off); a black item (leather, a black hilt) got a pure black rim,
                                    # which the client draws as a hard hole-like line; scene property uo_edge_floor (24 = a soft dark grey)
+SUPERSAMPLE = 1                    # per item (scene "uo_supersample", odd: 3): the item's colour is rendered K x K times denser and averaged over the area of the pixel (only the pixels that are
+                                   # opaque at the sub-pixel); the mask and so the silhouette, outline and every decision stay those of the pixel centre (the centre sub-sample is the old sample).
+                                   # The box filter of 0.01 px alone gives one sample point per pixel: a fine texture (weave, embroidery, a border) aliased into single bright / dark pixels that jump from
+                                   # frame to frame; the UO art is painted at pixel size and smooth inside. 1 = off (renders unchanged)
 OUT_DIR = "//uo_render/"           # PNG output root (vdtool 'canvas' layout + meta.json)
 WRITE_VD = True
 VD_FILE = "//uo_render/%s.vd"      # %s -> LAYER
@@ -59,7 +63,7 @@ CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share i
 CLOTH_LIE_DROP = 1.0               # with CLOTH_LIE: below the waist the lying garment falls by gravity onto what is under it (the posed legs / body, else the ground): its height above
                                    # that support is cut to this share (smoothed over the cloth; full 0.3 m under the waist, as far as the body lies). The front between the legs is
                                    # weighted to both of them and stood up over the raised knees as a sail. 1 = off; scene property uo_cloth_lie_drop
-HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
+HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite; per item (scene "uo_horse_holdout" 0): a cape is not cut by the horse
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
                                    # the "clothing" layer the body hides items exactly along the ORIGINAL outline
@@ -119,6 +123,8 @@ FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
 INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
 EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
+HORSE_HOLDOUT = bool(int(sc.get("uo_horse_holdout", HORSE_HOLDOUT)))      # a cape lies on the horse, it is drawn over it (scene uo_horse_holdout 0; the client draws a cloak over the mount)
+SUPERSAMPLE = max(1, int(sc.get("uo_supersample", SUPERSAMPLE))) | 1       # odd: the centre sub-sample is the pixel centre
 SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
 SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
@@ -222,7 +228,10 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
     sel = np.array(["pelvis" not in ctx["names"][k] for k in caps.idx])
     co = np.empty(len(o.data.vertices) * 3, np.float32); o.data.vertices.foreach_get("co", co)
     Vr = co.reshape(-1, 3).astype(np.float64); Mb_ = np.array(o.matrix_basis); Vr = (Vr @ Mb_[:3, :3].T + Mb_[:3, 3])[first]
-    if prm.get("type") == "cloak":                                            # a cape: swings back about the shoulders with the action (cloak_pitch.json from the original 468)
+    if prm.get("type") == "cloak":                                            # a cape: what the cloth simulation made of it (uo_cloth_sim.py, wind of the gait, the horse), else it swings back about the shoulders
+        sim = cloth_sim_table().get("%d_%d" % (a, i))                         # with the action (cloak_pitch.json from the original 468)
+        if sim is not None and len(sim) == len(o.data.vertices):
+            return (sim[first].astype(np.float64) @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
         rows = cloak_table()["actions"].get(str(a))
         if not rows:
             return np.zeros((len(first), 3))
@@ -663,14 +672,30 @@ def uo_post(px, keep=None):
     return out
 
 
-def render_px():
+def render_px(ss=1):
+    """RGBA float image of the canvas. ss > 1 (SUPERSAMPLE): rendered ss x ss denser, colour = area average over the sub-samples that are opaque, alpha = the centre sub-sample's (the old sample)"""
+    if ss > 1:
+        keep = (sc.cycles.samples, sc.cycles.adaptive_min_samples)
+        sc.render.resolution_x, sc.render.resolution_y = W * ss, H * ss
+        sc.cycles.samples = max(32, keep[0] // (ss * ss)); sc.cycles.adaptive_min_samples = min(keep[1], 16)     # the same budget per output pixel, spread over the sub-samples
     sc.render.filepath = tmp
-    bpy.ops.render.render(write_still=True)
+    try:
+        bpy.ops.render.render(write_still=True)
+    finally:
+        if ss > 1:
+            sc.render.resolution_x, sc.render.resolution_y = W, H
+            sc.cycles.samples, sc.cycles.adaptive_min_samples = keep
     im = bpy.data.images.load(tmp)
     w, h = im.size
     px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px)
     bpy.data.images.remove(im)
-    return px.reshape(h, w, 4)[::-1]                        # Blender pixels start at the bottom row
+    px = px.reshape(h, w, 4)[::-1]                          # Blender pixels start at the bottom row
+    if ss > 1:
+        a = px[..., 3]; num = (px[..., :3] * a[..., None]).reshape(H, ss, W, ss, 3).sum((1, 3)); den = a.reshape(H, ss, W, ss).sum((1, 3))
+        out = np.zeros((H, W, 4), np.float32)
+        out[..., :3] = num / np.maximum(den, 1e-6)[..., None]; out[..., 3] = a[ss // 2::ss, ss // 2::ss]
+        return out
+    return px
 
 
 LIMB_BONES = ("upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R", "thigh.L", "shin.L", "thigh.R", "shin.R")
@@ -839,11 +864,12 @@ def render_frame(a, i, d, body_mode):
     body.hide_render = body_mode == "hidden"
     body.is_holdout = body_mode == "holdout"
     set_horse(a, i)
-    px = render_px()
+    ss = SUPERSAMPLE if body_mode != "visible" else 1       # 'visible' carries the body (exact original colours): never averaged
+    px = render_px(ss)
     hm = HORSE_MASKS.get((a, i, d)) if HORSE_HOLDOUT else None
     if hm is not None and horses.get("Horse_a%d_f%d" % (a, i)) is not None:
         set_horse(-1, 0)                                # outside the horse sprite nothing is hidden
-        px = np.where(hm[..., None], px, render_px())
+        px = np.where(hm[..., None], px, render_px(ss))
     return px
 
 

@@ -115,7 +115,7 @@ It is meant for designing clothing, armour, hair and weapon layers: the `.blend`
       | `"hood"` | hood with a cowl | hood: head, cowl: neck and chest; then `uo_hood_cover.py` (recipe `"hood_cover"`) |
       | `"neck"` | gorget, collar | neck, chest, head |
       | `"all"` | full suit in one object | skin under it, every bone |
-      | `"cloak"` | cloak | hangs from the chest and **swings back about the shoulders** per action (table `cloak_pitch.json` from the original 468; no side waving) |
+      | `"cloak"` | cloak | pinned at the shoulders, the rest hangs free: `uo_cloak_hug.py` lays the upper part on the shoulders / back (12 mm off the skin, only along y: never over the chest), then `uo_cloth_sim.py` simulates it in every action incl. riding (collision with the body and the horse; the lower part is pulled weakly to the swing of the original 468, `cloak_pitch.json` x 0.5, so it lifts in run / fast riding); the horse does not cut it (`uo_horse_holdout` 0), colour from 3 x 3 sub-samples (`uo_supersample` 3) |
       | `"robe"`, `"skirt"` | robe, dress, skirt, kilt | skin down to the hips; below, the pelvis and the leg push (`cloth_lib.py`, property `uo_cloth`), then the cloth simulation (3a) |
       | `"hair"`, `"beard"`, `"hat"` | hair, beard, cap | rigid on `head` |
       | `"weapon1h"` | sword, mace, hammer, 1H axe, pickaxe | bone `weapon1h.R`, fitted to 13 original weapons (0.7-1.3 px error); run `uo_place_weapon.py` first |

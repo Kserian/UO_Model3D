@@ -52,6 +52,12 @@ AO_DIST = 0.08
 NAME = ""             # name of the result ("" = file name)
 BAKE_TEXTURE = 0      # > 0 (px, 2048 is plenty): the reduced model gets a NEW UV map and a texture BAKED from the original: a reduction drags the UVs of a model with a sculpted detail / an embroidery into
                       # streaks (the cloth turns into smeared noise). Needs the Cycles engine of Blender. Recipe: "bake_texture": 2048
+BAKE_UV_ANGLE = 66.0  # deg: smart project of the baked texture cuts an island where the faces turn more than this from its average: a pleated cape came out as hundreds of thin slivers (spikes of the
+                      # decimated pleats) with unbaked gaps in them (black patches in the render); a bigger angle gives few large islands. 89 = a sheet is cut only where it folds over
+BAKE_UV_MARGIN = 0.003  # island margin of the smart project (share of the image)
+BAKE_FILL = True      # after the bake the texels it did not reach (black: the background between the islands and the gaps inside them where no ray met the original) take the colour of the nearest baked texel:
+                      # the box average of uo_materials.py mixed that black into the rim of every island (dark streaks and black spots on a Meshy cape: 2 % of the faces had a black texel at their
+                      # centre; a larger BAKE_RAY or UV angle changed nothing). Needs scipy; skipped without it
 BAKE_RAY = 0.04       # m: how far from the reduced surface the original is looked for in the bake (layers closer to each other than this, e.g. a robe over a tunic, are not mixed up if they are further apart)
 WELD = 1e-6           # m: vertices closer than this are merged before the reduction (seams of the glTF import; 0 = off)
 DECIMATE_TO = 30000   # a model with more vertices than this is reduced (collapse, UVs and materials kept) - a 144k-vertex scan costs minutes in every later step; uo_densify_item.py adds
@@ -318,7 +324,7 @@ def bake_texture(lo, hi, px):
         o.select_set(False)
     lo.select_set(True); bpy.context.view_layer.objects.active = lo
     bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.003, area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
+    bpy.ops.uv.smart_project(angle_limit=math.radians(BAKE_UV_ANGLE), island_margin=BAKE_UV_MARGIN, area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
     bpy.ops.object.mode_set(mode="OBJECT")
     img = bpy.data.images.new("uo_baked_" + lo.name, px, px, alpha=False)
     mat = bpy.data.materials.new("uo_baked_" + lo.name); mat.use_nodes = True; nt = mat.node_tree
@@ -335,6 +341,18 @@ def bake_texture(lo, hi, px):
     b.use_pass_direct = False; b.use_pass_indirect = False; b.use_pass_color = True
     hi.select_set(True); lo.select_set(True); bpy.context.view_layer.objects.active = lo
     bpy.ops.object.bake(type="DIFFUSE")
+    if BAKE_FILL:
+        try:
+            from scipy.ndimage import distance_transform_edt
+        except ImportError:
+            distance_transform_edt = None
+        if distance_transform_edt is not None:
+            w_, h_ = img.size; C = np.array(img.pixels[:], np.float32).reshape(h_, w_, 4)
+            bad = C[..., :3].max(-1) < 0.02
+            if bad.any() and not bad.all():
+                iy, ix = distance_transform_edt(bad, return_distances=False, return_indices=True)
+                C[bad] = C[iy[bad], ix[bad]]; C[..., 3] = 1.0; img.pixels[:] = C.ravel()
+                print("uo_import_item: BAKE_FILL %s: %.1f %% of the texels (not reached by the bake) take the colour of the nearest baked texel" % (lo.name, 100.0 * bad.mean()))
     texels_per_m = px / max(math.sqrt(sum(p.area for p in lo.data.polygons) / 0.6), 1e-6)    # smart project fills ~60 % of the image
     if BAKE_NORMAL > 0 or BAKE_AO > 0:
         for m in hi.data.materials:                              # the original's own normal map (the weave) left out: only its geometry

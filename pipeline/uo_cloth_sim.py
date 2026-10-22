@@ -16,7 +16,7 @@ through which the legs showed; 0.04 m on a robe made by a cloth simulator: leg p
 simulated hem that lagged inwards let a foot come out through it in the run; < 0 = no limit), max_move (0.12 m: the most the cloth may differ from the kinematic target, soft limit; 0 = none). Measured on the replica of the original robe 469 (robe_cloth_sim_test.py, hybrid=1):
 lower-body IoU walk 0.754 -> 0.765, run 0.731 -> 0.735 against the kinematic result; the simulation alone (no goal) collapses in walk and run.
 """
-import json, os, sys, time
+import json, math, os, sys, time
 import numpy as np
 import bpy
 
@@ -38,11 +38,23 @@ FABRIC = {            # mass / stiffness / bending / damping per fabric, after B
     "leather": dict(mass=0.4,  tension=5.0, compression=5.0, shear=5.0, bending=150.0, tdamp=25.0),
 }
 CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, mscale=1.0, dscale=1.0, bscale=1.0, cq=4.0, cull=0.0, usenormal=0.0, mounted=0.0, horse=1.0, env=0.0, env_margin=0.02, env_tent=0.0, pushw=1.0, gravity=1.0, dist=0.005, preroll=40, cycles=3,
-           self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
+           self_collision=0, friction=0.0, wind=0.0, swing=0.6, swing_top=0.25, wind_noise=1.0, band=0.1, hem_goal=0.0, ramp_cloak=0.2, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
+
+
+PITCH = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cloak_pitch.json")))     # cloak: swing back about the shoulders per action and frame (original cloak 468)
+WIND = {0: 0.25, 1: 0.25, 15: 0.25, 23: 0.3, 2: 0.8, 3: 0.8, 24: 1.0, 26: 0.35, 27: 0.35, 28: 0.35, 29: 0.35}   # cloak: wind from the front (the cape is blown back) per action: a gentle breath in walking, hard in running and
+                                                                                                                  # fast riding, 0 where the body stands still; multiplied by the key wind (the strength of Blender's wind field)
+
+
+def is_cloak():
+    """the item is a cape (uo_bind_item.py PART cloak): pinned at the shoulders, blown by the wind of WIND, simulated in every action including riding and falls"""
+    return any(o.type == "MESH" and json.loads(o["uo_cloth"]).get("type") == "cloak" for o in bpy.data.collections["Clothing"].all_objects if o.get("uo_cloth"))
 
 
 def skip(a):
-    """actions not simulated: riding (the hem follows the legs there) and the falls when the item lies along the legs (render_uo_layer.py CLOTH_LIE, scene property uo_cloth_lie)"""
+    """actions not simulated: riding (the hem follows the legs there) and the falls when the item lies along the legs (render_uo_layer.py CLOTH_LIE, scene property uo_cloth_lie); a cloak is simulated everywhere"""
+    if is_cloak():
+        return False
     return (23 <= a <= 29 and not MOUNTED) or (a in (21, 22) and float(bpy.context.scene.get("uo_cloth_lie", 0)) > 0)
 
 
@@ -94,10 +106,14 @@ def main():
         return run_parallel(blend, out, only, jobs, extra)
     bpy.ops.wm.open_mainfile(filepath=blend)
     sc = bpy.context.scene; rig = bpy.data.objects["UO_Rig"]; body = bpy.data.objects["UO_Body"]
-    items = [o for o in bpy.data.collections["Clothing"].all_objects if o.type == "MESH" and o.get("uo_cloth") and json.loads(o["uo_cloth"]).get("type") != "cloak"]
+    items = [o for o in bpy.data.collections["Clothing"].all_objects if o.type == "MESH" and o.get("uo_cloth")]
     if not items:
         raise SystemExit("no loose garment (custom property uo_cloth) in the Clothing collection")
-    item = items[0]; prm = json.loads(item["uo_cloth"]); nv = len(item.data.vertices)
+    item = items[0]; prm = json.loads(item["uo_cloth"]); nv = len(item.data.vertices); cloak = prm.get("type") == "cloak"
+    if cloak:                                                                  # a cape flies far from the body: no limit on how far from the target; no legs hull (in_max)
+        for k, v in (("max_move", 0.0), ("in_max", -1.0)):
+            if k not in own:
+                cfg[k] = v
     print("uo_cloth_sim: item %s, %d vertices, hem %.2f m, waist %.2f m" % (item.name, nv, prm["z_hem"], prm["z_top"]), flush=True)
     for o in bpy.data.objects:
         if o.type == "MESH" and o not in (body, item) and "Clothing" not in [c.name for c in o.users_collection]:
@@ -170,6 +186,15 @@ def main():
         c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c)
         M = np.array(item.matrix_world)
         sk = c.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]
+        if cloak:                                                               # a cape hangs from the shoulders as the skin of the chest moves them; no push of the legs. The pin of the hanging part pulls
+            rows = PITCH["actions"].get(str(state["a"]))                        # (weakly) to the cape swung back about the shoulders as in the original cloak 468 (cloak_pitch.json, x swing): the gait
+            if not rows or cfg["swing"] <= 0:                                   # sets how far the wind lifts it, the cloth makes the folds and meets the body and the horse
+                return sk, sk
+            d0, d1 = (np.radians(x) * cfg["swing"] for x in rows[min(state["i"], len(rows) - 1)])
+            d0 *= cfg["swing_top"]                                              # the cape lifts from the lower back: the shoulders and the upper back stay on the body
+            skin, _, _ = leg_state()
+            d = cl.cloak_bend(Vr, prm["z_top"], prm["z_hem"], prm["y_top"], d0, d1)
+            return sk, sk + d @ skin["chest"][:3, :3].T
         if 23 <= state["a"] <= 29:                                              # riding: the hanging part lies along the legs (the same d0 as render_uo_layer.cloth_push), the pin holds all of it
             push = mounted_lie()
             return sk + push, sk + push
@@ -187,7 +212,9 @@ def main():
     z = Vr[:, 2]
     w = np.where(z >= prm["z_top"] - 0.02, cfg["upper"], 1.0 - (1.0 - cfg["goal"]) * np.clip((prm["z_top"] - z) / cfg["ramp"], 0.0, 1.0))
     w = np.where(z >= prm["z_top"] - 0.02, cfg["upper"], np.minimum(w, cfg["upper"]))
-    if cfg["arm_goal"] >= 0:                                                    # sleeves: free to drape over the arm (collision with the arm), not rigid on the skeleton
+    if cloak:                                                                   # pinned along the shoulder line (the top band), free below it
+        w = np.where(z >= prm["z_top"] - cfg["band"], 1.0, cfg["hem_goal"] + (1.0 - cfg["hem_goal"]) * np.clip(1.0 - (prm["z_top"] - cfg["band"] - z) / cfg["ramp_cloak"], 0.0, 1.0))
+    elif cfg["arm_goal"] >= 0:                                                  # sleeves: free to drape over the arm (collision with the arm), not rigid on the skeleton
         reg = item.data.attributes.get("uo_region")
         if reg is not None:                                                     # a conformed item (uo_conform_item.py) knows its sleeves: 1 / 2 the sleeves, 3 / 4 their roots
             rv = np.empty(nv, np.int32); reg.data.foreach_get("value", rv); arm = rv > 0
@@ -211,6 +238,12 @@ def main():
     body.modifiers.new("Collision", "COLLISION"); body.collision.thickness_outer = cfg["thick"]; body.collision.use_culling = bool(cfg["cull"]); body.collision.use_normal = bool(cfg["usenormal"]); body.collision.damping = 0.5; body.collision.cloth_friction = cfg["friction"]
 
     sc.gravity = (0.0, 0.0, -9.81 * cfg["gravity"])
+    wind = None
+    if cloak and cfg["wind"] > 0:                                               # the wind of walking / running / riding: blows from the front, along +Y (the back of the rest frame)
+        import math
+        bpy.ops.object.effector_add(type="WIND", location=(0.0, -2.0, 1.0)); wind = bpy.context.active_object; wind.name = "uo_wind"
+        wind.rotation_euler = (-math.pi / 2, 0.0, 0.0); wind.field.shape = "PLANE"; wind.field.noise = cfg["wind_noise"]; wind.field.use_max_distance = False
+        st.effector_weights.wind = 1.0
     res = {}
     acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
     for act in acts:
@@ -229,7 +262,7 @@ def main():
         for i in range(nfr):                                                  # the kinematic target of every UO frame (the simulated copy is hidden: only the item and the rig count)
             sc.frame_set(1 + i * STEP); rig.update_tag(); bpy.context.view_layer.update()
             item.hide_viewport = False; bpy.context.view_layer.update()
-            k, kp = kinematic(); T.append(k); TP.append(kp)
+            state["i"] = i; k, kp = kinematic(); T.append(k); TP.append(kp)
             evr = rig.evaluated_get(bpy.context.evaluated_depsgraph_get()); Pm = np.array(rig.matrix_world) @ np.array(evr.pose.bones["pelvis"].matrix)
             AX.append((Pm[:3, 3].copy(), Pm[:3, 1] / np.linalg.norm(Pm[:3, 1])))     # the pelvis bone points up its spine: its Y axis
             item.hide_viewport = True
@@ -273,6 +306,12 @@ def main():
             print("uo_cloth_sim: action %d: %d horse colliders" % (a, len(horses)), flush=True)
         sc.frame_start = f0; sc.frame_end = f1; cm.point_cache.frame_start = f0; cm.point_cache.frame_end = f1
         sc.frame_set(f0)
+        if wind is not None:                                                    # strength of the action, a gust per gait cycle in the looping ones
+            wind.animation_data_clear()
+            S = WIND.get(a, 0.0) * cfg["wind"]
+            for f in range(f0, f1 + 1, STEP):
+                wind.field.strength = S * (1.0 + (0.35 * math.sin(2 * math.pi * (f - 1) / period) if loop else 0.0)); wind.field.keyframe_insert("strength", frame=f)
+            print("uo_cloth_sim: action %d: wind %.2f" % (a, S), flush=True)
         base = 1 + (cyc - 1) * period if loop else 1
         want = {base + i * STEP: i for i in range(nfr)}
         for f in range(f0, f1 + 1):

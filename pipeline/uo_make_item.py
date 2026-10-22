@@ -23,6 +23,7 @@ RECIPE.json (only "file" and "kind" are required):
    "conform": {"MOVE": [0, 0, -0.07]},   # shirt / tunic / coat made on another mannequin: rebuilt as a shell of the body (uo_conform_item.py: sleeves onto the arms, wrapped GAP off the skin,
                                     # weights of the skin under it; the render keeps it out of the skin of its region in every frame); its settings, true = the defaults
    "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings)
+   "hug": true,                     # kind cloak: the upper cape lies on the shoulders / back (uo_cloak_hug.py; on by default for a cloak, false = off, {"GAP": 0.015} = its settings); "sim" of a cloak: the cloth simulation (CLOAK_SIM)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
@@ -44,13 +45,20 @@ sys.path.insert(0, HERE)
 ROBE_SCENE = {"uo_shade_sleeve": 0.4, "uo_shade_width": 4.0, "uo_contrast": 1.5}    # base look of a robe / skirt (2026-10, README section 4): smooth contact shadow at the sleeve-torso junction (needs "conform") and a contrast curve
 
 
+CLOAK_SCENE = {"uo_horse_holdout": 0, "uo_supersample": 3}                  # a cape: the horse does not cut it (it lies on the horse, drawn over it); the colour averaged over 3 x 3 sub-samples per pixel
+CLOAK_MATERIALS = {"FILTER_TEXELS_PER_M": 162.0}                            # ... so the texture is only reduced to 4.5 texels per UO pixel (54 = 1.5: the trim and the weave were averaged away, 2048 px -> 204 px)
+
+
 def scene_of(recipe):
     """the scene properties of the renderer for a recipe: the base look of a robe / skirt, then the recipe's own "scene" (which wins; e.g. {"uo_contrast": 1} turns the curve off)"""
-    base = dict(ROBE_SCENE) if recipe.get("kind") in ("robe", "skirt") else {}
+    base = dict(ROBE_SCENE) if recipe.get("kind") in ("robe", "skirt") else dict(CLOAK_SCENE) if recipe.get("kind") == "cloak" else {}
     base.update(recipe.get("scene", {}))
     return base
 
 
+CLOAK_SIM = {"fabric": "cotton", "mscale": 0.0333, "dscale": 0.0333, "bscale": 0.0333, "preroll": 20, "cycles": 2, "thick": 0.008, "dist": 0.004, "hem_goal": 0.12, "swing": 0.5, "swing_top": 0.2, "band": 0.08, "ramp_cloak": 0.22, "gravity": 1.5}   # a cape: pinned at the shoulders, the hanging part
+                                                                                                    # pulled weakly towards the swing of the original cloak (gait), the cloth does folds / body / horse
+CLOAK_ACTIONS = "04_stand,00_walk_unarmed,02_run_unarmed,23_mounted_walk,24_mounted_run,25_mounted_stand"
 PREVIEW_ACTIONS = "04_stand,00_walk_unarmed,02_run_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward"
 WEAPON_ACTIONS = {"weapon1h": "07_combat_idle_1h,09_attack_1h_slash,10_attack_1h_pierce,11_attack_1h_bash,03_run_armed,21_die_forward",
                   "polearm": "08_combat_idle_2h,13_attack_2h_slash,14_attack_2h_pierce,12_attack_2h_bash,03_run_armed,21_die_forward",
@@ -419,7 +427,7 @@ for k, v in %(scene)r.items():                                    # "scene": pro
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat={**(CLOAK_MATERIALS if kind == "cloak" else {}), **recipe.get("materials", {})}, prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):
@@ -509,6 +517,16 @@ if __name__ == "__main__":
             sys.exit("uo_hood_cover failed:\n%s\n%s" % (r.stdout[-3000:], r.stderr[-2000:]))
         for l in lines:
             print(l[:260])
+    if recipe.get("hug", recipe.get("kind") == "cloak") and recipe.get("kind") == "cloak":      # a cape: the upper part brought onto the shoulders and the back, 1.2 cm off the skin (uo_cloak_hug.py)
+        cfg = recipe["hug"] if isinstance(recipe.get("hug"), dict) else {}
+        sets = sum([["--set", "%s=%s" % kv] for kv in cfg.items()], [])
+        r = subprocess.run([sys.executable, os.path.join(HERE, "uo_cloak_hug.py"), blend, blend] + sets, capture_output=True, text=True)
+        lines = [l for l in r.stdout.splitlines() if l.startswith("uo_cloak_hug")]
+        open(os.path.join(out, "report.txt"), "a").write("\n".join(lines) + "\n")
+        if r.returncode or not any("saved" in l for l in lines):
+            sys.exit("uo_cloak_hug failed:\n%s\n%s" % (r.stdout[-3000:], r.stderr[-2000:]))
+        for l in lines:
+            print(l[:260])
     if recipe.get("flail"):                                  # a flail: haft rigid in the hand, the chain and the ball simulated per action (uo_flail.py -> flail_sim.npz next to item.blend)
         t = time.time(); cfg = recipe["flail"] if isinstance(recipe["flail"], dict) else {}
         sets = sum([["--set", "%s=%s" % kv] for kv in cfg.items()], [])
@@ -520,10 +538,10 @@ if __name__ == "__main__":
         for l in lines:
             print(l[:260])
         print("flail simulated in %.0f s" % (time.time() - t))
-    sim = recipe.get("sim", recipe.get("kind") in ("robe", "skirt")) and not recipe.get("weapon")      # loose garments: cloth simulation on top of the leg push (uo_cloth_sim.py), on by default
+    sim = recipe.get("sim", recipe.get("kind") in ("robe", "skirt", "cloak")) and not recipe.get("weapon")      # loose garments: cloth simulation on top of the leg push (uo_cloth_sim.py), on by default
     if sim and a.no_sim is False:
-        t = time.time(); cfg = ["%s=%s" % kv for kv in (recipe["sim"].items() if isinstance(recipe.get("sim"), dict) else [])]
-        acts = [x for x in (a.actions or PREVIEW_ACTIONS).split(",")] if a.preview and not a.vd else None
+        t = time.time(); cfg = ["%s=%s" % kv for kv in ({**(CLOAK_SIM if recipe.get("kind") == "cloak" else {}), **(recipe["sim"] if isinstance(recipe.get("sim"), dict) else {})}).items()]
+        acts = [x for x in (a.actions or (CLOAK_ACTIONS if recipe.get("kind") == "cloak" else PREVIEW_ACTIONS)).split(",")] if a.preview and not a.vd else None
         cmd = [sys.executable, os.path.join(HERE, "uo_cloth_sim.py"), blend, "--jobs", "4", "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + cfg
         r = subprocess.run(cmd, capture_output=True, text=True)
         line = next((l for l in r.stdout.splitlines() if l.startswith("wrote")), "uo_cloth_sim failed: " + (r.stderr or r.stdout)[-400:])
@@ -536,7 +554,7 @@ if __name__ == "__main__":
         render = os.path.join(out, "render")
         layer = "clothing" if a.vd else "all"
         wpart = (recipe.get("weapon") or {}).get("part")
-        acts = [x for x in (a.actions or WEAPON_ACTIONS.get(wpart, PREVIEW_ACTIONS)).split(",")] if not a.vd else []
+        acts = [x for x in (a.actions or WEAPON_ACTIONS.get(wpart, CLOAK_ACTIONS if recipe.get("kind") == "cloak" else PREVIEW_ACTIONS)).split(",")] if not a.vd else []
         cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, render, 'LAYER="all"' if a.preview else 'LAYER="clothing"',
                "ONLY=%r" % (acts,), "CANVAS=(256,256)", "ANCHOR=(128,192)"]
         subprocess.run(cmd, capture_output=True, text=True, check=True)

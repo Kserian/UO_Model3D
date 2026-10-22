@@ -115,7 +115,7 @@ Służy do projektowania warstw ubrań, zbroi, włosów i broni: plik `.blend` r
       | `"hood"` | kaptur z kołnierzem | kaptur: head, kołnierz: neck i chest; potem `uo_hood_cover.py` (receptura `"hood_cover"`) |
       | `"neck"` | kryza, kołnierz | neck, chest, head |
       | `"all"` | pełny strój w jednym obiekcie | skóra pod spodem, każda kość |
-      | `"cloak"` | płaszcz | wisi na piersi i **odchyla się do tyłu wokół ramion** per akcja (tabela `cloak_pitch.json` z oryginału 468; bez falowania boków) |
+      | `"cloak"` | płaszcz | przypięty na ramionach, reszta wisi swobodnie: `uo_cloak_hug.py` kładzie górę na ramionach i plecach (12 mm od skóry, tylko wzdłuż y: nigdy na piersi), potem `uo_cloth_sim.py` symuluje go w każdej akcji, także w jeździe (kolizja z ciałem i koniem; dół jest słabo przyciągany do wychylenia oryginału 468, `cloak_pitch.json` x 0,5, więc unosi się w biegu i szybkiej jeździe); koń go nie wycina (`uo_horse_holdout` 0), kolor ze 3 x 3 próbek na piksel (`uo_supersample` 3) |
       | `"robe"`, `"skirt"` | szata, sukienka, spódnica, kilt | skóra do bioder; niżej miednica i wypchnięcie przez nogi (`cloth_lib.py`, własność `uo_cloth`), potem symulacja tkaniny (3a) |
       | `"hair"`, `"beard"`, `"hat"` | włosy, broda, czapka | sztywno na `head` |
       | `"weapon1h"` | miecz, buzdygan, młot, topór 1H, kilof | kość `weapon1h.R`, dopasowana do 13 oryginalnych broni (błąd 0,7-1,3 px); najpierw `uo_place_weapon.py` |
