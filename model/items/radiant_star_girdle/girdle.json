@@ -1,0 +1,33 @@
+{
+ "name": "radiant_star_girdle",
+ "file": "models/radiant_star_girdle.glb",
+ "kind": "skirt",
+ "decimate": 16000,
+ "bake_texture": 4096,
+ "tune": {
+  "uo_autofit_item.py": {
+   "NUDGE": [
+    0,
+    0,
+    -0.25
+   ]
+  }
+ },
+ "prepare": {
+  "HEM": 0.03,
+  "FIT": false
+ },
+ "scene": {
+  "uo_behind_torso": 1,
+  "uo_samples": 1024
+ },
+ "sim": {
+  "engine": "pbd",
+  "damp": 3
+ },
+ "stretch": [
+  0.87,
+  0.85,
+  1.0
+ ]
+}

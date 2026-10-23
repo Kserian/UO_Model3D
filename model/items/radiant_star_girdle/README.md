@@ -1,0 +1,16 @@
+# Radiant Star Girdle (a girdle with a skirt of silk panels, on the hips)
+
+`Radiant_Star_Girdle.vd`: all 35 actions x 5 directions (1050 frames), layer `skirt`, made from one Meshy AI model (`Meshy_AI_Radiant_Star_Girdle_1022181159_texture.glb`, 47 MB, 265k vertices, textures 4096 px; **not in the repo**: keep it as `models/radiant_star_girdle.glb`, the folder is in `.gitignore`; record the licence when it is known).
+
+Rebuild (about 10 min for the item and the cloth, ~15 min for the render):
+`python pipeline/uo_make_item.py model/items/radiant_star_girdle/girdle.json --out OUT --vd`.
+Rendering in several processes: give every process its own output folder (they share `_tmp.png` otherwise), then merge the `frames/` folders and run once more with `ONLY=["04_stand"]` to write the combined `.vd`.
+
+What was decided (measured, see the commit messages and README section 3a):
+- **On the hips, not too big.** The waistband (0.42 x 0.33 m at the model's scale) sits at z 1.0-1.1 m (`NUDGE` -0.25 m), `stretch` 0.87 x 0.85 narrows it to the hips (0.35 x 0.28 m) and `"prepare": {"FIT": false}` keeps the push-out fit from inflating the ring to 0.67 x 0.61 m. The hem ends 3 cm above the ground (`HEM`).
+- **Silk that is attracted to nothing.** `"sim": {"engine": "pbd", "damp": 3}` = `uo_cloth_pbd.py`: only the waistband follows the skeleton, the rest hangs free (gravity, stretch and bending constraints, air drag); legs and pelvis are capsules the cloth is pushed out of in every sub-step, so the legs go through the slits and the panels fall back by their own weight. Blender's cloth crumpled this skirt into ropes in the walk in every variant (quality, margins, mass x1-x3, pin 0-0.15). `damp` 3 is the calmer ("heavier") setting; 1.5 swings more.
+- **Texture.** 4096 px baked from the original (no smearing by the 16k-vertex reduction), 1024 Cycles samples. A pixel filter of 1 px (the mean of each pixel) differs from the pixel-centre sample by <= 2 levels, so no extra option was kept.
+- **No dark inside.** Scene `uo_behind_torso`: the torso hides the inside of the waistband ring (it showed as a dark brown area over the chest).
+- Mounted actions (23-29): the hem follows the legs (not simulated), as for every skirt.
+
+QA (`item_qa.py`, item inside the body in the posed frames): mean 14.1 % (worst 21_die_forward), deepest 127 mm. Higher than a fitted item (6.8 % with the fit) because the band is not pushed out of the skin; the renderer pushes it out of limbs, and the torso never hides items.
