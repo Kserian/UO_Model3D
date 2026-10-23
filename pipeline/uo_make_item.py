@@ -393,6 +393,16 @@ def build_stage(recipe, out_blend):
     kind = recipe.get("kind", "")
     imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), ARM_BLEND=float(recipe.get("arm_blend", 0.12)), TURN=int(recipe.get("turn", 0)), OUTER_SHELL=bool(recipe.get("outer_shell", False)), OUTER_REMESH=float(recipe["outer_shell"]) if not isinstance(recipe.get("outer_shell", False), bool) else 0.0, BAKE_TEXTURE=int(recipe.get("bake_texture", 0)), HOLES=recipe.get("holes"), BAKE_NORMAL=float(recipe.get("bake_normal", 0.0)), BAKE_AO=float(recipe.get("bake_ao", 0.0)),
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
+    prep = dict(recipe.get("prepare", {}))
+    if recipe.get("cape") is not None:                       # a cape built as a clean silk sheet (uo_make_cape.py) instead of an imported mesh; the colours come from "file"
+        ccfg = dict(recipe["cape"]) if isinstance(recipe["cape"], dict) else {}
+        if recipe.get("file"):
+            ccfg.setdefault("COLORS_FROM", os.path.abspath(recipe["file"]))
+        import_step = 'run("uo_make_cape.py", **%r)' % (ccfg,)
+        for k in ("AUTOFIT", "DENSIFY", "FIT"):
+            prep.setdefault(k, False)
+    else:
+        import_step = 'run("uo_import_item.py", **%r)' % (imp,)
     if "scale" in recipe:
         imp["SCALE"] = float(recipe["scale"])
     if "stretch" in recipe:
@@ -411,7 +421,7 @@ def run(script, **over):
         text, n = re.subn(r"^%%s\\s*=.*$" %% re.escape(k), "%%s = %%r" %% (k, v), text, count=1, flags=re.M)
         assert n == 1, (script, k)
     exec(compile(text, script, "exec"), {"__name__": "__main__"})
-run("uo_import_item.py", **%(imp)r)
+%(import_step)s
 run("uo_materials.py", **%(mat)r)
 prep = %(prep)r
 flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}      # settings of uo_prepare_item.py (a dict setting too: HEM_BAND)
@@ -427,7 +437,7 @@ for k, v in %(scene)r.items():                                    # "scene": pro
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat={**(CLOAK_MATERIALS if kind == "cloak" else {}), **recipe.get("materials", {})}, prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), import_step=import_step, imp=imp, mat={**(CLOAK_MATERIALS if kind == "cloak" else {}), **recipe.get("materials", {})}, prep=prep, kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):
@@ -517,7 +527,7 @@ if __name__ == "__main__":
             sys.exit("uo_hood_cover failed:\n%s\n%s" % (r.stdout[-3000:], r.stderr[-2000:]))
         for l in lines:
             print(l[:260])
-    if recipe.get("hug", recipe.get("kind") == "cloak") and recipe.get("kind") == "cloak":      # a cape: the upper part brought onto the shoulders and the back, 1.2 cm off the skin (uo_cloak_hug.py)
+    if recipe.get("hug", recipe.get("kind") == "cloak" and recipe.get("cape") is None) and recipe.get("kind") == "cloak":      # a cape: the upper part brought onto the shoulders and the back, 1.2 cm off the skin (uo_cloak_hug.py)
         cfg = recipe["hug"] if isinstance(recipe.get("hug"), dict) else {}
         sets = sum([["--set", "%s=%s" % kv] for kv in cfg.items()], [])
         r = subprocess.run([sys.executable, os.path.join(HERE, "uo_cloak_hug.py"), blend, blend] + sets, capture_output=True, text=True)

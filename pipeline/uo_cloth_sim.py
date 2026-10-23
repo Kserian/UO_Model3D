@@ -41,6 +41,7 @@ CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, co
            self_collision=0, friction=0.0, wind=0.0, swing=0.6, swing_top=0.25, wind_noise=1.0, band=0.1, hem_goal=0.0, ramp_cloak=0.2, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
 
+MOTION = {}                                                                          # cloak: {"a_i": world displacement} of uo_cloak_motion.py when cloak_motion.npz is next to the item
 PITCH = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cloak_pitch.json")))     # cloak: swing back about the shoulders per action and frame (original cloak 468)
 WIND = {0: 0.25, 1: 0.25, 15: 0.25, 23: 0.3, 2: 0.8, 3: 0.8, 24: 1.0, 26: 0.35, 27: 0.35, 28: 0.35, 29: 0.35}   # cloak: wind from the front (the cape is blown back) per action: a gentle breath in walking, hard in running and
                                                                                                                   # fast riding, 0 where the body stands still; multiplied by the key wind (the strength of Blender's wind field)
@@ -102,6 +103,9 @@ def main():
     global MOUNTED
     cfg.update(own); MOUNTED = bool(cfg["mounted"])                                                             # fabric preset first, then the settings named one by one
     out = out or os.path.join(os.path.dirname(blend), "cloth_sim.npz")
+    mf = os.path.join(os.path.dirname(blend), "cloak_motion.npz")
+    if os.path.exists(mf) and not cfg.get("nomotion"):
+        z = np.load(mf); MOTION.update({k: z[k] for k in z.files}); print("uo_cloth_sim: pin target = the motion of uo_cloak_motion.py (%s, %d frames)" % (mf, len(MOTION)), flush=True)
     if jobs > 1:
         return run_parallel(blend, out, only, jobs, extra)
     bpy.ops.wm.open_mainfile(filepath=blend)
@@ -186,6 +190,10 @@ def main():
         c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c)
         M = np.array(item.matrix_world)
         sk = c.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]
+        if cloak and MOTION:                                                    # hybrid: the pin pulls to the smooth motion of uo_cloak_motion.py (cloak_motion.npz next to the item); the solver adds the lag, the weight and the soft folds
+            m = MOTION.get("%d_%d" % (state["a"], state["i"]))
+            if m is not None and len(m) == len(sk):
+                return sk, sk + m
         if cloak:                                                               # a cape hangs from the shoulders as the skin of the chest moves them; no push of the legs. The pin of the hanging part pulls
             rows = PITCH["actions"].get(str(state["a"]))                        # (weakly) to the cape swung back about the shoulders as in the original cloak 468 (cloak_pitch.json, x swing): the gait
             if not rows or cfg["swing"] <= 0:                                   # sets how far the wind lifts it, the cloth makes the folds and meets the body and the horse

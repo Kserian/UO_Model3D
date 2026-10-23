@@ -244,7 +244,7 @@ def mark_cloak(ob):
     M = np.array(ob.matrix_world)
     co = np.empty(len(ob.data.vertices) * 3, np.float32); ob.data.vertices.foreach_get("co", co)
     V = co.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]
-    z_top = float(V[:, 2].max()); top = V[V[:, 2] > z_top - 0.06]
+    z_top = float(V[:, 2].max()) - float(ob.get("uo_pin_drop", 0.0)); top = V[V[:, 2] > z_top - 0.06]      # uo_pin_drop (uo_make_cape.py): the pivot of the motion is this far below the highest point: what is above follows the body
     ob["uo_cloth"] = json.dumps(dict(type="cloak", y_top=round(float(top[:, 1].mean()), 4), z_top=round(z_top, 4), z_hem=round(float(V[:, 2].min()), 4)))
     print("uo_bind_item: %s: cloak, swings back about the shoulders (uo_cloth %s)" % (ob.name, ob["uo_cloth"]))
 
