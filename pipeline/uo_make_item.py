@@ -56,8 +56,9 @@ def scene_of(recipe):
     return base
 
 
-CLOAK_SIM = {"fabric": "cotton", "mscale": 0.0333, "dscale": 0.0333, "bscale": 0.0333, "preroll": 20, "cycles": 2, "thick": 0.008, "dist": 0.004, "hem_goal": 0.12, "swing": 0.5, "swing_top": 0.2, "band": 0.08, "ramp_cloak": 0.22, "gravity": 1.5}   # a cape: pinned at the shoulders, the hanging part
-                                                                                                    # pulled weakly towards the swing of the original cloak (gait), the cloth does folds / body / horse
+CLOAK_SIM = {"fabric": "wool", "density": 0.4, "band": 0.03, "ramp_cloak": 0.12, "swing": 0, "hem_goal": 0.05, "goal_run": 0.1, "gravity": 1.3, "quality": 10, "cq": 6, "thick": 0.012, "dist": 0.008,
+             "preroll": 30, "cycles": 2}      # a cape: wool (0.4 kg/m2), pinned along the shoulders, the rest hangs free under its weight (hem_goal 0.01), body / horse / ground collide; in the run and the ride (goal_run 0.1)
+                                              # it is pulled weakly to the lift of uo_cloak_motion.py (the original 468 angles)
 CLOAK_ACTIONS = "04_stand,00_walk_unarmed,02_run_unarmed,23_mounted_walk,24_mounted_run,25_mounted_stand"
 PREVIEW_ACTIONS = "04_stand,00_walk_unarmed,02_run_unarmed,09_attack_1h_slash,16_spell_directed,21_die_forward"
 WEAPON_ACTIONS = {"weapon1h": "07_combat_idle_1h,09_attack_1h_slash,10_attack_1h_pierce,11_attack_1h_bash,03_run_armed,21_die_forward",
@@ -552,12 +553,23 @@ if __name__ == "__main__":
     if sim and a.no_sim is False:
         t = time.time(); cfg = ["%s=%s" % kv for kv in ({**(CLOAK_SIM if recipe.get("kind") == "cloak" else {}), **(recipe["sim"] if isinstance(recipe.get("sim"), dict) else {})}).items()]
         acts = [x for x in (a.actions or (CLOAK_ACTIONS if recipe.get("kind") == "cloak" else PREVIEW_ACTIONS)).split(",")] if a.preview and not a.vd else None
-        if recipe.get("kind") == "cloak" and not (isinstance(recipe.get("sim"), dict) and recipe["sim"].get("solver") == "cloth"):      # a cape: the smooth motion of uo_cloak_motion.py (angles of the original cloak 468), not the cloth solver
+        if recipe.get("kind") == "cloak":                    # a cape: the smooth motion of uo_cloak_motion.py (angles of the original cloak 468) -> cloak_motion.npz, then (default) the wool simulation that follows it
             mcfg = ["%s=%s" % kv for kv in (recipe["motion"].items() if isinstance(recipe.get("motion"), dict) else [])]
-            cmd = [sys.executable, os.path.join(HERE, "uo_cloak_motion.py"), blend, "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + mcfg
+            solver = recipe["sim"].get("solver") if isinstance(recipe.get("sim"), dict) else None
+            target = os.path.join(out, "cloth_sim.npz" if solver == "motion" else "cloak_motion.npz")
+            subprocess.run([sys.executable, os.path.join(HERE, "uo_cloak_motion.py"), blend, "--out", target] + (["--actions", ",".join(acts)] if acts else []) + mcfg, capture_output=True, text=True)
+            cfg = [c for c in cfg if not c.startswith("solver=")]
+            cmd = [sys.executable, os.path.join(HERE, "uo_cloth_sim.py"), blend, "--jobs", "4", "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + cfg
+            if solver == "motion":
+                cmd = [sys.executable, "-c", "print('wrote', %r)" % target]
         else:
             cmd = [sys.executable, os.path.join(HERE, "uo_cloth_sim.py"), blend, "--jobs", "4", "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + cfg
         r = subprocess.run(cmd, capture_output=True, text=True)
+        if recipe.get("kind") == "cloak" and os.path.exists(os.path.join(out, "cloth_sim.npz")) and not (isinstance(recipe.get("sim"), dict) and recipe["sim"].get("solver") == "motion"):
+            sim_file = os.path.join(out, "cloth_sim.npz"); raw = os.path.join(out, "cloth_sim_raw.npz"); os.replace(sim_file, raw)       # what the solver left in the body (a fast bend of the torso cuts through the cloth) is pushed out
+            q = subprocess.run([sys.executable, os.path.join(HERE, "uo_cloak_motion.py"), blend, "--refine", raw, "--fallback", os.path.join(out, "cloak_motion.npz"), "--out", sim_file], capture_output=True, text=True)
+            if not os.path.exists(sim_file):
+                os.replace(raw, sim_file)
         line = next((l for l in r.stdout.splitlines() if l.startswith("wrote")), "uo_cloth_sim failed: " + (r.stderr or r.stdout)[-400:])
         print("cloth simulation: %s (%.0f s)" % (line, time.time() - t)); open(os.path.join(out, "report.txt"), "a").write(line + "\n")
     if not a.no_qa:                                          # penetration and thickness of the posed item in the main actions (a few seconds, item_qa.py)

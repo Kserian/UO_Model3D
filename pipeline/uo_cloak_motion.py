@@ -54,13 +54,17 @@ def table_rows(tab, a, nfr, loop):
 
 def main():
     args = sys.argv[1:]
-    blend = os.path.abspath(args.pop(0)); out = None; only = None; cfg = dict(CFG)
+    blend = os.path.abspath(args.pop(0)); out = None; only = None; cfg = dict(CFG); refine_path = None; fallback_path = None
     while args:
         a = args.pop(0)
         if a == "--out":
             out = os.path.abspath(args.pop(0))
         elif a == "--actions":
             v = args.pop(0); only = None if v == "all" else set(v.split(","))
+        elif a == "--refine":
+            refine_path = os.path.abspath(args.pop(0))
+        elif a == "--fallback":
+            fallback_path = os.path.abspath(args.pop(0))
         elif "=" in a:
             k, v = a.split("=", 1); cfg[k] = float(v)
     out = out or os.path.join(os.path.dirname(blend), "cloth_sim.npz")
@@ -95,6 +99,8 @@ def main():
     kxz = cKDTree(Vr[:, [0, 2]]); nbr = kxz.query_ball_point(Vr[:, [0, 2]], cfg["near"])
     names = ["chest"]; inv_local = {n: np.linalg.inv(np.array(rig.data.bones[n].matrix_local)) for n in names}
     Mr0 = np.array(rig.matrix_world)
+    refine = dict(np.load(refine_path)) if refine_path else None                                         # --refine: the result of the cloth simulation; only the clean-out of the body is done on it
+    fallback = dict(np.load(fallback_path)) if fallback_path else None                                  # --fallback: the kinematic motion, taken for a whole action when the solver blew up in it
     res = {}
     acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
     fwd = Vector((0.0, -1.0, 0.0))
@@ -110,6 +116,17 @@ def main():
         rows = table_rows(tab, a, nfr, loop) * cfg["lift"] * (cfg["run_lift"] if a in RUN else 1.0) * (cfg["ride_lift"] if 23 <= a <= 29 else 1.0)
         wv = WAVE.get(a)
         moved = []
+        use = refine
+        if refine is not None and fallback is not None:                                                     # the solver diverged (cloth flung 25 cm above the shoulder line: a hand at the neck, a body inside the cape at the start)?
+            bad = 0
+            for i in range(nfr):
+                sc.frame_set(1 + i * STEP); rig.update_tag(); bpy.context.view_layer.update(); evx = item.evaluated_get(bpy.context.evaluated_depsgraph_get())
+                cx = np.empty(nv * 3, np.float32); evx.data.vertices.foreach_get("co", cx); Mx = np.array(item.matrix_world); skx = cx.reshape(-1, 3).astype(np.float64) @ Mx[:3, :3].T + Mx[:3, 3]
+                Px = skx + refine["%d_%d" % (a, i)]
+                if not np.isfinite(Px).all() or (Px[:, 2].max() > skx[:, 2].max() + 0.25 and a not in (2, 3) and not 23 <= a <= 29):    # the run and the ride lift it above the shoulders on purpose
+                    bad += 1
+            if bad:
+                use = fallback; print("   action %d: the simulation diverged in %d of %d frames: the kinematic motion is used" % (a, bad, nfr), flush=True)
         for i in range(nfr):
             sc.frame_set(1 + i * STEP); rig.update_tag(); bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
             ev = item.evaluated_get(dg); c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c)
@@ -127,13 +144,13 @@ def main():
                 D[:, 1] += H * (s ** 2) * 0.5 * ripple
                 D[:, 0] += wv[1] * cfg["wave"] * (s ** 1.5) * math.sin(ph + 0.8)
             D = D * wpin[:, None]
-            P = sk + D                                                                              # world: the angles of the table are measured against the vertical in the sprites, not against the chest (a roll of the torso tilted the whole cape)
+            P = sk + (use["%d_%d" % (a, i)].astype(np.float64) if refine is not None else D)           # world: the angles of the table are measured against the vertical in the sprites, not against the chest (a roll of the torso tilted the whole cape)
             # behind the posed body: only backwards (+y), a smooth field
             eb = body.evaluated_get(dg); mb = eb.to_mesh(); Mb = eb.matrix_world
             bvh = BVHTree.FromPolygons([Mb @ v.co for v in mb.vertices], [tuple(p.vertices) for p in mb.polygons]); eb.to_mesh_clear()
-            horse = bpy.data.objects.get("Horse_a%d_f%d" % (a, i)) if 23 <= a <= 29 else None
+            horse = bpy.data.objects.get("Horse_a%d_f%d" % (a, i)) if (23 <= a <= 29 and refine is None) else None
             ty = np.full(nv, -np.inf)
-            for k in np.nonzero(wpin > 0)[0]:                                                       # the rearmost surface of the body at (x, z): from far behind along -y; the cape stays behind it (a leg swung
+            for k in (np.nonzero(wpin > 0)[0] if refine is None else []):                           # the rearmost surface of the body at (x, z): from far behind along -y; the cape stays behind it (a leg swung
                 loc, nor, _, dist = bvh.ray_cast(Vector((P[k, 0], 1.5, P[k, 2])), fwd, 3.0)         # back, a hand, the buttocks push the cloth back; it never lies in front of them)
                 if loc is not None:
                     ty[k] = loc.y + cfg["margin"] / max(abs(nor.y), cfg["slope_min"])
@@ -171,14 +188,14 @@ def main():
                     if not any_:
                         break
                     P = P + smooth_n(G, 4) * 1.6 * wpin[:, None]
-            for _ in range(3):                                                                       # what is still on or in the skin (the edge of a leg the rays passed by): out along its normal, spread
+            for _ in range(3 if refine is None else 10):                                           # what is still on or in the skin (the edge of a leg the rays passed by): out along its normal, spread
                 G = np.zeros((nv, 3)); got = False
                 for k in np.nonzero(wpin > 0)[0]:
-                    l, n, _, d = bvh.find_nearest(Vector(P[k]), 0.05)
-                    if l is not None and n.y > -0.2:
+                    l, n, _, d = bvh.find_nearest(Vector(P[k]), 0.05 if refine is None else 0.15)
+                    if l is not None and (n.y > -0.2 or refine is not None):
                         sd = (Vector(P[k]) - l).dot(n)
-                        if sd < 0.006:
-                            G[k] = np.array(n) * (0.012 - sd); got = True
+                        if sd < (0.006 if refine is None else 0.008):
+                            G[k] = np.array(n) * ((0.012 if refine is None else 0.016) - sd); got = True
                 if not got:
                     break
                 P = P + np.where(np.abs(G) > 0, G, smooth_n(G, 3) * 0.8) * wpin[:, None]

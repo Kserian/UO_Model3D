@@ -28,7 +28,10 @@ WIDTH_HEM = 0.66      # m: nearly straight, slightly flared (the original is a r
 SHOULDER_COVER = 0.05   # m: the top edge lies this far above the top of the shoulders (the corners rest on them, the middle stays at Z_TOP)
 PIN_DROP = 0.05       # m: the shoulder line the motion pivots about is this far below the highest point of the cape (what is above it follows the body)
 CELL = 0.025          # m
-GAP = 0.035            # m: off the skin of the back where it rests on it
+GAP = 0.03            # m: off the skin of the back where it rests on it
+OFFSET = 0.10         # m: below the attachment the cape stands this far off the back (smoothly, over OFFSET_LEN): it touches the shoulders only, it does not lie on the back
+OFFSET_LEN = 0.22     # m
+CLEAR = 0.05          # m: the least distance from the skin of the back (shoulder blades, buttocks) anywhere below the attachment
 LEAN = 0.12           # the hem stands this much of the depth off the back (7 %: hangs freely, a hand off the body)
 SMOOTH = 0.05         # m: gaussian smoothing of the rest shape
 FOLDS = 0.012         # m: amplitude of the very gentle vertical folds the rest shape starts with (the simulation makes the real ones)
@@ -114,7 +117,10 @@ def main():
     if len(first):
         env[:first[0]] = env[first[0]]
     d = Z_TOP - z
-    Y = env + GAP + LEAN * d
+    row = np.nonzero(z[:, nu // 2] <= top.max() - 0.06)[0][0]                                                    # the attachment: the back at the top of the cape
+    y0 = np.where(np.isfinite(back[row]), back[row], np.nan)
+    y0 = np.where(np.isnan(y0), np.nanmean(y0) if np.isfinite(y0).any() else 0.0, y0)[None, :] + GAP
+    Y = np.maximum(y0 + OFFSET * (1.0 - np.exp(-d / OFFSET_LEN)) + LEAN * d, env + CLEAR)                       # leaves the back right under the shoulders, never nearer than CLEAR
     Y = gaussian_filter(Y, SMOOTH / CELL, mode="nearest")
     ph = 0.7
     Y = Y + FOLDS * np.minimum(s * 3, 1.0)[:, None] * np.sin(2 * math.pi * FOLD_COUNT * xs[None, :] * 0.5 + ph)

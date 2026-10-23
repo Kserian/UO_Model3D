@@ -38,9 +38,10 @@ FABRIC = {            # mass / stiffness / bending / damping per fabric, after B
     "leather": dict(mass=0.4,  tension=5.0, compression=5.0, shear=5.0, bending=150.0, tdamp=25.0),
 }
 CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, mscale=1.0, dscale=1.0, bscale=1.0, cq=4.0, cull=0.0, usenormal=0.0, mounted=0.0, horse=1.0, env=0.0, env_margin=0.02, env_tent=0.0, pushw=1.0, gravity=1.0, dist=0.005, preroll=40, cycles=3,
-           self_collision=0, friction=0.0, wind=0.0, swing=0.6, swing_top=0.25, wind_noise=1.0, band=0.1, hem_goal=0.0, ramp_cloak=0.2, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
+           self_collision=0, friction=0.0, wind=0.0, goal_run=0.1, ground=1.0, swing=0.6, swing_top=0.25, wind_noise=1.0, band=0.1, hem_goal=0.0, ramp_cloak=0.2, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
 
+LIFT = {2, 3, 23, 24, 25, 26, 27, 28, 29}                                                   # cloak: the actions in which the lower cape is pulled (weakly) to the lifted shape of uo_cloak_motion.py (the run, the ride); elsewhere it hangs under its own weight
 MOTION = {}                                                                          # cloak: {"a_i": world displacement} of uo_cloak_motion.py when cloak_motion.npz is next to the item
 PITCH = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cloak_pitch.json")))     # cloak: swing back about the shoulders per action and frame (original cloak 468)
 WIND = {0: 0.25, 1: 0.25, 15: 0.25, 23: 0.3, 2: 0.8, 3: 0.8, 24: 1.0, 26: 0.35, 27: 0.35, 28: 0.35, 29: 0.35}   # cloak: wind from the front (the cape is blown back) per action: a gentle breath in walking, hard in running and
@@ -190,7 +191,7 @@ def main():
         c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c)
         M = np.array(item.matrix_world)
         sk = c.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]
-        if cloak and MOTION:                                                    # hybrid: the pin pulls to the smooth motion of uo_cloak_motion.py (cloak_motion.npz next to the item); the solver adds the lag, the weight and the soft folds
+        if cloak and MOTION and state["a"] in LIFT:                             # hybrid: the pin pulls to the smooth motion of uo_cloak_motion.py (cloak_motion.npz next to the item); the solver adds the lag, the weight and the soft folds
             m = MOTION.get("%d_%d" % (state["a"], state["i"]))
             if m is not None and len(m) == len(sk):
                 return sk, sk + m
@@ -231,8 +232,15 @@ def main():
         w = np.where(arm, cfg["arm_goal"], w)
         print("uo_cloth_sim: %d vertices of the sleeves (%s) get goal %.2f" % (int(arm.sum()), "uo_region of the conformed item" if reg is not None else "|x| > %.2f m above the waist" % cfg["arm_x"], cfg["arm_goal"]), flush=True)
     pin = sim.vertex_groups.new(name="goal")
-    for wv in np.unique(np.round(w, 3)):
-        pin.add([int(i) for i in np.nonzero(np.round(w, 3) == wv)[0]], float(wv), "REPLACE")
+
+    def set_goal(w):
+        for wv in np.unique(np.round(w, 3)):
+            pin.add([int(i) for i in np.nonzero(np.round(w, 3) == wv)[0]], float(wv), "REPLACE")
+
+    def cloak_goal(hg):
+        """pinned along the shoulder line (the top band), the rest free (hg: how far the lower cape is held to the target: 0.01 hangs under its own weight, 0.1 follows the lift of the run and the ride)"""
+        return np.where(z >= prm["z_top"] - cfg["band"], 1.0, hg + (1.0 - hg) * np.clip(1.0 - (prm["z_top"] - cfg["band"] - z) / cfg["ramp_cloak"], 0.0, 1.0))
+    set_goal(w)
     cm = sim.modifiers.new("Cloth", "CLOTH"); st = cm.settings
     area = sum(pl.area for pl in item.data.polygons)
     mass = cfg["density"] * area / nv if cfg["density"] > 0 else cfg["mass"] * cfg["mscale"]
@@ -246,6 +254,9 @@ def main():
     body.modifiers.new("Collision", "COLLISION"); body.collision.thickness_outer = cfg["thick"]; body.collision.use_culling = bool(cfg["cull"]); body.collision.use_normal = bool(cfg["usenormal"]); body.collision.damping = 0.5; body.collision.cloth_friction = cfg["friction"]
 
     sc.gravity = (0.0, 0.0, -9.81 * cfg["gravity"])
+    if cloak and cfg["ground"] > 0:                                             # the ground: a fallen body drags the cape onto it, it lies there instead of hanging in the air
+        bpy.ops.mesh.primitive_plane_add(size=8.0, location=(0.0, 0.0, 0.0)); gr = bpy.context.active_object; gr.name = "uo_ground"
+        gr.modifiers.new("Collision", "COLLISION"); gr.collision.thickness_outer = cfg["thick"]; gr.collision.cloth_friction = 5.0; gr.collision.use_culling = False
     wind = None
     if cloak and cfg["wind"] > 0:                                               # the wind of walking / running / riding: blows from the front, along +Y (the back of the rest frame)
         import math
@@ -259,6 +270,9 @@ def main():
         if skip(a) or (only is not None and act.name not in only):
             continue
         t0 = time.time(); rig.animation_data.action = act; rig["uo_direction"] = 0; state["a"] = a
+        if cloak:
+            lift = a in LIFT
+            set_goal(cloak_goal(cfg["goal_run"] if lift else cfg["hem_goal"]))
         nfr = int(act["uo_frames"]); loop = a in LOOP
         period = nfr * STEP if loop else (nfr - 1) * STEP + 1
         for fc in action_fcurves(act):
