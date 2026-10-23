@@ -28,7 +28,7 @@ from bpy_compat import action_fcurves                                       # no
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
 RUN = {2, 3, 24}                                                            # run, run armed, mounted run
-CFG = dict(lift=1.0, run_lift=1.15, ride_lift=1.0, wave=1.0, settle=1.0, margin=0.012, smooth=0.05, pin=0.06, near=0.02, slope_min=0.35, rounds=8)
+CFG = dict(lift=1.0, run_lift=1.15, ride_lift=1.0, wave=1.0, settle=1.0, margin=0.02, smooth=0.05, pin=0.06, near=0.02, slope_min=0.35, rounds=8)
 WAVE = {                                                                    # per action: (hem swing deg, sideways sway m, ripple deg)
     0: (4.0, 0.012, 2.5), 1: (4.0, 0.012, 2.5), 2: (5.0, 0.015, 3.5), 3: (5.0, 0.015, 3.5), 15: (4.0, 0.012, 2.5),
     23: (3.0, 0.010, 2.0), 24: (4.0, 0.015, 3.0), 26: (2.0, 0.008, 1.5), 27: (2.0, 0.008, 1.5), 28: (2.0, 0.008, 1.5), 29: (2.0, 0.008, 1.5)}
@@ -125,16 +125,22 @@ def main():
                 D[:, 1] += H * (s ** 2) * 0.5 * ripple
                 D[:, 0] += wv[1] * cfg["wave"] * (s ** 1.5) * math.sin(ph + 0.8)
             D = D * wpin[:, None]
-            P = sk + D @ Rc.T                                                                       # world
+            P = sk + D                                                                              # world: the angles of the table are measured against the vertical in the sprites, not against the chest (a roll of the torso tilted the whole cape)
             # behind the posed body: only backwards (+y), a smooth field
             eb = body.evaluated_get(dg); mb = eb.to_mesh(); Mb = eb.matrix_world
             bvh = BVHTree.FromPolygons([Mb @ v.co for v in mb.vertices], [tuple(p.vertices) for p in mb.polygons]); eb.to_mesh_clear()
             horse = bpy.data.objects.get("Horse_a%d_f%d" % (a, i)) if 23 <= a <= 29 else None
             ty = np.full(nv, -np.inf)
-            for k in np.nonzero(wpin > 0)[0]:
-                loc, nor, _, dist = bvh.ray_cast(Vector(P[k]), fwd, 0.35)
-                if loc is not None and nor.dot(fwd) <= 0:
+            for k in np.nonzero(wpin > 0)[0]:                                                       # the rearmost surface of the body at (x, z): from far behind along -y; the cape stays behind it (a leg swung
+                loc, nor, _, dist = bvh.ray_cast(Vector((P[k, 0], 1.5, P[k, 2])), fwd, 3.0)         # back, a hand, the buttocks push the cloth back; it never lies in front of them)
+                if loc is not None:
                     ty[k] = loc.y + cfg["margin"] / max(abs(nor.y), cfg["slope_min"])
+            for k in np.nonzero((wpin > 0) & ~np.isfinite(ty))[0]:                                      # no body in front along y (beside a leg, on a slanted surface): by the nearest surface
+                l, n, _, d = bvh.find_nearest(Vector(P[k]), 0.08)
+                if l is not None and n.y > 0.1:
+                    sd = (Vector(P[k]) - l).dot(n)
+                    if sd < cfg["margin"]:
+                        ty[k] = P[k, 1] + (cfg["margin"] - sd) / max(n.y, cfg["slope_min"])
             ty0 = ty.copy()
             for k in np.nonzero(np.isfinite(ty0))[0]:
                 ty[k] = max(ty0[j] for j in nbr[k] if np.isfinite(ty0[j]))
@@ -163,7 +169,25 @@ def main():
                     if not any_:
                         break
                     P = P + smooth_n(G, 4) * 1.6 * wpin[:, None]
+            for _ in range(3):                                                                       # what is still on or in the skin (the edge of a leg the rays passed by): out along its normal, spread
+                G = np.zeros((nv, 3)); got = False
+                for k in np.nonzero(wpin > 0)[0]:
+                    l, n, _, d = bvh.find_nearest(Vector(P[k]), 0.05)
+                    if l is not None and n.y > -0.2:
+                        sd = (Vector(P[k]) - l).dot(n)
+                        if sd < 0.006:
+                            G[k] = np.array(n) * (0.012 - sd); got = True
+                if not got:
+                    break
+                P = P + np.where(np.abs(G) > 0, G, smooth_n(G, 3) * 0.8) * wpin[:, None]
             dlt = P - sk
+            if cfg.get("report"):                                                                   # check: how much of the cape is inside the body of this frame (find_nearest, signed by the normal)
+                n_in = 0; deep = 0.0
+                for k in range(0, nv, 2):
+                    l, n, _, d = bvh.find_nearest(Vector(P[k]), 0.3)
+                    if l is not None and (Vector(P[k]) - l).dot(n) < 0:
+                        n_in += 1; deep = max(deep, d)
+                print("   frame %d: %.1f %% of the vertices inside the body, deepest %.1f mm; sk[1154] %s P %s" % (i, 200.0 * n_in / nv, 1e3 * deep, sk[1154].round(3), P[1154].round(3)), flush=True)
             res["%d_%d" % (a, i)] = dlt.astype(np.float32); moved.append(float(np.linalg.norm(dlt, axis=1).max()))
         print("action %2d %-26s %d frames, %.0f s, largest move %.2f m (angles d0 %.0f..%.0f d1 %.0f..%.0f deg)" % (a, act.name, nfr, time.time() - t0, max(moved), rows[:, 0].min(), rows[:, 0].max(), rows[:, 1].min(), rows[:, 1].max()), flush=True)
     np.savez_compressed(out, **res)

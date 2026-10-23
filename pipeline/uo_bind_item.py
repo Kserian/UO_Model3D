@@ -44,7 +44,8 @@ PARTS = {
     # cloth_lib.hull_push, calibrated on the original robes). FOLLOW also takes (share, t0, t1, end share): share near the joint -> end share along the bone.
     "robe":      (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),
     "skirt":     (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),
-    "cloak":     (None, {"hand": 0.0, "foot": 0.0, "shin": 0.0, "thigh": 0.0}),   # cape from the shoulders: hangs from the chest, the rest follows the pelvis; swings back per action (render_uo_layer.py)
+    "cloak":     (["pelvis", "spine", "chest", "neck"], {}),   # cape pinned on the shoulders: the torso only (chest at the shoulders, spine / pelvis below); with the upper arms in it one side of the shoulder line sagged and
+                                                               # rose with the swing of the arm (user, 2026-10-23); the motion (uo_cloak_motion.py / the pitch table, render_uo_layer.py) does the rest
 }
 # rigid items: every vertex 100 % on one bone (they do not bend): hair and beards (UO draws them rigid on the head),
 # weapons, shields (left forearm), quivers (back), a sword or dagger hung from the belt (thigh). UO holds 2H weapons, staffs, bows and crossbows in the LEFT hand and 1H weapons in the right,

@@ -11,7 +11,7 @@ Run all: `python pipeline/run_qa.py` (`--quick` skips items and canvas). Needs b
 | canvas | `test_canvas.py` | every case pixel-identical to reference | all OK | OK |
 | autofit | `test_autofit.py` | mean vertex error, 12 foreign replicas | <= 20 mm | 13.6 mm |
 | robe | `test_robe.py` | lower-body IoU vs original robe 469 | >= 0.74 | 0.757 |
-| cloak | `test_cloak.py` | silhouette IoU vs original cloak 468 (swing from `pipeline/cloak_pitch.json`) | >= 0.47 | 0.507 |
+| cloak | `test_cloak.py` | silhouette IoU vs original cloak 468 (swing from `pipeline/cloak_pitch.json`) | >= 0.47 | 0.494 (0.507 before the cloak was bound to the torso only, 2026-10-23: no weight on the upper arms) |
 | materials | `test_materials.py` | "RESULT OK" | - | OK |
 | import | `test_import_item.py` | chain from a foreign file runs, bbox as before | no error | OK |
 
