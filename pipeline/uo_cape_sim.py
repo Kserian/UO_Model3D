@@ -13,20 +13,24 @@ render_uo_layer.py adds it (uo_cloth type "cape"), then BODY_GAP pushes whatever
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the pose of the loop), looping actions CYCLES cycles and the last one is kept, so the loop closes.
 Settings (key=value): mass (kg per vertex, 0.3: the scale Blender's presets are made for; far smaller masses make the solver stiff and the cloth does not move: measured, a vertex of 6e-5 kg hung like a board; 0 = from density), density (kg/m2 of the cloth, used when mass = 0), tension / compression / shear (in-plane stiffness), bending, bscale, dscale,
 tdamp, damp_air, quality (16: substeps per frame; a leg or a hand swung through the cloth in 8 and 12 tunnelled), cq (collision quality, 10), dist (0.01 m: collision distance of the cloth), thick (0.02 m: outer thickness of the body collider), friction (0), cull, usenormal,
-preroll (40), cycles (3), gravity (1), self_collision (0), horse (1: riding actions collide with the horse), pin (0 = the clasp vertices only; > 0 = also the top edge of the cape, this far
+preroll (40), cycles (3), gravity (1), mount_start (60 deg: riding actions start with the cape swung out to the back about the clasps, above the horse, and let it fall on it), lean_riding (55 deg: the cape streams back over the horse's croup), lean (5 deg: gravity tilted to the back, x LEAN_SCALE per action: the cape hangs off the back, trails more in a run and streams in a gallop), self_collision (0), horse (1: riding actions collide with the horse proxy of the first frame carried by the pelvis), pin (0 = the clasp vertices only; > 0 = also the top edge of the cape, this far
 below it in m, softly: not used by default), max_move (0.45 m: the most the cape may differ from the bound item, soft limit; 0 = none), smooth (0 m: the move averaged in space).
 """
 import json, os, sys, time
 import numpy as np
 import bpy
+from mathutils import Matrix
 
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 from bpy_compat import action_fcurves                                       # noqa: E402 (Blender 5.x: no Action.fcurves)
 
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
+# how far the pull of gravity is tilted towards the back of the character (deg), per UO action: the cloth then hangs that many degrees off the back instead of lying on it (an accelerating
+# frame: the cape of a walker trails, of a runner trails more, of a galloper streams behind); `lean` (key) is the value for standing and fighting, the table scales it
+LEAN_SCALE = {0: 1.6, 1: 1.6, 2: 3.2, 3: 3.2}      # riding actions 23-29: `lean_riding`
 CFG = dict(density=0.7, mass=0.3, tension=1000.0, compression=1000.0, shear=500.0, bending=10.0, bscale=1.0, dscale=1.0, tdamp=5.0, damp_air=1.0, quality=16, cq=10.0, dist=0.01, thick=0.02, friction=0.0,
-           cull=0.0, usenormal=0.0, preroll=40, cycles=3, gravity=1.0, self_collision=0, horse=1.0, max_move=0.45, smooth=0.0, trace=0, nocollide=0, noshape=0)
+           cull=0.0, usenormal=0.0, preroll=40, cycles=3, gravity=1.0, self_collision=0, horse=1.0, lean=5.0, lean_riding=55.0, mount_start=60.0, max_move=0.45, smooth=0.0, trace=0, nocollide=0, noshape=0)
 
 
 def parse(extra):
@@ -111,6 +115,8 @@ def main():
     rig.data.pose_position = "REST"; bpy.context.view_layer.update(); R0 = skinned()          # the cape as placed (rest pose, world)
     rig.data.pose_position = "POSE"; bpy.context.view_layer.update()
 
+    EDG = np.empty(len(item.data.edges) * 2, np.int32); item.data.edges.foreach_get("vertices", EDG); EDG = EDG.reshape(-1, 2)
+    L0 = np.linalg.norm(R0[EDG[:, 0]] - R0[EDG[:, 1]], axis=1); BIG = L0 > 0.004
     sim_me = item.data.copy()
     sim = bpy.data.objects.new("uo_sim", sim_me); sc.collection.objects.link(sim)
     if sim_me.shape_keys:
@@ -134,7 +140,6 @@ def main():
     body.modifiers.new("Collision", "COLLISION"); body.collision.thickness_outer = cfg["thick"]; body.collision.use_culling = bool(cfg["cull"]); body.collision.use_normal = bool(cfg["usenormal"])
     body.collision.damping = 0.5; body.collision.cloth_friction = cfg["friction"]
 
-    sc.gravity = (0.0, 0.0, -9.81 * cfg["gravity"])
     res = {}
     acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
     for act in acts:
@@ -142,6 +147,8 @@ def main():
         if only is not None and act.name not in only:
             continue
         t0 = time.time(); rig.animation_data.action = act; rig["uo_direction"] = 0
+        th = np.radians(cfg["lean_riding"] if 23 <= a <= 29 else cfg["lean"] * LEAN_SCALE.get(a, 1.0)); g = 9.81 * cfg["gravity"]
+        sc.gravity = (0.0, g * np.sin(th), -g * np.cos(th))                       # +y is the back of the character
         nfr = int(act["uo_frames"]); loop = a in LOOP
         period = nfr * STEP if loop else (nfr - 1) * STEP + 1
         for fc in action_fcurves(act):
@@ -149,11 +156,12 @@ def main():
                 fc.modifiers.remove(m)
             m = fc.modifiers.new("CYCLES"); m.mode_before = "REPEAT" if loop else "NONE"; m.mode_after = "REPEAT" if loop else "NONE"
         sim.hide_viewport = True
-        S = []; TP = []
+        S = []; TP = []; PEL = []
         for i in range(nfr):                                                   # the bound cape of every UO frame; the rigid pose its clasps give is the shape the pin follows
             sc.frame_set(1 + i * STEP); rig.update_tag(); bpy.context.view_layer.update()
             item.hide_viewport = False; bpy.context.view_layer.update()
             s_ = skinned(); S.append(s_)
+            PEL.append(np.array(rig.matrix_world) @ np.array(rig.evaluated_get(bpy.context.evaluated_depsgraph_get()).pose.bones["pelvis"].matrix))
             R, t = kabsch(R0[pinned], s_[pinned]); T = R0 @ R.T + t; TP.append(T)                    # the clasps move as the rigid patches of the cape (the skin under them does not: it would stretch the cloth round them)
             item.hide_viewport = True
         sim.hide_viewport = False; bpy.context.view_layer.update()
@@ -166,9 +174,25 @@ def main():
             sim.shape_key_clear()
         sim.shape_key_add(name="Basis", from_mix=False)
         sim.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", TP[0].astype(np.float32).ravel())
+        riding = 23 <= a <= 29 and cfg["mount_start"] > 0
+        st.rest_shape_key = None
+        if not riding:                                                          # (Blender starts the cloth from its rest shape key too: riding has none, the rest is the swung-out start)
+            rest_kb = sim.shape_key_add(name="rest", from_mix=False); rest_kb.data.foreach_set("co", TP[0].astype(np.float32).ravel()); st.rest_shape_key = rest_kb    # springs and bending rest on the cape as placed
         keys = []
         for j in range(nfr):
             kb = sim.shape_key_add(name="t%d" % j, from_mix=False); kb.data.foreach_set("co", TP[j].astype(np.float32).ravel()); keys.append(kb)
+        if riding:                                                             # riding: the cape hanging from the shoulders would start INSIDE the horse (its croup is right behind the rider): it starts swung out
+            T0 = TP[0]; cl_ = clasp[pinned]; cL, cR = T0[pinned][cl_ == 1].mean(0), T0[pinned][cl_ == 2].mean(0)       # to the back about the line of the clasps and falls onto the horse
+            ax = (cR - cL) / np.linalg.norm(cR - cL); piv = (cL + cR) / 2; ph = np.radians(cfg["mount_start"])
+            def rot(P, ang):
+                v = P - piv; return piv + v * np.cos(ang) + np.cross(ax, v) * np.sin(ang) + np.outer(v @ ax, ax) * (1 - np.cos(ang))
+            Ts = T0.copy(); free = clasp == 0
+            for ang in (ph, -ph):                                              # the sign that sends the hem to the back (+y)
+                Q = rot(T0, ang)
+                if Q[free][:, 1].mean() > T0[free][:, 1].mean():
+                    Ts[free] = Q[free]; break
+            print("uo_cape_sim: riding start: free vertices mean y %.2f -> %.2f, lowest z %.2f -> %.2f" % (T0[free][:, 1].mean(), Ts[free][:, 1].mean(), T0[:, 2].min(), Ts[:, 2].min()), flush=True)
+            keys[0].data.foreach_set("co", Ts.astype(np.float32).ravel()); sim.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", Ts.astype(np.float32).ravel())
         if cfg["noshape"]:
             sim.shape_key_clear(); sim.data.vertices.foreach_set("co", TP[0].astype(np.float32).ravel()); sim.data.update(); keys = []
         pre = int(cfg["preroll"]); cyc = int(cfg["cycles"]) if loop else 1
@@ -181,27 +205,34 @@ def main():
             for fc in action_fcurves(sim.data.shape_keys.animation_data.action):
                 for kp in fc.keyframe_points:
                     kp.interpolation = "LINEAR"
-        horses = []
-        if 23 <= a <= 29 and cfg["horse"] > 0:                                  # riding: the horse proxy of the UO frame is a collider while that frame lasts (hidden objects do not collide: visibility keyed, constant)
-            horses = [(j, bpy.data.objects.get("Horse_a%d_f%d" % (a, j))) for j in range(nfr)]
-            horses = [(j, h) for j, h in horses if h is not None]
-            for j, h in horses:
-                if not any(m.type == "COLLISION" for m in h.modifiers):
-                    h.modifiers.new("Collision", "COLLISION")
-                h.collision.thickness_outer = cfg["thick"]; h.collision.use_culling = bool(cfg["cull"]); h.collision.use_normal = bool(cfg["usenormal"]); h.collision.damping = 0.5; h.collision.cloth_friction = cfg["friction"]
-                h.animation_data_create()
+        hf = None
+        if 23 <= a <= 29 and cfg["horse"] > 0:                                  # riding: ONE collider, the horse proxy of the first frame, carried by the rider's pelvis (a proxy per UO frame, shown and hidden in turn,
+            h0 = bpy.data.objects.get("Horse_a%d_f0" % a)                        # threw the cloth out of the next one and stretched it up to 10 x: the proxies have different meshes, they cannot be blended)
+            if h0 is not None:
+                hf = bpy.data.objects.new("uo_horse_follow", h0.data); sc.collection.objects.link(hf); hf.rotation_mode = "QUATERNION"
+                hf.modifiers.new("Collision", "COLLISION")
+                hf.collision.thickness_outer = cfg["thick"]; hf.collision.use_culling = bool(cfg["cull"]); hf.collision.use_normal = bool(cfg["usenormal"]); hf.collision.damping = 0.5; hf.collision.cloth_friction = cfg["friction"]
+                H0 = np.array(h0.matrix_world); hf.animation_data_create()
                 for ui in range(int(np.floor((f0 - 1) / STEP)), int(np.ceil((f1 - 1) / STEP)) + 1):
-                    h.hide_viewport = min(max(ui, 0), nfr - 1) != j; h.keyframe_insert("hide_viewport", frame=1 + ui * STEP - 1)
-                for fc in action_fcurves(h.animation_data.action):
+                    idx = ui % nfr if loop else min(max(ui, 0), nfr - 1)
+                    hf.matrix_world = Matrix((PEL[idx] @ np.linalg.inv(PEL[0]) @ H0).tolist())
+                    for path in ("location", "rotation_quaternion", "scale"):
+                        hf.keyframe_insert(path, frame=1 + ui * STEP)
+                for fc in action_fcurves(hf.animation_data.action):
                     for kp in fc.keyframe_points:
-                        kp.interpolation = "CONSTANT"
-            print("uo_cape_sim: action %d: %d horse colliders" % (a, len(horses)), flush=True)
+                        kp.interpolation = "LINEAR"
+                hf.matrix_world = Matrix(H0.tolist())
+                print("uo_cape_sim: action %d: the horse proxy of frame 0 follows the pelvis" % a, flush=True)
         sc.frame_start = f0; sc.frame_end = f1; cm.point_cache.frame_start = f0; cm.point_cache.frame_end = f1
         sc.frame_set(f0)
         base = 1 + (cyc - 1) * period if loop else 1
         want = {base + i * STEP: i for i in range(nfr)}
         for f in range(f0, f1 + 1):
             sc.frame_set(f)
+            if cfg["trace"] == 3 and (f % 6 == 0 or f < f0 + 4):
+                ev = sim.evaluated_get(bpy.context.evaluated_depsgraph_get()); c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c); c = c.reshape(-1, 3).astype(np.float64)
+                r_ = np.linalg.norm(c[EDG[:, 0]] - c[EDG[:, 1]], axis=1) / L0
+                print("trace f%d: edge ratio mean %.3f p99 %.3f max %.1f, lowest z %.3f, mean y %.3f" % (f, r_[BIG].mean(), np.percentile(r_[BIG], 99), r_[BIG].max(), c[:, 2].min(), c[:, 1].mean()), flush=True)
             if cfg["trace"] == 2:
                 ev = sim.evaluated_get(bpy.context.evaluated_depsgraph_get()); c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c); c = c.reshape(-1, 3)
                 print("trace f%d: lowest z %.3f, mean y %.3f, keys %s" % (f, c[:, 2].min(), c[:, 1].mean(), "".join("%.1f" % k.value for k in keys[:4])), flush=True)
@@ -214,9 +245,10 @@ def main():
                     n = np.maximum(np.linalg.norm(d, axis=1), 1e-9); d = d * (cfg["max_move"] * np.tanh(n / cfg["max_move"]) / n)[:, None]
                 res["%d_%d" % (a, i)] = d.astype(np.float32)
                 if cfg["trace"]:
-                    print("trace a%d f%d: lowest %.3f, clasp err vs rigid %.4f m" % (a, i, c[:, 2].min(), float(np.abs(c[pinned] - TP[i][pinned]).max())), flush=True)
-        for j, h in horses:
-            h.animation_data_clear(); h.hide_viewport = True
+                    dv = np.linalg.norm(c - TP[i], axis=1); Ed = np.vstack([f_ for f_ in item.data.edge_keys]) if False else None
+                    print("trace a%d f%d: |c - rigid pose| mean %.4f max %.4f m, lowest %.3f, clasp err vs rigid %.4f m" % (a, i, float(dv.mean()), float(dv.max()), c[:, 2].min(), float(np.abs(c[pinned] - TP[i][pinned]).max())), flush=True)
+        if hf is not None:
+            bpy.data.objects.remove(hf, do_unlink=True)
         d = np.array([np.linalg.norm(res["%d_%d" % (a, i)], axis=1).max() for i in range(nfr)])
         print("action %2d %-26s %d frames, loop %s, %.0f s, largest cape move %.2f m" % (a, act.name, nfr, loop, time.time() - t0, d.max()), flush=True)
     if cfg["smooth"] > 0 and res:
