@@ -45,7 +45,7 @@ sys.path.insert(0, HERE)
 ROBE_SCENE = {"uo_shade_sleeve": 0.4, "uo_shade_width": 4.0, "uo_contrast": 1.5}    # base look of a robe / skirt (2026-10, README section 4): smooth contact shadow at the sleeve-torso junction (needs "conform") and a contrast curve
 
 
-CLOAK_SCENE = {"uo_horse_holdout": 0, "uo_supersample": 3}                  # a cape: the horse does not cut it (it lies on the horse, drawn over it); the colour averaged over 3 x 3 sub-samples per pixel
+CLOAK_SCENE = {"uo_horse_holdout": 0, "uo_supersample": 3, "uo_edge_smooth": 2}                  # a cape: the horse does not cut it (it lies on the horse, drawn over it); the colour averaged over 3 x 3 sub-samples per pixel
 CLOAK_MATERIALS = {"FILTER_TEXELS_PER_M": 162.0}                            # ... so the texture is only reduced to 4.5 texels per UO pixel (54 = 1.5: the trim and the weave were averaged away, 2048 px -> 204 px)
 
 
@@ -542,7 +542,11 @@ if __name__ == "__main__":
     if sim and a.no_sim is False:
         t = time.time(); cfg = ["%s=%s" % kv for kv in ({**(CLOAK_SIM if recipe.get("kind") == "cloak" else {}), **(recipe["sim"] if isinstance(recipe.get("sim"), dict) else {})}).items()]
         acts = [x for x in (a.actions or (CLOAK_ACTIONS if recipe.get("kind") == "cloak" else PREVIEW_ACTIONS)).split(",")] if a.preview and not a.vd else None
-        cmd = [sys.executable, os.path.join(HERE, "uo_cloth_sim.py"), blend, "--jobs", "4", "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + cfg
+        if recipe.get("kind") == "cloak" and not (isinstance(recipe.get("sim"), dict) and recipe["sim"].get("solver") == "cloth"):      # a cape: the smooth motion of uo_cloak_motion.py (angles of the original cloak 468), not the cloth solver
+            mcfg = ["%s=%s" % kv for kv in (recipe["motion"].items() if isinstance(recipe.get("motion"), dict) else [])]
+            cmd = [sys.executable, os.path.join(HERE, "uo_cloak_motion.py"), blend, "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + mcfg
+        else:
+            cmd = [sys.executable, os.path.join(HERE, "uo_cloth_sim.py"), blend, "--jobs", "4", "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + cfg
         r = subprocess.run(cmd, capture_output=True, text=True)
         line = next((l for l in r.stdout.splitlines() if l.startswith("wrote")), "uo_cloth_sim failed: " + (r.stderr or r.stdout)[-400:])
         print("cloth simulation: %s (%.0f s)" % (line, time.time() - t)); open(os.path.join(out, "report.txt"), "a").write(line + "\n")

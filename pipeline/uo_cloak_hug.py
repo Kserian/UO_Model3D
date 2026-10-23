@@ -20,6 +20,8 @@ ZFULL = 0.30          # m below the shoulder line (uo_cloth z_top): up to here t
 ZZERO = 0.65          # m below the shoulder line: from here down the cape is left as fitted
 REACH = 0.25          # m: a skin farther than this behind (in -y) the vertex is not the cape's back (a leg in front of a hem, nothing)
 SIGMA = 0.05          # m: the move is smoothed in space (gaussian), the ripples of the skin do not become ripples of the cloth
+RAISE = 0.03          # m: the whole cape is put this much higher (the collar nearer the neck, the shoulders covered; user 2026-10-22)
+HEM_TAPER = 0.85      # the width of the cape at the hem relative to the shoulders' (1 = as the model): a cape of the original (468) is nearly straight, a flared A-line one is narrowed (smoothly, ~s^1.5)
 SLOPE_MIN = 0.35      # the gap along y is GAP / max(|n_y|, SLOPE_MIN) (n = normal of the skin where the ray hits it): on the slope of the shoulders a gap measured along y is a few mm
                       # along the normal and the skin came through the cape (28 % of the vertices of the upper cape were inside the body, grey stripes on the back). The move stays along y: the
                       # cape never goes round the shoulder to the front (an earlier push along the skin normal wrapped it over the chest)
@@ -47,6 +49,9 @@ def main(src, dst, sets):
     bvh = BVHTree.FromPolygons([tuple(v) for v in VB], [tuple(p.vertices) for p in m.polygons])
     Mi = np.array(it.matrix_world); Vl = np.array([v.co for v in it.data.vertices]); V = Vl @ Mi[:3, :3].T + Mi[:3, 3]
     zt = prm["z_top"]
+    st = np.clip((zt - V[:, 2]) / max(zt - prm["z_hem"], 1e-3), 0.0, 1.0)
+    V[:, 0] *= 1.0 - (1.0 - HEM_TAPER) * st ** 1.5
+    V[:, 2] += RAISE; zt += RAISE; prm["z_top"] = round(zt, 4); prm["z_hem"] = round(prm["z_hem"] + RAISE, 4)
     t = np.clip((zt - ZFULL - V[:, 2]) / (ZZERO - ZFULL), 0.0, 1.0)
     wz = 0.5 + 0.5 * np.cos(np.pi * t)                                       # 1 down to ZFULL below the shoulder line, 0 from ZZERO
     hit = np.zeros(len(V), bool); gap0 = np.full(len(V), np.nan); ty = np.full(len(V), -np.inf); fwd = Vector((0.0, -1.0, 0.0))
