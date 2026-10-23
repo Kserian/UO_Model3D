@@ -229,6 +229,11 @@ def cloth_push(o, first, dg, Mw, a=0, i=0):
         d0, d1 = (np.radians(x) * CLOAK_SWING for x in rows[min(i, len(rows) - 1)])
         d = cl.cloak_bend(Vr, prm["z_top"], prm["z_hem"], prm["y_top"], d0, d1)
         return ((d @ skin["chest"][:3, :3].T) @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
+    if prm.get("type") == "cape":                                             # a cape simulated by uo_cape_sim.py: pinned at its clasps, free elsewhere; the simulation is the whole displacement from the bound item
+        sim = cloth_sim_table().get("%d_%d" % (a, i))
+        if sim is None or len(sim) != len(o.data.vertices):
+            return np.zeros((len(first), 3))
+        return (sim[first].astype(np.float64) @ Dm[:3, :3].T) @ np.linalg.inv(Mw[:3, :3]).T
     share = CLOTH_MOUNTED if 23 <= a <= 29 else CLOTH_LIE if a in (21, 22) else 0.0
     if share > 0:                                                             # riding (and lying, CLOTH_LIE): the hanging part lies along the legs, as the skin under it would move it
         up = skin["pelvis"][:3, :3].T @ np.array([0.0, 0.0, 1.0])            # how far the body lies (0 upright, 1 lying): CLOTH_LIE_DROP in body_fix

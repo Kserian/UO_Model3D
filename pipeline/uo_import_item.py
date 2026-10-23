@@ -52,6 +52,8 @@ AO_DIST = 0.08
 NAME = ""             # name of the result ("" = file name)
 BAKE_TEXTURE = 0      # > 0 (px, 2048 is plenty): the reduced model gets a NEW UV map and a texture BAKED from the original: a reduction drags the UVs of a model with a sculpted detail / an embroidery into
                       # streaks (the cloth turns into smeared noise). Needs the Cycles engine of Blender. Recipe: "bake_texture": 2048
+BAKE_UV = None        # (x, y, z) in the file's axes: with BAKE_TEXTURE, the new UVs are ONE planar projection along this direction instead of the smart-projected islands: a cape hanging in a plane (0, -1, 0) is one
+                      # block of the texture, no seams: the many narrow islands of the smart projection, averaged down to the UO resolution by uo_materials.py, ran into the black between them (dark streaks). Used by uo_cape_sheet.py
 BAKE_RAY = 0.04       # m: how far from the reduced surface the original is looked for in the bake (layers closer to each other than this, e.g. a robe over a tunic, are not mixed up if they are further apart)
 WELD = 1e-6           # m: vertices closer than this are merged before the reduction (seams of the glTF import; 0 = off)
 DECIMATE_TO = 30000   # a model with more vertices than this is reduced (collapse, UVs and materials kept) - a 144k-vertex scan costs minutes in every later step; uo_densify_item.py adds
@@ -318,8 +320,19 @@ def bake_texture(lo, hi, px):
         o.select_set(False)
     lo.select_set(True); bpy.context.view_layer.objects.active = lo
     bpy.ops.object.mode_set(mode="EDIT"); bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.003, area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
+    if BAKE_UV is None:
+        bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.003, area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
     bpy.ops.object.mode_set(mode="OBJECT")
+    proj_texels = None
+    if BAKE_UV is not None:                                      # one planar projection: u across, v up the image, the whole model in one block (aspect kept, 2 % border)
+        d = np.array(BAKE_UV, float); d /= np.linalg.norm(d)
+        up = np.array([0.0, 0.0, 1.0]) if abs(d[2]) < 0.9 else np.array([0.0, 1.0, 0.0])
+        ux = np.cross(up, d); ux /= np.linalg.norm(ux); vy = np.cross(d, ux)
+        me = lo.data; cv = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", cv); cv = cv.reshape(-1, 3).astype(np.float64)
+        P = np.c_[cv @ ux, cv @ vy]; p0 = P.min(0); k = 0.96 / float(np.ptp(P, axis=0).max())
+        li = np.empty(len(me.loops), np.int32); me.loops.foreach_get("vertex_index", li)
+        me.uv_layers.active.data.foreach_set("uv", (0.02 + (P[li] - p0) * k).astype(np.float32).ravel())
+        proj_texels = px * k
     img = bpy.data.images.new("uo_baked_" + lo.name, px, px, alpha=False)
     mat = bpy.data.materials.new("uo_baked_" + lo.name); mat.use_nodes = True; nt = mat.node_tree
     bsdf = nt.nodes["Principled BSDF"]; tex = nt.nodes.new("ShaderNodeTexImage"); tex.image = img
@@ -335,7 +348,7 @@ def bake_texture(lo, hi, px):
     b.use_pass_direct = False; b.use_pass_indirect = False; b.use_pass_color = True
     hi.select_set(True); lo.select_set(True); bpy.context.view_layer.objects.active = lo
     bpy.ops.object.bake(type="DIFFUSE")
-    texels_per_m = px / max(math.sqrt(sum(p.area for p in lo.data.polygons) / 0.6), 1e-6)    # smart project fills ~60 % of the image
+    texels_per_m = proj_texels or px / max(math.sqrt(sum(p.area for p in lo.data.polygons) / 0.6), 1e-6)    # smart project fills ~60 % of the image
     if BAKE_NORMAL > 0 or BAKE_AO > 0:
         for m in hi.data.materials:                              # the original's own normal map (the weave) left out: only its geometry
             if m and m.use_nodes:
