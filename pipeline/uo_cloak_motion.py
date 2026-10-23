@@ -28,7 +28,7 @@ from bpy_compat import action_fcurves                                       # no
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
 RUN = {2, 3, 24}                                                            # run, run armed, mounted run
-CFG = dict(lift=1.0, run_lift=1.15, ride_lift=1.0, wave=1.0, settle=1.0, margin=0.02, smooth=0.05, pin=0.06, near=0.02, slope_min=0.35, rounds=8)
+CFG = dict(inward=0.4, lift=1.0, run_lift=1.15, ride_lift=1.0, wave=1.0, settle=1.0, margin=0.02, smooth=0.05, pin=0.06, near=0.02, slope_min=0.35, rounds=8)
 WAVE = {                                                                    # per action: (hem swing deg, sideways sway m, ripple deg)
     0: (4.0, 0.012, 2.5), 1: (4.0, 0.012, 2.5), 2: (5.0, 0.015, 3.5), 3: (5.0, 0.015, 3.5), 15: (4.0, 0.012, 2.5),
     23: (3.0, 0.010, 2.0), 24: (4.0, 0.015, 3.0), 26: (2.0, 0.008, 1.5), 27: (2.0, 0.008, 1.5), 28: (2.0, 0.008, 1.5), 29: (2.0, 0.008, 1.5)}
@@ -116,6 +116,8 @@ def main():
             M = np.array(item.matrix_world); sk = c.reshape(-1, 3).astype(np.float64) @ M[:3, :3].T + M[:3, 3]
             evr = rig.evaluated_get(dg); Rc = (Mr0 @ np.array(evr.pose.bones["chest"].matrix) @ inv_local["chest"] @ np.linalg.inv(Mr0))[:3, :3]
             d0, d1 = np.radians(rows[i])
+            if not 23 <= a <= 29:                                                                   # on foot the cape hangs free: the angles that turn it towards the body (the table's walk: hem -10 deg) count less
+                d0, d1 = (d0 * (cfg["inward"] if d0 < 0 else 1.0), d1 * (cfg["inward"] if d1 < 0 else 1.0))
             ph = 2 * math.pi * i / nfr if nfr > 1 else 0.0
             if wv and cfg["wave"] > 0 and nfr > 1:                                                  # the gait wave: the hem swings, the cape sways sideways, a ripple runs down it
                 d1 = d1 + math.radians(wv[0]) * cfg["wave"] * math.sin(ph)
