@@ -30,6 +30,8 @@ COVER_WEIGHT = 0.05   # cost per unit of skin coverage missing below 90 % (ranki
 USE_EDGE = True       # the pull of EDGE_BY_KIND on the vertical place (off: only the wrap decides)
 SAMPLES = 3500        # skin points used
 ITEM_POINTS = 60000   # item surface points used at most
+NUDGE = (0.0, 0.0, 0.0)   # m: the found place moved by this (x, y, z) before it is applied. A girdle whose waistband the wrap puts at the ribs (1.24-1.34 m) but which should hang on the hips: (0, 0, -0.23).
+                      # Recipe: "tune": {"uo_autofit_item.py": {"NUDGE": [0, 0, -0.23]}}
 APPLY = True          # False: only report
 REPORT = True
 
@@ -276,7 +278,7 @@ def run():
         return x, f, info
     c, sn = np.cos(yaw), np.sin(yaw)
     R3 = np.array([[c, -sn, 0], [sn, c, 0], [0, 0, 1.0]])
-    T = np.eye(4); T[:3, :3] = np.exp(x[0]) * R3; T[:3, 3] = x[1:4]
+    T = np.eye(4); T[:3, :3] = np.exp(x[0]) * R3; T[:3, 3] = x[1:4] + np.array(NUDGE, float)
     U = np.diag([f, f, f, 1.0])
     for ob in obs:
         ob.data.transform(Matrix(T @ U) @ ob.matrix_world)       # into the mesh: world coordinates, the object's own transform becomes identity

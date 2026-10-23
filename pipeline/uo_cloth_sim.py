@@ -13,7 +13,7 @@ Every action is simulated on its own: PREROLL frames in its first pose (looping 
 kept, so the loop closes without a jump. Settings (key=value): fabric (silk, cotton, wool, denim, leather: mass, stiffness, bending, damping at once; the keys below override it), cull (0; 1 = the collider is single sided: the cloth collision respects the collider's normals, Blender: improves penetration recovery), usenormal (0; 1 = collision impulses along the collider's normals), cq (4; collision quality of Blender's cloth: iterations of the contact solver), env (0; kappa of a last pass that keeps the simulated cloth inside-out of the shadow of the legs, cloth_lib.hull_push on the simulated points: a leg in full stride does not come out of the hem), env_margin (0.02 m beyond the legs' reach), env_tent (0 = no tent: the cloth above is not pulled out), mounted (0; 1 = the riding actions 23-29 are simulated too: the target is the rider's, the hanging part lies along the legs as render_uo_layer.py CLOTH_MOUNTED does, and the cloth collides with the horse proxy Horse_a<action>_f<frame>; horse=0: no collision with the horse, the renderer's HORSE_HOLDOUT only cuts the cloth where the horse is in front), pushw (1; the pin holds skinned + pushw x the push of the legs: 0 = the cloth hangs from the pelvis and the legs push it out by collision only, the result is still stored against the full target), gravity (1; x the scene's gravity: a heavier fall of the free cloth), bscale (1; x the bending stiffness: like the damping it is not scaled with the vertex mass, with mscale 0.033 the cloth is ~30 x too stiff against its weight and the hem a leg lifted does not fall back: walk +0.26 m cotton, +0.47 m wool, silk +0.04), dscale (1; x the damping (air and internal): damping is not scaled with the mass of a vertex, so with mscale 0.033 take dscale 0.033 too, or the cloth is ~30 x over-damped and does not fall back after a leg lifts it), mscale (1; x the mass of a vertex: Blender's presets assume ~0.3 kg per vertex, a 24k-vertex robe hangs with ~0.01 kg = mscale 0.033; free cloth, goal 0.2, thick 0.006, dist 0.002), goal (0.4), upper (1.0), ramp (0.30 m from the waist down to GOAL), quality (8), mass (0.3 per vertex), density (kg/m2 of the cloth; > 0 = the mass of a vertex is density x area of the item / vertices, so a fine mesh weighs what the fabric weighs; the fabrics set it, 0 = mass as given), tension / compression (15), shear (5), bending (0.5),
 damp_air (1), tdamp (5), dist (0.005), preroll (40), cycles (3), self_collision (0), friction (0), arm_goal (0.7; -1 = sleeves as the rest above the waist; 0-1 = their own goal), arm_x (0.19 m from the middle: where the sleeves start), arm_zmin (the sleeves are the vertices above this height; default 0.05 m below the waist: long bell sleeves that hang below it need e.g. 0.55), thick (0.02 m: the outer thickness of the body as a collider; a fast leg tunnels through the cloth with a thin one: leg pixels through the robe in the run 466 at 0.005 m, 196 at 0.02, 147 with dist 0.02 too but 3 x slower), smooth (0 m; > 0 = the simulation's move averaged over this distance in space, 2 passes: neighbouring pleats that cross each other in the simulation opened slits
 through which the legs showed; 0.04 m on a robe made by a cloth simulator: leg pixels through the robe in walk 44 -> 12), in_max (0.01 m: below the waist the cloth may move at most this much TOWARDS the axis of the pelvis against the target: the target already holds it just outside the legs' reach, and a
-simulated hem that lagged inwards let a foot come out through it in the run; < 0 = no limit), max_move (0.12 m: the most the cloth may differ from the kinematic target, soft limit; 0 = none). Measured on the replica of the original robe 469 (robe_cloth_sim_test.py, hybrid=1):
+simulated hem that lagged inwards let a foot come out through it in the run; < 0 = no limit), island (0; > 0 = pieces of the mesh not connected to a pinned vertex follow the target with this goal: loose shards otherwise fall away), abs (0; 1 = also write the simulated positions to <out>.abs.npz), max_move (0.12 m: the most the cloth may differ from the kinematic target, soft limit; 0 = none). Measured on the replica of the original robe 469 (robe_cloth_sim_test.py, hybrid=1):
 lower-body IoU walk 0.754 -> 0.765, run 0.731 -> 0.735 against the kinematic result; the simulation alone (no goal) collapses in walk and run.
 """
 import json, os, sys, time
@@ -38,7 +38,7 @@ FABRIC = {            # mass / stiffness / bending / damping per fabric, after B
     "leather": dict(mass=0.4,  tension=5.0, compression=5.0, shear=5.0, bending=150.0, tdamp=25.0),
 }
 CFG = dict(goal=0.4, upper=1.0, ramp=0.30, quality=8, mass=0.3, tension=15.0, compression=15.0, shear=5.0, bending=0.5, damp_air=1.0, tdamp=5.0, density=0.0, mscale=1.0, dscale=1.0, bscale=1.0, cq=4.0, cull=0.0, usenormal=0.0, mounted=0.0, horse=1.0, env=0.0, env_margin=0.02, env_tent=0.0, pushw=1.0, gravity=1.0, dist=0.005, preroll=40, cycles=3,
-           self_collision=0, friction=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
+           self_collision=0, friction=0.0, abs=0.0, island=0.0, arm_goal=0.7, arm_x=0.19, arm_zmin=-9.0, max_move=0.12, thick=0.02, in_max=0.01, smooth=0.0)
 
 
 def skip(a):
@@ -195,6 +195,15 @@ def main():
             arm = (np.abs(Vr[:, 0] - np.median(Vr[:, 0])) > cfg["arm_x"]) & (z > (cfg["arm_zmin"] if cfg["arm_zmin"] > -9 else prm["z_top"] - 0.05))
         w = np.where(arm, cfg["arm_goal"], w)
         print("uo_cloth_sim: %d vertices of the sleeves (%s) get goal %.2f" % (int(arm.sum()), "uo_region of the conformed item" if reg is not None else "|x| > %.2f m above the waist" % cfg["arm_x"], cfg["arm_goal"]), flush=True)
+    if cfg["island"] > 0:                                                       # pieces of the mesh that touch no pinned vertex (loose shards, threads of a model made by a generator) fall away for good: they follow the target with this goal
+        from scipy.sparse import coo_matrix
+        from scipy.sparse.csgraph import connected_components
+        ed = np.empty(len(item.data.edges) * 2, np.int32); item.data.edges.foreach_get("vertices", ed); ed = ed.reshape(-1, 2)
+        nc, comp = connected_components(coo_matrix((np.ones(len(ed)), (ed[:, 0], ed[:, 1])), shape=(nv, nv)), directed=False)
+        held = np.zeros(nc, bool); held[np.unique(comp[w >= 0.5])] = True
+        free = ~held[comp]
+        w = np.where(free, np.maximum(w, cfg["island"]), w)
+        print("uo_cloth_sim: %d loose pieces (%d vertices) get goal %.2f" % (int((~held).sum()), int(free.sum()), cfg["island"]), flush=True)
     pin = sim.vertex_groups.new(name="goal")
     for wv in np.unique(np.round(w, 3)):
         pin.add([int(i) for i in np.nonzero(np.round(w, 3) == wv)[0]], float(wv), "REPLACE")
@@ -211,7 +220,7 @@ def main():
     body.modifiers.new("Collision", "COLLISION"); body.collision.thickness_outer = cfg["thick"]; body.collision.use_culling = bool(cfg["cull"]); body.collision.use_normal = bool(cfg["usenormal"]); body.collision.damping = 0.5; body.collision.cloth_friction = cfg["friction"]
 
     sc.gravity = (0.0, 0.0, -9.81 * cfg["gravity"])
-    res = {}
+    res = {}; ABS = {}
     acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
     for act in acts:
         a = int(act["uo_action"])
@@ -287,6 +296,8 @@ def main():
                 ev = sim.evaluated_get(bpy.context.evaluated_depsgraph_get())
                 c = np.empty(nv * 3, np.float32); ev.data.vertices.foreach_get("co", c)
                 i = want[f]; c = c.reshape(-1, 3).astype(np.float64)
+                if cfg["abs"]:
+                    ABS["%d_%d" % (a, i)] = c.astype(np.float16)
                 if cfg["env"] > 0:
                     c = envelope(c)
                 d = c - T[i]
@@ -314,6 +325,8 @@ def main():
                 D = (K @ D) / ks[:, None]
             res[k] = D.astype(np.float32)
     np.savez_compressed(out, **res)
+    if ABS:
+        np.savez_compressed(out + ".abs.npz", **ABS)                       # key abs=1: the simulated positions themselves (world, m), for looking at the cloth without the renderer
     print("wrote", out, "(%d frames)" % len(res))
 
 

@@ -24,7 +24,8 @@ RECIPE.json (only "file" and "kind" are required):
                                     # weights of the skin under it; the render keeps it out of the skin of its region in every frame); its settings, true = the defaults
    "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
-   "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
+   "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings;
+                                    # {"engine": "pbd", "damp": 3, ...} = uo_cloth_pbd.py: free-hanging cloth pinned at the waistband only, legs as capsules, no pull to the body)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
@@ -522,9 +523,11 @@ if __name__ == "__main__":
         print("flail simulated in %.0f s" % (time.time() - t))
     sim = recipe.get("sim", recipe.get("kind") in ("robe", "skirt")) and not recipe.get("weapon")      # loose garments: cloth simulation on top of the leg push (uo_cloth_sim.py), on by default
     if sim and a.no_sim is False:
-        t = time.time(); cfg = ["%s=%s" % kv for kv in (recipe["sim"].items() if isinstance(recipe.get("sim"), dict) else [])]
+        t = time.time(); simcfg = dict(recipe["sim"]) if isinstance(recipe.get("sim"), dict) else {}
+        engine = simcfg.pop("engine", "blender")                      # "pbd": uo_cloth_pbd.py, a free-hanging cloth pinned at the waistband only (no pull to the body, the legs are capsules)
+        cfg = ["%s=%s" % kv for kv in simcfg.items()]
         acts = [x for x in (a.actions or PREVIEW_ACTIONS).split(",")] if a.preview and not a.vd else None
-        cmd = [sys.executable, os.path.join(HERE, "uo_cloth_sim.py"), blend, "--jobs", "4", "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + cfg
+        cmd = [sys.executable, os.path.join(HERE, "uo_cloth_pbd.py" if engine == "pbd" else "uo_cloth_sim.py"), blend, "--jobs", "4", "--out", os.path.join(out, "cloth_sim.npz")] + (["--actions", ",".join(acts)] if acts else []) + cfg
         r = subprocess.run(cmd, capture_output=True, text=True)
         line = next((l for l in r.stdout.splitlines() if l.startswith("wrote")), "uo_cloth_sim failed: " + (r.stderr or r.stdout)[-400:])
         print("cloth simulation: %s (%.0f s)" % (line, time.time() - t)); open(os.path.join(out, "report.txt"), "a").write(line + "\n")

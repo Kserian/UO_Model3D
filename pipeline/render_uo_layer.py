@@ -749,7 +749,7 @@ OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP 
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
 HANDHEAD_TRIS = body_part_mask({"hand", "head"})                # HIDE_ERODE shrinks what these hide (a hand only next to its sleeve)
 HEAD_TRIS = body_part_mask({"head"})
-BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and any(o.get("uo_behind_torso") for o in clothes if not o.hide_render)
+BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and (bool(sc.get("uo_behind_torso", 0)) or any(o.get("uo_behind_torso") for o in clothes if not o.hide_render))   # scene "uo_behind_torso": 1 = every visible item (a recipe's "scene")
 TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if BEHIND_TORSO else None
 print("render_uo_layer: items wrap %s; body parts that may hide them: %s" % (sorted(WORN), sorted(set(OCCLUDERS) - WORN)))
 

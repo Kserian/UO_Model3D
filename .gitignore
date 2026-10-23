@@ -3,3 +3,4 @@ __pycache__/
 *.blend1
 uo_render/
 uo_client/
+models/
