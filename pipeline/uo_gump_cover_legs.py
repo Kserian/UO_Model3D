@@ -68,26 +68,32 @@ def cover(raw, body, margin, side, y_leg=135, max_run=24, panel_x=(None, 86), sl
         if 0 <= ns and ns + (e - s) <= W:
             out[y, ns:ns + (e - s)] = np.where(seg[..., 3:4] > 0.5, seg, out[y, ns:ns + (e - s)])
             moved = max(moved, sh)
-    # the outer edge of the moved panels is smoothed along y (a moving average of its x, only ever extended outwards so that the cover stays; the new pixels take the colour of the edge pixel)
+    # the outer edge of the moved panel is replaced by a smooth curve: a cubic polynomial fitted to its x(y) over the rows of the panel (the waves of the torn border and the plateaus and steps of the integer
+    # shifts go; the slanted line along the leg stays), then clamped so that the leg never sticks out by more than 1 px (the cover stays), at most 5 px from where it was; pixels added take the colour of the
+    # edge pixel, pixels removed become transparent
     edge = np.full(H, np.nan)
     for y in range(H):
         if d[y] > 0.5 and out[y, :, 3].max() > 0.5:
             rs = runs(out[y, :, 3] > 0.5)
-            if len(rs) >= 2 and (rs[0] if side == "left" else rs[-1])[1] - (rs[0] if side == "left" else rs[-1])[0] <= max_run and (side != "left" or rs[0][1] <= panel_x[1]):
-                edge[y] = (rs[0][0] if side == "left" else rs[-1][1] - 1)
-    ok = ~np.isnan(edge)
-    if ok.sum() > 4:
-        sm = edge.copy(); sm[ok] = ndimage.gaussian_filter1d(np.interp(np.nonzero(ok)[0], np.nonzero(ok)[0], edge[ok]), 2.5)
-        for y in np.nonzero(ok)[0]:
-            rs = runs(out[y, :, 3] > 0.5); s0, e0 = rs[0] if side == "left" else rs[-1]
+            r0 = rs[0] if side == "left" else rs[-1]
+            if len(rs) >= 2 and r0[1] - r0[0] <= max_run and (side != "left" or r0[1] <= panel_x[1]):
+                edge[y] = r0[0] if side == "left" else r0[1] - 1
+    ok = ~np.isnan(edge); ys_ok = np.nonzero(ok)[0]
+    for seg in (np.split(ys_ok, np.nonzero(np.diff(ys_ok) > 1)[0] + 1) if len(ys_ok) else []):
+        if len(seg) < 12:
+            continue
+        coef = np.polyfit(seg - seg[0], edge[seg], 3); fit = np.polyval(coef, seg - seg[0])
+        for y, e_old, e_fit in zip(seg, edge[seg], fit):
+            e_old = int(e_old)
+            bx = np.nonzero(B[y])[0]
+            new_e = int(np.clip(round(e_fit), e_old - 5, e_old + 5))
             if side == "left":
-                nl = min(s0, int(np.floor(sm[y] + 0.5)))
-                if nl < s0 and s0 - nl <= 3:
-                    out[y, nl:s0] = out[y, s0]
-            else:
-                nr = max(e0 - 1, int(np.ceil(sm[y] - 0.5)))
-                if nr > e0 - 1 and nr - (e0 - 1) <= 3:
-                    out[y, e0:nr + 1] = out[y, e0 - 1]
+                if len(bx):
+                    new_e = min(new_e, int(bx.min()) + 1)                          # the leg sticks out by 1 px at most
+                if new_e < e_old:
+                    out[y, new_e:e_old] = out[y, e_old]
+                elif new_e > e_old:
+                    out[y, e_old:new_e] = 0
     if side == "left":                                                      # 1-px stubs beside the panel (a tick of the tip) go: a 2 x 2 opening of the panel's region only (the banner's own thin ornaments are not touched)
         reg = np.zeros(out.shape[:2], bool); reg[y_leg:, :panel_x[1]] = True
         al = out[..., 3] > 0.5
