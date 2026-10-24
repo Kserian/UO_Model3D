@@ -19,10 +19,6 @@
    ],
    "below": 0.72
   },
-  "shaft_widen": {
-   "below": 0.72,
-   "by": 0.014
-  },
   "follow_hand": {
    "actions": [
     "23_mounted_walk",
@@ -39,7 +35,7 @@
  "decimate": 30000,
  "materials": {},
  "scene": {
-  "uo_edge_floor": 40,
-  "uo_outline": 0.7
+  "uo_edge_floor": 52,
+  "uo_outline": 0.5
  }
 }

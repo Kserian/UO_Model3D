@@ -16,4 +16,4 @@ Rebuild: `python pipeline/uo_make_item.py model/items/spiked_mace/spiked_mace.js
 
 - Grip: `"butt": -1.05` (hands 1.05 m from the butt = 0.57 m below the head): closer to the ball in 2H idle and 2H bash.
 - Mounted actions (23-29): `follow_hand` re-keys `polearm.L` rigid on `hand.L` (`uo_follow_hand.py`, reference = mean hand-relative transform in `01_walk_armed`). The keys of the repo rig follow the original weapons, which sit 10-50 cm off the fitted hand in the mounted actions.
-- Wood: `shaft_tint` (lower 72 % of the shaft x (2.3, 1.9, 1.4)); the head stays steel. Shaft +1 px (`shaft_widen`, radius +1.4 cm).
+- Wood: `shaft_tint` (lower 72 % of the shaft x (2.3, 1.9, 1.4)); the head stays steel. Shaft thickness is the model's own (`shaft_widen` is available but off: +1 px was too thick). Outline: `uo_outline` 0.5, `uo_edge_floor` 52 (soft, dark grey on the ball, never black).
