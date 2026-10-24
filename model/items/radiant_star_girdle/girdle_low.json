@@ -1,6 +1,6 @@
 {
  "name": "radiant_star_girdle_low",
- "file": "models/radiant_star_girdle.glb",
+ "file": "models/radiant_star_girdle_filled_narrow.glb",
  "kind": "skirt",
  "decimate": 16000,
  "bake_texture": 4096,
@@ -25,7 +25,8 @@
  "sim": {
   "engine": "pbd",
   "damp": 3,
-  "upper": -0.04
+  "upper": -0.04,
+  "glue": 0.025
  },
  "stretch": [
   0.87,

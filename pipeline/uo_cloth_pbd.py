@@ -16,7 +16,7 @@ Settings (key=value): substeps (8 per UO frame), iters (60 Gauss-Seidel iteratio
 damp (1.5 1/s: air drag + internal damping; a heavier, calmer cloth: 3-5; 0 = a pendulum that never stops), gravity (1: x 9.81), friction (0.3: share of the velocity a vertex loses in a sub-step
 in which it touches a leg), margin (0.012 m: the cloth stays this far outside the capsule), rpct (75: percentile of the skin distance that is the radius of a capsule), upper (z_top - 0.02 m: the band is
 the vertices above z_top + (upper - 0.02)), ramp (0.04 m: how far below the band the pin fades out to zero), island (1), preroll (20 UO-frame durations... in frames of 1/fps x STEP), cycles (2),
-smooth (0.03 m: the move averaged over this distance in space, 2 passes, as in uo_cloth_sim.py; 0 = off), abs (0; 1 = also write <out>.abs.npz with the positions themselves), mounted (not simulated, as there).
+glue (0; 0.025 m = pieces of the mesh that are not connected to the cloth, e.g. the strips of uo_fill_banner_gap.py, are tied to the nearest vertices within this distance), smooth (0.03 m: the move averaged over this distance in space, 2 passes, as in uo_cloth_sim.py; 0 = off), abs (0; 1 = also write <out>.abs.npz with the positions themselves), mounted (not simulated, as there).
 """
 import json, os, sys, time
 import numpy as np
@@ -28,7 +28,7 @@ import cloth_lib as cl                                                      # no
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
 CFG = dict(substeps=8, iters=60, stretch=1.0, bend=0.15, damp=1.5, gravity=1.0, friction=0.3, margin=0.012, rpct=75.0, upper=0.0, ramp=0.04, island=1.0, preroll=20, cycles=2,
-           smooth=0.03, abs=0.0, floor=0.012, mounted=0.0)
+           smooth=0.03, abs=0.0, floor=0.012, mounted=0.0, glue=0.0)
 
 try:
     from numba import njit
@@ -126,6 +126,25 @@ def mesh_constraints(item):
     return V, E, L0, B, LB
 
 
+def glue_pairs(V, E, dist, k=4):
+    """pieces of the mesh that are not connected to the main cloth (the strips filled in between a banner and its frame by uo_fill_banner_gap.py: a mesh of 3 mm, 230 rows, that the solver cannot hold
+    up by its own edges) are tied to the nearest vertices of the other pieces within `dist` m by distance constraints with their rest lengths: they move with the cloth they lie next to"""
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    from scipy.spatial import cKDTree
+    n = len(V)
+    nc, comp = connected_components(coo_matrix((np.ones(len(E)), (E[:, 0], E[:, 1])), shape=(n, n)), directed=False)
+    big = np.argmax(np.bincount(comp))
+    d, nb = cKDTree(V).query(V, k=k + 1)
+    pairs = set()
+    for i in np.nonzero(comp != big)[0]:
+        for dd, j in zip(d[i, 1:], nb[i, 1:]):
+            if dd < dist and comp[j] != comp[i]:
+                pairs.add((min(i, j), max(i, j)))
+    G = np.array(sorted(pairs), np.int32).reshape(-1, 2)
+    return G, np.linalg.norm(V[G[:, 0]] - V[G[:, 1]], axis=1) if len(G) else np.zeros(0)
+
+
 def run_parallel(blend, out, only, jobs, extra):
     import subprocess, tempfile
     bpy.ops.wm.open_mainfile(filepath=blend)
@@ -201,6 +220,10 @@ def main():
     inv_local = {n: np.linalg.inv(np.array(rig.data.bones[n].matrix_local)) for n in names}
     sel = np.array(["pelvis" not in names[k] for k in caps_leg.idx])
     Vr, E, L0, B, LB = mesh_constraints(item)
+    if cfg["glue"] > 0:
+        G, LG = glue_pairs(Vr, E, cfg["glue"])
+        print("uo_cloth_pbd: %d glue constraints tie the loose strips (%.0f mm) to the cloth next to them" % (len(G), 1000 * cfg["glue"]), flush=True)
+        E = np.r_[E, G].astype(np.int32); L0 = np.r_[L0, LG]
     rig.data.pose_position = "POSE"; bpy.context.view_layer.update()
     print("uo_cloth_pbd: item %s, %d vertices, %d edges, %d bending pairs, %d capsules (radii %s), dt %.1f ms x %d sub-steps, waist %.2f m" % (
         item.name, nv, len(E), len(B), len(caps.idx), ", ".join("%.3f" % r for r in caps.radius), 1000 * dt, ns, prm["z_top"]), flush=True)
