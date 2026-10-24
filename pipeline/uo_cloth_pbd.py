@@ -12,7 +12,7 @@ skeleton skins it + the leg push), so the renderer needs no change (CLOTH_SIM = 
     leg never gets through), the ground as a plane. Nothing pulls the cloth to the legs or to a shape: it drapes over them and falls back by its own weight. Loose pieces that touch no
     pinned vertex (shards of a generated model) follow the skin (island 1), else they fall away for ever.
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the loop), CYCLES loops of a looping action, the last one is kept (the loop closes without a jump).
-Settings (key=value): substeps (8 per UO frame), iters (10 Gauss-Seidel iterations per sub-step), stretch (1: stiffness of the edges, 0..1), bend (0.15: of the bending constraints; silk 0.05-0.3),
+Settings (key=value): substeps (8 per UO frame), iters (60 Gauss-Seidel iterations per sub-step: with 10 a 0.8 m skirt of 16k vertices stretches by 0.15 m under its own weight, with 60 by 2 cm, 100 by 1 cm), stretch (1: stiffness of the edges, 0..1), bend (0.15: of the bending constraints; silk 0.05-0.3),
 damp (1.5 1/s: air drag + internal damping; a heavier, calmer cloth: 3-5; 0 = a pendulum that never stops), gravity (1: x 9.81), friction (0.3: share of the velocity a vertex loses in a sub-step
 in which it touches a leg), margin (0.012 m: the cloth stays this far outside the capsule), rpct (75: percentile of the skin distance that is the radius of a capsule), upper (z_top - 0.02 m: the band is
 the vertices above z_top + (upper - 0.02)), ramp (0.04 m: how far below the band the pin fades out to zero), island (1), preroll (20 UO-frame durations... in frames of 1/fps x STEP), cycles (2),
@@ -27,7 +27,7 @@ import cloth_lib as cl                                                      # no
 
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
-CFG = dict(substeps=8, iters=10, stretch=1.0, bend=0.15, damp=1.5, gravity=1.0, friction=0.3, margin=0.012, rpct=75.0, upper=0.0, ramp=0.04, island=1.0, preroll=20, cycles=2,
+CFG = dict(substeps=8, iters=60, stretch=1.0, bend=0.15, damp=1.5, gravity=1.0, friction=0.3, margin=0.012, rpct=75.0, upper=0.0, ramp=0.04, island=1.0, preroll=20, cycles=2,
            smooth=0.03, abs=0.0, floor=0.012, mounted=0.0)
 
 try:
@@ -266,10 +266,10 @@ def main():
                 al = 0.0 if hold else (s + 1) / ns
                 tgt = S[i] + al * (S[j] - S[i]); ch = CH[i] + al * (CH[j] - CH[i]); ct = CT[i] + al * (CT[j] - CT[i])
                 substep(x, v, tgt, pinw, invm, E, L0, B, LB, ch, ct, cr, dt, 9.81 * cfg["gravity"], cfg["damp"], int(cfg["iters"]), cfg["stretch"], cfg["bend"], cfg["friction"], cfg["floor"], 0)
+            if not loop and q == pre - 1:                                                # the state after the preroll is frame 0 of an action that is played once
+                keep[0] = x.copy()
             if q >= pre and q >= len(seq) - nfr:                                         # the last loop: the state at the end of UO frame i is the pose of frame j = i + 1
                 keep[j % nfr if loop else j] = x.copy()
-        if not loop:
-            keep[0] = None
         for i in range(nfr):
             c = keep.get(i)
             if c is None:

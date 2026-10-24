@@ -14,12 +14,13 @@
   }
  },
  "prepare": {
-  "HEM": 0.03,
+  "HEM": 0.12,
   "FIT": false
  },
  "scene": {
   "uo_behind_torso": 1,
-  "uo_samples": 1024
+  "uo_samples": 1024,
+  "uo_edge_smooth": 3
  },
  "sim": {
   "engine": "pbd",
