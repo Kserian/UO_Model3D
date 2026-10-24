@@ -16,7 +16,7 @@ Settings (key=value): substeps (8 per UO frame), iters (60 Gauss-Seidel iteratio
 damp (1.5 1/s: air drag + internal damping; a heavier, calmer cloth: 3-5; 0 = a pendulum that never stops), gravity (1: x 9.81), friction (0.3: share of the velocity a vertex loses in a sub-step
 in which it touches a leg), margin (0.012 m: the cloth stays this far outside the capsule), rpct (75: percentile of the skin distance that is the radius of a capsule), upper (z_top - 0.02 m: the band is
 the vertices above z_top + (upper - 0.02)), ramp (0.04 m: how far below the band the pin fades out to zero), island (1), preroll (20 UO-frame durations... in frames of 1/fps x STEP), cycles (2),
-glue (0; 0.025 m = pieces of the mesh that are not connected to the cloth, e.g. the strips of uo_fill_banner_gap.py, are tied to the nearest vertices within this distance), smooth (0.03 m: the move averaged over this distance in space, 2 passes, as in uo_cloth_sim.py; 0 = off), abs (0; 1 = also write <out>.abs.npz with the positions themselves), mounted (not simulated, as there).
+lie (-1 = as the scene property uo_cloth_lie; 1 = the falls 21, 22 are not simulated: the renderer lays the cloth along the legs, which keeps it on the body in every frame of a death; 0 = simulated), glue (0; 0.025 m = pieces of the mesh that are not connected to the cloth, e.g. the strips of uo_fill_banner_gap.py, are tied to the nearest vertices within this distance), smooth (0.03 m: the move averaged over this distance in space, 2 passes, as in uo_cloth_sim.py; 0 = off), abs (0; 1 = also write <out>.abs.npz with the positions themselves), mounted (not simulated, as there).
 """
 import json, os, sys, time
 import numpy as np
@@ -28,7 +28,7 @@ import cloth_lib as cl                                                      # no
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
 CFG = dict(substeps=8, iters=60, stretch=1.0, bend=0.15, damp=1.5, gravity=1.0, friction=0.3, margin=0.012, rpct=75.0, upper=0.0, ramp=0.04, island=1.0, preroll=20, cycles=2,
-           smooth=0.03, abs=0.0, floor=0.012, mounted=0.0, glue=0.0)
+           smooth=0.03, abs=0.0, floor=0.012, mounted=0.0, glue=0.0, lie=-1.0)
 
 try:
     from numba import njit
@@ -148,7 +148,11 @@ def glue_pairs(V, E, dist, k=4):
 def run_parallel(blend, out, only, jobs, extra):
     import subprocess, tempfile
     bpy.ops.wm.open_mainfile(filepath=blend)
-    names = [a.name for a in sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"])) if not (23 <= int(a["uo_action"]) <= 29) and (only is None or a.name in only)]
+    lie = float(bpy.context.scene.get("uo_cloth_lie", 0)) > 0
+    for e in extra:
+        if e.startswith("lie=") and float(e[4:]) >= 0:
+            lie = float(e[4:]) > 0
+    names = [a.name for a in sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"])) if not (23 <= int(a["uo_action"]) <= 29) and not (lie and int(a["uo_action"]) in (21, 22)) and (only is None or a.name in only)]
     groups = [names[k::jobs] for k in range(jobs)]
     tmp = tempfile.mkdtemp(prefix="uo_cloth_pbd_"); procs = []
     for k, g in enumerate(groups):
@@ -268,8 +272,8 @@ def main():
     from bpy_compat import action_fcurves
     for act in acts:
         a = int(act["uo_action"])
-        if (23 <= a <= 29 and not cfg["mounted"]) or (only is not None and act.name not in only):
-            continue
+        if (23 <= a <= 29 and not cfg["mounted"]) or (a in (21, 22) and (cfg["lie"] > 0 if cfg["lie"] >= 0 else float(sc.get("uo_cloth_lie", 0)) > 0)) or (only is not None and act.name not in only):
+            continue                                                                        # riding and (scene uo_cloth_lie > 0) the falls are not simulated: the renderer lays the cloth along the legs
         t0 = time.time(); rig.animation_data.action = act; rig["uo_direction"] = 0
         nfr = int(act["uo_frames"]); loop = a in LOOP
         T = []; S = []; CH = []; CT = []
