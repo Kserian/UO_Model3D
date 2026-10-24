@@ -50,3 +50,7 @@ In the run the thigh of the real body stood out of the capsule that `uo_cloth_pb
 ### Gumps and icon of the lower version from the filled, narrowed model (`paperdoll_low/`, replaces the first ones)
 
 `gump_male.png` / `gump_female.png` (260 x 237), `art.png` and `art_mirror.png` (44 x 44) with their `.bin` entries (`Gumpart.mul`, `art.mul`), `levels.json`. Gumps: `uo_render_paperdoll.py` on `run8/item.blend` (band fitted to the underwear of each body gump) then `uo_gump_finish.py`. The icon is no longer a separate 3D view: `uo_art_from_gump.py` takes the front view of the item (`item_hi.npy`, saved by `uo_render_paperdoll.py`), turns it by 45 degrees in its plane and reduces it by x0.151 (area mean) into 44 x 44 px; the mirrored icon is the second `.bin`. Decoded back with `uo_gump_art.py`: alpha identical, colours within the 5-bit rounding.
+
+#### The left panel covers the leg on the paperdoll (`pipeline/uo_gump_cover_legs.py`)
+
+The skirt hangs straight, the drawn body gumps stand with the legs apart: below the hip the left leg came out beside the outer panel (4-6 px in the male gump, 2-5 px in the female one, measured per row as the outermost pixel of the body gump against that of the item). `uo_gump_cover_legs.py` moves the outermost run of item pixels of each row outwards by that difference + 1 px (smoothed along y, eased in below row 135): up to 7 px (male) and 10 px (female); the right leg is inside its panel in both. Run between `uo_render_paperdoll.py` and `uo_gump_finish.py`; the icon is not affected.
