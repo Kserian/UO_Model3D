@@ -145,8 +145,8 @@ for gender, (tx0, tx1, ttop) in TARGETS.items():
     b0, b1, bt = band_of(belt_g)
     print("PD %s: band now x %.1f..%.1f top %.1f (target %.0f..%.0f top %.0f), kx %.3f" % (gender, b0 / SS, b1 / SS, bt / SS, tx0, tx1, ttop, kx))
 
-# art: the item as one object, tilted towards the camera, fitted into 44 x 32
-AW, AH = 44, 32
+# art: the item as one object, tilted towards the camera, fitted into 44 x 32 (PD_ART_W / PD_ART_H)
+AW, AH = int(os.environ.get("PD_ART_W", "44")), int(os.environ.get("PD_ART_H", "32"))      # the box of the icon (a skirt: 44 x 40)
 tilt = float(os.environ.get("PD_ART_TILT", "55"))
 turn = float(os.environ.get("PD_ART_TURN", "-35"))
 rig.rotation_mode = "ZYX"; rig.rotation_euler = (np.radians(tilt), 0, np.radians(turn))      # first the turn about the vertical axis, then the tilt of the top towards the camera (= a camera `tilt` degrees above the horizon)
