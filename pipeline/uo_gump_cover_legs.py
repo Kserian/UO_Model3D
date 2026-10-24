@@ -89,11 +89,18 @@ def cover(raw, body, margin, side, y_leg=135, max_run=24, panel_x=(None, 86), sl
             new_e = int(np.clip(round(e_fit), e_old - 5, e_old + 5))
             if side == "left":
                 if len(bx):
-                    new_e = min(new_e, int(bx.min()) + 1)                          # the leg sticks out by 1 px at most
+                    new_e = min(new_e, int(bx.min()))                              # the edge reaches the leg's outermost pixel: no body beside the panel
                 if new_e < e_old:
                     out[y, new_e:e_old] = out[y, e_old]
                 elif new_e > e_old:
                     out[y, e_old:new_e] = 0
+    if side == "left":                                                      # the corner under the band: before the panel leaves it (the shift grows 0.5 px per row) the leg comes out beside the band's lower corner by 2-3 px; the item's edge is
+        for y in range(max(y_leg - 4, 0), H):                              # widened to the leg's outer edge (at most 5 px, the colour of the edge pixel; later rows are covered by the fitted edge)
+            if not (out[y, :, 3] > 0.5).any() or not B[y].any():
+                continue
+            lx = int(np.nonzero(B[y])[0].min()); ix = int(np.nonzero(out[y, :, 3] > 0.5)[0].min())
+            if lx >= 70 and ix > lx and ix - lx <= 5 and ix <= panel_x[1]:
+                out[y, lx:ix] = out[y, ix]
     if side == "left":                                                      # 1-px stubs beside the panel (a tick of the tip) go: a 2 x 2 opening of the panel's region only (the banner's own thin ornaments are not touched)
         reg = np.zeros(out.shape[:2], bool); reg[y_leg:, :panel_x[1]] = True
         al = out[..., 3] > 0.5
