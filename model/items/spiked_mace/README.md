@@ -10,7 +10,7 @@ Rebuild: `python pipeline/uo_make_item.py model/items/spiked_mace/spiked_mace.js
 
 ## Files
 
-- `Spiked_mace_6_actions.vd`: 5 directions of `12_attack_2h_bash`, `01_walk_armed`, `03_run_armed`, `23_mounted_walk`, `24_mounted_run`, `25_mounted_stand` (rebuild with `--vd --actions 12_attack_2h_bash,01_walk_armed,03_run_armed,23_mounted_walk,24_mounted_run,25_mounted_stand`). Length 1.62 m, spikes inflated 1.2 cm (`inflate`), outline floor 40.
+- `Spiked_mace_2h_mounted.vd`: 5 directions of `01_walk_armed`, `03_run_armed`, `08_combat_idle_2h`, `12_attack_2h_bash`, `13_attack_2h_slash`, `14_attack_2h_pierce`, `23_mounted_walk`, `24_mounted_run`, `25_mounted_stand`, `26..29_mounted_attack_*` (rebuild with `--vd --actions` and these names).
 
 ## Tuning notes (2026-10-24)
 
