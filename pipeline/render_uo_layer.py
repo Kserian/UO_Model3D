@@ -121,6 +121,8 @@ EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
+TORSO_HIDE_MARGIN = float(sc.get("uo_torso_margin", TORSO_HIDE_MARGIN))     # per item (scene): how far behind the torso an item with `uo_behind_torso` must be to be hidden by it (m)
+OCCLUDERS = [x for x in str(sc.get("uo_hiders", ",".join(OCCLUDERS))).split(",") if x]       # per item (scene, comma list): the body parts that may hide it. A weapon held in the hand: "hand" (UO draws a held weapon over the body; only the fist wraps it)
 SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
 CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
