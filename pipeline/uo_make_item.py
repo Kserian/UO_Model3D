@@ -25,7 +25,7 @@ RECIPE.json (only "file" and "kind" are required):
    "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
-   "weapon": {"class": "sword", "part": "weapon1h", "inflate": {"above": 0.7, "by": 0.012}, "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
+   "weapon": {"class": "sword", "part": "weapon1h", "inflate": {"above": 0.7, "by": 0.012}, "shaft_tint": {"rgb": [2.2, 1.9, 1.5], "below": 0.7}, "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
@@ -420,8 +420,48 @@ if wp:                                                           # a weapon: upr
                     v.co += v.normal * by
             o.data.update()
             print("uo_make_item: inflate %%s above z=%%.2f by %%.1f cm" %% (o.name, lim, 100 * by))
+    if wp.get("shaft_widen"):                                   # "shaft_widen": {"below": 0.72, "by": 0.014}: the lower part of the shaft (fraction of the length from the butt) is pushed out from the shaft axis by `by` m all round: +2 x by to the diameter (0.028 m = 1 px)
+        import numpy as np
+        for o in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
+            co = np.array([v.co[:] for v in o.data.vertices]); lo, hi = co[:, 2].min(), co[:, 2].max()
+            low = co[:, 2] < lo + float(wp["shaft_widen"].get("below", 0.72)) * (hi - lo); ax = np.median(co[co[:, 2] < lo + 0.4 * (hi - lo), :2], axis=0)
+            d = co[:, :2] - ax; r = np.maximum(np.linalg.norm(d, axis=1), 1e-9); by = float(wp["shaft_widen"]["by"])
+            co[low, :2] += d[low] / r[low, None] * by
+            o.data.vertices.foreach_set("co", co.astype(np.float32).ravel()); o.data.update()
+            print("uo_make_item: shaft_widen %%s: %%d vertices, radius +%%.1f cm" %% (o.name, low.sum(), 100 * by))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
+    if wp.get("shaft_tint"):                                     # "shaft_tint": {"rgb": [2.2, 1.9, 1.5], "below": 0.72}: the albedo of the lower part of the shaft (fraction of the length from the butt) is multiplied by rgb (a dark wood: lighter and warmer); the head stays
+        import numpy as np
+        st = wp["shaft_tint"]
+        for o in [o for o in bpy.data.collections["Clothing"].all_objects if o.type == "MESH"]:
+            P = np.array([v.co[:] for v in o.data.vertices]); c = P.mean(0); u = np.linalg.svd(P - c, full_matrices=False)[2][0]
+            t = (P - c) @ u; lo, hi = t.min(), t.max(); span = hi - lo
+            if (t > hi - 0.15 * span).sum() < (t < lo + 0.15 * span).sum():          # the head is the end with more vertices: make it the high end
+                u = -u; t = -t; lo, hi = t.min(), t.max()
+            lim = lo + float(st.get("below", 0.72)) * (hi - lo); mn = P.min(0); sz = np.maximum(P.max(0) - mn, 1e-9)     # "Generated" coordinates = the undeformed bounding box 0..1 (the pose does not move the mask): P = mn + g * sz
+            off = float(np.dot(c, u)) - float(np.dot(mn, u)); u = u * sz
+            for m in o.data.materials:
+                nt = m.node_tree; grp = [n for n in nt.nodes if n.type == "GROUP" and "Albedo" in n.inputs]
+                if not grp:
+                    continue
+                gi = grp[0].inputs["Albedo"]
+                tc = nt.nodes.new("ShaderNodeTexCoord"); dot = nt.nodes.new("ShaderNodeVectorMath"); dot.operation = "DOT_PRODUCT"; dot.inputs[1].default_value = tuple(float(x) for x in u)
+                nt.links.new(tc.outputs["Generated"], dot.inputs[0])
+                lt = nt.nodes.new("ShaderNodeMath"); lt.operation = "LESS_THAN"; lt.inputs[1].default_value = lim + off
+                nt.links.new(dot.outputs["Value"], lt.inputs[0])
+                mix = nt.nodes.new("ShaderNodeMix"); mix.data_type = "RGBA"; mix.blend_type = "MULTIPLY"; mix.clamp_result = False
+                src = gi.links[0].from_socket if gi.links else None
+                if src is not None:
+                    nt.links.new(src, mix.inputs[6])
+                else:
+                    mix.inputs[6].default_value = gi.default_value
+                mix.inputs[7].default_value = tuple(float(x) for x in st["rgb"]) + (1.0,)
+                nt.links.new(lt.outputs["Value"], mix.inputs[0]); nt.links.new(mix.outputs[2], gi)
+                print("uo_make_item: shaft_tint %%s below %%.2f of the length, x%%s" %% (o.name, st.get("below", 0.72), st["rgb"]))
+    if wp.get("follow_hand"):                                    # "follow_hand": {"actions": ["23_mounted_walk", ...], "reference": "01_walk_armed"}: the weapon bone rigid on its hand in these actions (uo_follow_hand.py)
+        fh = wp["follow_hand"]
+        run("uo_follow_hand.py", BONE=wp["part"] + (".L" if wp["part"] in ("polearm", "axe2h", "bow") else ".R"), HAND="hand.L" if wp["part"] in ("polearm", "axe2h", "bow", "weapon.L") else "hand.R", ACTIONS=list(fh["actions"]), REFERENCE=fh.get("reference", "01_walk_armed"))
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)

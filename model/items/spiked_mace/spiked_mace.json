@@ -1,1 +1,45 @@
-{"name": "spiked_mace", "file": "models/spiked_mace.glb", "weapon": {"class": "staff", "part": "polearm", "length": 1.62, "tip": "heavy", "butt": -0.81, "inflate": {"above": 0.72, "by": 0.012}}, "decimate": 30000, "materials": {}, "scene": {"uo_edge_floor": 40, "uo_outline": 0.7}}
+{
+ "name": "spiked_mace",
+ "file": "models/spiked_mace.glb",
+ "weapon": {
+  "class": "staff",
+  "part": "polearm",
+  "length": 1.62,
+  "tip": "heavy",
+  "butt": -1.05,
+  "inflate": {
+   "above": 0.72,
+   "by": 0.012
+  },
+  "shaft_tint": {
+   "rgb": [
+    2.3,
+    1.9,
+    1.4
+   ],
+   "below": 0.72
+  },
+  "shaft_widen": {
+   "below": 0.72,
+   "by": 0.014
+  },
+  "follow_hand": {
+   "actions": [
+    "23_mounted_walk",
+    "24_mounted_run",
+    "25_mounted_stand",
+    "26_mounted_attack_1h",
+    "27_mounted_attack_bow",
+    "28_mounted_attack_crossbow",
+    "29_mounted_attack_2h"
+   ],
+   "reference": "01_walk_armed"
+  }
+ },
+ "decimate": 30000,
+ "materials": {},
+ "scene": {
+  "uo_edge_floor": 40,
+  "uo_outline": 0.7
+ }
+}
