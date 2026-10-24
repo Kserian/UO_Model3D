@@ -128,6 +128,7 @@ def fit(a, kx, dx, dy, x_ref, y_ref):
     return out
 
 
+np.save(os.path.join(OUT, "item_hi.npy"), a1)               # the front view at SS x the gump's resolution, before it is fitted to a body gump (uo_art_from_gump.py: the icon is this picture turned and reduced)
 sx0, sx1, stop = band_of(a1)
 print("PD our band: x %.1f..%.1f top %.1f (gump px)" % (sx0 / SS, sx1 / SS, stop / SS))
 from PIL import Image

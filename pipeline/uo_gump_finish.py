@@ -71,7 +71,7 @@ def main():
             im = np.array(Image.open(f).convert("RGBA")); pix.append(im[interior(im)][:, :3])
     ref = np.percentile((np.concatenate(pix).astype(np.float32) * LUMA).sum(1), [5, 50, 95])
     levels = {"animation": ref.tolist()}
-    names = [("gump_male", "gump_male_raw.npy"), ("gump_female", "gump_female_raw.npy"), ("art", "art_raw.npy")]
+    names = [("gump_male", "gump_male_raw.npy"), ("gump_female", "gump_female_raw.npy"), ("art", "art_raw.npy")] + ([("art_mirror", "art_mirror_raw.npy")] if os.path.exists(os.path.join(a.raw, "art_mirror_raw.npy")) else [])
     for name, npy in names:
         raw = np.load(os.path.join(a.raw, npy))
         a8 = np.clip(raw * 255 + 0.5, 0, 255).astype(np.uint8); a8[..., 3] = np.where(raw[..., 3] >= 0.5, 255, 0)
@@ -80,8 +80,8 @@ def main():
         a8 = rim(spikes(a8), a.rim)
         levels[name + "_after"] = percentiles(a8, interior(a8)).tolist()
         Image.fromarray(a8).save(os.path.join(a.out, name + ".png"))
-        if name == "art":
-            open(os.path.join(a.out, "art.bin"), "wb").write(ga.encode_art(a8))
+        if name.startswith("art"):
+            open(os.path.join(a.out, name + ".bin"), "wb").write(ga.encode_art(a8))
         else:
             data, extra = ga.encode_gump(a8)
             open(os.path.join(a.out, name + ".bin"), "wb").write(data); levels[name + "_extra"] = extra
