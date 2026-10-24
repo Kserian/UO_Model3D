@@ -5,7 +5,7 @@
 RAW_DIR = the output of uo_render_paperdoll.py (gump_male_raw.npy, gump_female_raw.npy); the body gumps are docs/paperdoll/paperdoll_male_0xc.png / female_0xd.png. The skirt of the 3D model hangs
 straight down, the drawn bodies stand with the legs apart (the left leg of the body gump 12 goes 15 px outwards over the height of the skirt), so below the hip the leg comes out beside the
 outer panel. Per row: the leg's outer edge is the outermost pixel of the body gump, the panel's the outermost pixel of the item; where the leg is further out, the panel (the outermost run of item
-pixels, when it is separate from the rest) is moved outwards by the difference + margin px, smoothed along y and the largest need within +-4 rows then smoothed (a slanted edge, not steps), eased in over the 10 rows above the first row that needs it; its outer edge smoothed along y (only extended outwards, so the cover stays), so it hangs along the leg. Only the left side is
+pixels, when it is separate from the rest) is moved outwards by the difference + margin px, smoothed along y and the largest need within +-4 rows then smoothed, and the shift may grow by at most 0.5 px per row from the first row that needs it (a slanted start flush with the band, like the right panel; the leg may stick out 2-4 px there); its outer edge smoothed along y (only extended outwards, so the cover stays), so it hangs along the leg. Only the left side is
 moved by default (the right leg is inside its panel in both gumps); `--side both` moves the right one too where needed. Overwrites the raw files, prints the largest shift per gump.
 """
 import argparse, os
@@ -29,7 +29,7 @@ def runs(row):
     return r
 
 
-def cover(raw, body, margin, side, y_leg=135, max_run=24, panel_x=(None, 86)):
+def cover(raw, body, margin, side, y_leg=135, max_run=24, panel_x=(None, 86), slope=0.5):
     a = raw[..., 3] > 0.5; B = body[..., 3] > 0
     H, W = a.shape
     ys = np.nonzero(a.any(1))[0]
@@ -42,8 +42,14 @@ def cover(raw, body, margin, side, y_leg=135, max_run=24, panel_x=(None, 86)):
         d[y] = max(0.0, (ix.min() - bx.min() + margin) if side == "left" else (bx.max() - ix.max() + margin))
     d = ndimage.maximum_filter1d(d, size=9)                              # the cover first (the largest need within +-4 rows), then smooth: the edge is a slanted line, not steps
     d = ndimage.gaussian_filter1d(d, 3.0)
-    first = int(np.nonzero(d > 0.3)[0][0]) if (d > 0.3).any() else H
-    d *= np.clip((np.arange(H) - (first - 10)) / 10.0, 0, 1)             # eased in over the 10 rows above the first row that needs it
+    y_sep = H                                                              # the first row in which the panel is a run of its own (left of the banner): there the shift starts at 0
+    for y in range(y_leg, H):
+        rs = runs(a[y])
+        if len(rs) >= 2:
+            s0, e0 = rs[0] if side == "left" else rs[-1]
+            if e0 - s0 <= max_run and ((side == "left" and e0 <= panel_x[1]) or (side == "right" and s0 >= 260 - panel_x[1])):
+                y_sep = y; break
+    d = np.minimum(d, slope * np.maximum(np.arange(H) - y_sep + 1, 0))     # the shift grows by at most `slope` px per row from there: the panel leaves the band along a slanted edge, flush with it, like the other panel
     d = np.minimum(d, 14.0)                                                  # at most 14 px; no easing out at the end: the panel keeps its outer edge on the leg's outer edge down to its own last row (it rests on the leg)
     out = raw.copy(); moved = 0
     for y in range(H):
@@ -82,6 +88,12 @@ def cover(raw, body, margin, side, y_leg=135, max_run=24, panel_x=(None, 86)):
                 nr = max(e0 - 1, int(np.ceil(sm[y] - 0.5)))
                 if nr > e0 - 1 and nr - (e0 - 1) <= 3:
                     out[y, e0:nr + 1] = out[y, e0 - 1]
+    if side == "left":                                                      # 1-px stubs beside the panel (a tick of the tip) go: a 2 x 2 opening of the panel's region only (the banner's own thin ornaments are not touched)
+        reg = np.zeros(out.shape[:2], bool); reg[y_leg:, :panel_x[1]] = True
+        al = out[..., 3] > 0.5
+        opened = ndimage.binary_opening(al & reg, structure=np.ones((2, 2), bool))
+        drop = al & reg & ~opened
+        out[drop] = 0
     return out, moved, d.max()
 
 
