@@ -16,3 +16,7 @@ What was decided (measured, see the commit messages and README section 3a):
 - Mounted actions (23-29): the hem follows the legs (not simulated), as for every skirt.
 
 QA (`item_qa.py`, item inside the body in the posed frames): mean 14.1 % (worst 21_die_forward), deepest 127 mm. Higher than a fitted item (6.8 % with the fit) because the band is not pushed out of the skin; the renderer pushes it out of limbs, and the torso never hides items.
+
+## Second version: lower on the hips (`girdle_low.json` -> `Radiant_Star_Girdle_low.vd`)
+
+The band sits 7 cm lower (`NUDGE` -0.32 m: band at z 0.98-1.08 m, on the line of underwear), the hem stays at the same height above the ankles (`HEM` 0.13 m), so the skirt is about 5 cm shorter. Everything else as above. The cloth pins the whole band (`"sim": {"upper": -0.04}`; the pin height is taken from the recipe's `z_top`, which does not follow `NUDGE`). Hem (1st percentile of the simulated vertices) stand 0.153 m, walk 0.09-0.18 m, run 0.10-0.16 m; it touches the ground in crouching attacks and falls. QA: item inside the body 15.8 % (worst 21_die_forward), deepest 115 mm.
