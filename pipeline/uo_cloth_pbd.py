@@ -14,7 +14,7 @@ skeleton skins it + the leg push), so the renderer needs no change (CLOTH_SIM = 
 Every action is simulated on its own: PREROLL frames in its first pose (looping actions: the loop), CYCLES loops of a looping action, the last one is kept (the loop closes without a jump).
 Settings (key=value): substeps (8 per UO frame), iters (60 Gauss-Seidel iterations per sub-step: with 10 a 0.8 m skirt of 16k vertices stretches by 0.15 m under its own weight, with 60 by 2 cm, 100 by 1 cm), stretch (1: stiffness of the edges, 0..1), bend (0.15: of the bending constraints; silk 0.05-0.3),
 damp (1.5 1/s: air drag + internal damping; a heavier, calmer cloth: 3-5; 0 = a pendulum that never stops), gravity (1: x 9.81), friction (0.3: share of the velocity a vertex loses in a sub-step
-in which it touches a leg), margin (0.012 m: the cloth stays this far outside the capsule), rpct (75: percentile of the skin distance that is the radius of a capsule), upper (z_top - 0.02 m: the band is
+in which it touches a leg), margin (0.015 m: the cloth stays this far outside the capsule), rpct (95: percentile of the skin distance that is the radius of a capsule; with 75 the thigh of the real body stood out of the capsule and 27-43 % of the banner sat inside the leg in the run, so the legs hid it), upper (z_top - 0.02 m: the band is
 the vertices above z_top + (upper - 0.02)), ramp (0.04 m: how far below the band the pin fades out to zero), island (1), preroll (20 UO-frame durations... in frames of 1/fps x STEP), cycles (2),
 lie (-1 = as the scene property uo_cloth_lie; 1 = the falls 21, 22 are not simulated: the renderer lays the cloth along the legs, which keeps it on the body in every frame of a death; 0 = simulated), glue (0; 0.025 m = pieces of the mesh that are not connected to the cloth, e.g. the strips of uo_fill_banner_gap.py, are tied to the nearest vertices within this distance), smooth (0.03 m: the move averaged over this distance in space, 2 passes, as in uo_cloth_sim.py; 0 = off), abs (0; 1 = also write <out>.abs.npz with the positions themselves), mounted (not simulated, as there).
 """
@@ -27,7 +27,7 @@ import cloth_lib as cl                                                      # no
 
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
-CFG = dict(substeps=8, iters=60, stretch=1.0, bend=0.15, damp=1.5, gravity=1.0, friction=0.3, margin=0.012, rpct=75.0, upper=0.0, ramp=0.04, island=1.0, preroll=20, cycles=2,
+CFG = dict(substeps=8, iters=60, stretch=1.0, bend=0.15, damp=1.5, gravity=1.0, friction=0.3, margin=0.015, rpct=95.0, upper=0.0, ramp=0.04, island=1.0, preroll=20, cycles=2,
            smooth=0.03, abs=0.0, floor=0.012, mounted=0.0, glue=0.0, lie=-1.0)
 
 try:

@@ -26,7 +26,9 @@
   "engine": "pbd",
   "damp": 3,
   "upper": -0.04,
-  "glue": 0.025
+  "glue": 0.025,
+  "rpct": 95,
+  "margin": 0.015
  },
  "stretch": [
   0.87,
