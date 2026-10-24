@@ -29,7 +29,7 @@ def runs(row):
     return r
 
 
-def cover(raw, body, margin, side, y_leg=135, max_run=24):
+def cover(raw, body, margin, side, y_leg=135, max_run=24, panel_x=(None, 86)):
     a = raw[..., 3] > 0.5; B = body[..., 3] > 0
     H, W = a.shape
     ys = np.nonzero(a.any(1))[0]
@@ -44,7 +44,7 @@ def cover(raw, body, margin, side, y_leg=135, max_run=24):
     d = ndimage.gaussian_filter1d(d, 3.0)
     first = int(np.nonzero(d > 0.3)[0][0]) if (d > 0.3).any() else H
     d *= np.clip((np.arange(H) - (first - 10)) / 10.0, 0, 1)             # eased in over the 10 rows above the first row that needs it
-    d = np.minimum(d, 10.0) * np.clip((ys.max() - np.arange(H)) / 12.0, 0, 1)   # at most 10 px, and eased out over the last 12 rows: the point of the hem ends above the ankle, the leg below it is bare anyway
+    d = np.minimum(d, 14.0)                                                  # at most 14 px; no easing out at the end: the panel keeps its outer edge on the leg's outer edge down to its own last row (it rests on the leg)
     out = raw.copy(); moved = 0
     for y in range(H):
         sh = int(round(d[y]))
@@ -54,8 +54,8 @@ def cover(raw, body, margin, side, y_leg=135, max_run=24):
         if len(rs) < 2:
             continue
         s, e = rs[0] if side == "left" else rs[-1]
-        if e - s > max_run:
-            continue
+        if e - s > max_run or (side == "left" and e > panel_x[1]) or (side == "right" and s < 260 - panel_x[1]):
+            continue                                                           # not a panel: wider than one, or already the banner's own ornament
         seg = raw[y, s:e].copy()
         out[y, s:e] = 0                                                    # the old place of the panel is empty (the body shows)
         ns = s + sign * sh
@@ -67,7 +67,7 @@ def cover(raw, body, margin, side, y_leg=135, max_run=24):
     for y in range(H):
         if d[y] > 0.5 and out[y, :, 3].max() > 0.5:
             rs = runs(out[y, :, 3] > 0.5)
-            if len(rs) >= 2 and (rs[0] if side == "left" else rs[-1])[1] - (rs[0] if side == "left" else rs[-1])[0] <= max_run:
+            if len(rs) >= 2 and (rs[0] if side == "left" else rs[-1])[1] - (rs[0] if side == "left" else rs[-1])[0] <= max_run and (side != "left" or rs[0][1] <= panel_x[1]):
                 edge[y] = (rs[0][0] if side == "left" else rs[-1][1] - 1)
     ok = ~np.isnan(edge)
     if ok.sum() > 4:
@@ -94,6 +94,10 @@ def main():
         for side in (["left", "right"] if a.side == "both" else [a.side]):
             raw, moved, dmax = cover(raw, body, a.margin, side)
             print("%s %s: the panel moved outwards by up to %d px (the leg stuck out by %.1f px)" % (g, side, moved, dmax))
+        lab, n = ndimage.label(raw[..., 3] > 0.5)                              # a bit of the moved tip left on its own (a few pixels) is dropped
+        size = ndimage.sum(np.ones(lab.shape), lab, range(1, n + 1))
+        for k in np.nonzero(size < 20)[0]:
+            raw[lab == k + 1] = 0
         np.save(os.path.join(a.raw, "gump_%s_raw.npy" % g), raw)
 
 
