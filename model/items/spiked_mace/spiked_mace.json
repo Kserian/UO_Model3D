@@ -1,1 +1,1 @@
-{"name": "spiked_mace", "file": "models/spiked_mace.glb", "weapon": {"class": "staff", "part": "polearm", "length": 1.8, "tip": "heavy", "butt": -0.9}, "decimate": 30000, "materials": {}}
+{"name": "spiked_mace", "file": "models/spiked_mace.glb", "weapon": {"class": "staff", "part": "polearm", "length": 1.62, "tip": "heavy", "butt": -0.81, "inflate": {"above": 0.72, "by": 0.012}}, "decimate": 30000, "materials": {}, "scene": {"uo_edge_floor": 40, "uo_outline": 0.7}}
