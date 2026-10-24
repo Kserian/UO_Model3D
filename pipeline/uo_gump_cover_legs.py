@@ -6,7 +6,7 @@ RAW_DIR = the output of uo_render_paperdoll.py (gump_male_raw.npy, gump_female_r
 straight down, the drawn bodies stand with the legs apart (the left leg of the body gump 12 goes 15 px outwards over the height of the skirt), so below the hip the leg comes out beside the
 outer panel. Per row: the leg's outer edge is the outermost pixel of the body gump, the panel's the outermost pixel of the item; where the leg is further out, the panel (the outermost run of item
 pixels, when it is separate from the rest) is moved outwards by the difference + margin px, smoothed along y and the largest need within +-4 rows then smoothed, and the shift may grow by at most 0.5 px per row from the first row that needs it (a slanted start flush with the band, like the right panel; the leg may stick out 2-4 px there); its outer edge smoothed along y (only extended outwards, so the cover stays), so it hangs along the leg. Only the left side is
-moved by default (the right leg is inside its panel in both gumps); `--side both` moves the right one too where needed. Overwrites the raw files, prints the largest shift per gump.
+moved by default (the right leg is inside its panel in both gumps); `--side both` moves the right one too where needed. The inner edges of both panels are then smoothed along y (smooth_inner_edges). Overwrites the raw files, prints the largest shift per gump.
 """
 import argparse, os
 import numpy as np
@@ -97,6 +97,48 @@ def cover(raw, body, margin, side, y_leg=135, max_run=24, panel_x=(None, 86), sl
     return out, moved, d.max()
 
 
+def smooth_inner_edges(raw, y_leg=135, max_run=24, left_end=86, right_start=103, sigma=2.5, max_move=3):
+    """the inner edges of both panels (towards the leg and the banner) are smoothed along y: the torn border of the model is ragged and, once the body shows behind it, reads as frayed. Per row the panel is
+    the first run left of the banner (its right end is the inner edge) / the last run right of it (its left end); the edge x(y) goes through a median of 5 rows (notches of the torn border) and an average over +-2.5 rows in every stretch of consecutive rows
+    and is moved by at most `max_move` (3) px: a pixel added takes the colour of the edge pixel, a pixel removed becomes transparent"""
+    out = raw.copy(); a = raw[..., 3] > 0.5; H, W = a.shape
+    for side in ("left", "right"):
+        edge = np.full(H, np.nan)
+        for y in range(y_leg, H):
+            rs = runs(a[y])
+            if len(rs) < 2:
+                continue
+            s0, e0 = rs[0] if side == "left" else rs[-1]
+            if e0 - s0 > max_run:
+                continue
+            if side == "left" and e0 <= left_end:
+                edge[y] = e0
+            elif side == "right" and s0 >= right_start:
+                edge[y] = s0
+        ok = ~np.isnan(edge); ys = np.nonzero(ok)[0]
+        if len(ys) < 5:
+            continue
+        for seg in np.split(ys, np.nonzero(np.diff(ys) > 1)[0] + 1):               # consecutive rows only
+            if len(seg) < 5:
+                continue
+            e = edge[seg]; sm = ndimage.gaussian_filter1d(ndimage.median_filter(e, size=5, mode="nearest"), sigma, mode="nearest")      # the median first: notches of the torn border go, then the average
+            for y, e_old, e_new in zip(seg, e, sm):
+                n = int(np.clip(round(e_new) - e_old, -max_move, max_move)); e_old = int(e_old)
+                if n == 0:
+                    continue
+                if side == "left":                                                   # the inner edge is the right end of the run [s0, e_old)
+                    if n > 0:
+                        out[y, e_old:e_old + n] = out[y, e_old - 1]
+                    else:
+                        out[y, e_old + n:e_old] = 0
+                else:                                                                # the inner edge is the left end s0 = e_old
+                    if n < 0:
+                        out[y, e_old + n:e_old] = out[y, e_old]
+                    else:
+                        out[y, e_old:e_old + n] = 0
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("raw"); ap.add_argument("--margin", type=float, default=0.0); ap.add_argument("--side", default="left")
     a = ap.parse_args()
@@ -106,6 +148,7 @@ def main():
         for side in (["left", "right"] if a.side == "both" else [a.side]):
             raw, moved, dmax = cover(raw, body, a.margin, side)
             print("%s %s: the panel moved outwards by up to %d px (the leg stuck out by %.1f px)" % (g, side, moved, dmax))
+        raw = smooth_inner_edges(raw)
         lab, n = ndimage.label(raw[..., 3] > 0.5)                              # a bit of the moved tip left on its own (a few pixels) is dropped
         size = ndimage.sum(np.ones(lab.shape), lab, range(1, n + 1))
         for k in np.nonzero(size < 20)[0]:
