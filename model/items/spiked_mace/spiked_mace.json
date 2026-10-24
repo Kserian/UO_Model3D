@@ -11,25 +11,48 @@
    "above": 0.72,
    "by": 0.012
   },
-  "shaft_tint": {
-   "rgb": [
-    2.3,
-    1.9,
-    1.4
-   ],
-   "below": 0.72
-  },
   "follow_hand": {
-   "actions": [
-    "23_mounted_walk",
-    "24_mounted_run",
-    "25_mounted_stand",
-    "26_mounted_attack_1h",
-    "27_mounted_attack_bow",
-    "28_mounted_attack_crossbow",
-    "29_mounted_attack_2h"
+   "original": [
+    "20_get_hit",
+    "21_die_forward",
+    "22_die_backward",
+    "30_block",
+    "31_punch",
+    "32_bow",
+    "33_salute",
+    "34_eat"
    ],
-   "reference": "01_walk_armed"
+   "upright": {
+    "actions": [
+     "23_mounted_walk",
+     "24_mounted_run",
+     "25_mounted_stand",
+     "26_mounted_attack_1h",
+     "27_mounted_attack_bow",
+     "28_mounted_attack_crossbow",
+     "29_mounted_attack_2h"
+    ],
+    "dir": [
+     0.3,
+     -0.1,
+     1.0
+    ],
+    "grip": 0.5
+   }
+  },
+  "shaft_wood": {
+   "below": 0.72,
+   "light": [
+    0.55,
+    0.38,
+    0.2
+   ],
+   "dark": [
+    0.4,
+    0.26,
+    0.13
+   ],
+   "steel_above": 0.3
   }
  },
  "decimate": 30000,

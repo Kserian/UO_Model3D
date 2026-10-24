@@ -459,9 +459,43 @@ if wp:                                                           # a weapon: upr
                 mix.inputs[7].default_value = tuple(float(x) for x in st["rgb"]) + (1.0,)
                 nt.links.new(lt.outputs["Value"], mix.inputs[0]); nt.links.new(mix.outputs[2], gi)
                 print("uo_make_item: shaft_tint %%s below %%.2f of the length, x%%s" %% (o.name, st.get("below", 0.72), st["rgb"]))
-    if wp.get("follow_hand"):                                    # "follow_hand": {"actions": ["23_mounted_walk", ...], "reference": "01_walk_armed"}: the weapon bone rigid on its hand in these actions (uo_follow_hand.py)
-        fh = wp["follow_hand"]
-        run("uo_follow_hand.py", BONE=wp["part"] + (".L" if wp["part"] in ("polearm", "axe2h", "bow") else ".R"), HAND="hand.L" if wp["part"] in ("polearm", "axe2h", "bow", "weapon.L") else "hand.R", ACTIONS=list(fh["actions"]), REFERENCE=fh.get("reference", "01_walk_armed"))
+    if wp.get("shaft_wood"):                                     # "shaft_wood": {"below": 0.72, "light": [0.50, 0.34, 0.18], "dark": [0.36, 0.23, 0.11], "steel_above": 0.30}: the lower part of the shaft gets a procedural wood (grain along the shaft, linear albedo light..dark) instead of the model's smeared texture; pixels of the original texture brighter than steel_above (fittings, the cap) and the head stay as they are
+        import numpy as np
+        sw = wp["shaft_wood"]
+        for o in [o for o in bpy.data.collections["Clothing"].all_objects if o.type == "MESH"]:
+            P = np.array([v.co[:] for v in o.data.vertices]); c = P.mean(0); u = np.linalg.svd(P - c, full_matrices=False)[2][0]
+            t = (P - c) @ u; lo, hi = t.min(), t.max()
+            if (t > hi - 0.15 * (hi - lo)).sum() < (t < lo + 0.15 * (hi - lo)).sum():
+                u = -u; t = -t; lo, hi = t.min(), t.max()
+            lim = lo + float(sw.get("below", 0.72)) * (hi - lo); mn = P.min(0); sz = np.maximum(P.max(0) - mn, 1e-9)
+            off = float(np.dot(c, u)) - float(np.dot(mn, u)); uv = u * sz
+            for m in o.data.materials:
+                nt = m.node_tree; grp = [n for n in nt.nodes if n.type == "GROUP" and "Albedo" in n.inputs]
+                if not grp:
+                    continue
+                gi = grp[0].inputs["Albedo"]; src = gi.links[0].from_socket if gi.links else None
+                tc = nt.nodes.new("ShaderNodeTexCoord")
+                dot = nt.nodes.new("ShaderNodeVectorMath"); dot.operation = "DOT_PRODUCT"; dot.inputs[1].default_value = tuple(float(x) for x in uv); nt.links.new(tc.outputs["Generated"], dot.inputs[0])
+                low = nt.nodes.new("ShaderNodeMath"); low.operation = "LESS_THAN"; low.inputs[1].default_value = lim + off; nt.links.new(dot.outputs["Value"], low.inputs[0])
+                mp = nt.nodes.new("ShaderNodeMapping"); mp.inputs["Scale"].default_value = tuple(float(2 + 120 * (1 - abs(x))) for x in u); nt.links.new(tc.outputs["Generated"], mp.inputs["Vector"])
+                nz = nt.nodes.new("ShaderNodeTexNoise"); nz.inputs["Scale"].default_value = 1.0; nz.inputs["Detail"].default_value = 5.0; nz.inputs["Roughness"].default_value = 0.6; nt.links.new(mp.outputs["Vector"], nz.inputs["Vector"])
+                ramp = nt.nodes.new("ShaderNodeValToRGB"); ramp.color_ramp.elements[0].color = tuple(float(x) for x in sw["dark"]) + (1.0,); ramp.color_ramp.elements[1].color = tuple(float(x) for x in sw["light"]) + (1.0,)
+                ramp.color_ramp.elements[0].position = 0.35; ramp.color_ramp.elements[1].position = 0.65; nt.links.new(nz.outputs["Fac"], ramp.inputs["Fac"])
+                msk = low
+                if src is not None:                                                  # steel / fittings of the shaft keep their texture: the original colour brighter than steel_above is not wood
+                    bw = nt.nodes.new("ShaderNodeRGBToBW"); nt.links.new(src, bw.inputs["Color"])
+                    dk = nt.nodes.new("ShaderNodeMath"); dk.operation = "LESS_THAN"; dk.inputs[1].default_value = float(sw.get("steel_above", 0.30)); nt.links.new(bw.outputs["Val"], dk.inputs[0])
+                    msk = nt.nodes.new("ShaderNodeMath"); msk.operation = "MULTIPLY"; nt.links.new(low.outputs["Value"], msk.inputs[0]); nt.links.new(dk.outputs["Value"], msk.inputs[1])
+                mix = nt.nodes.new("ShaderNodeMix"); mix.data_type = "RGBA"; mix.blend_type = "MIX"
+                if src is not None:
+                    nt.links.new(src, mix.inputs[6])
+                else:
+                    mix.inputs[6].default_value = gi.default_value
+                nt.links.new(ramp.outputs["Color"], mix.inputs[7]); nt.links.new(msk.outputs["Value"], mix.inputs[0]); nt.links.new(mix.outputs[2], gi)
+                print("uo_make_item: shaft_wood %%s below %%.2f of the length" %% (o.name, sw.get("below", 0.72)))
+    if wp.get("follow_hand"):                                    # "follow_hand": {"original": [actions], "upright": {"actions": [...], "dir": [0.3, -0.1, 1], "grip": 0.5}}: the weapon bone keeps to the hand in these actions, without the twist about the shaft (uo_follow_hand.py)
+        fh = wp["follow_hand"]; up = fh.get("upright", {})
+        run("uo_follow_hand.py", BONE=wp["part"] + (".L" if wp["part"] in ("polearm", "axe2h", "bow") else ".R"), HAND="hand.L" if wp["part"] in ("polearm", "axe2h", "bow", "weapon.L") else "hand.R", ORIGINAL_ACTIONS=list(fh.get("original", [])), UPRIGHT_ACTIONS=list(up.get("actions", [])), UPRIGHT_DIR=tuple(up.get("dir", (0.30, -0.10, 1.0))), GRIP_FROM_BUTT=float(up.get("grip", 0.5)), BUTT=float(wp["butt"]) if "butt" in wp else None)
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
