@@ -162,6 +162,15 @@ for act in sorted(bpy.data.actions, key=lambda a: a.name):
                 Cn = rig.pose.bones[CHEST].matrix.to_3x3().to_4x4()
                 Rm = (Cn @ C1.inverted()) @ Rm0
             Ws.append(place(Rm, L, u))
+    elif mode == "strike":                                          # a blow: the shaft direction (armature space) is interpolated through `keys` = [[uo_frame, [x, y, z]], ...] (scene frame = 1 + 3 * uo_frame), the hand A m below the top follows the hand
+        keys = sorted((float(k), Vector(v).normalized()) for k, v in cfg["keys"])
+        for f in frames:
+            pose_at(act, f)
+            t = (f - 1) / 3.0
+            lo = max([k for k in keys if k[0] <= t], key=lambda k: k[0], default=keys[0]); hi = min([k for k in keys if k[0] >= t], key=lambda k: k[0], default=keys[-1])
+            w = 0.0 if hi[0] == lo[0] else (t - lo[0]) / (hi[0] - lo[0])
+            D = (lo[1] * (1 - w) + hi[1] * w).normalized()
+            Ws.append(place(rot_between(d0, D), grips()[0], u))
     elif mode == "follow":
         pose_at(act, f0); Hp1 = rig.pose.bones[HAND].matrix.copy(); P1 = Hp1.translation.copy(); Hinv = Hp1.inverted()
         W1 = W_orig; a1 = a_orig

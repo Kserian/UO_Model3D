@@ -139,6 +139,10 @@ def _parse_body_over(text):
 
 
 BODY_OVER = _parse_body_over(sc.get("uo_body_over", ""))
+HAND_SNAP = {x for x in str(sc.get("uo_hand_snap", "")).split(",") if x}      # per item (scene, comma list of actions): the finished item is shifted by the few pixels that bring the 3D hand into the ORIGINAL body sprite (in the mounted actions 20 % of the 3D hand lies outside it)
+HAND_SNAP_PX = int(sc.get("uo_hand_snap_px", 6))                           # largest shift (px)
+HANDS_ONLY = {x for x in str(sc.get("uo_hands_only", "")).split(",") if x}                 # per item (scene, comma list of actions): in these actions only the hands may hide the item (a rider's forearms in front of the belly would eat a held shaft)
+CUR_ACT = {"name": ""}
 SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
 CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
@@ -766,6 +770,7 @@ if HEAD_HIDES:
 OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP keeps the items away from
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
 HANDHEAD_TRIS = body_part_mask({"hand", "head"})                # HIDE_ERODE shrinks what these hide (a hand only next to its sleeve)
+HAND_TRIS = body_part_mask({"hand"}) if (HAND_SNAP or HANDS_ONLY) else None
 HEAD_TRIS = body_part_mask({"head"})
 BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and any(o.get("uo_behind_torso") for o in clothes if not o.hide_render)
 TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if BEHIND_TORSO else None
@@ -820,7 +825,10 @@ def body_occlusion(free, margin):
     """the clothing render without the body, with the body in front of the item removed. The body hides a pixel only
     where it is more than `margin` in front of the visible item surface. Returns (hold, body coverage)."""
     cov, _ = raster([body])
-    occ, zb = raster([body], HIDER_TRIS & ~HANDHEAD_TRIS if HIDE_ERODE > 0 else HIDER_TRIS)   # only the parts that may hide items (not the torso)
+    if CUR_ACT["name"] in HANDS_ONLY:
+        occ, zb = raster([body], HIDER_TRIS & HAND_TRIS)
+    else:
+        occ, zb = raster([body], HIDER_TRIS & ~HANDHEAD_TRIS if HIDE_ERODE > 0 else HIDER_TRIS)   # only the parts that may hide items (not the torso)
     _, zi = raster([o for o in clothes if not o.hide_render])
     seen = free[..., 3] >= 0.5
     for _ in range(2):                                  # item pixels Cycles drew but the raster missed: neighbour depth
@@ -850,6 +858,30 @@ def body_occlusion(free, margin):
         occt, zt = raster([body], TORSO_TRIS)
         hold[occt & (zt < zi - TORSO_HIDE_MARGIN)] = 0.0
     return hold, cov
+
+
+def hand_snap(rgba, orig_m):
+    """shift the item so that the 3D hand lies inside the original body sprite as much as possible (smallest shift that gives the best overlap)"""
+    hm, _ = raster([body], HAND_TRIS)
+    if int(hm.sum()) < 6:
+        return rgba
+    ys, xs = np.nonzero(hm); n = float(len(ys)); H, W = hm.shape
+    best, bs = (-1.0, 0, 0), None
+    for dy in range(-HAND_SNAP_PX, HAND_SNAP_PX + 1):
+        for dx in range(-HAND_SNAP_PX, HAND_SNAP_PX + 1):
+            yy, xx = ys + dy, xs + dx
+            ok = (yy >= 0) & (yy < H) & (xx >= 0) & (xx < W)
+            inside = float(orig_m[yy[ok], xx[ok]].sum()) / n
+            score = inside - 0.004 * (abs(dx) + abs(dy))
+            if score > best[0]:
+                best = (score, dx, dy)
+    _, dx, dy = best
+    if dx == 0 and dy == 0:
+        return rgba
+    out = np.zeros_like(rgba)
+    ys0, ys1 = max(0, dy), min(H, H + dy); xs0, xs1 = max(0, dx), min(W, W + dx)
+    out[ys0:ys1, xs0:xs1] = rgba[ys0 - dy:ys1 - dy, xs0 - dx:xs1 - dx]
+    return out
 
 
 def render_frame(a, i, d, body_mode):
@@ -1098,6 +1130,7 @@ def frame_job():
             if ONLY and act.name not in ONLY:
                 continue
             a = int(act["uo_action"])
+            CUR_ACT["name"] = act.name
             rig.animation_data.action = act
             for d in range(5):
                 rig["uo_direction"] = d
@@ -1134,6 +1167,8 @@ def frame_job():
                         if EDGE_SMOOTH > 0:
                             px = edge_smooth(px, EDGE_SMOOTH)
                         rgba = uo_post(px)
+                        if act.name in HAND_SNAP and orig_m is not None:
+                            rgba = hand_snap(rgba, orig_m)
                         if DESPECKLE > 0:
                             rgba = despeckle(rgba, DESPECKLE)
                         if MIN_PIECE > 0:
