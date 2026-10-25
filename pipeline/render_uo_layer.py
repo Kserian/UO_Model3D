@@ -123,6 +123,7 @@ SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a c
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
 TORSO_HIDE_MARGIN = float(sc.get("uo_torso_margin", TORSO_HIDE_MARGIN))     # per item (scene): how far behind the torso an item with `uo_behind_torso` must be to be hidden by it (m)
 OCCLUDERS = [x for x in str(sc.get("uo_hiders", ",".join(OCCLUDERS))).split(",") if x]       # per item (scene, comma list): the body parts that may hide it. A weapon held in the hand: "hand" (UO draws a held weapon over the body; only the fist wraps it)
+BODY_OVER = {tuple(x.split(":")[:2]) for x in str(sc.get("uo_body_over", "")).split(",") if x}      # per item (scene, "action:dir,..."): frames in which the original body sprite hides the item wherever they overlap (a fix of one pose where the 3D depth test lets a held weapon show through the body)
 SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
 CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
@@ -1106,6 +1107,8 @@ def frame_job():
                         free = render_frame(a, i, d, "hidden")
                         hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
+                        if (act.name, str(d)) in BODY_OVER and orig_m is not None:
+                            px = px.copy(); px[orig_m] = 0.0
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
                         lab = region_labels(a, i, d) if (INNER_LINE > 0 or SHADE_SLEEVE > 0) else None
