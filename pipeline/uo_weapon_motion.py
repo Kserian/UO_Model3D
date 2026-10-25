@@ -4,7 +4,7 @@
 #   "two":    both hands are on the shaft: the axis passes through the grip of hand.L and of hand.R (the head on the side of the upper hand, the one that was nearer the head
 #             in the first frame / the original key), the upper hand A m below the top of the weapon; smoothed in time, the roll carried by parallel transport.
 #   "side":   one hand (hand.L), the shaft in a fixed direction `dir` of the armature (X = left of the character, -Y front, Z up), the hand A m below the top: the weapon
-#             stands at the side and goes where the hand goes (walk, run, stand, riding).
+#             stands at the side and goes where the hand goes (walk, run, stand, riding); "damp" < 1 = only that share of the hand's travel about its mean.
 #   "chest":  one hand; the direction is `dir` (or the original key of the first frame) at the first frame and then turns with the chest bone only: the hand may flail
 #             (deaths, hit, bow, salute, drink) without screwing the weapon about its shaft.
 #   "follow": the grip follows the hand joint, the shaft turns with the hand but without the twist about the shaft (swing-twist split).
@@ -147,9 +147,13 @@ for act in sorted(bpy.data.actions, key=lambda a: a.name):
         if mode == "side" and "dir" in cfg:
             Rm0 = rot_between(d0, D)
         pose_at(act, f0); C1 = rig.pose.bones[CHEST].matrix.to_3x3().to_4x4()
+        Ls = []
         for f in frames:
+            pose_at(act, f); Ls.append(grips()[0])
+        mean = sum(Ls, Vector()) / len(Ls); damp = float(cfg.get("damp", 1.0))        # damp < 1: the weapon follows the hand but moves only that share of the hand's travel
+        for k, f in enumerate(frames):
             pose_at(act, f)
-            L, R = grips()
+            L = mean + damp * (Ls[k] - mean)
             if mode == "side":
                 Rm = Rm0
             else:
