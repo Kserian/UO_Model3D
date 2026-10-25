@@ -131,6 +131,8 @@ for act in sorted(bpy.data.actions, key=lambda a: a.name):
                 d = v.normalized()
                 if d.dot(prev) < 0:
                     d = -d                                          # the head stays on the side it was
+                if cfg.get("flip") and not ds:
+                    d = -d; prev = d                                # "flip": the head on the other hand's side (the original key points the other way)
             ds.append(d); prev = d
         ds = smooth_axes(ds, int(cfg.get("smooth", SMOOTH)))
         Rm = rot_between(a_orig, ds[0]) @ R_orig
@@ -163,6 +165,9 @@ for act in sorted(bpy.data.actions, key=lambda a: a.name):
     elif mode == "follow":
         pose_at(act, f0); Hp1 = rig.pose.bones[HAND].matrix.copy(); P1 = Hp1.translation.copy(); Hinv = Hp1.inverted()
         W1 = W_orig; a1 = a_orig
+        if "dir" in cfg:                                           # start in the hand with the shaft along `dir` (the original key of a mounted action is 10-50 cm off the hand)
+            D = Vector(cfg["dir"]).normalized()
+            W1 = place(rot_between(d0, D), grips()[0], u); a1 = D
         for f in frames:
             pose_at(act, f)
             Hr = rig.pose.bones[HAND].matrix @ Hinv
