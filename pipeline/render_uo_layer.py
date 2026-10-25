@@ -27,6 +27,8 @@ OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline":
 SAMPLES = 512                      # Cycles samples per pixel for items (adaptive sampling; the pixel filter stays a 0.01 px box = the pixel centre, no blur): the
                                    # gloss of metal in UO_Look (Principled) is sampled at random, so at 1 sample a flail had 61 % of its pixels off the converged
                                    # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
+SUBPIXEL = 1                       # per item (scene "uo_subpixel"): G > 1 = every pixel is the AVERAGE of a G x G grid of sub-pixel camera positions (one render per sub-pixel camera position, SAMPLES / G^2 samples each, at least SUBPIXEL_MIN_SAMPLES)
+                                   # instead of the single point at its centre: the area average of the pixel (mosaic textures, fine patterns: 4 gave 2x closer to the area-average reference than point sampling)
 SHADE_BODY = 0.0                   # per item (scene "uo_shade_body", 0..1): contact shadow of the body parts in front of the item (hands, arms, head: what hides the item): the item pixels near them are darkened by up to this
                                    # share, smoothly over SHADE_WIDTH px (no line): the sides of a robe next to the hands. Per frame, in the posed picture
 SHADE_SLEEVE = 0.0                 # per item (scene "uo_shade_sleeve", 0..1): the same where a sleeve and the torso part of the item meet (needs uo_conform_item.py: attribute uo_region): the torso next to the arm
@@ -119,6 +121,8 @@ FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
 INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
 EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
+SUBPIXEL = int(sc.get("uo_subpixel", SUBPIXEL))
+SUBPIXEL_MIN_SAMPLES = int(sc.get("uo_subpixel_samples", 16))
 SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
 SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
@@ -663,7 +667,7 @@ def uo_post(px, keep=None):
     return out
 
 
-def render_px():
+def render_once():
     sc.render.filepath = tmp
     bpy.ops.render.render(write_still=True)
     im = bpy.data.images.load(tmp)
@@ -671,6 +675,29 @@ def render_px():
     px = np.empty(w * h * 4, np.float32); im.pixels.foreach_get(px)
     bpy.data.images.remove(im)
     return px.reshape(h, w, 4)[::-1]                        # Blender pixels start at the bottom row
+
+
+def render_px():
+    if SUBPIXEL <= 1 or LAYER == "body":
+        return render_once()
+    cd = sc.camera.data                                      # G x G renders with the camera moved by sub-pixel steps, averaged = the area average of the pixel
+    sx0, sy0, n0 = cd.shift_x, cd.shift_y, sc.cycles.samples # (not one render at G times the resolution: the bump / normal map derivatives follow the pixel footprint and it came out 3 levels darker)
+    G = SUBPIXEL
+    sc.cycles.samples = max(SUBPIXEL_MIN_SAMPLES, n0 // (G * G))
+    acc = None
+    try:
+        for i in range(G):
+            for j in range(G):
+                cd.shift_x = sx0 + ((i + 0.5) / G - 0.5) / W           # ortho_scale = W px: a shift of 1 is the frame width
+                cd.shift_y = sy0 + ((j + 0.5) / G - 0.5) / W
+                px = render_once()
+                px = np.concatenate([px[..., :3] * px[..., 3:4], px[..., 3:4]], -1)   # premultiplied: edge pixels average right
+                acc = px if acc is None else acc + px
+    finally:
+        cd.shift_x, cd.shift_y, sc.cycles.samples = sx0, sy0, n0
+    acc /= G * G
+    a = acc[..., 3:4]
+    return np.concatenate([acc[..., :3] / np.maximum(a, 1e-6), a], -1).astype(np.float32)
 
 
 LIMB_BONES = ("upper_arm.L", "forearm.L", "upper_arm.R", "forearm.R", "thigh.L", "shin.L", "thigh.R", "shin.R")

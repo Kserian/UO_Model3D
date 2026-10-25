@@ -20,7 +20,8 @@
  "scene": {
   "uo_behind_torso": 1,
   "uo_samples": 1024,
-  "uo_edge_smooth": 3
+  "uo_edge_smooth": 3,
+  "uo_subpixel": 4
  },
  "sim": {
   "engine": "pbd",
@@ -34,5 +35,8 @@
   0.87,
   0.85,
   1.0
- ]
+ ],
+ "materials": {
+  "TEXTURE_FILTER": false
+ }
 }
