@@ -836,6 +836,7 @@ FIST_MAX = 8.0                                     # px: the largest shift
 STAFF_ACT = {int(x) for x in str(sc.get("uo_staff_actions", "")).split(",") if x}   # actions in which the weapon is laid along the line of an ORIGINAL staff (uo_staff_lines: {"action,dir,frame": [cx, cy, ux, uy]} measured on the original black staff's sprites, px of the canvas, u pointing down)
 STAFF_FLAT = float(sc.get("uo_staff_flat", 1.7))       # |ux| / |uy| above this: the staff is nearly horizontal (60 deg from vertical)
 STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the end of the original staff that is this much farther from the hand than the other
+STAFF_CENTRE = {int(x) for x in str(sc.get("uo_staff_centre", "")).split(",") if x}   # actions in which the grip goes to the CENTRE of the original staff (the hands hold it in the middle) instead of the nearest point of its line
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -1004,7 +1005,7 @@ def staff_plan(a, n):
             wt = Pt[1] - Pt[0]; wt /= np.linalg.norm(wt)
             if wt @ u < 0.99 and rot_ok(gw, dw * ball, fwd, -phi, project_world, u):   # the other way round
                 alpha = -phi
-            r = c - P[0]; shift = r - (r @ u) * u                               # across the line only
+            r = c - P[0]; shift = r if a in STAFF_CENTRE else r - (r @ u) * u   # to the centre of the staff, or across the line only
             row.append((shift, alpha))
         out[d] = row
     return out
