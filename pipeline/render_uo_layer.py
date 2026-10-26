@@ -834,6 +834,7 @@ FIST_R = float(sc.get("uo_fist_radius", 6.0))      # px: the hand is looked for 
 FIST_EDT = float(sc.get("uo_fist_edt", 3.4))       # px: a fist is not thicker than this (half width); thicker = the torso, no hand found
 FIST_MAX = 8.0                                     # px: the largest shift
 STAFF_ACT = {int(x) for x in str(sc.get("uo_staff_actions", "")).split(",") if x}   # actions in which the weapon is laid along the line of an ORIGINAL staff (uo_staff_lines: {"action,dir,frame": [cx, cy, ux, uy]} measured on the original black staff's sprites, px of the canvas, u pointing down)
+STAFF_FLAT = float(sc.get("uo_staff_flat", 1.7))       # |ux| / |uy| above this: the staff is nearly horizontal (60 deg from vertical)
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -955,8 +956,8 @@ def fist_offsets(a, n):
 
 
 def staff_plan(a, n):
-    """per direction and frame (shift px, turn rad): the weapon turned about its grip, in the plane of the camera, until its projected axis lies on the original staff's line of that frame (the ball end follows the same end of the staff all
-    through the action: the end is chosen in the first frame by the smaller turn and kept by continuity), and moved across so that the line passes through the grip. {d: [(shift, turn) or None] * n}"""
+    """per direction and frame (shift px, turn rad): the weapon turned about its grip, in the plane of the camera, until its projected axis lies on the original staff's line of that frame (the ball end is the UPPER end of the line, and in a nearly horizontal
+    line (the turn over the head) the end of the previous frame), and moved across so that the line passes through the grip. {d: [(shift, turn) or None] * n}"""
     obs = [o for o in clothes if not o.hide_render and "uo_grips" in o]
     for o in obs:
         fix_off(o)
@@ -981,11 +982,14 @@ def staff_plan(a, n):
             P = project_world(np.array([gw, gw + 0.2 * ball * dw]))
             w = P[1] - P[0]; w /= np.linalg.norm(w)                          # towards the ball
             c, u = np.array(ln[:2]), np.array(ln[2:])
-            if u_prev is None:
-                if w @ u < 0:
+            if u[1] > 0:
+                u = -u                                                       # pointing up in the image: the ball end is the upper end
+            if abs(u[0]) > STAFF_FLAT * abs(u[1]):                          # nearly horizontal (the turn over the head): no upper end, the end of the previous frame is kept
+                if u_prev is None:
+                    if w @ u < 0:
+                        u = -u
+                elif u @ u_prev < 0:
                     u = -u
-            elif u @ u_prev < 0:
-                u = -u
             u_prev = u
             phi = math.atan2(w[0] * u[1] - w[1] * u[0], w @ u)              # turn (image plane, y down) that makes w point along u
             fwd = -np.array(sc.camera.matrix_world)[:3, 2]; fwd /= np.linalg.norm(fwd)
