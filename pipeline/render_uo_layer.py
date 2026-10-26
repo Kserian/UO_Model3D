@@ -887,6 +887,7 @@ def fist_offsets(a, n):
             h = detect_fist(orig[..., 3] > 0, P[0]) if orig is not None else None
             if h is not None:
                 found[d, i] = h - P[0]
+    nudge = json.loads(sc["uo_fist_nudge"]).get(str(a), {}) if sc.get("uo_fist_nudge") else {}
     man = json.loads(sc["uo_fist_manual"]).get(str(a), {}) if sc.get("uo_fist_manual") else {}   # {"dir": [dx, dy] | {"frame": [dx, dy]}}: shifts read by eye where the hand merges with the body
     if not found and not man:
         return {d: [None] * n for d in range(5)}
@@ -926,6 +927,12 @@ def fist_offsets(a, n):
             out[d] = [None] * n; continue
         sm = np.stack([np.interp(x, x[good], base[good, c]) for c in range(2)], 1)           # no smoothing: the hand moves from frame to frame (run), the weapon follows it frame by frame
         m = np.hypot(sm[:, 0], sm[:, 1]); sm = sm * np.minimum(1.0, FIST_MAX / np.maximum(m, 1e-9))[:, None]
+        nd = nudge.get(str(d))                               # read off the viewer by eye: extra px on top of the shift ({"frame": [dx, dy]} or [dx, dy] for all frames)
+        if nd is not None:
+            for i in range(n):
+                v = nd.get(str(i)) if isinstance(nd, dict) else nd
+                if v is not None:
+                    sm[i] = sm[i] + np.asarray(v, float)
         print("render_uo_layer: fist on the sprite, action %d dir %d: hand seen in %d / %d frames, shift px %s" % (a, d, ok.sum(), n, np.round(np.hypot(sm[:, 0], sm[:, 1]), 1).tolist()))
         out[d] = [sm[i] for i in range(n)]
     if sc.get("uo_fist_report"):                          # JSON {"a,d,i": [x, y of the grip after the shift, hand found (x, y) or null, shift dx, dy]} for checking
