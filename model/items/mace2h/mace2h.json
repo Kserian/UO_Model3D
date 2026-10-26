@@ -1,5 +1,5 @@
 {"name": "mace2h", "file": "models/mace2h.glb",
- "weapon": {"class": "mace", "part": "polearm", "length": 1.35, "tip": "heavy", "butt": -0.9, "spikes": {"LENGTH": 1.35, "WIDTH": 2.2}, "no_body_gap": true, "behind_torso": true},
+ "weapon": {"class": "mace", "part": "polearm", "length": 1.35, "tip": "heavy", "butt": -0.9, "spikes": {"LENGTH": 1.6, "WIDTH": 3.0, "SHAFT": 0.0278}, "no_body_gap": true, "behind_torso": true},
  "twohand": {"CLEAR_SHAFT": 0.08, "CLEAR_BALL": 0.07, "OUT_MIN": 0.5},
  "decimate": 30000, "materials": {"BRIGHTNESS": 2.1},
  "scene": {"uo_torso_margin": 0.04, "uo_outline": 0.7, "uo_outline_blend": 0.6}}

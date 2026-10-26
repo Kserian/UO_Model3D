@@ -5,6 +5,7 @@
 #    to its tip (a spike of a ball points away from the centre).
 # 3. Per spike, in coordinates along its axis (t) and across it (perp): t' = r + (t - r) x LENGTH for t > r; perp' = perp x (1 + (WIDTH - 1) w(t)), w rising from 0 at
 #    0.9 r to 1 at 1.05 r (the foot in the ball stays, the cone widens outside it). Vertices of the ball far from every spike axis do not move.
+# 4. SHAFT > 0: the shaft and the pommel are made thicker by SHAFT m (diameter) by moving their vertices out from the axis, fading out towards the ball.
 # The ball is stored on the object for uo_twohand.py: custom property uo_head = [z of the centre, radius, z of the bottom of the ball, z of the tip] (m, from the butt).
 import math
 import bpy
@@ -17,6 +18,7 @@ HEAD = 0.45           # share of the length (from the top) that holds the ball
 SPIKE_FROM = 1.35     # vertices farther than this x radius from the centre belong to a spike
 MIN_VERTS = 20        # a group of fewer vertices is not a spike
 SPIKE_MAX = 4.0       # a group reaching farther than this x radius is the shaft, not a spike
+SHAFT = 0.0           # m: the shaft and the pommel thicker by this much in diameter (0.0278 = one pixel at 36 px/m); the collar under the ball stays, the widening fades in below it
 BALL_R = 0.0          # m: radius (0 = found); BALL_Z = height of the centre (0 = found)
 BALL_Z = 0.0
 
@@ -94,6 +96,11 @@ def run():
         perp_v = rel - tk[:, None] * ax
         new = c + t2[:, None] * ax + perp_v * (1 + (WIDTH - 1) * w)[:, None]
         V2 = np.where(mine[:, None], new, V)
+        if SHAFT > 0:                                                                   # shaft + pommel: every vertex below the ball moves out from the axis by SHAFT / 2
+            ax_xy = V[:, :2].mean(0)
+            w = np.clip(((c[2] - r) - V2[:, 2] - 0.03) / 0.08, 0, 1); w = w * w * (3 - 2 * w)
+            rad = V2[:, :2] - ax_xy; rl = np.maximum(np.linalg.norm(rad, axis=1), 1e-9)
+            V2[:, :2] += rad / rl[:, None] * (SHAFT / 2 * w)[:, None]
         ob.data.vertices.foreach_set("co", np.array([Mi @ Vector(p) for p in V2]).ravel())
         ob.data.update()
         ob["uo_head"] = [float(c[2]), float(r), float(c[2] - r), float(V2[:, 2].max())]
