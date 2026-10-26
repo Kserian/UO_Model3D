@@ -839,6 +839,7 @@ STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the en
 STAFF_CENTRE = {int(x) for x in str(sc.get("uo_staff_centre", "")).split(",") if x}   # actions in which the grip goes to the CENTRE of the original staff (the hands hold it in the middle) instead of the nearest point of its line
 GRIP_CUT_ONLY = {int(x) for x in str(sc.get("uo_grip_cut_only", "")).split(",") if x}   # the hands cut the shaft only in these actions (empty = in every action that has grip points); the other actions' grip points serve the staff alignment only
 STAFF_PLANE = str(sc.get("uo_staff_plane", ""))              # actions ("all" or a list) in which the weapon is swung INTO the image plane onto the staff's direction (its depth component becomes 0: a weapon pointing at the camera is not left foreshortened to a stub), not only turned about the view axis
+STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -1000,6 +1001,13 @@ def staff_plan(a, n):
             else:
                 u = u0                                                       # held in the middle: the ball towards the ground
             u_prev = u
+            tune = STAFF_TUNE.get(str(a), {})
+            if tune.get("lean"):
+                out_s = 1.0 if (P[0][0] - 128.0) > 0 else -1.0                  # the hand is left or right of the body's axis: out = that side
+                th = math.radians(tune["lean"])
+                ua = np.array([u[0] * math.cos(th) - u[1] * math.sin(th), u[0] * math.sin(th) + u[1] * math.cos(th)])
+                ub = np.array([u[0] * math.cos(-th) - u[1] * math.sin(-th), u[0] * math.sin(-th) + u[1] * math.cos(-th)])
+                u = ua if ua[0] * out_s > ub[0] * out_s else ub
             phi = math.atan2(w[0] * u[1] - w[1] * u[0], w @ u)              # turn (image plane, y down) that makes w point along u
             fwd = -np.array(sc.camera.matrix_world)[:3, 2]; fwd /= np.linalg.norm(fwd)
             alpha = phi
@@ -1013,7 +1021,15 @@ def staff_plan(a, n):
                 d3 = ball * dw / np.linalg.norm(dw); kx = np.cross(d3, t3); sn = np.linalg.norm(kx); cs = float(d3 @ t3)
                 Rm = rot_matrix(kx / sn, math.atan2(sn, cs)) if sn > 1e-6 else (np.eye(3) if cs > 0 else rot_matrix(Mcw[:3, 2], math.pi))
             alpha = Rm
-            r = c - P[0]; shift = r if a in STAFF_CENTRE else r - (r @ u) * u   # to the centre of the staff, or across the line only
+            hand = None
+            if tune.get("hand"):                                                 # the axis goes exactly through the centre of the hand on the original sprite (the grip is put there, the turn and the slide keep the axis through it)
+                og = original(a, i, d)
+                hand = detect_fist(og[..., 3] > 0, P[0]) if og is not None else None
+                if hand is not None and np.hypot(*(hand - P[0])) > 7.0:
+                    hand = None
+            r = c - P[0]; shift = (hand - P[0]) if hand is not None else (r if a in STAFF_CENTRE else r - (r @ u) * u)   # to the hand, or to the centre of the staff, or across the line only
+            if tune.get("slide"):
+                shift = shift + u * tune["slide"] * 36.0                           # along the weapon towards its ball (36 px per m)
             row.append((shift, alpha))
         out[d] = row
     return out
