@@ -44,6 +44,8 @@ FISTC_ACTIONS = ""       # "17,23,...": the shaft goes through the CENTRE of the
                          # lies ~1.2 cm inside the skin: half of the shaft then stood out of the hand (mounted stand: the weapon "not in the hand")
 STILL_ACTIONS = ""       # "17": the weapon keeps ONE direction in the world (upright, STILL_LEAN outwards) in every frame: it does not turn with the hand
 STILL_LEAN = 0.0
+CAL_ACTIONS = ""         # "23,...,29": the grip is at the origin of the CALIBRATED halberd bone (weapon_motion.json: where the original weapon is held on the original sprites) instead of the fist of our 3D arm.
+                         # In the mounted actions our fitted arm is 20-35 cm (up to 8 px) off the hand the original sprite shows, and the weapon through our fist looked "detached from the hand"
 ARM_ACTIONS = ""         # "29": the weapon is the extension of the arm: its direction is the line of the forearm (elbow -> wrist), the grip ARM_GRIP m before the butt (a swing that follows the arm)
 ARM_GRIP = 0.13          # m from the butt to the fist in ARM_ACTIONS (the steel end of the weapon, ~8.5 cm, sticks out)
 STAFF_FWD = 0.3          # share of the calibrated line's own horizontal lean (forward, mostly) kept in the staff carry
@@ -168,6 +170,7 @@ def main():
     steady = {int(x) for x in STEADY_ACTIONS.split(",") if x}
     staff = {int(x) for x in STAFF_ACTIONS.split(",") if x}
     arm = {int(x) for x in ARM_ACTIONS.split(",") if x}
+    calset = {int(x) for x in CAL_ACTIONS.split(",") if x}
     fistc = {int(x) for x in FISTC_ACTIONS.split(",") if x}
     still = {int(x) for x in STILL_ACTIONS.split(",") if x}
     grips_out = {}
@@ -222,6 +225,7 @@ def main():
                 raise SystemExit("action %s has no rotation keys of %s" % (act.name, BONE))
             act["uo_polearm_cal"] = [[fcs[(f'pose.bones["{BONE}"].rotation_quaternion', k)].evaluate(1 + 3 * i) for k in range(4)] for i in range(n)]
         cal_keys[a] = [list(q) for q in act["uo_polearm_cal"]]
+    cal_o = {}
     # pass 1: the body per frame
     for act in acts:
         a = int(act["uo_action"]); n = int(act["uo_frames"]); rig.animation_data.action = act
@@ -242,6 +246,8 @@ def main():
                 lat.z = 0; fwd = np.array(lat.normalized().cross(Vector((0, 0, 1))))
                 dg = bpy.context.evaluated_depsgraph_get(); ev = body.evaluated_get(dg); me = ev.to_mesh()
                 bvh = BVHTree.FromPolygons([ev.matrix_world @ v.co for v in me.vertices], [list(pl.vertices) for pl in me.polygons]); ev.to_mesh_clear()
+            if a in fresh:
+                cal_o.setdefault(a, []).append([float(x) for x in (rig.matrix_world @ pb[BONE].matrix).translation])
             cL = None
             if a in fistc:
                 dg2 = bpy.context.evaluated_depsgraph_get(); ev2 = body.evaluated_get(dg2); me2 = ev2.to_mesh()
@@ -251,6 +257,12 @@ def main():
                              head=np.array((W @ pb["head"].matrix).translation), pelvis=np.array((W @ pb["pelvis"].matrix).translation),
                              left=np.array(tl - tr)))
         data[a] = rows
+    for act in acts:
+        a_ = int(act["uo_action"])
+        if a_ in fresh:
+            act["uo_polearm_cal_o"] = cal_o[a_]                    # where the calibrated halberd was held (armature space), kept for later runs
+        for i_, r_ in enumerate(data[a_]):
+            r_["cal_o"] = np.array(act["uo_polearm_cal_o"][i_]) if "uo_polearm_cal_o" in act else None
     if fresh:
         log("calibrated halberd direction rebuilt from the keys: at most %.2f deg off the bone" % cal_err)
         if cal_err > 1.0:
@@ -279,6 +291,8 @@ def main():
             gu, gl = (r["gR"], r["gL"]) if upper == "R" else (r["gL"], r["gR"])
             if a in fistc and upper == "L":
                 gu = r["cL"]
+            if a in calset and upper == "L" and r["cal_o"] is not None:
+                gu = r["cal_o"]
             v = gu - gl; sep[i] = np.linalg.norm(v)
             Dboth[i] = v / max(sep[i], 1e-6); GU[i] = gu
             Dfist[i] = unit(r["fist"])
@@ -314,7 +328,7 @@ def main():
             D = np.array([unit(np.array([0, 0, 1.0]) + STILL_LEAN * lat_s[i]) for i in range(n)])
             notes.append("one steady direction: %.0f deg from vertical in every frame" % np.degrees(np.arccos(D[0][2])))
         elif a in arm:
-            D = np.array([unit(r["fore"]) for r in rows])
+            D = np.array([unit(r["fore"]) if a not in calset else unit(r["fist"]) for r in rows])
             D = smooth_dirs(D, SMOOTH, cyc)
             tl = np.degrees(np.arccos(np.clip(D[:, 2], -1, 1)))
             notes.append("extension of the forearm: %.0f-%.0f deg from vertical, the fist %.0f cm from the butt" % (tl.min(), tl.max(), 100 * ARM_GRIP))

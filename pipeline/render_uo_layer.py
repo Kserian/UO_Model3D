@@ -768,7 +768,7 @@ HAND_TRIS = body_part_mask({"hand"})                # HIDE_ERODE shrinks what th
 HEAD_TRIS = body_part_mask({"head"})
 BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and any(o.get("uo_behind_torso") for o in clothes if not o.hide_render)
 TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if BEHIND_TORSO else None
-ACTION_HIDE = json.loads(sc["uo_action_hide"]) if sc.get("uo_action_hide") else {}   # per action: {"29": {"legs_under": 1, "torso": 0}} = in that action the legs never hide the item / the torso does not hide it
+ACTION_HIDE = json.loads(sc["uo_action_hide"]) if sc.get("uo_action_hide") else {}   # per action: {"29": {"legs_under": 1, "torso": 0}} = in that action the legs never hide the item / the torso does not hide it / only the listed parts may hide it ("occluders": "hand")
 _BASE_HIDE = (WORN.copy(), HIDER_TRIS, BEHIND_TORSO, TORSO_TRIS)
 
 
@@ -782,7 +782,7 @@ def set_hiders(a):
     WORN = _BASE_HIDE[0].copy()
     if o.get("legs_under"):
         WORN |= {"thigh", "shin", "foot"}
-    HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)
+    HIDER_TRIS = body_part_mask((set(o["occluders"].split(",")) if o.get("occluders") else set(OCCLUDERS)) - WORN)
     BEHIND_TORSO = bool(_BASE_HIDE[2]) and bool(o.get("torso", 1))
     TORSO_TRIS = _BASE_HIDE[3] if BEHIND_TORSO else None
 print("render_uo_layer: items wrap %s; body parts that may hide them: %s" % (sorted(WORN), sorted(set(OCCLUDERS) - WORN)))
@@ -841,8 +841,11 @@ def grip_cut(px, a, i, orig_m):
     hv = np.c_[np.array(pts), np.ones(len(pts))] @ (Vm @ Mw).T
     h = hv @ Pm.T; ndc = h[:, :2] / h[:, 3:4]
     gp = np.stack([(ndc[:, 0] + 1) * 0.5 * W, (1 - ndc[:, 1]) * 0.5 * H], 1)
-    hand, _ = raster([body], HAND_TRIS)
-    hand = binary_dilation(hand, 1)
+    if str(a) in str(sc.get("uo_grip_cut_orig", "")).split(","):     # grips taken from the original sprites (the hand of our 3D arm is elsewhere): the original body pixels near the grip, no 3D hand
+        hand = np.ones((H, W), bool)
+    else:
+        hand, _ = raster([body], HAND_TRIS)
+        hand = binary_dilation(hand, 1)
     yy, xx = np.mgrid[0:H, 0:W]
     near = np.zeros((H, W), bool)
     for gx, gy in gp:
