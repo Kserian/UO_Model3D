@@ -853,16 +853,22 @@ def project_world(P):
     return np.stack([(h[:, 0] / h[:, 3] + 1) * 0.5 * W, (1 - h[:, 1] / h[:, 3]) * 0.5 * H], 1)
 
 
-def detect_fist(mask, g):
-    """centre (px) of the hand on an original sprite near g: the thickest blob of the sprite within FIST_R of g (distance to the edge, the torso is thicker than a fist and is refused), or None"""
+def detect_fist(mask, g, line=None, radius=None):
+    """centre (px) of the hand on an original sprite near g: the thickest blob of the sprite within FIST_R of g (distance to the edge, the torso is thicker than a fist and is refused), or None.
+    line = (point, unit direction): only pixels within 4 px of that line count (the hand that holds the original staff lies on its line), radius replaces FIST_R"""
     Hm, Wm = mask.shape
+    R_ = radius or FIST_R
     pad = np.pad(mask, 6)
     best, bp = -9.0, None
-    for y in range(max(int(g[1] - FIST_R) - 1, 0), min(int(g[1] + FIST_R) + 2, Hm)):
-        for x in range(max(int(g[0] - FIST_R) - 1, 0), min(int(g[0] + FIST_R) + 2, Wm)):
+    for y in range(max(int(g[1] - R_) - 1, 0), min(int(g[1] + R_) + 2, Hm)):
+        for x in range(max(int(g[0] - R_) - 1, 0), min(int(g[0] + R_) + 2, Wm)):
             dist = np.hypot(x + 0.5 - g[0], y + 0.5 - g[1])
-            if not mask[y, x] or dist > FIST_R:
+            if not mask[y, x] or dist > R_:
                 continue
+            if line is not None:
+                dx, dy = x + 0.5 - line[0][0], y + 0.5 - line[0][1]
+                if abs(dx * line[1][1] - dy * line[1][0]) > 4.0:
+                    continue
             win = pad[y + 6 - 5:y + 6 + 6, x + 6 - 5:x + 6 + 6]
             yy, xx = np.nonzero(~win)
             e = np.min(np.hypot(yy - 5, xx - 5)) if len(yy) else 5.0
@@ -1024,9 +1030,9 @@ def staff_plan(a, n):
             hand = None
             if tune.get("hand"):                                                 # the axis goes exactly through the centre of the hand on the original sprite (the grip is put there, the turn and the slide keep the axis through it)
                 og = original(a, i, d)
-                hand = detect_fist(og[..., 3] > 0, P[0]) if og is not None else None
-                if hand is not None and np.hypot(*(hand - P[0])) > 7.0:
-                    hand = None
+                hand = detect_fist(og[..., 3] > 0, P[0], line=(c, u0), radius=14.0) if og is not None else None     # the hand on the staff's line, up to 14 px from our fist
+                if hand is None and og is not None:
+                    hand = detect_fist(og[..., 3] > 0, P[0])
             r = c - P[0]; shift = (hand - P[0]) if hand is not None else (r if a in STAFF_CENTRE else r - (r @ u) * u)   # to the hand, or to the centre of the staff, or across the line only
             if tune.get("slide"):
                 shift = shift + u * tune["slide"] * 36.0                           # along the weapon towards its ball (36 px per m)
