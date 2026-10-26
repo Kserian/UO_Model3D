@@ -955,14 +955,16 @@ def fist_offsets(a, n):
 
 
 def staff_plan(a, n):
-    """per direction and frame (shift px, turn rad): the weapon turned about its grip, in the plane of the camera, until its projected axis is parallel to the original staff's line of that frame, and moved across so that the line passes
-    through the grip (the original staff lies in the hand; ours then lies where it lies). {d: [(shift, turn) or None] * n}"""
+    """per direction and frame (shift px, turn rad): the weapon turned about its grip, in the plane of the camera, until its projected axis lies on the original staff's line of that frame (the ball end follows the same end of the staff all
+    through the action: the end is chosen in the first frame by the smaller turn and kept by continuity), and moved across so that the line passes through the grip. {d: [(shift, turn) or None] * n}"""
     obs = [o for o in clothes if not o.hide_render and "uo_grips" in o]
+    for o in obs:
+        fix_off(o)
     WMd = json.loads(bpy.data.texts["weapon_motion.json"].as_string())["polearm.L"]["dir"]
-    out = {}
+    out, ball = {}, None
     for d in range(5):
         rig["uo_direction"] = d; rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
-        row = []
+        row, u_prev = [], None
         for i in range(n):
             ln = STAFF_LINES.get("%d,%d,%d" % (a, d, i))
             pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
@@ -972,22 +974,37 @@ def staff_plan(a, n):
             Mr = np.array(rig.matrix_world)
             D3 = np.array(rig.pose.bones["polearm.L"].matrix.to_3x3() @ Vector(WMd)); D3 /= np.linalg.norm(D3)
             gw = np.array(pts[0]) @ Mr[:3, :3].T + Mr[:3, 3]; dw = Mr[:3, :3] @ D3
-            P = project_world(np.array([gw, gw + 0.2 * dw]))
-            w = P[1] - P[0]; w /= np.linalg.norm(w)
+            if ball is None:                                                  # which end of the bone's axis is the ball: the end with more vertices
+                dg = bpy.context.evaluated_depsgraph_get(); ev, me, cur = evaluated_co(obs[0], dg); Mo = np.array(ev.matrix_world); ev.to_mesh_clear()
+                sv = (cur @ Mo[:3, :3].T + Mo[:3, 3] - gw) @ dw
+                ball = 1.0 if (sv > sv.max() - 0.25).sum() > (sv < sv.min() + 0.25).sum() else -1.0
+            P = project_world(np.array([gw, gw + 0.2 * ball * dw]))
+            w = P[1] - P[0]; w /= np.linalg.norm(w)                          # towards the ball
             c, u = np.array(ln[:2]), np.array(ln[2:])
-            if w @ u < 0:
+            if u_prev is None:
+                if w @ u < 0:
+                    u = -u
+            elif u @ u_prev < 0:
                 u = -u
-            phi = math.atan2(w[0] * u[1] - w[1] * u[0], w @ u)              # turn (image plane, y down) that makes w parallel to u
+            u_prev = u
+            phi = math.atan2(w[0] * u[1] - w[1] * u[0], w @ u)              # turn (image plane, y down) that makes w point along u
             fwd = -np.array(sc.camera.matrix_world)[:3, 2]; fwd /= np.linalg.norm(fwd)
             alpha = phi
-            tip = rot_axis(gw + 0.2 * dw, gw, fwd, alpha); Pt = project_world(np.array([gw, tip]))
+            tip = rot_axis(gw + 0.2 * ball * dw, gw, fwd, alpha); Pt = project_world(np.array([gw, tip]))
             wt = Pt[1] - Pt[0]; wt /= np.linalg.norm(wt)
-            if wt @ u < w @ u:                                                   # the other way round
+            if wt @ u < 0.99 and rot_ok(gw, dw * ball, fwd, -phi, project_world, u):   # the other way round
                 alpha = -phi
             r = c - P[0]; shift = r - (r @ u) * u                               # across the line only
             row.append((shift, alpha))
         out[d] = row
     return out
+
+
+def rot_ok(gw, dw, fwd, alpha, project, u):
+    """True when turning by alpha puts the projected axis closer to u than the sign tried before"""
+    Pt = project(np.array([gw, rot_axis(gw + 0.2 * dw, gw, fwd, alpha)]))
+    wt = Pt[1] - Pt[0]; wt /= np.linalg.norm(wt)
+    return wt @ u > 0.99
 
 
 def rot_axis(p, pivot, axis, ang):
