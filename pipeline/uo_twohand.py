@@ -37,6 +37,18 @@ GRIP_BELOW = 0.14        # m: the upper fist below the bottom of the ball (5 px 
 MOUNTED_EXTRA = 0.12     # m: lower in the mounted actions (23-29)
 GRIP_EXTRA = ""          # "1:0.14,3:0.14": per action, m lower on the shaft than GRIP_BELOW (user, 2026-10: walk and run armed 5 px lower)
 GRIP_FRAC = ""           # "21:0.75,22:0.75,33:0.75,34:0.75": per action, the upper fist at this share of the shaft (butt = 0, bottom of the ball = 1) instead of GRIP_BELOW under the ball
+STAFF_ACTIONS = ""       # "23,...,29": carried like an original staff: one hand, upright, the direction of the calibrated staff line in that frame (what the original staff does on a horse), leaning
+                         # outwards by STAFF_OUT (the part of the weapon that is inside the horse is hidden by it, as with the original staff); the horse proxy is not used
+STAFF_FWD = 0.3          # share of the calibrated line's own horizontal lean (forward, mostly) kept in the staff carry
+STAFF_MAX = 1.0          # the outward lean grows from STAFF_OUT up to this until the weapon is out of the horse (to within STAFF_TOL m)
+STAFF_TOL = 0.03
+STAFF_OUT = 0.35         # sideways lean of the staff carry (the vertical x 0.9 + 0.3 x the horizontal part of the calibrated line + this x the outward axis, renormalised)
+STEADY_ACTIONS = ""      # "23,24,25": mounted actions in which ONE direction is chosen for the whole action, fixed in the frame of the chest (the weapon is carried, not swung): the one that clears the horse
+                         # in every frame, leans outwards, stays upright (STEADY_TILT per rad) and stays near the axis of the fist that holds it (STEADY_FIST per rad)
+STEADY_TILT = 0.6
+STEADY_FIST = 1.0
+GRIP_CUT_ACTIONS = ""    # "22,23,...": the actions in which the hands cut the shaft where they hold it (property uo_grips of the item; scene uo_grip_cut = radius in px)
+GRIP_MID = ""            # "23,24,...": the upper fist at the middle of the whole weapon (butt to the top of the spikes) in these actions (mounted: user, 2026-10)
 SINGLE_ACTIONS = ""      # "33,34": the weapon is held by the upper hand alone (the direction of the calibrated halberd line), not through both fists (salute, eat)
 BUTT_MIN = 0.09          # m: in BUTT_ACTIONS the lower fist stays this far from the butt so that the end of the weapon still shows out of the hand (the fist is ~4.5 cm; the default HAND_END covers the butt)
 BUTT_ACTIONS = ""        # "7,8,9": the actions that use BUTT_MIN instead of HAND_END
@@ -145,6 +157,11 @@ def main():
     butt_set = {int(x) for x in BUTT_ACTIONS.split(",") if x}
     frac = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_FRAC.split(",") if kv)}
     single = {int(x) for x in SINGLE_ACTIONS.split(",") if x}
+    mid = {int(x) for x in GRIP_MID.split(",") if x}
+    steady = {int(x) for x in STEADY_ACTIONS.split(",") if x}
+    staff = {int(x) for x in STAFF_ACTIONS.split(",") if x}
+    grips_out = {}
+    cut_set = {int(x) for x in GRIP_CUT_ACTIONS.split(",") if x}
     extra = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_EXTRA.split(",") if kv)}
     falls = {int(x) for x in FALL_ACTIONS.split(",") if x}
     mounted_set = {int(x) for x in MOUNTED_ACTIONS.split(",") if x}
@@ -217,6 +234,17 @@ def main():
         log("calibrated halberd direction rebuilt from the keys: at most %.2f deg off the bone" % cal_err)
         if cal_err > 1.0:
             raise SystemExit("the calibrated direction does not match the bone")
+    steady_dl, steady_info = None, ""
+    if (steady - staff) & {int(x["uo_action"]) for x in acts}:           # the carried weapon of the mounted walk, run and stand: one direction in the chest frame for all of them
+        items = []
+        for act in acts:
+            a_ = int(act["uo_action"])
+            if a_ in steady:
+                w_ = s_butt + 0.5 * (s_max - s_butt) if a_ in mid else s_ball - GRIP_BELOW - MOUNTED_EXTRA
+                for i_, r_ in enumerate(data[a_]):
+                    items.append(dict(a=a_, i=i_, row=r_, GU=r_["gL"] if UPPER == "L" else r_["gR"], D0=unit(r_["fist"]), want=w_))
+        steady_dl, steady_info = steady_local(items, s_butt, s_ball, s_cen, r_ball, tip_len, UPPER)
+        log(steady_info)
     # pass 2: the weapon per frame
     plan = {}
     stats = {}
@@ -249,12 +277,46 @@ def main():
         want = np.full(n, s_ball - GRIP_BELOW - (MOUNTED_EXTRA if is_mounted else 0.0) - extra.get(a, 0.0))
         if a in frac:
             want[:] = s_butt + frac[a] * (s_ball - s_butt)
+        if a in mid:
+            want[:] = s_butt + 0.5 * (s_max - s_butt)
         Dsm = smooth_dirs(D, SMOOTH, cyc)
         if a in falls or is_mounted:
             D = Dsm
         else:                                                 # where the fists define the line it is exact (smoothing it pulled the lower fist 10-25 cm off the shaft in the fast swings); smoothed only where they do not
             D = np.array([unit(slerp(Dsm[i], D[i], wb[i] ** 2)) for i in range(n)])
-        if is_mounted:
+        if a in staff:
+            lat_ = [unit(np.array([r["left"][0], r["left"][1], 0.0])) * (1 if upper == "L" else -1) for r in rows]
+            up_ = np.array([0, 0, 1.0])                        # upright: the vertical, a third of the calibrated line's own horizontal lean, and the outward lean
+            def staff_dirs(lean):
+                return np.array([unit(up_ * 0.9 + STAFF_FWD * (D0[i] - (D0[i] @ up_) * up_) + lean * lat_[i]) for i in range(n)])
+
+            def inside_i(i, dv):                               # deepest part of the weapon inside the horse proxy in frame i (m); the hand's own surroundings are left alone
+                bvh = horse_bvh(a, i)
+                if bvh is None:
+                    return 0.0
+                bad = 0.0
+                for x in np.arange(s_butt, s_ball + 1e-6, 0.05):
+                    if abs(x - want[i]) > 0.12:
+                        bad = max(bad, -signed_dist(bvh, GU[i] + dv * (x - want[i])))
+                return max(bad, -(signed_dist(bvh, GU[i] + dv * (s_cen - want[i])) - r_ball))
+            leans = np.zeros(n)                                # per frame the least outward lean at which the weapon is out of the horse (to STAFF_TOL), at most STAFF_MAX
+            for i in range(n):
+                lean = STAFF_OUT
+                while lean < STAFF_MAX and inside_i(i, unit(up_ * 0.9 + STAFF_FWD * (D0[i] - (D0[i] @ up_) * up_) + lean * lat_[i])) > STAFF_TOL:
+                    lean += 0.05
+                leans[i] = lean
+            k_ = np.arange(-3, 4); w_ = np.exp(-0.5 * (k_ / 1.0) ** 2)
+            leans_s = np.array([sum(w_[j] * leans[(i + k_[j]) % n if cyc else min(max(i + k_[j], 0), n - 1)] for j in range(len(k_))) / w_.sum() for i in range(n)])
+            leans_s = np.maximum(leans_s, leans * 0.9)         # smoothed, but not much less than what a frame needs
+            D = np.array([unit(up_ * 0.9 + STAFF_FWD * (D0[i] - (D0[i] @ up_) * up_) + leans_s[i] * lat_[i]) for i in range(n)])
+            D = smooth_dirs(D, SMOOTH, cyc)
+            bad = max(inside_i(i, D[i]) for i in range(n))
+            tl = np.degrees(np.arccos(np.clip(D[:, 2], -1, 1)))
+            notes.append("staff carry: outward lean %.2f-%.2f, %.0f-%.0f deg from vertical, %.0f mm of the weapon inside the horse proxy at most" % (leans_s.min(), leans_s.max(), tl.min(), tl.max(), 1000 * bad))
+        elif a in steady:
+            D = np.array([chest_basis(r) @ steady_dl for r in rows])
+            notes.append(steady_info)
+        elif is_mounted:
             D, info = mounted_dirs(a, rows, GU, D, want, s_butt, s_ball, s_cen, r_ball, tip_len, upper)
             D = smooth_dirs(D, SMOOTH, cyc)
             notes.append(info)
@@ -295,6 +357,13 @@ def main():
             B = np.array([x, np.cross(D[i], x), D[i]]).T
             Rw.append(B @ A.T)
         plan[a] = (O, Rw, D)
+        for i, r in enumerate(rows if a in cut_set else []):    # where the hands hold the shaft (the renderer cuts the shaft there: GRIP_CUT of the scene)
+            gl_i = r["gR"] if upper == "L" else r["gL"]
+            pts = [GU[i]]
+            line_pt = O[i] + D[i] * ((gl_i - O[i]) @ D[i])
+            if np.linalg.norm(gl_i - line_pt) < 0.05 and a not in falls:
+                pts.append(gl_i)
+            grips_out["%d,%d" % (a, i)] = [[round(float(x), 4) for x in q] for q in pts]
         if a in falls:
             ang = [math.degrees(math.acos(np.clip(D[i] @ unit(rows[i]["head"] - rows[i]["pelvis"]), -1, 1))) for i in range(n)]
             notes.append("last frame %.0f deg from the body axis" % ang[-1])
@@ -346,10 +415,70 @@ def main():
     log("check: the keyed bone differs from the target by at most %.4f (m / unit vector)" % maxerr)
     if maxerr > 0.01:
         raise SystemExit("keyed bone does not match the target")
+    old_g = json.loads(item["uo_grips"]) if "uo_grips" in item else {}
+    old_g.update(grips_out); item["uo_grips"] = json.dumps(old_g)
     if report:
         json.dump(stats, open(report, "w"), indent=1)
     bpy.ops.wm.save_as_mainfile(filepath=outp)
     log("saved", outp)
+
+
+def chest_basis(r):
+    cx, cy = unit(r["chest_x"]), unit(r["chest_y"]); cz = np.cross(cx, cy)
+    if cz[2] < 0:
+        cz = -cz
+    return np.array([cx, cy, cz]).T
+
+
+def steady_local(items, s_butt, s_ball, s_cen, r_ball, tip_len, upper):
+    """ONE direction for the carried weapon of several mounted actions, fixed in the frame of the chest: clears the horse proxy in every frame, leans outwards, stays upright and
+    near the axis of the fist that holds it. items: dicts (a, i, row, GU, D0, want). Returns the direction in chest axes and a note."""
+    frames = []
+    for it in items:
+        r = it["row"]
+        lat = np.array([r["left"][0], r["left"][1], 0.0]); lat = unit(lat) * (1 if upper == "L" else -1)
+        frames.append((horse_bvh(it["a"], it["i"]), chest_basis(r), lat, it))
+    n = len(frames)
+    sh_s = np.arange(s_butt, s_ball + 1e-6, 0.06)
+
+    def cost(dl):
+        tot = 0.0; pen_t = 0.0
+        for bvh, B, lat, it in frames:
+            d = B @ dl; gu = it["GU"]; su = it["want"]
+            pen = 0.0
+            if bvh is not None:
+                for s in sh_s:                                 # the clearance grows with the distance from the grip
+                    pen += max(0.0, CLEAR_SHAFT * smoothstep((abs(s - su) - 0.1) / 0.3) - signed_dist(bvh, gu + d * (s - su)))
+                c = gu + d * (s_cen - su)
+                pen += 2.0 * max(0.0, r_ball + CLEAR_BALL - signed_dist(bvh, c))
+                x = np.cross(d, [0, 0, 1.0]); x = x / np.linalg.norm(x) if np.linalg.norm(x) > 1e-6 else np.array([1.0, 0, 0]); y = np.cross(d, x)
+                for ax in (d, x, -x, y, -y):
+                    pen += max(0.0, CLEAR_BALL - signed_dist(bvh, c + ax * tip_len * 0.9))
+            pen_t += pen
+            tot += STEADY_FIST * math.acos(np.clip(d @ it["D0"], -1, 1)) + STEADY_TILT * math.acos(np.clip(d[2], -1, 1)) + 2.0 * max(0.0, OUT_MIN - d @ lat)
+        return 30.0 * pen_t + tot / n, pen_t / n
+    best = None
+    for tilt in range(0, 91, 10):
+        for az in range(0, 360, 15):
+            t = math.radians(tilt); p = math.radians(az)
+            dl = np.array([math.sin(t) * math.cos(p), math.sin(t) * math.sin(p), math.cos(t)])
+            c = cost(dl)[0]
+            if best is None or c < best[0]:
+                best = (c, dl)
+    d_best = best[1]
+    for step in (6.0, 3.0, 1.5):
+        base = d_best; ax1 = np.cross(base, [0, 0, 1.0]); ax1 = ax1 / np.linalg.norm(ax1) if np.linalg.norm(ax1) > 1e-6 else np.array([1.0, 0, 0]); ax2 = np.cross(base, ax1)
+        for u in (-2, -1, 0, 1, 2):
+            for v in (-2, -1, 0, 1, 2):
+                dl = unit(base + math.tan(math.radians(step)) * (u * ax1 + v * ax2))
+                c = cost(dl)[0]
+                if c < best[0]:
+                    best = (c, dl)
+        d_best = best[1]
+    out = [B @ d_best for _, B, _, _ in frames]
+    fist = np.degrees(np.mean([math.acos(np.clip(o @ it["D0"], -1, 1)) for o, (_, _, _, it) in zip(out, frames)]))
+    return d_best, "one direction for the actions %s in the chest frame: tilt %.0f deg from vertical, %.0f deg from the fist axis, intrusion %.0f mm" % (
+        sorted({it["a"] for _, _, _, it in frames}), np.degrees(np.mean([math.acos(np.clip(o[2], -1, 1)) for o in out])), fist, 1000 * cost(d_best)[1])
 
 
 def mounted_dirs(a, rows, GU, D0, want, s_butt, s_ball, s_cen, r_ball, tip_len, upper):

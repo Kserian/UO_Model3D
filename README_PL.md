@@ -213,6 +213,7 @@ Sztywność w płaszczyźnie (tension, compression, shear) wynosi 5 dla wszystki
 | `uo_outline` | auto (0,38) | Siła ciemnego konturu 1 px (1.0 = brak) | Jasnoszara szata: 0,6-0,8 |
 | `uo_edge_floor` | 0 | Kontur nigdy ciemniejszy niż to na kanał | 24 = brak czystej czerni na czarnym przedmiocie |
 | `uo_outline_blend` | 0 (wył.) | Udział koloru pikseli przedmiotu obok brzegu (od środka) domieszany do brzegu, zanim `uo_outline` go przyciemni: kontur jest ciemniejszym odcieniem otoczenia (szarość stali, brąz skóry), a nie często czarnego piksela krawędzi | Maczuga z kolcami: `uo_outline` 0,7 + `uo_outline_blend` 0,6 = miękki kolorowy brzeg, kolce i kij nie wyglądają jak czarne linie |
+| `uo_grip_cut` | 0 (wył.) | Promień w px: przedmiot z własnością `uo_grips` (`uo_twohand.py`, `GRIP_CUT_ACTIONS`) jest wycinany przez trzymające go dłonie: piksele przedmiotu w tym promieniu od chwytu, leżące na naszej dłoni (z palcami) i na oryginalnym sprite'cie ciała, są usuwane bez testu głębi | 3 dla maczugi: w upadku do przodu i akcjach konnych głębia 3D nie pozwalała dłoni zasłonić kija |
 | `uo_torso_margin` | 0,12 | Jak daleko za piersią (m) musi być przedmiot, żeby tułów go zasłonił (przedmioty z `behind_torso`) | 0,04 dla broni trzymanej przed ciałem: z kierunków 3 i 4 plecy, szyja i głowa zasłaniają kij |
 | `uo_samples` | 512 | Próbki Cycles | 1024 dla połysku metalu, ciemnej skóry |
 | `uo_inner_line` | 0 | Ciemna linia 1 px między rękawem a tułowiem (wymaga `conform`) | Rozrzut 30 → 40, ale wygląda jak narysowana linia: niezalecane |

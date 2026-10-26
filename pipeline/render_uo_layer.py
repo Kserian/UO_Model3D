@@ -93,6 +93,9 @@ FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded 
                                    # rips should show the body: 0)
 INNER_LINE = 0.0                   # clothing: > 0 = the torso pixels of an item that touch its sleeve (point attribute uo_region of uo_conform_item.py) are darkened to this share: a 1-px
                                    # line that sets the sleeves off the torso like the original robes (an extra label render per frame). 0 = off; scene property uo_inner_line
+GRIP_CUT = 0.0                     # px: an item with the property uo_grips (uo_twohand.py: where the hands hold the shaft, per UO frame, armature space) is cut by the hand: item pixels within this radius of a
+                                   # projected grip that lie on our hand (fingers included, no depth test) and on the original body sprite are removed, whichever of the two is nearer to the camera in 3D
+                                   # (a hand that holds a shaft is in front of it; the 3D depth of a hand pressed to the floor or a fist 2 px off the original sprite did not hide it). 0 = off; scene property uo_grip_cut
 OUTLINE_BLEND = 0.0                # clothing: share of the colour of the item pixels next to the rim (inside it) mixed into the rim before it is darkened: the outline is then a darker shade
                                    # of the colours around it, not of the (often much darker) edge pixel itself, and it follows the shading smoothly. 0 = off; scene property uo_outline_blend
 EDGE_SMOOTH = 0                    # clothing: passes of outline smoothing (a pixel with at most 1 of its 4 neighbours in the item is dropped, an empty one with 3-4 is filled with the colour
@@ -124,6 +127,7 @@ CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune":
 SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
 OUTLINE_BLEND = float(sc.get("uo_outline_blend", OUTLINE_BLEND))
+GRIP_CUT = float(sc.get("uo_grip_cut", GRIP_CUT))
 TORSO_HIDE_MARGIN = float(sc.get("uo_torso_margin", TORSO_HIDE_MARGIN))     # per item: how far behind the chest an item must be for the torso to hide it (uo_behind_torso items; a weapon held in front: 0.03)
 SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
 CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
@@ -759,7 +763,8 @@ if HEAD_HIDES:
     WORN.discard("head")
 OCCLUDER_TRIS = body_part_mask(set(OCCLUDERS))                 # parts BODY_GAP keeps the items away from
 HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)             # parts that may hide an item in the holdout
-HANDHEAD_TRIS = body_part_mask({"hand", "head"})                # HIDE_ERODE shrinks what these hide (a hand only next to its sleeve)
+HANDHEAD_TRIS = body_part_mask({"hand", "head"})
+HAND_TRIS = body_part_mask({"hand"})                # HIDE_ERODE shrinks what these hide (a hand only next to its sleeve)
 HEAD_TRIS = body_part_mask({"head"})
 BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and any(o.get("uo_behind_torso") for o in clothes if not o.hide_render)
 TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if BEHIND_TORSO else None
@@ -803,6 +808,33 @@ def raster(objs, tri_mask=None):
                 z = l0[k] * Z[t[k], 0] + l1[k] * Z[t[k], 1] + (1 - l0[k] - l1[k]) * Z[t[k], 2]
                 np.minimum.at(depth, (py_[k], px_[k]), z)
     return img, depth
+
+
+def grip_cut(px, a, i, orig_m):
+    """remove the item pixels the hands that hold it cover (GRIP_CUT)"""
+    pts = []
+    for o in clothes:
+        if not o.hide_render and "uo_grips" in o:
+            pts += json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])
+    if not pts:
+        return px
+    rig.update_tag(); bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
+    Pm = np.array(cam.calc_matrix_camera(dg, x=W, y=H)); Vm = np.array(cam.matrix_world.inverted()); Mw = np.array(rig.matrix_world)
+    hv = np.c_[np.array(pts), np.ones(len(pts))] @ (Vm @ Mw).T
+    h = hv @ Pm.T; ndc = h[:, :2] / h[:, 3:4]
+    gp = np.stack([(ndc[:, 0] + 1) * 0.5 * W, (1 - ndc[:, 1]) * 0.5 * H], 1)
+    hand, _ = raster([body], HAND_TRIS)
+    hand = binary_dilation(hand, 1)
+    yy, xx = np.mgrid[0:H, 0:W]
+    near = np.zeros((H, W), bool)
+    for gx, gy in gp:
+        near |= (xx + 0.5 - gx) ** 2 + (yy + 0.5 - gy) ** 2 <= GRIP_CUT ** 2
+    cut = near & hand & (px[..., 3] >= 0.5)
+    if orig_m is not None:
+        cut &= orig_m
+    px = px.copy(); px[cut] = 0.0
+    return px
 
 
 def body_coverage():
@@ -1116,6 +1148,8 @@ def frame_job():
                         free = render_frame(a, i, d, "hidden")
                         hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
+                        if GRIP_CUT > 0:
+                            px = grip_cut(px, a, i, orig_m if EXACT_BODY else None)
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
                         lab = region_labels(a, i, d) if (INNER_LINE > 0 or SHADE_SLEEVE > 0) else None
