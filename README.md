@@ -84,7 +84,7 @@ It is meant for designing clothing, armour, hair and weapon layers: the `.blend`
 
 | Group | Scripts |
 |---|---|
-| Item in one command | `uo_make_item.py` (3a), `uo_conform_item.py`, `uo_cloth_sim.py`, `uo_spikes.py` (bigger spikes of a spiked ball), `uo_twohand.py` (two-handed weapon carried by both hands), `item_gif.py` (frame sheet and GIF of an item on the original body), `item_sheet.py` |
+| Item in one command | `uo_make_item.py` (3a), `vd_swap_action.py` (replace the frames of single actions in a finished `.vd` by freshly rendered ones: no full render), `uo_conform_item.py`, `uo_cloth_sim.py`, `uo_spikes.py` (bigger spikes of a spiked ball), `uo_twohand.py` (two-handed weapon carried by both hands), `item_gif.py` (frame sheet and GIF of an item on the original body), `item_sheet.py` |
 | Item measurements | `item_qa.py` (clipping, thickness), `item_clearance.py`, `item_thickness.py`, `item_body_holes.py` (what the client shows over the original body 400), `item_skin_check.py` (skin through the item vs in holes, feet apart) |
 | Body and poses | `pose_lib.py` (rig in numpy, pixel-identical to Blender; `qa`), `pose_natural_fit.py` + `apply_pose_keys.py`, `pose_naturalness.py`, `body_part_raster.py` + `body_part_qa.py`, `arm_*.py` (arm fit, mirror of the left arm in action 17) |
 | Tests | `run_qa.py [--quick]` (regression with thresholds, `docs/qa/baselines.md`), `test_items.py`, `test_canvas.py`, `test_autofit.py`, `test_robe.py`, `test_cloak.py`, `test_materials.py`, `test_import_item.py`, `test_twohand.py`, `test_weapons.py`, `test_weapon_roll.py` (weapon tests need client sprites; only katana 627 is in the repo) |
