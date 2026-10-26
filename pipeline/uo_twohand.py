@@ -36,6 +36,8 @@ BONE = "polearm.L"
 GRIP_BELOW = 0.14        # m: the upper fist below the bottom of the ball (5 px at 36 px/m)
 MOUNTED_EXTRA = 0.12     # m: lower in the mounted actions (23-29)
 GRIP_EXTRA = ""          # "1:0.14,3:0.14": per action, m lower on the shaft than GRIP_BELOW (user, 2026-10: walk and run armed 5 px lower)
+BUTT_MIN = 0.09          # m: in BUTT_ACTIONS the lower fist stays this far from the butt so that the end of the weapon still shows out of the hand (the fist is ~4.5 cm; the default HAND_END covers the butt)
+BUTT_ACTIONS = ""        # "7,8,9": the actions that use BUTT_MIN instead of HAND_END
 FRONT_ACTIONS = ""       # "1,3": the weapon is moved forward (away from the body, along the front of the chest) by the least amount at which the shaft does not enter the posed body
 FRONT_CLEAR = 0.015      # m: the shaft stays this far outside the skin (the parts within FRONT_SKIP of a fist are left alone: the fists hold it there)
 FRONT_SKIP = 0.14        # m
@@ -138,6 +140,7 @@ def main():
         globals()[k] = v if isinstance(globals()[k], str) else type(globals()[k])(v)
     upper_r = {int(x) for x in UPPER_R.split(",") if x}
     front_set = {int(x) for x in FRONT_ACTIONS.split(",") if x}
+    butt_set = {int(x) for x in BUTT_ACTIONS.split(",") if x}
     extra = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_EXTRA.split(",") if kv)}
     falls = {int(x) for x in FALL_ACTIONS.split(",") if x}
     mounted_set = {int(x) for x in MOUNTED_ACTIONS.split(",") if x}
@@ -250,7 +253,7 @@ def main():
         s_up = np.zeros(n)
         for i in range(n):
             if wb[i] > 0.5 and not is_mounted and a not in falls:         # both fists on the shaft: the lower one stays on it
-                lo = s_butt + HAND_END + sep[i]; hi = s_ball - 0.03
+                lo = s_butt + (BUTT_MIN if a in butt_set else HAND_END) + sep[i]; hi = s_ball - 0.03
                 s_up[i] = min(max(want[i], lo), max(hi, lo))
             else:
                 s_up[i] = want[i]
@@ -290,13 +293,15 @@ def main():
         gl_ = np.array([(r["gR"] if upper == "L" else r["gL"]) for r in rows])           # the lower fist: how far from the shaft line
         off = np.linalg.norm(np.cross(gl_ - GU, D), axis=1)
         held = wb > 0.5
+        prot = (s_up - np.where(held, sep, 0.0) - s_butt) * 100 if held.any() else None        # how far the end of the weapon sticks out beyond the lower fist (cm)
         turn = np.degrees(np.arccos(np.clip((D[1:] * D[:-1]).sum(1), -1, 1))) if n > 1 else np.zeros(1)
         tl_ = np.degrees(np.arccos(np.clip(D[:, 2], -1, 1)))
         stats[a] = dict(frames=n, upper=upper, sep_cm=[float(sep.min() * 100), float(sep.max() * 100)], max_turn_deg=float(turn.max()) if len(turn) else 0.0,
-                        axis_err_last_deg=float(ang[-1]) if a in falls else None, fists_define=float(wb.mean()), lower_fist_off_cm=[float(off[held].mean() * 100), float(off[held].max() * 100)] if held.any() else None, tilt_deg=[float(tl_.min()), float(tl_.max())], notes=notes)
-        log("action %2d %-22s upper %s sep %.0f-%.0f cm (fists define the line in %.0f%%), turn per frame <= %.0f deg, tilt %.0f-%.0f deg, lower fist %s off the shaft %s" % (
+                        butt_beyond_fist_cm=[float(prot[held].min()), float(prot[held].max())] if held.any() else None, axis_err_last_deg=float(ang[-1]) if a in falls else None, fists_define=float(wb.mean()), lower_fist_off_cm=[float(off[held].mean() * 100), float(off[held].max() * 100)] if held.any() else None, tilt_deg=[float(tl_.min()), float(tl_.max())], notes=notes)
+        log("action %2d %-22s upper %s sep %.0f-%.0f cm (fists define the line in %.0f%%), turn per frame <= %.0f deg, tilt %.0f-%.0f deg, lower fist %s off the shaft, end beyond the fist %s %s" % (
             a, act.name[3:], upper, stats[a]["sep_cm"][0], stats[a]["sep_cm"][1], 100 * wb.mean(), stats[a]["max_turn_deg"], *stats[a]["tilt_deg"],
-            "%.1f / %.1f cm" % tuple(stats[a]["lower_fist_off_cm"]) if stats[a]["lower_fist_off_cm"] else "-", "; ".join(notes)))
+            "%.1f / %.1f cm" % tuple(stats[a]["lower_fist_off_cm"]) if stats[a]["lower_fist_off_cm"] else "-",
+            "%.0f-%.0f cm" % tuple(stats[a]["butt_beyond_fist_cm"]) if stats[a]["butt_beyond_fist_cm"] else "-", "; ".join(notes)))
     # pass 3: key the bone
     bone = pb[BONE]; bone.rotation_mode = "QUATERNION"
     for act in acts:
