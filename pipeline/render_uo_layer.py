@@ -770,12 +770,14 @@ BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and any(o.get("uo_b
 TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if BEHIND_TORSO else None
 ACTION_HIDE = json.loads(sc["uo_action_hide"]) if sc.get("uo_action_hide") else {}   # per action: {"29": {"legs_under": 1, "torso": 0}} = in that action the legs never hide the item / the torso does not hide it / only the listed parts may hide it ("occluders": "hand")
 _BASE_HIDE = (WORN.copy(), HIDER_TRIS, BEHIND_TORSO, TORSO_TRIS)
+_BASE_HORSE = HORSE_HOLDOUT
 
 
 def set_hiders(a):
     """what may hide the item in action a: the scene's own setting, or the per-action override uo_action_hide"""
-    global WORN, HIDER_TRIS, BEHIND_TORSO, TORSO_TRIS
+    global WORN, HIDER_TRIS, BEHIND_TORSO, TORSO_TRIS, HORSE_HOLDOUT
     o = ACTION_HIDE.get(str(a))
+    HORSE_HOLDOUT = _BASE_HORSE and not (o and o.get("horse") == 0)       # "horse": 0 = the horse does not hide the item in this action
     if not o or LAYER != "clothing":
         WORN, HIDER_TRIS, BEHIND_TORSO, TORSO_TRIS = _BASE_HIDE[0].copy(), _BASE_HIDE[1], _BASE_HIDE[2], _BASE_HIDE[3]
         return

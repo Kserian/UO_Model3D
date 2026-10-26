@@ -42,6 +42,8 @@ STAFF_ACTIONS = ""       # "23,...,29": carried like an original staff: one hand
 STAFF_SIDE = 1.0         # +1: the staff leans outwards at the top (the end of the shaft inwards); -1: the other way, the butt end points outwards, away from the body and the horse (user, 2026-10)
 FISTC_ACTIONS = ""       # "17,23,...": the shaft goes through the CENTRE of the upper (left) fist (the middle of the hand and finger vertices of the posed skin) instead of the calibrated grip point, which
                          # lies ~1.2 cm inside the skin: half of the shaft then stood out of the hand (mounted stand: the weapon "not in the hand")
+HANDLOCK_ACTIONS = ""    # "23,...,28": the weapon is RIGID in the hand (it follows the hand and cannot jump or leave it): one direction in the frame of the hand for all of them
+HANDLOCK_FIT = ""        # "23,24,25": the actions the direction is fitted on (closest to the upright carry leaning outwards, STAFF_SIDE / STAFF_OUT, and out of the horse proxy); "" = HANDLOCK_ACTIONS
 STILL_ACTIONS = ""       # "17": the weapon keeps ONE direction in the world (upright, STILL_LEAN outwards) in every frame: it does not turn with the hand
 STILL_LEAN = 0.0
 CAL_ACTIONS = ""         # "23,...,29": the grip is at the origin of the CALIBRATED halberd bone (weapon_motion.json: where the original weapon is held on the original sprites) instead of the fist of our 3D arm.
@@ -173,6 +175,8 @@ def main():
     calset = {int(x) for x in CAL_ACTIONS.split(",") if x}
     fistc = {int(x) for x in FISTC_ACTIONS.split(",") if x}
     still = {int(x) for x in STILL_ACTIONS.split(",") if x}
+    handlock = {int(x) for x in HANDLOCK_ACTIONS.split(",") if x}
+    hfit = {int(x) for x in HANDLOCK_FIT.split(",") if x} or handlock
     grips_out = {}
     cut_set = {int(x) for x in GRIP_CUT_ACTIONS.split(",") if x}
     extra = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_EXTRA.split(",") if kv)}
@@ -267,6 +271,19 @@ def main():
         log("calibrated halberd direction rebuilt from the keys: at most %.2f deg off the bone" % cal_err)
         if cal_err > 1.0:
             raise SystemExit("the calibrated direction does not match the bone")
+    handlock_dl, handlock_info = None, ""
+    if handlock & {int(x["uo_action"]) for x in acts}:         # the mounted actions: the weapon rigid in the left hand
+        items = []
+        for act in acts:
+            a_ = int(act["uo_action"])
+            if a_ in hfit:
+                w_ = s_butt + frac[a_] * (s_ball - s_butt) if a_ in frac else s_ball - GRIP_BELOW - MOUNTED_EXTRA
+                for i_, r_ in enumerate(data[a_]):
+                    lat_ = unit(np.array([r_["left"][0], r_["left"][1], 0.0])) * STAFF_SIDE
+                    des_ = unit(np.array([0, 0, 0.9]) + STAFF_OUT * lat_)
+                    items.append(dict(a=a_, i=i_, row=r_, GU=(r_["cL"] if a_ in fistc else r_["gL"]), want=w_, des=des_))
+        handlock_dl, handlock_info = handlock_local(items, s_butt, s_ball, s_cen, r_ball, tip_len)
+        log(handlock_info)
     steady_dl, steady_info = None, ""
     if (steady - staff) & {int(x["uo_action"]) for x in acts}:           # the carried weapon of the mounted walk, run and stand: one direction in the chest frame for all of them
         items = []
@@ -298,7 +315,7 @@ def main():
             Dfist[i] = unit(r["fist"])
         # how much the fists define the line: 1 inside [SEP_MIN, sep_max], blended out over SEP_BLEND outside
         wb = smoothstep((sep - SEP_MIN) / SEP_BLEND) * (1 - smoothstep((sep - sep_max) / SEP_BLEND))
-        if a in single or a in arm or a in still:
+        if a in single or a in arm or a in still or a in handlock:
             wb = np.zeros(n)
         if wb.mean() < FISTS_MIN_SHARE and wb.min() < 0.5:    # an action in which the fists mostly cannot hold the weapon together (spells, swings with the arms wide): one steady line (the axis of the fist), no switching between two lines
             wb = np.zeros(n)
@@ -323,7 +340,11 @@ def main():
             D = Dsm
         else:                                                 # where the fists define the line it is exact (smoothing it pulled the lower fist 10-25 cm off the shaft in the fast swings); smoothed only where they do not
             D = np.array([unit(slerp(Dsm[i], D[i], wb[i] ** 2)) for i in range(n)])
-        if a in still:
+        if a in handlock:
+            D = np.array([r["hrot"] @ handlock_dl for r in rows])
+            tl = np.degrees(np.arccos(np.clip(D[:, 2], -1, 1)))
+            notes.append("rigid in the hand: %.0f-%.0f deg from vertical in this action" % (tl.min(), tl.max()))
+        elif a in still:
             lat_s = [unit(np.array([r["left"][0], r["left"][1], 0.0])) * (1 if upper == "L" else -1) * STAFF_SIDE for r in rows]
             D = np.array([unit(np.array([0, 0, 1.0]) + STILL_LEAN * lat_s[i]) for i in range(n)])
             notes.append("one steady direction: %.0f deg from vertical in every frame" % np.degrees(np.arccos(D[0][2])))
@@ -477,6 +498,47 @@ def chest_basis(r):
     if cz[2] < 0:
         cz = -cz
     return np.array([cx, cy, cz]).T
+
+
+def handlock_local(items, s_butt, s_ball, s_cen, r_ball, tip_len):
+    """ONE direction in the frame of the hand for a weapon that is rigid in the hand: the mean angle to the wanted carry (items: a, i, row, GU, want, des) plus 30 x the intrusion into the horse proxy"""
+    frames = [(horse_bvh(it["a"], it["i"]), it["row"]["hrot"], it) for it in items]
+    n = len(frames)
+    sh_s = np.arange(s_butt, s_ball + 1e-6, 0.06)
+
+    def cost(dl):
+        ang = 0.0; pen_t = 0.0
+        for bvh, B, it in frames:
+            d = B @ dl; gu = it["GU"]; su = it["want"]
+            ang += math.acos(np.clip(d @ it["des"], -1, 1))
+            if bvh is None:
+                continue
+            for s in sh_s:
+                pen_t += max(0.0, CLEAR_SHAFT * smoothstep((abs(s - su) - 0.1) / 0.3) - signed_dist(bvh, gu + d * (s - su)))
+            c = gu + d * (s_cen - su)
+            pen_t += 2.0 * max(0.0, r_ball + CLEAR_BALL - signed_dist(bvh, c))
+        return 30.0 * pen_t / n + ang / n, pen_t / n, ang / n
+    best = None
+    for tilt in range(0, 181, 15):
+        for az in range(0, 360, 15):
+            t = math.radians(tilt); p = math.radians(az)
+            dl = np.array([math.sin(t) * math.cos(p), math.sin(t) * math.sin(p), math.cos(t)])
+            c = cost(dl)[0]
+            if best is None or c < best[0]:
+                best = (c, dl)
+    d_best = best[1]
+    for step in (6.0, 3.0, 1.5):
+        base = d_best; ax1 = np.cross(base, [0, 0, 1.0]); ax1 = ax1 / np.linalg.norm(ax1) if np.linalg.norm(ax1) > 1e-6 else np.array([1.0, 0, 0]); ax2 = np.cross(base, ax1)
+        for u in (-2, -1, 0, 1, 2):
+            for v in (-2, -1, 0, 1, 2):
+                dl = unit(base + math.tan(math.radians(step)) * (u * ax1 + v * ax2))
+                c = cost(dl)[0]
+                if c < best[0]:
+                    best = (c, dl)
+        d_best = best[1]
+    _, pen, ang = cost(d_best)
+    return d_best, "weapon rigid in the hand (direction in the frame of the hand fitted on actions %s: %.0f deg on average from the upright carry, %.0f mm inside the horse proxy)" % (
+        sorted({it["a"] for it in items}), math.degrees(ang), 1000 * pen)
 
 
 def steady_local(items, s_butt, s_ball, s_cen, r_ball, tip_len, upper):
