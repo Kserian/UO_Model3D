@@ -829,6 +829,131 @@ def raster(objs, tri_mask=None):
     return img, depth
 
 
+FIST_SPRITE = {int(x) for x in str(sc.get("uo_fist_sprite", "")).split(",") if x}   # actions whose weapon is moved so that it goes through the hand SHOWN ON THE ORIGINAL SPRITE (our fitted fist is up to 4 px off it)
+FIST_R = float(sc.get("uo_fist_radius", 6.0))      # px: the hand is looked for this far from our fist
+FIST_EDT = float(sc.get("uo_fist_edt", 3.4))       # px: a fist is not thicker than this (half width); thicker = the torso, no hand found
+FIST_MAX = 8.0                                     # px: the largest shift
+FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
+
+
+def project_world(P):
+    """pixels of world points (n, 3) through UO_Camera"""
+    rig.update_tag(); bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
+    Pm = np.array(cam.calc_matrix_camera(dg, x=W, y=H)); Vm = np.array(cam.matrix_world.inverted())
+    h = np.c_[np.asarray(P, float), np.ones(len(P))] @ (Pm @ Vm).T
+    return np.stack([(h[:, 0] / h[:, 3] + 1) * 0.5 * W, (1 - h[:, 1] / h[:, 3]) * 0.5 * H], 1)
+
+
+def detect_fist(mask, g):
+    """centre (px) of the hand on an original sprite near g: the thickest blob of the sprite within FIST_R of g (distance to the edge, the torso is thicker than a fist and is refused), or None"""
+    Hm, Wm = mask.shape
+    pad = np.pad(mask, 6)
+    best, bp = -9.0, None
+    for y in range(max(int(g[1] - FIST_R) - 1, 0), min(int(g[1] + FIST_R) + 2, Hm)):
+        for x in range(max(int(g[0] - FIST_R) - 1, 0), min(int(g[0] + FIST_R) + 2, Wm)):
+            dist = np.hypot(x + 0.5 - g[0], y + 0.5 - g[1])
+            if not mask[y, x] or dist > FIST_R:
+                continue
+            win = pad[y + 6 - 5:y + 6 + 6, x + 6 - 5:x + 6 + 6]
+            yy, xx = np.nonzero(~win)
+            e = np.min(np.hypot(yy - 5, xx - 5)) if len(yy) else 5.0
+            if e - 0.15 * dist > best:
+                best, bp = e - 0.15 * dist, (x, y, e)
+    if bp is None or bp[2] > FIST_EDT:
+        return None
+    yy, xx = np.mgrid[0:Hm, 0:Wm]
+    w = (np.hypot(xx - bp[0], yy - bp[1]) <= 2.6) & mask
+    return np.array([xx[w].mean() + 0.5, yy[w].mean() + 0.5])
+
+
+def fist_offsets(a, n):
+    """per direction and frame the shift (px) from the grip of our weapon to the hand on the original sprite. The hand is found on the sprites of the directions where it stands free; its 3D
+    offset from our fist (least squares over them) gives the shift in the directions where it merges with the torso. Smoothed over the action. {d: [shift or None] * n}"""
+    obs = [o for o in clothes if not o.hide_render and "uo_grips" in o]
+    G, J, found = {}, {}, {}
+    for d in range(5):
+        rig["uo_direction"] = d; rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
+        for i in range(n):
+            pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
+            if not pts:
+                continue
+            sc.frame_set(1 + i * STEP); bpy.context.view_layer.update()
+            Mr = np.array(rig.matrix_world)                      # the rig turns with the direction
+            g3 = np.array(pts[0])                                # armature space; the shifts below are armature-space too
+            P = project_world(np.array([g3, g3 + [0.1, 0, 0], g3 + [0, 0.1, 0], g3 + [0, 0, 0.1]]) @ Mr[:3, :3].T + Mr[:3, 3])
+            G[d, i] = g3; J[d, i] = np.array([(P[k] - P[0]) / 0.1 for k in (1, 2, 3)]).T
+            orig = original(a, i, d)
+            h = detect_fist(orig[..., 3] > 0, P[0]) if orig is not None else None
+            if h is not None:
+                found[d, i] = h - P[0]
+    man = json.loads(sc["uo_fist_manual"]).get(str(a), {}) if sc.get("uo_fist_manual") else {}   # {"dir": [dx, dy] | {"frame": [dx, dy]}}: shifts read by eye where the hand merges with the body
+    if not found and not man:
+        return {d: [None] * n for d in range(5)}
+    x = np.arange(n)
+    def smooth(arr, ok):                                  # arr (n, k): gaps interpolated, median of 3, gauss sigma 0.8 frames
+        k = arr.shape[1]; v = np.stack([np.interp(x, x[ok], arr[ok, c]) for c in range(k)], 1)
+        v = np.stack([np.median(np.stack([v[np.clip(x + t, 0, n - 1), c] for t in (-1, 0, 1)]), 0) for c in range(k)], 1)
+        ker = np.exp(-0.5 * (np.arange(-2, 3) / 0.8) ** 2); ker /= ker.sum()
+        return np.stack([np.convolve(np.pad(v[:, c], 2, mode="edge"), ker, mode="valid") for c in range(k)], 1)
+    delta = np.full((n, 3), np.nan)                       # world shift of the fist (m) from the directions that see the hand
+    for i in range(n):
+        rows = [(J[d, i], found[d, i]) for d in range(5) if (d, i) in found]
+        if rows:
+            A = np.vstack([r[0] for r in rows] + [10.0 * np.eye(3)]); b = np.concatenate([r[1] for r in rows] + [np.zeros(3)])
+            delta[i] = np.linalg.lstsq(A, b, rcond=None)[0]
+    dok = ~np.isnan(delta[:, 0])
+    dsm = smooth(delta, dok) if dok.any() else np.zeros((n, 3))
+    out = {}
+    for d in range(5):
+        raw = np.full((n, 2), np.nan)
+        for i in range(n):
+            if (d, i) in found:
+                raw[i] = found[d, i]
+        ok = ~np.isnan(raw[:, 0])
+        m_d = man.get(str(d))
+        if m_d is not None:
+            for i in range(n):
+                v = m_d.get(str(i)) if isinstance(m_d, dict) else m_d
+                if v is not None:
+                    raw[i] = v
+            ok = ~np.isnan(raw[:, 0])
+        est = np.array([J[d, i] @ dsm[i] if (d, i) in J else [np.nan, np.nan] for i in range(n)])    # the 3D shift seen from this direction
+        base = np.where(ok[:, None], raw, est)
+        good = ~np.isnan(base[:, 0])
+        if not good.any():
+            out[d] = [None] * n; continue
+        sm = smooth(base, good)
+        m = np.hypot(sm[:, 0], sm[:, 1]); sm = sm * np.minimum(1.0, FIST_MAX / np.maximum(m, 1e-9))[:, None]
+        print("render_uo_layer: fist on the sprite, action %d dir %d: hand seen in %d / %d frames, shift px %s" % (a, d, ok.sum(), n, np.round(np.hypot(sm[:, 0], sm[:, 1]), 1).tolist()))
+        out[d] = [sm[i] for i in range(n)]
+    return out
+
+
+def fist_fix(a, i, off):
+    """the item moved by `off` px in the camera plane (to where the hand is on the original sprite); FIST_SHIFT keeps the shift for grip_cut"""
+    global FIST_SHIFT
+    obs = [o for o in clothes if not o.hide_render and "uo_grips" in o]
+    for o in obs:
+        fix_off(o)
+    FIST_SHIFT = np.zeros(3)
+    if off is None or np.hypot(*off) < 0.05:
+        return
+    pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
+    if not pts:
+        return
+    Mrig = np.array(rig.matrix_world)
+    g = np.array(pts[0]) @ Mrig[:3, :3].T + Mrig[:3, 3]
+    P = project_world(np.array([g, g + [0.1, 0, 0], g + [0, 0.1, 0], g + [0, 0, 0.1]]))
+    Jm = np.array([(P[k] - P[0]) / 0.1 for k in (1, 2, 3)]).T          # px per m for the world axes (2 x 3)
+    delta = np.linalg.lstsq(Jm, np.asarray(off, float), rcond=None)[0]   # minimum-norm world shift giving `off` px (it lies in the camera plane)
+    bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+    for o in obs:
+        ev, me, cur = evaluated_co(o, dg); Mo = np.array(ev.matrix_world); ev.to_mesh_clear()
+        fix_on(o, cur + delta @ np.linalg.inv(Mo[:3, :3]).T)
+    FIST_SHIFT = np.linalg.inv(Mrig[:3, :3]) @ delta
+
+
 def grip_cut(px, a, i, orig_m):
     """remove the item pixels the hands that hold it cover (GRIP_CUT)"""
     pts = []
@@ -837,6 +962,7 @@ def grip_cut(px, a, i, orig_m):
             pts += json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])
     if not pts:
         return px
+    pts = (np.array(pts) + FIST_SHIFT).tolist()
     rig.update_tag(); bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
     Pm = np.array(cam.calc_matrix_camera(dg, x=W, y=H)); Vm = np.array(cam.matrix_world.inverted()); Mw = np.array(rig.matrix_world)
@@ -1148,12 +1274,14 @@ def frame_job():
             a = int(act["uo_action"])
             rig.animation_data.action = act
             set_hiders(a)
+            fist_all = fist_offsets(a, int(act["uo_frames"])) if (a in FIST_SPRITE and LAYER == "clothing" and EXACT_ANY) else None
             for d in range(5):
                 rig["uo_direction"] = d
                 rig.update_tag()
                 fdir = os.path.join(root, "frames", act.name, "dir%d" % d)
                 os.makedirs(fdir, exist_ok=True)
                 frames, meta_frames = [], []
+                offs = fist_all[d] if fist_all else None
                 for i in range(int(act["uo_frames"])):
                     if os.path.exists(os.path.join(root, "STOP")):      # create an empty file named STOP to cancel
                         raise KeyboardInterrupt("STOP file found in " + root)
@@ -1163,6 +1291,8 @@ def frame_job():
                         body_fix(a, i)
                     if LAYER != "body":
                         flail_fix(a, i)
+                    if FIST_SPRITE and LAYER == "clothing":
+                        fist_fix(a, i, offs[i] if offs else None)
                     orig = original(a, i, d) if EXACT_ANY else None
                     orig_m = orig[..., 3] > 0 if orig is not None else None
                     if LAYER == "body" and EXACT_BODY and orig is not None:
