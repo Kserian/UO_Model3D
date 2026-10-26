@@ -35,6 +35,11 @@ from bpy_compat import action_fcurves  # noqa: E402
 BONE = "polearm.L"
 GRIP_BELOW = 0.14        # m: the upper fist below the bottom of the ball (5 px at 36 px/m)
 MOUNTED_EXTRA = 0.12     # m: lower in the mounted actions (23-29)
+GRIP_EXTRA = ""          # "1:0.14,3:0.14": per action, m lower on the shaft than GRIP_BELOW (user, 2026-10: walk and run armed 5 px lower)
+FRONT_ACTIONS = ""       # "1,3": the weapon is moved forward (away from the body, along the front of the chest) by the least amount at which the shaft does not enter the posed body
+FRONT_CLEAR = 0.015      # m: the shaft stays this far outside the skin (the parts within FRONT_SKIP of a fist are left alone: the fists hold it there)
+FRONT_SKIP = 0.14        # m
+FRONT_MAX = 0.20         # m: the largest shift forward
 UPPER = "L"              # the upper hand of the actions not in UPPER_R
 UPPER_R = "8,12,13,15"   # actions whose upper hand is the right one (the original 2H weapon is held with the right hand above the left one)
 SEP_MIN = 0.18           # m: fists closer than this do not define a line
@@ -132,10 +137,12 @@ def main():
             raise SystemExit("unknown setting %s" % k)
         globals()[k] = v if isinstance(globals()[k], str) else type(globals()[k])(v)
     upper_r = {int(x) for x in UPPER_R.split(",") if x}
+    front_set = {int(x) for x in FRONT_ACTIONS.split(",") if x}
+    extra = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_EXTRA.split(",") if kv)}
     falls = {int(x) for x in FALL_ACTIONS.split(",") if x}
     mounted_set = {int(x) for x in MOUNTED_ACTIONS.split(",") if x}
     bpy.ops.wm.open_mainfile(filepath=blend)
-    rig = bpy.data.objects["UO_Rig"]; sc = bpy.context.scene
+    rig = bpy.data.objects["UO_Rig"]; sc = bpy.context.scene; body = bpy.data.objects["UO_Body"]
     WM = json.loads(bpy.data.texts["weapon_motion.json"].as_string())
     DIR = Vector(WM[BONE]["dir"]).normalized()
     PIV_L = Vector(WM[BONE]["pivot"]); PIV_R = Vector(WM["weapon1h.R"]["pivot"])
@@ -188,7 +195,14 @@ def main():
             if a in fresh:                                    # the file as it came: the formula must give the direction the bone really has
                 got = np.array((rig.matrix_world @ pb[BONE].matrix).to_3x3() @ DIR); got /= np.linalg.norm(got)
                 cal_err = max(cal_err, math.degrees(math.acos(float(np.clip(got @ cal / np.linalg.norm(cal), -1, 1)))))
-            rows.append(dict(gL=np.array(hl @ PIV_L), gR=np.array(hr @ PIV_R), fist=cal.astype(float), chest_x=np.array(ch.to_3x3().col[0]), chest_y=np.array(ch.to_3x3().col[1]),
+            fwd = None; bvh = None
+            if a in front_set:                                # the front of the chest (horizontal) and the posed skin
+                from mathutils.bvhtree import BVHTree
+                lat = (W @ pb["upper_arm.L"].matrix).translation - (W @ pb["upper_arm.R"].matrix).translation
+                lat.z = 0; fwd = np.array(lat.normalized().cross(Vector((0, 0, 1))))
+                dg = bpy.context.evaluated_depsgraph_get(); ev = body.evaluated_get(dg); me = ev.to_mesh()
+                bvh = BVHTree.FromPolygons([ev.matrix_world @ v.co for v in me.vertices], [list(pl.vertices) for pl in me.polygons]); ev.to_mesh_clear()
+            rows.append(dict(fwd=fwd, bvh=bvh, gL=np.array(hl @ PIV_L), gR=np.array(hr @ PIV_R), fist=cal.astype(float), chest_x=np.array(ch.to_3x3().col[0]), chest_y=np.array(ch.to_3x3().col[1]),
                              head=np.array((W @ pb["head"].matrix).translation), pelvis=np.array((W @ pb["pelvis"].matrix).translation),
                              left=np.array(tl - tr)))
         data[a] = rows
@@ -223,7 +237,7 @@ def main():
             for i, r in enumerate(rows):
                 D[i] = slerp(D0[i], unit(r["head"] - r["pelvis"]), wf[i])
             notes.append("along the body from %d of %d frames" % (int((wf > 0.99).argmax()) if (wf > 0.99).any() else n, n))
-        want = np.full(n, s_ball - GRIP_BELOW - (MOUNTED_EXTRA if is_mounted else 0.0))
+        want = np.full(n, s_ball - GRIP_BELOW - (MOUNTED_EXTRA if is_mounted else 0.0) - extra.get(a, 0.0))
         Dsm = smooth_dirs(D, SMOOTH, cyc)
         if a in falls or is_mounted:
             D = Dsm
@@ -241,6 +255,20 @@ def main():
             else:
                 s_up[i] = want[i]
         O = GU - D * s_up[:, None]                            # bone origin: the upper fist is s_up along the shaft
+        if a in front_set:                                    # forward by the least shift at which the shaft is outside the skin
+            shift = np.zeros(n)
+            for i, r in enumerate(rows):
+                ss = np.arange(s_butt, s_ball, 0.04)
+                for dlt in np.arange(0.0, FRONT_MAX + 1e-9, 0.005):
+                    lo_g = r["gR"] if upper == "L" else r["gL"]
+                    pts = [q for q in (O[i] + D[i] * x + r["fwd"] * dlt for x in ss)
+                           if np.linalg.norm(q - GU[i]) > FRONT_SKIP and np.linalg.norm(q - lo_g) > FRONT_SKIP]
+                    if all(signed_dist(r["bvh"], p) >= FRONT_CLEAR for p in pts):
+                        break
+                shift[i] = dlt
+            shift = np.max([shift, np.roll(shift, 1) * 0.5, np.roll(shift, -1) * 0.5], axis=0) if a in (0, 1, 2, 3, 4, 5, 6, 7, 8, 15, 23, 24, 25) else shift
+            O = O + np.array([r["fwd"] for r in rows]) * shift[:, None]
+            notes.append("forward %.0f-%.0f mm to leave the body (%s)" % (1000 * shift.min(), 1000 * shift.max(), " ".join("%.0f" % (1000 * x) for x in shift)))
         if a in falls:                                        # not into the floor
             for i in range(n):
                 pts = [O[i] + D[i] * s for s in (s_butt, s_cen)]
