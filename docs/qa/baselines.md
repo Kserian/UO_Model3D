@@ -14,6 +14,7 @@ Run all: `python pipeline/run_qa.py` (`--quick` skips items and canvas). Needs b
 | cloak | `test_cloak.py` | silhouette IoU vs original cloak 468 (swing from `pipeline/cloak_pitch.json`) | >= 0.47 | 0.507 |
 | materials | `test_materials.py` | "RESULT OK" | - | OK |
 | import | `test_import_item.py` | chain from a foreign file runs, bbox as before | no error | OK |
+| two-hand weapon | `test_twohand.py` | synthetic spiked mace through `uo_make_item.py` (spikes, `uo_twohand.py`): both fists on the shaft in 8 / 12 / 13 / 15, falls along the body, horse clearance in 23-29 | lower fist <= 1 cm off; last frame <= 15 deg from the body axis; intrusion <= 10 mm (29: 60) | RESULT OK (0.00 cm; 7.7 / 2.1 deg; 0 mm, 29: 52 mm) |
 
 Items per replica (IoU): shirt 0.715, plate 0.699, trousers 0.801, boots 0.771, gloves 0.572, helmet 0.782.
 

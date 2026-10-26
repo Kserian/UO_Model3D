@@ -93,6 +93,8 @@ FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded 
                                    # rips should show the body: 0)
 INNER_LINE = 0.0                   # clothing: > 0 = the torso pixels of an item that touch its sleeve (point attribute uo_region of uo_conform_item.py) are darkened to this share: a 1-px
                                    # line that sets the sleeves off the torso like the original robes (an extra label render per frame). 0 = off; scene property uo_inner_line
+OUTLINE_BLEND = 0.0                # clothing: share of the colour of the item pixels next to the rim (inside it) mixed into the rim before it is darkened: the outline is then a darker shade
+                                   # of the colours around it, not of the (often much darker) edge pixel itself, and it follows the shading smoothly. 0 = off; scene property uo_outline_blend
 EDGE_SMOOTH = 0                    # clothing: passes of outline smoothing (a pixel with at most 1 of its 4 neighbours in the item is dropped, an empty one with 3-4 is filled with the colour
                                    # around): the 1-px spikes and notches of a ragged hem. 0 = off; scene property uo_edge_smooth
 BODY_GAP = 0.006                   # m: every frame, parts of the bound items closer than this to the arms, hands, legs or
@@ -121,6 +123,8 @@ EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 SAMPLES = int(sc.get("uo_samples", SAMPLES))            # an item that wants a cleaner render than the default (1024: gloss of metal, dark leather)
 EDGE_FLOOR = int(sc.get("uo_edge_floor", EDGE_FLOOR))
+OUTLINE_BLEND = float(sc.get("uo_outline_blend", OUTLINE_BLEND))
+TORSO_HIDE_MARGIN = float(sc.get("uo_torso_margin", TORSO_HIDE_MARGIN))     # per item: how far behind the chest an item must be for the torso to hide it (uo_behind_torso items; a weapon held in front: 0.03)
 SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc.get("uo_shade_sleeve", SHADE_SLEEVE)); SHADE_WIDTH = float(sc.get("uo_shade_width", SHADE_WIDTH))
 CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
@@ -644,6 +648,14 @@ def uo_post(px, keep=None):
     if keep is not None:
         edge &= ~keep
         rgb[keep & m] = px[..., :3][keep & m]
+    if OUTLINE_BLEND > 0 and edge.any():               # the rim takes the colour of the item pixels next to it (inside): the outline is a darker shade of its surroundings
+        acc = np.zeros_like(rgb); cnt = np.zeros(m.shape)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            sh = np.roll(np.roll(rgb, dy, 0), dx, 1); ok = np.roll(np.roll(inner, dy, 0), dx, 1)
+            acc += sh * ok[..., None]; cnt += ok
+        nb = acc / np.maximum(cnt, 1)[..., None]
+        use = edge & (cnt > 0)
+        rgb[use] = (1 - OUTLINE_BLEND) * rgb[use] + OUTLINE_BLEND * nb[use]
     if OUTLINE_AUTO:                                   # the rim is darkened in finish(), by one factor for the whole render
         ring = inner & ~(np.pad(~edge, 1, constant_values=True)[1:-1, 2:] & np.pad(~edge, 1, constant_values=True)[1:-1, :-2]
                          & np.pad(~edge, 1, constant_values=True)[2:, 1:-1] & np.pad(~edge, 1, constant_values=True)[:-2, 1:-1])
