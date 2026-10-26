@@ -39,8 +39,11 @@ GRIP_EXTRA = ""          # "1:0.14,3:0.14": per action, m lower on the shaft tha
 GRIP_FRAC = ""           # "21:0.75,22:0.75,33:0.75,34:0.75": per action, the upper fist at this share of the shaft (butt = 0, bottom of the ball = 1) instead of GRIP_BELOW under the ball
 STAFF_ACTIONS = ""       # "23,...,29": carried like an original staff: one hand, upright, the direction of the calibrated staff line in that frame (what the original staff does on a horse), leaning
                          # outwards by STAFF_OUT (the part of the weapon that is inside the horse is hidden by it, as with the original staff); the horse proxy is not used
+STAFF_SIDE = 1.0         # +1: the staff leans outwards at the top (the end of the shaft inwards); -1: the other way, the butt end points outwards, away from the body and the horse (user, 2026-10)
+ARM_ACTIONS = ""         # "29": the weapon is the extension of the arm: its direction is the line of the forearm (elbow -> wrist), the grip ARM_GRIP m before the butt (a swing that follows the arm)
+ARM_GRIP = 0.13          # m from the butt to the fist in ARM_ACTIONS (the steel end of the weapon, ~8.5 cm, sticks out)
 STAFF_FWD = 0.3          # share of the calibrated line's own horizontal lean (forward, mostly) kept in the staff carry
-STAFF_MAX = 1.0          # the outward lean grows from STAFF_OUT up to this until the weapon is out of the horse (to within STAFF_TOL m)
+STAFF_MAX = 0.6          # the outward lean grows from STAFF_OUT up to this until the weapon is out of the horse (to within STAFF_TOL m)
 STAFF_TOL = 0.03
 STAFF_OUT = 0.35         # sideways lean of the staff carry (the vertical x 0.9 + 0.3 x the horizontal part of the calibrated line + this x the outward axis, renormalised)
 STEADY_ACTIONS = ""      # "23,24,25": mounted actions in which ONE direction is chosen for the whole action, fixed in the frame of the chest (the weapon is carried, not swung): the one that clears the horse
@@ -160,6 +163,7 @@ def main():
     mid = {int(x) for x in GRIP_MID.split(",") if x}
     steady = {int(x) for x in STEADY_ACTIONS.split(",") if x}
     staff = {int(x) for x in STAFF_ACTIONS.split(",") if x}
+    arm = {int(x) for x in ARM_ACTIONS.split(",") if x}
     grips_out = {}
     cut_set = {int(x) for x in GRIP_CUT_ACTIONS.split(",") if x}
     extra = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_EXTRA.split(",") if kv)}
@@ -226,7 +230,7 @@ def main():
                 lat.z = 0; fwd = np.array(lat.normalized().cross(Vector((0, 0, 1))))
                 dg = bpy.context.evaluated_depsgraph_get(); ev = body.evaluated_get(dg); me = ev.to_mesh()
                 bvh = BVHTree.FromPolygons([ev.matrix_world @ v.co for v in me.vertices], [list(pl.vertices) for pl in me.polygons]); ev.to_mesh_clear()
-            rows.append(dict(fwd=fwd, bvh=bvh, gL=np.array(hl @ PIV_L), gR=np.array(hr @ PIV_R), fist=cal.astype(float), chest_x=np.array(ch.to_3x3().col[0]), chest_y=np.array(ch.to_3x3().col[1]),
+            rows.append(dict(fore=np.array((W @ pb["hand.L"].matrix).translation - (W @ pb["forearm.L"].matrix).translation), fwd=fwd, bvh=bvh, gL=np.array(hl @ PIV_L), gR=np.array(hr @ PIV_R), fist=cal.astype(float), chest_x=np.array(ch.to_3x3().col[0]), chest_y=np.array(ch.to_3x3().col[1]),
                              head=np.array((W @ pb["head"].matrix).translation), pelvis=np.array((W @ pb["pelvis"].matrix).translation),
                              left=np.array(tl - tr)))
         data[a] = rows
@@ -261,7 +265,7 @@ def main():
             Dfist[i] = unit(r["fist"])
         # how much the fists define the line: 1 inside [SEP_MIN, sep_max], blended out over SEP_BLEND outside
         wb = smoothstep((sep - SEP_MIN) / SEP_BLEND) * (1 - smoothstep((sep - sep_max) / SEP_BLEND))
-        if a in single:
+        if a in single or a in arm:
             wb = np.zeros(n)
         if wb.mean() < FISTS_MIN_SHARE and wb.min() < 0.5:    # an action in which the fists mostly cannot hold the weapon together (spells, swings with the arms wide): one steady line (the axis of the fist), no switching between two lines
             wb = np.zeros(n)
@@ -279,13 +283,20 @@ def main():
             want[:] = s_butt + frac[a] * (s_ball - s_butt)
         if a in mid:
             want[:] = s_butt + 0.5 * (s_max - s_butt)
+        if a in arm:
+            want[:] = s_butt + ARM_GRIP
         Dsm = smooth_dirs(D, SMOOTH, cyc)
         if a in falls or is_mounted:
             D = Dsm
         else:                                                 # where the fists define the line it is exact (smoothing it pulled the lower fist 10-25 cm off the shaft in the fast swings); smoothed only where they do not
             D = np.array([unit(slerp(Dsm[i], D[i], wb[i] ** 2)) for i in range(n)])
-        if a in staff:
-            lat_ = [unit(np.array([r["left"][0], r["left"][1], 0.0])) * (1 if upper == "L" else -1) for r in rows]
+        if a in arm:
+            D = np.array([unit(r["fore"]) for r in rows])
+            D = smooth_dirs(D, SMOOTH, cyc)
+            tl = np.degrees(np.arccos(np.clip(D[:, 2], -1, 1)))
+            notes.append("extension of the forearm: %.0f-%.0f deg from vertical, the fist %.0f cm from the butt" % (tl.min(), tl.max(), 100 * ARM_GRIP))
+        elif a in staff:
+            lat_ = [unit(np.array([r["left"][0], r["left"][1], 0.0])) * (1 if upper == "L" else -1) * STAFF_SIDE for r in rows]
             up_ = np.array([0, 0, 1.0])                        # upright: the vertical, a third of the calibrated line's own horizontal lean, and the outward lean
             def staff_dirs(lean):
                 return np.array([unit(up_ * 0.9 + STAFF_FWD * (D0[i] - (D0[i] @ up_) * up_) + lean * lat_[i]) for i in range(n)])
