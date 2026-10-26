@@ -837,6 +837,7 @@ STAFF_ACT = {int(x) for x in str(sc.get("uo_staff_actions", "")).split(",") if x
 STAFF_FLAT = float(sc.get("uo_staff_flat", 1.7))       # |ux| / |uy| above this: the staff is nearly horizontal (60 deg from vertical)
 STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the end of the original staff that is this much farther from the hand than the other
 STAFF_CENTRE = {int(x) for x in str(sc.get("uo_staff_centre", "")).split(",") if x}   # actions in which the grip goes to the CENTRE of the original staff (the hands hold it in the middle) instead of the nearest point of its line
+GRIP_CUT_ONLY = {int(x) for x in str(sc.get("uo_grip_cut_only", "")).split(",") if x}   # the hands cut the shaft only in these actions (empty = in every action that has grip points); the other actions' grip points serve the staff alignment only
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -1057,6 +1058,8 @@ def fist_fix(a, i, plan):
 
 def grip_cut(px, a, i, orig_m):
     """remove the item pixels the hands that hold it cover (GRIP_CUT)"""
+    if GRIP_CUT_ONLY and a not in GRIP_CUT_ONLY:
+        return px
     pts = []
     for o in clothes:
         if not o.hide_render and "uo_grips" in o:
