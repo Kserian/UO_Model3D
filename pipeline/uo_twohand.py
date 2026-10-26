@@ -36,6 +36,8 @@ BONE = "polearm.L"
 GRIP_BELOW = 0.14        # m: the upper fist below the bottom of the ball (5 px at 36 px/m)
 MOUNTED_EXTRA = 0.12     # m: lower in the mounted actions (23-29)
 GRIP_EXTRA = ""          # "1:0.14,3:0.14": per action, m lower on the shaft than GRIP_BELOW (user, 2026-10: walk and run armed 5 px lower)
+GRIP_FRAC = ""           # "21:0.75,22:0.75,33:0.75,34:0.75": per action, the upper fist at this share of the shaft (butt = 0, bottom of the ball = 1) instead of GRIP_BELOW under the ball
+SINGLE_ACTIONS = ""      # "33,34": the weapon is held by the upper hand alone (the direction of the calibrated halberd line), not through both fists (salute, eat)
 BUTT_MIN = 0.09          # m: in BUTT_ACTIONS the lower fist stays this far from the butt so that the end of the weapon still shows out of the hand (the fist is ~4.5 cm; the default HAND_END covers the butt)
 BUTT_ACTIONS = ""        # "7,8,9": the actions that use BUTT_MIN instead of HAND_END
 FRONT_ACTIONS = ""       # "1,3": the weapon is moved forward (away from the body, along the front of the chest) by the least amount at which the shaft does not enter the posed body
@@ -141,6 +143,8 @@ def main():
     upper_r = {int(x) for x in UPPER_R.split(",") if x}
     front_set = {int(x) for x in FRONT_ACTIONS.split(",") if x}
     butt_set = {int(x) for x in BUTT_ACTIONS.split(",") if x}
+    frac = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_FRAC.split(",") if kv)}
+    single = {int(x) for x in SINGLE_ACTIONS.split(",") if x}
     extra = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_EXTRA.split(",") if kv)}
     falls = {int(x) for x in FALL_ACTIONS.split(",") if x}
     mounted_set = {int(x) for x in MOUNTED_ACTIONS.split(",") if x}
@@ -229,6 +233,8 @@ def main():
             Dfist[i] = unit(r["fist"])
         # how much the fists define the line: 1 inside [SEP_MIN, sep_max], blended out over SEP_BLEND outside
         wb = smoothstep((sep - SEP_MIN) / SEP_BLEND) * (1 - smoothstep((sep - sep_max) / SEP_BLEND))
+        if a in single:
+            wb = np.zeros(n)
         if wb.mean() < FISTS_MIN_SHARE and wb.min() < 0.5:    # an action in which the fists mostly cannot hold the weapon together (spells, swings with the arms wide): one steady line (the axis of the fist), no switching between two lines
             wb = np.zeros(n)
         D0 = np.array([unit(slerp(Dfist[i], Dboth[i], wb[i])) for i in range(n)])
@@ -241,6 +247,8 @@ def main():
                 D[i] = slerp(D0[i], unit(r["head"] - r["pelvis"]), wf[i])
             notes.append("along the body from %d of %d frames" % (int((wf > 0.99).argmax()) if (wf > 0.99).any() else n, n))
         want = np.full(n, s_ball - GRIP_BELOW - (MOUNTED_EXTRA if is_mounted else 0.0) - extra.get(a, 0.0))
+        if a in frac:
+            want[:] = s_butt + frac[a] * (s_ball - s_butt)
         Dsm = smooth_dirs(D, SMOOTH, cyc)
         if a in falls or is_mounted:
             D = Dsm

@@ -18,6 +18,7 @@ HEAD = 0.45           # share of the length (from the top) that holds the ball
 SPIKE_FROM = 1.35     # vertices farther than this x radius from the centre belong to a spike
 MIN_VERTS = 20        # a group of fewer vertices is not a spike
 SPIKE_MAX = 4.0       # a group reaching farther than this x radius is the shaft, not a spike
+TRIM = 0.0            # m: every spike shorter by this much (0.0278 = one pixel at 36 px/m) after LENGTH; its width is scaled by the same ratio (a shorter spike keeps its shape: thinner a little)
 SHAFT = 0.0           # m: the shaft and the pommel thicker by this much in diameter (0.0278 = one pixel at 36 px/m); the collar under the ball stays, the widening fades in below it
 BALL_R = 0.0          # m: radius (0 = found); BALL_Z = height of the centre (0 = found)
 BALL_Z = 0.0
@@ -66,7 +67,7 @@ def run():
         vol = np.zeros(g.max(0) + 2, bool); vol[tuple(g.T)] = True
         lab, n = ndimage.label(ndimage.binary_dilation(vol))
         ids = lab[tuple(g.T)]
-        axes = []
+        axes, ext = [], []
         for k in range(1, n + 1):
             m = far[ids == k]
             if len(m) < MIN_VERTS:
@@ -75,14 +76,17 @@ def run():
             if dm.max() > SPIKE_MAX * r:
                 continue
             tip = V[m[np.argmax(dm)]]
-            axes.append((tip - c) / np.linalg.norm(tip - c))
+            axes.append((tip - c) / np.linalg.norm(tip - c)); ext.append(float(dm.max() - r))
         if not axes:
             raise RuntimeError("no spikes found (ball r %.3f at z %.3f)" % (r, c[2]))
-        keep = []                                                                       # two groups of one spike (a sparse mesh breaks it in two): one axis
-        for ax in axes:
+        keep, kext = [], []                                                             # two groups of one spike (a sparse mesh breaks it in two): one axis
+        for ax, e in zip(axes, ext):
             if all(ax @ k < math.cos(math.radians(12)) for k in keep):
-                keep.append(ax)
-        A = np.array(keep)
+                keep.append(ax); kext.append(e)
+            else:
+                j = int(np.argmax([ax @ k for k in keep])); kext[j] = max(kext[j], e)
+        A = np.array(keep); kext = np.array(kext)
+        ratio = np.clip(1.0 - TRIM / np.maximum(kext * LENGTH, 1e-6), 0.3, 1.0)           # per spike: (its new length - TRIM) / its new length
         rel = V - c
         t = rel @ A.T                                                                   # (n, spikes): along each axis
         perp = np.linalg.norm(rel[:, None, :] - t[..., None] * A[None], axis=2)          # (n, spikes): across it
@@ -91,10 +95,11 @@ def run():
         tk, pk = t[idx, k], perp[idx, k]
         mine = (tk > 0.8 * r) & (pk < 0.45 * r)
         w = np.clip((tk - 0.9 * r) / (0.15 * r), 0, 1); w = w * w * (3 - 2 * w)
-        t2 = np.where(tk > r, r + (tk - r) * LENGTH, tk)
+        rk = ratio[k]
+        t2 = np.where(tk > r, r + (tk - r) * LENGTH * rk, tk)
         ax = A[k]
         perp_v = rel - tk[:, None] * ax
-        new = c + t2[:, None] * ax + perp_v * (1 + (WIDTH - 1) * w)[:, None]
+        new = c + t2[:, None] * ax + perp_v * (1 + (WIDTH * rk - 1) * w)[:, None]
         V2 = np.where(mine[:, None], new, V)
         if SHAFT > 0:                                                                   # shaft + pommel: every vertex below the ball moves out from the axis by SHAFT / 2
             ax_xy = V[:, :2].mean(0)
@@ -104,8 +109,8 @@ def run():
         ob.data.vertices.foreach_set("co", np.array([Mi @ Vector(p) for p in V2]).ravel())
         ob.data.update()
         ob["uo_head"] = [float(c[2]), float(r), float(c[2] - r), float(V2[:, 2].max())]
-        print("uo_spikes: %s: ball r %.3f m at z %.3f, %d spikes, %d vertices moved, length x%.2f width x%.2f, top %.3f -> %.3f m" % (
-            ob.name, r, c[2], len(A), int(mine.sum()), LENGTH, WIDTH, zmax, V2[:, 2].max()))
+        print("uo_spikes: %s: ball r %.3f m at z %.3f, %d spikes, %d vertices moved, length x%.2f width x%.2f, trimmed by %.0f mm, top %.3f -> %.3f m" % (
+            ob.name, r, c[2], len(A), int(mine.sum()), LENGTH, WIDTH, 1000 * TRIM, zmax, V2[:, 2].max()))
 
 
 run()
