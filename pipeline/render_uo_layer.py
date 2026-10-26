@@ -768,6 +768,23 @@ HAND_TRIS = body_part_mask({"hand"})                # HIDE_ERODE shrinks what th
 HEAD_TRIS = body_part_mask({"head"})
 BEHIND_TORSO = TORSO_HIDE_MARGIN > 0 and LAYER == "clothing" and any(o.get("uo_behind_torso") for o in clothes if not o.hide_render)
 TORSO_TRIS = body_part_mask({"pelvis", "spine", "chest", "neck", "clavicle"}) if BEHIND_TORSO else None
+ACTION_HIDE = json.loads(sc["uo_action_hide"]) if sc.get("uo_action_hide") else {}   # per action: {"29": {"legs_under": 1, "torso": 0}} = in that action the legs never hide the item / the torso does not hide it
+_BASE_HIDE = (WORN.copy(), HIDER_TRIS, BEHIND_TORSO, TORSO_TRIS)
+
+
+def set_hiders(a):
+    """what may hide the item in action a: the scene's own setting, or the per-action override uo_action_hide"""
+    global WORN, HIDER_TRIS, BEHIND_TORSO, TORSO_TRIS
+    o = ACTION_HIDE.get(str(a))
+    if not o or LAYER != "clothing":
+        WORN, HIDER_TRIS, BEHIND_TORSO, TORSO_TRIS = _BASE_HIDE[0].copy(), _BASE_HIDE[1], _BASE_HIDE[2], _BASE_HIDE[3]
+        return
+    WORN = _BASE_HIDE[0].copy()
+    if o.get("legs_under"):
+        WORN |= {"thigh", "shin", "foot"}
+    HIDER_TRIS = body_part_mask(set(OCCLUDERS) - WORN)
+    BEHIND_TORSO = bool(_BASE_HIDE[2]) and bool(o.get("torso", 1))
+    TORSO_TRIS = _BASE_HIDE[3] if BEHIND_TORSO else None
 print("render_uo_layer: items wrap %s; body parts that may hide them: %s" % (sorted(WORN), sorted(set(OCCLUDERS) - WORN)))
 
 
@@ -1125,6 +1142,7 @@ def frame_job():
                 continue
             a = int(act["uo_action"])
             rig.animation_data.action = act
+            set_hiders(a)
             for d in range(5):
                 rig["uo_direction"] = d
                 rig.update_tag()
