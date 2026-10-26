@@ -40,6 +40,10 @@ GRIP_FRAC = ""           # "21:0.75,22:0.75,33:0.75,34:0.75": per action, the up
 STAFF_ACTIONS = ""       # "23,...,29": carried like an original staff: one hand, upright, the direction of the calibrated staff line in that frame (what the original staff does on a horse), leaning
                          # outwards by STAFF_OUT (the part of the weapon that is inside the horse is hidden by it, as with the original staff); the horse proxy is not used
 STAFF_SIDE = 1.0         # +1: the staff leans outwards at the top (the end of the shaft inwards); -1: the other way, the butt end points outwards, away from the body and the horse (user, 2026-10)
+FISTC_ACTIONS = ""       # "17,23,...": the shaft goes through the CENTRE of the upper (left) fist (the middle of the hand and finger vertices of the posed skin) instead of the calibrated grip point, which
+                         # lies ~1.2 cm inside the skin: half of the shaft then stood out of the hand (mounted stand: the weapon "not in the hand")
+STILL_ACTIONS = ""       # "17": the weapon keeps ONE direction in the world (upright, STILL_LEAN outwards) in every frame: it does not turn with the hand
+STILL_LEAN = 0.0
 ARM_ACTIONS = ""         # "29": the weapon is the extension of the arm: its direction is the line of the forearm (elbow -> wrist), the grip ARM_GRIP m before the butt (a swing that follows the arm)
 ARM_GRIP = 0.13          # m from the butt to the fist in ARM_ACTIONS (the steel end of the weapon, ~8.5 cm, sticks out)
 STAFF_FWD = 0.3          # share of the calibrated line's own horizontal lean (forward, mostly) kept in the staff carry
@@ -164,6 +168,8 @@ def main():
     steady = {int(x) for x in STEADY_ACTIONS.split(",") if x}
     staff = {int(x) for x in STAFF_ACTIONS.split(",") if x}
     arm = {int(x) for x in ARM_ACTIONS.split(",") if x}
+    fistc = {int(x) for x in FISTC_ACTIONS.split(",") if x}
+    still = {int(x) for x in STILL_ACTIONS.split(",") if x}
     grips_out = {}
     cut_set = {int(x) for x in GRIP_CUT_ACTIONS.split(",") if x}
     extra = {int(k): float(v) for k, v in (kv.split(":") for kv in GRIP_EXTRA.split(",") if kv)}
@@ -196,6 +202,12 @@ def main():
     if only:
         acts = [a for a in acts if a.name in only or str(a["uo_action"]) in only]
     pb = rig.pose.bones
+    hand_vs = None
+    if fistc:                                                  # vertices of the left hand and its fingers (dominant weight)
+        names = [g.name for g in body.vertex_groups]
+        isL = {k for k, nm in enumerate(names) if nm == "hand.L" or (nm.startswith("finger") and nm.endswith(".L"))}
+        hand_vs = np.array([v.index for v in body.data.vertices if v.groups and max(v.groups, key=lambda g: g.weight).group in isL])
+        log("fist centre from %d vertices of the left hand" % len(hand_vs))
     x0_loc = Vector((1, 0, 0)); x0_loc = (x0_loc - DIR * x0_loc.dot(DIR)).normalized()
     A = np.array([x0_loc, DIR.cross(x0_loc), DIR]).T          # local frame of the weapon (columns) in bone-local coordinates
     data = {}; cal_err = 0.0
@@ -230,7 +242,12 @@ def main():
                 lat.z = 0; fwd = np.array(lat.normalized().cross(Vector((0, 0, 1))))
                 dg = bpy.context.evaluated_depsgraph_get(); ev = body.evaluated_get(dg); me = ev.to_mesh()
                 bvh = BVHTree.FromPolygons([ev.matrix_world @ v.co for v in me.vertices], [list(pl.vertices) for pl in me.polygons]); ev.to_mesh_clear()
-            rows.append(dict(fore=np.array((W @ pb["hand.L"].matrix).translation - (W @ pb["forearm.L"].matrix).translation), fwd=fwd, bvh=bvh, gL=np.array(hl @ PIV_L), gR=np.array(hr @ PIV_R), fist=cal.astype(float), chest_x=np.array(ch.to_3x3().col[0]), chest_y=np.array(ch.to_3x3().col[1]),
+            cL = None
+            if a in fistc:
+                dg2 = bpy.context.evaluated_depsgraph_get(); ev2 = body.evaluated_get(dg2); me2 = ev2.to_mesh()
+                co = np.empty(len(me2.vertices) * 3, np.float32); me2.vertices.foreach_get("co", co); ev2.to_mesh_clear()
+                cL = np.array(ev2.matrix_world @ Vector(co.reshape(-1, 3)[hand_vs].mean(0)))
+            rows.append(dict(cL=cL, hrot=np.array(hl.to_3x3().normalized()), fore=np.array((W @ pb["hand.L"].matrix).translation - (W @ pb["forearm.L"].matrix).translation), fwd=fwd, bvh=bvh, gL=np.array(hl @ PIV_L), gR=np.array(hr @ PIV_R), fist=cal.astype(float), chest_x=np.array(ch.to_3x3().col[0]), chest_y=np.array(ch.to_3x3().col[1]),
                              head=np.array((W @ pb["head"].matrix).translation), pelvis=np.array((W @ pb["pelvis"].matrix).translation),
                              left=np.array(tl - tr)))
         data[a] = rows
@@ -260,12 +277,14 @@ def main():
         sep = np.zeros(n); GU = np.zeros((n, 3)); Dboth = np.zeros((n, 3)); Dfist = np.zeros((n, 3))
         for i, r in enumerate(rows):
             gu, gl = (r["gR"], r["gL"]) if upper == "R" else (r["gL"], r["gR"])
+            if a in fistc and upper == "L":
+                gu = r["cL"]
             v = gu - gl; sep[i] = np.linalg.norm(v)
             Dboth[i] = v / max(sep[i], 1e-6); GU[i] = gu
             Dfist[i] = unit(r["fist"])
         # how much the fists define the line: 1 inside [SEP_MIN, sep_max], blended out over SEP_BLEND outside
         wb = smoothstep((sep - SEP_MIN) / SEP_BLEND) * (1 - smoothstep((sep - sep_max) / SEP_BLEND))
-        if a in single or a in arm:
+        if a in single or a in arm or a in still:
             wb = np.zeros(n)
         if wb.mean() < FISTS_MIN_SHARE and wb.min() < 0.5:    # an action in which the fists mostly cannot hold the weapon together (spells, swings with the arms wide): one steady line (the axis of the fist), no switching between two lines
             wb = np.zeros(n)
@@ -290,7 +309,11 @@ def main():
             D = Dsm
         else:                                                 # where the fists define the line it is exact (smoothing it pulled the lower fist 10-25 cm off the shaft in the fast swings); smoothed only where they do not
             D = np.array([unit(slerp(Dsm[i], D[i], wb[i] ** 2)) for i in range(n)])
-        if a in arm:
+        if a in still:
+            lat_s = [unit(np.array([r["left"][0], r["left"][1], 0.0])) * (1 if upper == "L" else -1) * STAFF_SIDE for r in rows]
+            D = np.array([unit(np.array([0, 0, 1.0]) + STILL_LEAN * lat_s[i]) for i in range(n)])
+            notes.append("one steady direction: %.0f deg from vertical in every frame" % np.degrees(np.arccos(D[0][2])))
+        elif a in arm:
             D = np.array([unit(r["fore"]) for r in rows])
             D = smooth_dirs(D, SMOOTH, cyc)
             tl = np.degrees(np.arccos(np.clip(D[:, 2], -1, 1)))
@@ -317,6 +340,7 @@ def main():
                     lean += 0.05
                 leans[i] = lean
             k_ = np.arange(-3, 4); w_ = np.exp(-0.5 * (k_ / 1.0) ** 2)
+            leans[:] = leans.max()                             # ONE lean for the whole action: the weapon carried steadily, no jumps
             leans_s = np.array([sum(w_[j] * leans[(i + k_[j]) % n if cyc else min(max(i + k_[j], 0), n - 1)] for j in range(len(k_))) / w_.sum() for i in range(n)])
             leans_s = np.maximum(leans_s, leans * 0.9)         # smoothed, but not much less than what a frame needs
             D = np.array([unit(up_ * 0.9 + STAFF_FWD * (D0[i] - (D0[i] @ up_) * up_) + leans_s[i] * lat_[i]) for i in range(n)])
