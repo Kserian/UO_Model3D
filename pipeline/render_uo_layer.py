@@ -871,7 +871,7 @@ def fist_offsets(a, n):
     """per direction and frame the shift (px) from the grip of our weapon to the hand on the original sprite. The hand is found on the sprites of the directions where it stands free; its 3D
     offset from our fist (least squares over them) gives the shift in the directions where it merges with the torso. Smoothed over the action. {d: [shift or None] * n}"""
     obs = [o for o in clothes if not o.hide_render and "uo_grips" in o]
-    G, J, found = {}, {}, {}
+    G, J, found, GPX = {}, {}, {}, {}
     for d in range(5):
         rig["uo_direction"] = d; rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
         for i in range(n):
@@ -882,7 +882,7 @@ def fist_offsets(a, n):
             Mr = np.array(rig.matrix_world)                      # the rig turns with the direction
             g3 = np.array(pts[0])                                # armature space; the shifts below are armature-space too
             P = project_world(np.array([g3, g3 + [0.1, 0, 0], g3 + [0, 0.1, 0], g3 + [0, 0, 0.1]]) @ Mr[:3, :3].T + Mr[:3, 3])
-            G[d, i] = g3; J[d, i] = np.array([(P[k] - P[0]) / 0.1 for k in (1, 2, 3)]).T
+            GPX[d, i] = P[0]; G[d, i] = g3; J[d, i] = np.array([(P[k] - P[0]) / 0.1 for k in (1, 2, 3)]).T
             orig = original(a, i, d)
             h = detect_fist(orig[..., 3] > 0, P[0]) if orig is not None else None
             if h is not None:
@@ -911,6 +911,7 @@ def fist_offsets(a, n):
             if (d, i) in found:
                 raw[i] = found[d, i]
         ok = ~np.isnan(raw[:, 0])
+        ok = ~np.isnan(raw[:, 0])
         m_d = man.get(str(d))
         if m_d is not None:
             for i in range(n):
@@ -923,10 +924,17 @@ def fist_offsets(a, n):
         good = ~np.isnan(base[:, 0])
         if not good.any():
             out[d] = [None] * n; continue
-        sm = smooth(base, good)
+        sm = np.stack([np.interp(x, x[good], base[good, c]) for c in range(2)], 1)           # no smoothing: the hand moves from frame to frame (run), the weapon follows it frame by frame
         m = np.hypot(sm[:, 0], sm[:, 1]); sm = sm * np.minimum(1.0, FIST_MAX / np.maximum(m, 1e-9))[:, None]
         print("render_uo_layer: fist on the sprite, action %d dir %d: hand seen in %d / %d frames, shift px %s" % (a, d, ok.sum(), n, np.round(np.hypot(sm[:, 0], sm[:, 1]), 1).tolist()))
         out[d] = [sm[i] for i in range(n)]
+    if sc.get("uo_fist_report"):                          # JSON {"a,d,i": [x, y of the grip after the shift, hand found (x, y) or null, shift dx, dy]} for checking
+        rp = json.load(open(sc["uo_fist_report"])) if os.path.exists(sc["uo_fist_report"]) else {}
+        for d in range(5):
+            for i in range(n):
+                if out[d][i] is not None and (d, i) in GPX:
+                    rp["%d,%d,%d" % (a, d, i)] = [float(GPX[d, i][0] + out[d][i][0]), float(GPX[d, i][1] + out[d][i][1]), (np.round(GPX[d, i] + found[d, i], 2).tolist() if (d, i) in found else None), float(out[d][i][0]), float(out[d][i][1])]
+        json.dump(rp, open(sc["uo_fist_report"], "w"))
     return out
 
 
