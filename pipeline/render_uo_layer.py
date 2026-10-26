@@ -12,7 +12,7 @@
 #   output folder (e.g. uo_render/clothing/STOP) or press Ctrl+C to cancel. Delete STOP before the next run.
 #   Several runs into the same OUT_DIR add up: e.g. render ONLY = [attacks] with one grip, then ONLY = [others] with
 #   another; each run writes a .vd with ALL actions rendered so far (delete OUT_DIR to start from scratch).
-import bpy, os, json
+import bpy, os, json, math
 import numpy as np
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
@@ -833,6 +833,8 @@ FIST_SPRITE = {int(x) for x in str(sc.get("uo_fist_sprite", "")).split(",") if x
 FIST_R = float(sc.get("uo_fist_radius", 6.0))      # px: the hand is looked for this far from our fist
 FIST_EDT = float(sc.get("uo_fist_edt", 3.4))       # px: a fist is not thicker than this (half width); thicker = the torso, no hand found
 FIST_MAX = 8.0                                     # px: the largest shift
+STAFF_ACT = {int(x) for x in str(sc.get("uo_staff_actions", "")).split(",") if x}   # actions in which the weapon is laid along the line of an ORIGINAL staff (uo_staff_lines: {"action,dir,frame": [cx, cy, ux, uy]} measured on the original black staff's sprites, px of the canvas, u pointing down)
+STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
 
@@ -887,6 +889,7 @@ def fist_offsets(a, n):
             h = detect_fist(orig[..., 3] > 0, P[0]) if orig is not None else None
             if h is not None:
                 found[d, i] = h - P[0]
+    absol = json.loads(sc["uo_fist_abs"]).get(str(a), {}) if sc.get("uo_fist_abs") else {}
     nudge = json.loads(sc["uo_fist_nudge"]).get(str(a), {}) if sc.get("uo_fist_nudge") else {}
     man = json.loads(sc["uo_fist_manual"]).get(str(a), {}) if sc.get("uo_fist_manual") else {}   # {"dir": [dx, dy] | {"frame": [dx, dy]}}: shifts read by eye where the hand merges with the body
     if not found and not man:
@@ -927,6 +930,12 @@ def fist_offsets(a, n):
             out[d] = [None] * n; continue
         sm = np.stack([np.interp(x, x[good], base[good, c]) for c in range(2)], 1)           # no smoothing: the hand moves from frame to frame (run), the weapon follows it frame by frame
         m = np.hypot(sm[:, 0], sm[:, 1]); sm = sm * np.minimum(1.0, FIST_MAX / np.maximum(m, 1e-9))[:, None]
+        ab = absol.get(str(d))                               # the hand's position on the sprite read by eye: the grip goes exactly there ({"frame": [x, y]}, px of the canvas)
+        if ab is not None:
+            for i in range(n):
+                v = ab.get(str(i))
+                if v is not None and (d, i) in GPX:
+                    sm[i] = np.asarray(v, float) - GPX[d, i]
         nd = nudge.get(str(d))                               # read off the viewer by eye: extra px on top of the shift ({"frame": [dx, dy]} or [dx, dy] for all frames)
         if nd is not None:
             for i in range(n):
@@ -945,14 +954,57 @@ def fist_offsets(a, n):
     return out
 
 
-def fist_fix(a, i, off):
+def staff_plan(a, n):
+    """per direction and frame (shift px, turn rad): the weapon turned about its grip, in the plane of the camera, until its projected axis is parallel to the original staff's line of that frame, and moved across so that the line passes
+    through the grip (the original staff lies in the hand; ours then lies where it lies). {d: [(shift, turn) or None] * n}"""
+    obs = [o for o in clothes if not o.hide_render and "uo_grips" in o]
+    WMd = json.loads(bpy.data.texts["weapon_motion.json"].as_string())["polearm.L"]["dir"]
+    out = {}
+    for d in range(5):
+        rig["uo_direction"] = d; rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
+        row = []
+        for i in range(n):
+            ln = STAFF_LINES.get("%d,%d,%d" % (a, d, i))
+            pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
+            if not ln or not pts:
+                row.append(None); continue
+            sc.frame_set(1 + i * STEP); bpy.context.view_layer.update()
+            Mr = np.array(rig.matrix_world)
+            D3 = np.array(rig.pose.bones["polearm.L"].matrix.to_3x3() @ Vector(WMd)); D3 /= np.linalg.norm(D3)
+            gw = np.array(pts[0]) @ Mr[:3, :3].T + Mr[:3, 3]; dw = Mr[:3, :3] @ D3
+            P = project_world(np.array([gw, gw + 0.2 * dw]))
+            w = P[1] - P[0]; w /= np.linalg.norm(w)
+            c, u = np.array(ln[:2]), np.array(ln[2:])
+            if w @ u < 0:
+                u = -u
+            phi = math.atan2(w[0] * u[1] - w[1] * u[0], w @ u)              # turn (image plane, y down) that makes w parallel to u
+            fwd = -np.array(sc.camera.matrix_world)[:3, 2]; fwd /= np.linalg.norm(fwd)
+            alpha = phi
+            tip = rot_axis(gw + 0.2 * dw, gw, fwd, alpha); Pt = project_world(np.array([gw, tip]))
+            wt = Pt[1] - Pt[0]; wt /= np.linalg.norm(wt)
+            if wt @ u < w @ u:                                                   # the other way round
+                alpha = -phi
+            r = c - P[0]; shift = r - (r @ u) * u                               # across the line only
+            row.append((shift, alpha))
+        out[d] = row
+    return out
+
+
+def rot_axis(p, pivot, axis, ang):
+    """point p turned about the axis through pivot by ang (Rodrigues)"""
+    v = p - pivot; k = axis / np.linalg.norm(axis)
+    return pivot + v * math.cos(ang) + np.cross(k, v) * math.sin(ang) + k * (k @ v) * (1 - math.cos(ang))
+
+
+def fist_fix(a, i, plan):
     """the item moved by `off` px in the camera plane (to where the hand is on the original sprite); FIST_SHIFT keeps the shift for grip_cut"""
     global FIST_SHIFT
     obs = [o for o in clothes if not o.hide_render and "uo_grips" in o]
     for o in obs:
         fix_off(o)
     FIST_SHIFT = np.zeros(3)
-    if off is None or np.hypot(*off) < 0.05:
+    off, rot = plan if plan is not None else (None, 0.0)
+    if off is None or (np.hypot(*off) < 0.05 and abs(rot) < 1e-4):
         return
     pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
     if not pts:
@@ -963,9 +1015,15 @@ def fist_fix(a, i, off):
     Jm = np.array([(P[k] - P[0]) / 0.1 for k in (1, 2, 3)]).T          # px per m for the world axes (2 x 3)
     delta = np.linalg.lstsq(Jm, np.asarray(off, float), rcond=None)[0]   # minimum-norm world shift giving `off` px (it lies in the camera plane)
     bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+    Mc = np.array(sc.camera.matrix_world); fwd = -Mc[:3, 2]
     for o in obs:
         ev, me, cur = evaluated_co(o, dg); Mo = np.array(ev.matrix_world); ev.to_mesh_clear()
-        fix_on(o, cur + delta @ np.linalg.inv(Mo[:3, :3]).T)
+        pw = cur @ Mo[:3, :3].T + Mo[:3, 3]
+        if abs(rot) > 1e-6:                                    # turned about the grip in the plane of the camera
+            v = pw - g; k = fwd / np.linalg.norm(fwd)
+            pw = g + v * math.cos(rot) + np.cross(k, v) * math.sin(rot) + k * (v @ k)[:, None] * (1 - math.cos(rot))
+        pw = pw + delta
+        fix_on(o, (pw - Mo[:3, 3]) @ np.linalg.inv(Mo[:3, :3]).T)
     FIST_SHIFT = np.linalg.inv(Mrig[:3, :3]) @ delta
 
 
@@ -1289,7 +1347,12 @@ def frame_job():
             a = int(act["uo_action"])
             rig.animation_data.action = act
             set_hiders(a)
-            fist_all = fist_offsets(a, int(act["uo_frames"])) if (a in FIST_SPRITE and LAYER == "clothing" and EXACT_ANY) else None
+            if a in STAFF_ACT and STAFF_LINES and LAYER == "clothing":
+                fist_all = staff_plan(a, int(act["uo_frames"]))
+            else:
+                fist_all = fist_offsets(a, int(act["uo_frames"])) if (a in FIST_SPRITE and LAYER == "clothing" and EXACT_ANY) else None
+                if fist_all:
+                    fist_all = {dd: [(v, 0.0) if v is not None else None for v in row] for dd, row in fist_all.items()}
             for d in range(5):
                 rig["uo_direction"] = d
                 rig.update_tag()
@@ -1306,7 +1369,7 @@ def frame_job():
                         body_fix(a, i)
                     if LAYER != "body":
                         flail_fix(a, i)
-                    if FIST_SPRITE and LAYER == "clothing":
+                    if (FIST_SPRITE or STAFF_ACT) and LAYER == "clothing":
                         fist_fix(a, i, offs[i] if offs else None)
                     orig = original(a, i, d) if EXACT_ANY else None
                     orig_m = orig[..., 3] > 0 if orig is not None else None
