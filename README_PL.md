@@ -84,7 +84,7 @@ Służy do projektowania warstw ubrań, zbroi, włosów i broni: plik `.blend` r
 
 | Grupa | Skrypty |
 |---|---|
-| Przedmiot jednym poleceniem | `uo_make_item.py` (3a), `uo_conform_item.py`, `uo_cloth_sim.py`, `uo_spikes.py` (większe kolce kuli z kolcami), `uo_twohand.py` (broń dwuręczna niesiona obiema rękami), `item_gif.py` (arkusz klatek i GIF przedmiotu na oryginalnym ciele), `item_sheet.py` |
+| Przedmiot jednym poleceniem | `uo_make_item.py` (3a), `vd_swap_action.py` (podmiana klatek pojedynczych akcji w gotowym `.vd` świeżo wyrenderowanymi: bez renderu całości), `uo_conform_item.py`, `uo_cloth_sim.py`, `uo_spikes.py` (większe kolce kuli z kolcami), `uo_twohand.py` (broń dwuręczna niesiona obiema rękami), `item_gif.py` (arkusz klatek i GIF przedmiotu na oryginalnym ciele), `item_sheet.py` |
 | Pomiary przedmiotu | `item_qa.py` (przebicia, grubość), `item_clearance.py`, `item_thickness.py`, `item_body_holes.py` (co widzi klient na oryginalnym ciele 400), `item_skin_check.py` (skóra przez przedmiot a w dziurach, stopy osobno) |
 | Ciało i pozy | `pose_lib.py` (szkielet w numpy, co do piksela jak Blender; `qa`), `pose_natural_fit.py` + `apply_pose_keys.py`, `pose_naturalness.py`, `body_part_raster.py` + `body_part_qa.py`, `arm_*.py` (dopasowanie ręki, odbicie lewej ręki w akcji 17) |
 | Testy | `run_qa.py [--quick]` (regresja z progami, `docs/qa/baselines.md`), `test_items.py`, `test_canvas.py`, `test_autofit.py`, `test_robe.py`, `test_cloak.py`, `test_materials.py`, `test_import_item.py`, `test_twohand.py`, `test_weapons.py`, `test_weapon_roll.py` (testy broni potrzebują sprite'ów z klienta; w repo jest tylko katana 627) |
