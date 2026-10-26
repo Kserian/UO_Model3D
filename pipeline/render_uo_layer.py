@@ -835,6 +835,7 @@ FIST_EDT = float(sc.get("uo_fist_edt", 3.4))       # px: a fist is not thicker t
 FIST_MAX = 8.0                                     # px: the largest shift
 STAFF_ACT = {int(x) for x in str(sc.get("uo_staff_actions", "")).split(",") if x}   # actions in which the weapon is laid along the line of an ORIGINAL staff (uo_staff_lines: {"action,dir,frame": [cx, cy, ux, uy]} measured on the original black staff's sprites, px of the canvas, u pointing down)
 STAFF_FLAT = float(sc.get("uo_staff_flat", 1.7))       # |ux| / |uy| above this: the staff is nearly horizontal (60 deg from vertical)
+STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the end of the original staff that is this much farther from the hand than the other
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -956,8 +957,8 @@ def fist_offsets(a, n):
 
 
 def staff_plan(a, n):
-    """per direction and frame (shift px, turn rad): the weapon turned about its grip, in the plane of the camera, until its projected axis lies on the original staff's line of that frame (the ball end is the UPPER end of the line, and in a nearly horizontal
-    line (the turn over the head) the end of the previous frame), and moved across so that the line passes through the grip. {d: [(shift, turn) or None] * n}"""
+    """per direction and frame (shift px, turn rad): the weapon turned about its grip, in the plane of the camera, until its projected axis lies on the original staff's line of that frame (the ball goes to the LONGER part of the original staff counted from the hand, towards the ground when the hand is in the middle;
+    in a nearly horizontal line held in the middle the end of the previous frame), and moved across so that the line passes through the grip. {d: [(shift, turn) or None] * n}"""
     obs = [o for o in clothes if not o.hide_render and "uo_grips" in o]
     for o in obs:
         fix_off(o)
@@ -981,15 +982,20 @@ def staff_plan(a, n):
                 ball = 1.0 if (sv > sv.max() - 0.25).sum() > (sv < sv.min() + 0.25).sum() else -1.0
             P = project_world(np.array([gw, gw + 0.2 * ball * dw]))
             w = P[1] - P[0]; w /= np.linalg.norm(w)                          # towards the ball
-            c, u = np.array(ln[:2]), np.array(ln[2:])
-            if u[1] > 0:
-                u = -u                                                       # pointing up in the image: the ball end is the upper end
-            if abs(u[0]) > STAFF_FLAT * abs(u[1]):                          # nearly horizontal (the turn over the head): no upper end, the end of the previous frame is kept
-                if u_prev is None:
-                    if w @ u < 0:
-                        u = -u
-                elif u @ u_prev < 0:
-                    u = -u
+            c, u0 = np.array(ln[:2]), np.array(ln[2:4])                       # u0 points down in the image; ln[4:6] = the ends of the original staff along u0 from its centre
+            if len(ln) >= 6:
+                gt = (P[0] - c) @ u0
+                d_pl, d_mi = ln[5] - gt, gt - ln[4]                           # distances from the hand to the two ends of the original staff
+            else:
+                d_pl = d_mi = 1.0
+            if d_pl > STAFF_LONG * d_mi:
+                u = u0                                                       # the ball goes to the LONGER part of the staff counted from the hand
+            elif d_mi > STAFF_LONG * d_pl:
+                u = -u0
+            elif u_prev is not None and abs(u0[0]) > STAFF_FLAT * abs(u0[1]):    # held in the middle and nearly horizontal (the turn over the head): the end of the previous frame
+                u = u0 if u0 @ u_prev > 0 else -u0
+            else:
+                u = u0                                                       # held in the middle: the ball towards the ground
             u_prev = u
             phi = math.atan2(w[0] * u[1] - w[1] * u[0], w @ u)              # turn (image plane, y down) that makes w point along u
             fwd = -np.array(sc.camera.matrix_world)[:3, 2]; fwd /= np.linalg.norm(fwd)
