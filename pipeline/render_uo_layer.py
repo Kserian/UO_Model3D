@@ -838,6 +838,7 @@ STAFF_FLAT = float(sc.get("uo_staff_flat", 1.7))       # |ux| / |uy| above this:
 STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the end of the original staff that is this much farther from the hand than the other
 STAFF_CENTRE = {int(x) for x in str(sc.get("uo_staff_centre", "")).split(",") if x}   # actions in which the grip goes to the CENTRE of the original staff (the hands hold it in the middle) instead of the nearest point of its line
 GRIP_CUT_ONLY = {int(x) for x in str(sc.get("uo_grip_cut_only", "")).split(",") if x}   # the hands cut the shaft only in these actions (empty = in every action that has grip points); the other actions' grip points serve the staff alignment only
+STAFF_PLANE = str(sc.get("uo_staff_plane", ""))              # actions ("all" or a list) in which the weapon is swung INTO the image plane onto the staff's direction (its depth component becomes 0: a weapon pointing at the camera is not left foreshortened to a stub), not only turned about the view axis
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -1006,6 +1007,12 @@ def staff_plan(a, n):
             wt = Pt[1] - Pt[0]; wt /= np.linalg.norm(wt)
             if wt @ u < 0.99 and rot_ok(gw, dw * ball, fwd, -phi, project_world, u):   # the other way round
                 alpha = -phi
+            Rm = rot_matrix(fwd, alpha)
+            if STAFF_PLANE == "all" or str(a) in STAFF_PLANE.split(","):
+                Mcw = np.array(sc.camera.matrix_world); t3 = u[0] * Mcw[:3, 0] - u[1] * Mcw[:3, 1]; t3 /= np.linalg.norm(t3)
+                d3 = ball * dw / np.linalg.norm(dw); kx = np.cross(d3, t3); sn = np.linalg.norm(kx); cs = float(d3 @ t3)
+                Rm = rot_matrix(kx / sn, math.atan2(sn, cs)) if sn > 1e-6 else (np.eye(3) if cs > 0 else rot_matrix(Mcw[:3, 2], math.pi))
+            alpha = Rm
             r = c - P[0]; shift = r if a in STAFF_CENTRE else r - (r @ u) * u   # to the centre of the staff, or across the line only
             row.append((shift, alpha))
         out[d] = row
@@ -1017,6 +1024,11 @@ def rot_ok(gw, dw, fwd, alpha, project, u):
     Pt = project(np.array([gw, rot_axis(gw + 0.2 * dw, gw, fwd, alpha)]))
     wt = Pt[1] - Pt[0]; wt /= np.linalg.norm(wt)
     return wt @ u > 0.99
+
+
+def rot_matrix(axis, ang):
+    k = axis / np.linalg.norm(axis); K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+    return np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * (K @ K)
 
 
 def rot_axis(p, pivot, axis, ang):
@@ -1033,7 +1045,8 @@ def fist_fix(a, i, plan):
         fix_off(o)
     FIST_SHIFT = np.zeros(3)
     off, rot = plan if plan is not None else (None, 0.0)
-    if off is None or (np.hypot(*off) < 0.05 and abs(rot) < 1e-4):
+    Rm = np.asarray(rot) if np.ndim(rot) == 2 else None
+    if off is None or (np.hypot(*off) < 0.05 and (abs(rot) < 1e-4 if Rm is None else np.allclose(Rm, np.eye(3), atol=1e-5))):
         return
     pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
     if not pts:
@@ -1048,9 +1061,10 @@ def fist_fix(a, i, plan):
     for o in obs:
         ev, me, cur = evaluated_co(o, dg); Mo = np.array(ev.matrix_world); ev.to_mesh_clear()
         pw = cur @ Mo[:3, :3].T + Mo[:3, 3]
-        if abs(rot) > 1e-6:                                    # turned about the grip in the plane of the camera
-            v = pw - g; k = fwd / np.linalg.norm(fwd)
-            pw = g + v * math.cos(rot) + np.cross(k, v) * math.sin(rot) + k * (v @ k)[:, None] * (1 - math.cos(rot))
+        if Rm is None and abs(rot) > 1e-6:                     # turned about the grip in the plane of the camera
+            Rm = rot_matrix(fwd, rot)
+        if Rm is not None:
+            pw = g + (pw - g) @ Rm.T
         pw = pw + delta
         fix_on(o, (pw - Mo[:3, 3]) @ np.linalg.inv(Mo[:3, :3]).T)
     FIST_SHIFT = np.linalg.inv(Mrig[:3, :3]) @ delta
