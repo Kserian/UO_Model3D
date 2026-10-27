@@ -6,7 +6,7 @@
 Same pictures as uo_render_mace2h_gump.py (gump 260 x 237, 90.5 px/m, the fist of body gump 12 / 13, variants down = the ball on the floor at the feet and up = the fist at the middle of the weapon,
 art on the ground seen from above), but the model is imported from the .glb, scaled so that it is LENGTH m long (butt to the tips of the spikes), turned (shaft along the axis, ball up), and
 rendered with its own PBR materials (Cycles, a sun from the upper left like the UO light, a soft world light, EXPOSURE) at SS x the resolution, then averaged down (alpha: opaque from 50 %),
-a dark rim and the 15-bit colours of the client. The spikes may be enlarged for the gump (SPIKE_LEN, SPIKE_WIDTH, 1 = the original). Writes the same files as the other script (gump_*_{down,up}.png/.bin,
+a dark outline (from the neighbouring colours, not black) and the 15-bit colours of the client. The spikes may be enlarged for the gump (SPIKE_LEN, SPIKE_WIDTH, 1 = the original). Writes the same files as the other script (gump_*_{down,up}.png/.bin,
 *_hd.png, *_preview.png, art.png, art_mirror.png).
 """
 import os, sys
@@ -26,10 +26,10 @@ EXPOSURE = 0.2               # the glb's textures are dark (the item of the anim
 CONTRAST = 1.3               # the render's contrast about the middle grey, a little more than the render: the pictures of the client are crisp
 SUN = 3.2                    # strength of the sun (from the upper left, in front: the UO light), WORLD = the soft light from everywhere
 WORLD = 0.9
-SPIKE_LEN = 1.15             # the spikes' length x this (1 = the original) and
-SPIKE_WIDTH = 2.2            # their width x this: the original's are tiny at 90 px/m
-OUTLINE = 0.5                # the edge pixels (next to transparency) x this
-RIM = 16.0                   # art: the dark rim's grey level
+SPIKE_LEN = 0.9              # the spikes' length x this (1 = the original) and
+SPIKE_WIDTH = 1.55           # their width x this: the original's are tiny at 90 px/m
+OUTLINE = 0.55               # the edge pixels (next to transparency): the mean colour of their inner neighbours x this
+RIM = 0.45                   # art: the ring outside the item: the mean colour of the neighbouring pixels x this
 HD_SCALE = 4                 # the large weapon-only pictures (gump_*_hd.png) at this x the gump's resolution (0 = none)
 
 
@@ -51,21 +51,36 @@ def setup(sc):
     return cam
 
 
+def neigh_mean(rgb, ok):
+    """mean colour of the 8 neighbours where ok (and how many there are)"""
+    H, Wd = ok.shape; acc = np.zeros(rgb.shape); n = np.zeros((H, Wd))
+    po = np.pad(ok, 1); pr = np.pad(rgb, ((1, 1), (1, 1), (0, 0)))
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dy or dx:
+                o = po[1 + dy:1 + dy + H, 1 + dx:1 + dx + Wd]
+                acc += pr[1 + dy:1 + dy + H, 1 + dx:1 + dx + Wd] * o[..., None]; n += o
+    return acc / np.maximum(n, 1)[..., None], n
+
+
 def grade(a, outline=OUTLINE, rim=None):
-    """float RGBA (display values) -> uint8 RGBA: contrast about the mid grey, a dark edge, the client's 15-bit colours; rim: a grey level for the pixels next to the item"""
+    """float RGBA (display values) -> uint8 RGBA: contrast about the mid grey, an outline darkened from the colours of the neighbouring pixels (never black), the client's 15-bit colours;
+    rim: art only, one more ring of pixels outside the item, from the colours of its edge pixels"""
     m = a[..., 3] > 0
     rgb = (a[..., :3] * 255.0 - 128.0) * CONTRAST + 128.0
+    rgb = np.where(m[..., None], rgb, 0.0)
     if outline < 1:
         pad = np.pad(m, 1)
         edge = m & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:])
-        rgb[edge] *= outline
-    q = (np.clip(np.round(rgb), 8, 255).astype(np.int32) >> 3) << 3
+        nm, n = neigh_mean(rgb, m & ~edge)
+        rgb[edge] = np.where((n > 0)[edge, None], nm[edge], rgb[edge]) * outline
     out = np.zeros(a.shape[:2] + (4,), np.uint8)
-    out[..., :3] = np.where(m[..., None], q, 0); out[..., 3] = np.where(m, 255, 0)
+    out[..., :3] = np.where(m[..., None], (np.clip(np.round(rgb), 8, 255).astype(np.int32) >> 3) << 3, 0); out[..., 3] = np.where(m, 255, 0)
     if rim is not None:
         pad = np.pad(m, 1)
         ring = ~m & (pad[:-2, 1:-1] | pad[2:, 1:-1] | pad[1:-1, :-2] | pad[1:-1, 2:])
-        out[ring, :3] = (int(rim) >> 3) << 3; out[ring, 3] = 255
+        nm, n = neigh_mean(rgb, m)
+        out[ring, :3] = (np.clip(np.round(nm[ring] * rim), 8, 255).astype(np.int32) >> 3) << 3; out[ring, 3] = 255
     return out
 
 
@@ -102,7 +117,7 @@ def main(src, out):
             if not any(float(u[i] @ ax) > 0.95 for ax in axes):
                 axes.append(u[i].copy())
         A = np.array(axes) if axes else np.zeros((0, 3))
-        print("OG: %d spikes found" % len(A))
+        print("OG: %d spikes found, rb %.3f, tip distance from the ball centre %s" % (len(A), rb, np.round(np.sort(dist[ball & (dist > rb * 1.5)])[-5:], 3).tolist()))
         if len(A):
             cs = u @ A.T; k = cs.argmax(1); near = cs.max(1) > 0.93
             msk = ball & near & (dist > rb)
