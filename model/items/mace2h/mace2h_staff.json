@@ -57,6 +57,6 @@
   "uo_staff_centre": "17",
   "uo_grip_cut_only": "1,17,22,23,24,25,26,27,28,29,31",
   "uo_staff_plane": "all",
-  "uo_staff_tune": "{\"1\": {\"lean\": 15, \"hand\": 1}}"
+  "uo_staff_tune": "{\"1\": {\"lean\": 15, \"hand\": 1, \"hand_mean\": 1}}"
  }
 }

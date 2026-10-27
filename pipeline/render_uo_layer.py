@@ -839,7 +839,7 @@ STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the en
 STAFF_CENTRE = {int(x) for x in str(sc.get("uo_staff_centre", "")).split(",") if x}   # actions in which the grip goes to the CENTRE of the original staff (the hands hold it in the middle) instead of the nearest point of its line
 GRIP_CUT_ONLY = {int(x) for x in str(sc.get("uo_grip_cut_only", "")).split(",") if x}   # the hands cut the shaft only in these actions (empty = in every action that has grip points); the other actions' grip points serve the staff alignment only
 STAFF_PLANE = str(sc.get("uo_staff_plane", ""))              # actions ("all" or a list) in which the weapon is swung INTO the image plane onto the staff's direction (its depth component becomes 0: a weapon pointing at the camera is not left foreshortened to a stub), not only turned about the view axis
-STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane
+STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane (the side = the mean x of the fist over the cycle, one per direction), hand_mean = one hand-minus-fist offset per direction (the mean over the cycle) instead of one per frame; uo_staff_report = path of a JSON with our fist and the shift per frame
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -966,6 +966,9 @@ def fist_offsets(a, n):
     return out
 
 
+REPORT = {}
+
+
 def staff_plan(a, n):
     """per direction and frame (shift px, turn rad): the weapon turned about its grip, in the plane of the camera, until its projected axis lies on the original staff's line of that frame (the ball goes to the LONGER part of the original staff counted from the hand, towards the ground when the hand is in the middle;
     in a nearly horizontal line held in the middle the end of the previous frame), and moved across so that the line passes through the grip. {d: [(shift, turn) or None] * n}"""
@@ -976,12 +979,21 @@ def staff_plan(a, n):
     out, ball = {}, None
     for d in range(5):
         rig["uo_direction"] = d; rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
-        row, u_prev = [], None
+        row, u_prev, seen, slides, P0s = [], None, [], [], {}
+        out_dir = None
+        if STAFF_TUNE.get(str(a), {}).get("lean"):                            # the side the ball leans to is one per direction (the mean of the fist's x over the cycle), not per frame: a fist near the body's axis flipped the lean from frame to frame
+            xs = []
+            for i in range(n):
+                pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
+                if pts and STAFF_LINES.get("%d,%d,%d" % (a, d, i)):
+                    sc.frame_set(1 + i * STEP); bpy.context.view_layer.update()
+                    Mr = np.array(rig.matrix_world); xs.append(project_world(np.array([np.array(pts[0]) @ Mr[:3, :3].T + Mr[:3, 3]]))[0][0])
+            out_dir = 1.0 if xs and np.mean(xs) - 128.0 > 0 else -1.0
         for i in range(n):
             ln = STAFF_LINES.get("%d,%d,%d" % (a, d, i))
             pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
             if not ln or not pts:
-                row.append(None); continue
+                row.append(None); slides.append(None); continue
             sc.frame_set(1 + i * STEP); bpy.context.view_layer.update()
             Mr = np.array(rig.matrix_world)
             D3 = np.array(rig.pose.bones["polearm.L"].matrix.to_3x3() @ Vector(WMd)); D3 /= np.linalg.norm(D3)
@@ -990,7 +1002,7 @@ def staff_plan(a, n):
                 dg = bpy.context.evaluated_depsgraph_get(); ev, me, cur = evaluated_co(obs[0], dg); Mo = np.array(ev.matrix_world); ev.to_mesh_clear()
                 sv = (cur @ Mo[:3, :3].T + Mo[:3, 3] - gw) @ dw
                 ball = 1.0 if (sv > sv.max() - 0.25).sum() > (sv < sv.min() + 0.25).sum() else -1.0
-            P = project_world(np.array([gw, gw + 0.2 * ball * dw]))
+            P = project_world(np.array([gw, gw + 0.2 * ball * dw])); P0s[i] = P[0].tolist()
             w = P[1] - P[0]; w /= np.linalg.norm(w)                          # towards the ball
             c, u0 = np.array(ln[:2]), np.array(ln[2:4])                       # u0 points down in the image; ln[4:6] = the ends of the original staff along u0 from its centre
             if len(ln) >= 6:
@@ -1009,7 +1021,7 @@ def staff_plan(a, n):
             u_prev = u
             tune = STAFF_TUNE.get(str(a), {})
             if tune.get("lean"):
-                out_s = 1.0 if (P[0][0] - 128.0) > 0 else -1.0                  # the hand is left or right of the body's axis: out = that side
+                out_s = out_dir                                                 # the hand is left or right of the body's axis (mean over the cycle): out = that side
                 th = math.radians(tune["lean"])
                 ua = np.array([u[0] * math.cos(th) - u[1] * math.sin(th), u[0] * math.sin(th) + u[1] * math.cos(th)])
                 ub = np.array([u[0] * math.cos(-th) - u[1] * math.sin(-th), u[0] * math.sin(-th) + u[1] * math.cos(-th)])
@@ -1033,11 +1045,21 @@ def staff_plan(a, n):
                 hand = detect_fist(og[..., 3] > 0, P[0], radius=float(tune.get("hand_r", 3.0))) if og is not None else None   # the hand seen on the sprite, only if it is near our fist (farther = most likely a wrong blob: thigh, torso)
                 if hand is None or np.hypot(*(hand - P[0])) > float(tune.get("hand_r", 3.0)):
                     hand = P[0].copy()                                           # our fist is on the hand: the grip stays where it is, the axis passes through it
+                seen.append(hand - P[0])
             r = c - P[0]; shift = (hand - P[0]) if hand is not None else (r if a in STAFF_CENTRE else r - (r @ u) * u)   # to the hand, or to the centre of the staff, or across the line only
-            if tune.get("slide"):
-                shift = shift + u * tune["slide"] * 36.0                           # along the weapon towards its ball (36 px per m)
-            row.append((shift, alpha))
+            sl = u * tune["slide"] * 36.0 if tune.get("slide") else np.zeros(2)     # along the weapon towards its ball (36 px per m)
+            shift = shift + sl
+            row.append((shift, alpha)); slides.append(sl)
+        tn = STAFF_TUNE.get(str(a), {})
+        if tn.get("hand_mean") and seen:                                # our fist moves smoothly, the hand found on the sprite jitters by a few px: ONE offset per direction (the mean over the cycle of the hand found on the sprite minus our fist, 0 where no hand is found) for every frame
+            mo = np.mean(seen, axis=0); row = [None if r is None else (mo + sl_, r[1]) for r, sl_ in zip(row, slides)]
         out[d] = row
+        if sc.get("uo_staff_report"):                                          # diagnostics: the shift (px) applied to our fist in every frame
+            for i, r in enumerate(row):
+                if r is not None:
+                    REPORT["%d,%d,%d" % (a, d, i)] = [P0s[i], None, np.asarray(r[0]).tolist()]
+    if sc.get("uo_staff_report"):
+        json.dump(REPORT, open(sc["uo_staff_report"], "w"))
     return out
 
 
