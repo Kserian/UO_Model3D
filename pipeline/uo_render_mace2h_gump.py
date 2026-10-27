@@ -28,6 +28,11 @@ BUTT_ABOVE = 0.12            # m: the butt of the 'down' gump sticks out over th
 KNOB = 0.09                  # m: the knob at the butt keeps its length when the shaft is stretched
 BALL_FLOOR = 0.0             # m: the lowest tip of the ball above the floor line of the 'down' gump
 THIN_HAFT = 0.75             # the haft's cross-section scaled about the axis (the animation needs a thick haft: 7.5 cm = 2.7 px at 36 px/m, the gump is 2.5 x larger: 6.8 px; the client's maces 3-5 px)
+SS_GUMP = 6                  # supersampling of the gump (the flail script: 3): rendered 6 x larger and averaged down, so that the shading of the spikes survives the reduction
+SPIKE_SCALE = 0.7            # gump / art: the spikes' length beyond the ball's surface x this (the animation's spikes are long to read at 36 px/m; at 90 px/m they are too big)
+METAL_CONTRAST = 1.9         # the metal (ball, spikes): the grey's deviation from its local 5 x 5 px mean x this, so that every spike shows a lit and a dark side
+METAL_LEVELS = (22.0, 100.0, 205.0)   # metal: output grey at the 10th / 50th / 90th percentile (the flail script: 48 / 105 / 165)
+HD_SCALE = 4                 # the large weapon-only gump (gump_*_hd.png): rendered at HD_SCALE x the gump's resolution, not quantized to the client's palette (0 = none)
 ART_STRETCH = 1.2            # art: the shaft x this (as HAFT_LEN of the flail art)
 HOLD_CUT = (8, 9, 6)         # as uo_render_weapon_gump.py: the window of the fist around the grip, the wood is cut where the body gump's fist lies in it
 HOLD_SHOW = {"male": 2, "female": 3}
@@ -65,6 +70,24 @@ def pose(V, butt, hd, s_grip, d_w):
     return (V - G) @ R.T
 
 
+def shade_metal(img, pp):
+    """the metal's grey: the deviation from its 5 x 5 local mean x METAL_CONTRAST (a lit and a dark side on every spike); the haft's wood and the dark rim are left as they are"""
+    m = (pp == 2) & (img[..., 3] > 0)
+    if METAL_CONTRAST == 1.0 or m.sum() < 10:
+        return img
+    y = img[..., 0].astype(np.float32); w = m.astype(np.float32)
+    k = 2; pad_y = np.pad(y * w, k); pad_w = np.pad(w, k)
+    sy = sum(pad_y[i:i + y.shape[0], j:j + y.shape[1]] for i in range(2 * k + 1) for j in range(2 * k + 1))
+    sw = sum(pad_w[i:i + y.shape[0], j:j + y.shape[1]] for i in range(2 * k + 1) for j in range(2 * k + 1))
+    mean = sy / np.maximum(sw, 1e-6)
+    out = np.clip(mean + METAL_CONTRAST * (y - mean), 10, 230)
+    q = ((np.round(out).astype(np.int32)) >> 3) << 3
+    res = img.copy()
+    for c in range(3):
+        res[..., c] = np.where(m, np.clip(q, 8, 255), res[..., c])
+    return res
+
+
 def main(src, out):
     bpy.ops.wm.open_mainfile(filepath=src)
     sc = bpy.context.scene
@@ -86,10 +109,16 @@ def main(src, out):
     ob.parent = None; ob.matrix_world = Matrix.Identity(4)
     rad_v = (V - butt) - np.outer(s, hd)
     V = np.where((s < bb - 0.005)[:, None], butt + np.outer(s, hd) + rad_v * THIN_HAFT, V)
+    if head is not None and SPIKE_SCALE != 1.0:                                  # the spikes shorter: the ball's vertices beyond its radius pulled towards its centre
+        cb = butt + hd * float(head[0]); rb = float(head[1])
+        dv = V - cb; dist = np.linalg.norm(dv, axis=1)
+        msk = (s >= bb - 0.005) & (dist > rb)
+        V[msk] = cb + dv[msk] / dist[msk, None] * (rb + (dist[msk] - rb) * SPIKE_SCALE)[:, None]
     part = np.where(s < bb - 0.005, 0, 2).astype(np.int32)                      # 0 = the haft (wood), 2 = the ball and the spikes (metal)
     at = ob.data.attributes.get("uo_flail_part") or ob.data.attributes.new("uo_flail_part", "FLOAT", "POINT")
     at.data.foreach_set("value", part.astype(np.float32))
     print("MG: weapon %.3f m, ball from %.3f m (butt = 0), axis %s" % (s.max(), bb, np.round(hd, 3).tolist()))
+    W.SS = SS_GUMP; W.LEVELS = METAL_LEVELS
     cam = W.setup_render(sc)
     from PIL import Image
     os.makedirs(out, exist_ok=True); tmp = os.path.join(out, "_tmp.png")
@@ -103,6 +132,7 @@ def main(src, out):
         a = W.box_down(W.render(sc, cam, tmp, W.GW * W.SS, W.GH * W.SS, W.PXM * W.SS, cx, cz, False), W.SS)
         pp = W.part_pass(sc, cam, ob, tmp, W.GW * W.SS, W.GH * W.SS, W.PXM * W.SS, cx, cz, False)
         img = W.tone(a, W.LEVELS, pp, W.WOOD_LEVELS)
+        img = shade_metal(img, pp)
         try:
             bodyg = ga.read_gump(W.CLIENT, W.BODY[gender])
         except OSError:
@@ -121,6 +151,12 @@ def main(src, out):
             bg = Image.new("RGBA", prev.size, (70, 70, 70, 255)); bg.alpha_composite(prev)
             bg.resize((bg.width * 2, bg.height * 2), Image.NEAREST).save(os.path.join(out, "%s_preview.png" % name))
         Image.fromarray(img).save(os.path.join(out, name + ".png"))
+        if HD_SCALE:                                                          # the large weapon-only picture (no body gump: the fist is not cut)
+            ss0, k = W.SS, HD_SCALE; W.SS = 2
+            a2 = W.box_down(W.render(sc, cam, tmp, W.GW * k * 2, W.GH * k * 2, W.PXM * k * 2, cx, cz, False), 2)
+            pp2 = W.part_pass(sc, cam, ob, tmp, W.GW * k * 2, W.GH * k * 2, W.PXM * k * 2, cx, cz, False)
+            Image.fromarray(shade_metal(W.tone(a2, W.LEVELS, pp2, W.WOOD_LEVELS, 0.6), pp2)).save(os.path.join(out, name + "_hd.png"))
+            W.SS = ss0
         data, extra = ga.encode_gump(img)
         open(os.path.join(out, name + ".bin"), "wb").write(data)
         ys, xs = np.nonzero(img[..., 3]); print("MG %s: bbox x %d..%d y %d..%d, %d px, extra %08x" % (name, xs.min(), xs.max(), ys.min(), ys.max(), len(xs), extra))
