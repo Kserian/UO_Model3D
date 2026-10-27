@@ -28,7 +28,7 @@ SUN = 3.2                    # strength of the sun (from the upper left, in fron
 WORLD = 0.9
 SPIKE_LEN = 0.9              # the spikes' length x this (1 = the original) and
 SPIKE_WIDTH = 1.55           # their width x this: the original's are tiny at 90 px/m
-OUTLINE = 0.55               # the edge pixels (next to transparency): the mean colour of their inner neighbours x this
+OUTLINE = 0.75               # the edge pixels (next to transparency): the mean colour of their inner neighbours x this
 RIM = 0.45                   # art: the ring outside the item: the mean colour of the neighbouring pixels x this
 HD_SCALE = 4                 # the large weapon-only pictures (gump_*_hd.png) at this x the gump's resolution (0 = none)
 
@@ -120,6 +120,7 @@ def main(src, out):
         print("OG: %d spikes found, rb %.3f, tip distance from the ball centre %s" % (len(A), rb, np.round(np.sort(dist[ball & (dist > rb * 1.5)])[-5:], 3).tolist()))
         if len(A):
             cs = u @ A.T; k = cs.argmax(1); near = cs.max(1) > 0.93
+            near &= (A[k] @ hd) > -0.9                                         # not the collar where the ball meets the haft (3 stubs along the haft: widened they were a dark blob over the haft)
             msk = ball & near & (dist > rb)
             w = np.clip((dist[msk] - rb) / (0.3 * rb), 0, 1)
             ax = A[k[msk]]; along = (dv[msk] * ax).sum(1); perp = dv[msk] - along[:, None] * ax
