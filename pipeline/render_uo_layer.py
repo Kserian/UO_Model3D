@@ -839,7 +839,7 @@ STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the en
 STAFF_CENTRE = {int(x) for x in str(sc.get("uo_staff_centre", "")).split(",") if x}   # actions in which the grip goes to the CENTRE of the original staff (the hands hold it in the middle) instead of the nearest point of its line
 GRIP_CUT_ONLY = {int(x) for x in str(sc.get("uo_grip_cut_only", "")).split(",") if x}   # the hands cut the shaft only in these actions (empty = in every action that has grip points); the other actions' grip points serve the staff alignment only
 STAFF_PLANE = str(sc.get("uo_staff_plane", ""))              # actions ("all" or a list) in which the weapon is swung INTO the image plane onto the staff's direction (its depth component becomes 0: a weapon pointing at the camera is not left foreshortened to a stub), not only turned about the view axis
-STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane (the side = the mean x of the fist over the cycle, one per direction), hand_med = the hand offsets median-filtered over 3 frames, hand_xy = {dir: {frame: [x, y]}} hand points read by eye, hand_off = {dir: [dx, dy]} an offset of a whole direction, hand_mean = one hand-minus-fist offset per direction (the mean over the cycle) instead of one per frame; uo_staff_report = path of a JSON with our fist and the shift per frame
+STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane (the side = the mean x of the fist over the cycle, one per direction), hand_med = the hand offsets median-filtered over 3 frames, fist = the axis through our fist (no move onto the line), lean_dir = {dir: deg}, hand_xy = {dir: {frame: [x, y]}} hand points on the sprite, hand_off = {dir: [dx, dy]} an offset of a whole direction, hand_mean = one hand-minus-fist offset per direction (the mean over the cycle) instead of one per frame; uo_staff_report = path of a JSON with our fist and the shift per frame
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -981,7 +981,7 @@ def staff_plan(a, n):
         rig["uo_direction"] = d; rig.update_tag(); body.update_tag(); bpy.context.view_layer.update()
         row, u_prev, seen, slides, P0s = [], None, [], [], {}
         out_dir = None
-        if STAFF_TUNE.get(str(a), {}).get("lean"):                            # the side the ball leans to is one per direction (the mean of the fist's x over the cycle), not per frame: a fist near the body's axis flipped the lean from frame to frame
+        if STAFF_TUNE.get(str(a), {}).get("lean") or STAFF_TUNE.get(str(a), {}).get("lean_dir"):      # the side the ball leans to is one per direction (the mean of the fist's x over the cycle), not per frame: a fist near the body's axis flipped the lean from frame to frame
             xs = []
             for i in range(n):
                 pts = [p for o in obs for p in json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])]
@@ -1021,12 +1021,13 @@ def staff_plan(a, n):
             u_prev = u
             tune = STAFF_TUNE.get(str(a), {})
             u_line = u                                                           # the direction of the original staff's line (before the lean)
-            if tune.get("lean"):
+            lean = tune.get("lean_dir", {}).get(str(d), tune.get("lean"))            # per-direction lean (deg; negative = the ball turned towards the body)
+            if lean:
                 out_s = out_dir                                                 # the hand is left or right of the body's axis (mean over the cycle): out = that side
-                th = math.radians(tune["lean"])
+                th = math.radians(abs(lean))
                 ua = np.array([u[0] * math.cos(th) - u[1] * math.sin(th), u[0] * math.sin(th) + u[1] * math.cos(th)])
                 ub = np.array([u[0] * math.cos(-th) - u[1] * math.sin(-th), u[0] * math.sin(-th) + u[1] * math.cos(-th)])
-                u = ua if ua[0] * out_s > ub[0] * out_s else ub
+                u = ua if (ua[0] * out_s > ub[0] * out_s) == (lean > 0) else ub
             phi = math.atan2(w[0] * u[1] - w[1] * u[0], w @ u)              # turn (image plane, y down) that makes w point along u
             fwd = -np.array(sc.camera.matrix_world)[:3, 2]; fwd /= np.linalg.norm(fwd)
             alpha = phi
@@ -1051,6 +1052,12 @@ def staff_plan(a, n):
                     hand = np.array(hx, float)
                 seen.append(hand - P[0])
             r = c - P[0]; shift = (hand - P[0]) if hand is not None else (r if a in STAFF_CENTRE else r - (r @ u_line) * u_line)   # to the hand, or to the centre of the staff, or across the ORIGINAL line only (the line of the original staff passes through the hand, the lean turns the weapon about the grip on it)
+            if tune.get("fist"):                                                  # the axis through OUR fist (the rig's hand is on the sprite's hand), not moved onto the staff's line; hand_xy = a point read on the sprite (absolute px), hand_off = a constant offset of a direction
+                shift = np.zeros(2)
+                hx = tune.get("hand_xy", {}).get(str(d), {}).get(str(i))
+                if hx is not None:
+                    shift = np.array(hx, float) - P[0]
+                shift = shift + np.array(tune.get("hand_off", {}).get(str(d), [0.0, 0.0]), float)
             sl = u * tune["slide"] * 36.0 if tune.get("slide") else np.zeros(2)     # along the weapon towards its ball (36 px per m)
             shift = shift + sl
             row.append((shift, alpha)); slides.append(sl)
