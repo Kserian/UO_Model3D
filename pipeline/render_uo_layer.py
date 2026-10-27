@@ -839,7 +839,7 @@ STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the en
 STAFF_CENTRE = {int(x) for x in str(sc.get("uo_staff_centre", "")).split(",") if x}   # actions in which the grip goes to the CENTRE of the original staff (the hands hold it in the middle) instead of the nearest point of its line
 GRIP_CUT_ONLY = {int(x) for x in str(sc.get("uo_grip_cut_only", "")).split(",") if x}   # the hands cut the shaft only in these actions (empty = in every action that has grip points); the other actions' grip points serve the staff alignment only
 STAFF_PLANE = str(sc.get("uo_staff_plane", ""))              # actions ("all" or a list) in which the weapon is swung INTO the image plane onto the staff's direction (its depth component becomes 0: a weapon pointing at the camera is not left foreshortened to a stub), not only turned about the view axis
-STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane (the side = the mean x of the fist over the cycle, one per direction), hand_mean = one hand-minus-fist offset per direction (the mean over the cycle) instead of one per frame; uo_staff_report = path of a JSON with our fist and the shift per frame
+STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane (the side = the mean x of the fist over the cycle, one per direction), hand_med = the hand offsets median-filtered over 3 frames, hand_xy = {dir: {frame: [x, y]}} hand points read by eye, hand_off = {dir: [dx, dy]} an offset of a whole direction, hand_mean = one hand-minus-fist offset per direction (the mean over the cycle) instead of one per frame; uo_staff_report = path of a JSON with our fist and the shift per frame
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -1020,6 +1020,7 @@ def staff_plan(a, n):
                 u = u0                                                       # held in the middle: the ball towards the ground
             u_prev = u
             tune = STAFF_TUNE.get(str(a), {})
+            u_line = u                                                           # the direction of the original staff's line (before the lean)
             if tune.get("lean"):
                 out_s = out_dir                                                 # the hand is left or right of the body's axis (mean over the cycle): out = that side
                 th = math.radians(tune["lean"])
@@ -1045,13 +1046,20 @@ def staff_plan(a, n):
                 hand = detect_fist(og[..., 3] > 0, P[0], radius=float(tune.get("hand_r", 3.0))) if og is not None else None   # the hand seen on the sprite, only if it is near our fist (farther = most likely a wrong blob: thigh, torso)
                 if hand is None or np.hypot(*(hand - P[0])) > float(tune.get("hand_r", 3.0)):
                     hand = P[0].copy()                                           # our fist is on the hand: the grip stays where it is, the axis passes through it
+                hx = tune.get("hand_xy", {}).get(str(d), {}).get(str(i))             # a hand point read by eye on the sprite (absolute px), wins over the detection
+                if hx is not None:
+                    hand = np.array(hx, float)
                 seen.append(hand - P[0])
-            r = c - P[0]; shift = (hand - P[0]) if hand is not None else (r if a in STAFF_CENTRE else r - (r @ u) * u)   # to the hand, or to the centre of the staff, or across the line only
+            r = c - P[0]; shift = (hand - P[0]) if hand is not None else (r if a in STAFF_CENTRE else r - (r @ u_line) * u_line)   # to the hand, or to the centre of the staff, or across the ORIGINAL line only (the line of the original staff passes through the hand, the lean turns the weapon about the grip on it)
             sl = u * tune["slide"] * 36.0 if tune.get("slide") else np.zeros(2)     # along the weapon towards its ball (36 px per m)
             shift = shift + sl
             row.append((shift, alpha)); slides.append(sl)
         tn = STAFF_TUNE.get(str(a), {})
-        if tn.get("hand_mean") and seen:                                # our fist moves smoothly, the hand found on the sprite jitters by a few px: ONE offset per direction (the mean over the cycle of the hand found on the sprite minus our fist, 0 where no hand is found) for every frame
+        if tn.get("hand_med") and len(seen) == n and all(r is not None for r in row):    # a median over 3 neighbouring frames (the cycle is closed): a wrong blob in one frame (thigh, torso) does not pull the weapon, the real motion of the hand is kept
+            O = np.array(seen); Of = np.array([np.median([O[(i - 1) % n], O[i], O[(i + 1) % n]], axis=0) for i in range(n)])
+            Of = Of + np.array(tn.get("hand_off", {}).get(str(d), [0.0, 0.0]), float)            # a constant offset of the whole direction (px), read by eye
+            row = [(Of[i] + slides[i], row[i][1]) for i in range(n)]
+        elif tn.get("hand_mean") and seen:                                # our fist moves smoothly, the hand found on the sprite jitters by a few px: ONE offset per direction (the mean over the cycle of the hand found on the sprite minus our fist, 0 where no hand is found) for every frame
             mo = np.mean(seen, axis=0); row = [None if r is None else (mo + sl_, r[1]) for r, sl_ in zip(row, slides)]
         out[d] = row
         if sc.get("uo_staff_report"):                                          # diagnostics: the shift (px) applied to our fist in every frame
