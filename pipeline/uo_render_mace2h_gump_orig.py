@@ -28,6 +28,7 @@ SUN = 3.2                    # strength of the sun (from the upper left, in fron
 WORLD = 0.9
 SPIKE_LEN = 0.9              # the spikes' length x this (1 = the original) and
 SPIKE_WIDTH = 1.55           # their width x this: the original's are tiny at 90 px/m
+ROLL = 25.0                  # deg: the weapon turned about its axis (the 12 spikes are at 45 deg steps: one at the camera and down hid in front of the ball's collar)
 OUTLINE = 0.75               # the edge pixels (next to transparency): the mean colour of their inner neighbours x this
 RIM = 0.45                   # art: the ring outside the item: the mean colour of the neighbouring pixels x this
 HD_SCALE = 4                 # the large weapon-only pictures (gump_*_hd.png) at this x the gump's resolution (0 = none)
@@ -125,6 +126,10 @@ def main(src, out):
             w = np.clip((dist[msk] - rb) / (0.3 * rb), 0, 1)
             ax = A[k[msk]]; along = (dv[msk] * ax).sum(1); perp = dv[msk] - along[:, None] * ax
             V[msk] = cb + ax * (along * (1 + (SPIKE_LEN - 1) * w))[:, None] + perp * (1 + (SPIKE_WIDTH - 1) * w)[:, None]
+    if ROLL:                                                                      # the weapon turned about its own axis: a spike no longer points at the camera and down onto the haft
+        r = np.radians(ROLL); R3 = np.array(Vector(hd.tolist()).rotation_difference(Vector((0, 0, 1))).to_matrix())
+        K = np.array([[0, -hd[2], hd[1]], [hd[2], 0, -hd[0]], [-hd[1], hd[0], 0]]); Rr = np.eye(3) + np.sin(r) * K + (1 - np.cos(r)) * (K @ K)
+        V = butt + (V - butt) @ Rr.T
     part = np.where(ball, 2, 0).astype(np.int32)
     at = ob.data.attributes.get("uo_flail_part") or ob.data.attributes.new("uo_flail_part", "FLOAT", "POINT")
     at.data.foreach_set("value", part.astype(np.float32))
