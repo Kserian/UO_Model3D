@@ -839,7 +839,7 @@ STAFF_LONG = float(sc.get("uo_staff_long", 1.15))      # the ball goes to the en
 STAFF_CENTRE = {int(x) for x in str(sc.get("uo_staff_centre", "")).split(",") if x}   # actions in which the grip goes to the CENTRE of the original staff (the hands hold it in the middle) instead of the nearest point of its line
 GRIP_CUT_ONLY = {int(x) for x in str(sc.get("uo_grip_cut_only", "")).split(",") if x}   # the hands cut the shaft only in these actions (empty = in every action that has grip points); the other actions' grip points serve the staff alignment only
 STAFF_PLANE = str(sc.get("uo_staff_plane", ""))              # actions ("all" or a list) in which the weapon is swung INTO the image plane onto the staff's direction (its depth component becomes 0: a weapon pointing at the camera is not left foreshortened to a stub), not only turned about the view axis
-STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane (the side = the mean x of the fist over the cycle, one per direction), hand_med = the hand offsets median-filtered over 3 frames, fist = the axis through our fist (no move onto the line), lean_dir = {dir: deg}, hand_xy = {dir: {frame: [x, y]}} hand points on the sprite, hand_off = {dir: [dx, dy]} an offset of a whole direction, hand_mean = one hand-minus-fist offset per direction (the mean over the cycle) instead of one per frame; uo_staff_report = path of a JSON with our fist and the shift per frame
+STAFF_TUNE = json.loads(sc["uo_staff_tune"]) if sc.get("uo_staff_tune") else {}   # per action {"3": {"slide": 0.12, "lean": 12, "hand": 1}}: hand = the grip goes to the centre of the hand found on the original sprite; slide = m the weapon moves towards its ball along its axis (the hand holds it lower), lean = deg the ball is turned further OUT (away from the body) in the image plane (the side = the mean x of the fist over the cycle, one per direction), hand_med = the hand offsets median-filtered over 3 frames, fist = the axis through our fist (no move onto the line), lean_dir = {dir: deg}, hand_xy = {dir: {frame: [x, y]}} hand points on the sprite, hand_off = {dir: [dx, dy]} an offset of a whole direction, hand_nudge = {dir: {frame: [dx, dy]}} per frame, hand_mean = one hand-minus-fist offset per direction (the mean over the cycle) instead of one per frame; uo_staff_report = path of a JSON with our fist and the shift per frame
 STAFF_LINES = json.loads(sc["uo_staff_lines"]) if sc.get("uo_staff_lines") else {}
 FIST_SHIFT = np.zeros(3)                           # armature-space shift applied to the item in the current frame (the grip points of grip_cut move with it)
 
@@ -1058,6 +1058,7 @@ def staff_plan(a, n):
                 if hx is not None:
                     shift = np.array(hx, float) - P[0]
                 shift = shift + np.array(tune.get("hand_off", {}).get(str(d), [0.0, 0.0]), float)
+                shift = shift + np.array(tune.get("hand_nudge", {}).get(str(d), {}).get(str(i), [0.0, 0.0]), float)   # per frame, px read off the viewer
             sl = u * tune["slide"] * 36.0 if tune.get("slide") else np.zeros(2)     # along the weapon towards its ball (36 px per m)
             shift = shift + sl
             row.append((shift, alpha)); slides.append(sl)
@@ -1139,6 +1140,8 @@ def grip_cut(px, a, i, orig_m):
             pts += json.loads(o["uo_grips"]).get("%d,%d" % (a, i), [])
     if not pts:
         return px
+    if "%d:%d" % (a, int(rig["uo_direction"])) in str(sc.get("uo_grip_cut_first", "")).split(","):     # only the first grip point (the left hand) cuts in these "action:direction" (the other hand of the model must not cut the shaft)
+        pts = pts[:1]
     pts = (np.array(pts) + FIST_SHIFT).tolist()
     rig.update_tag(); bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get(); cam = sc.camera.evaluated_get(dg)
