@@ -40,3 +40,12 @@ A throw-away beard (cheek shell + tapered tube 20 cm below the chin, solidified 
 2. **Long beard from the original 801 + our extension:** the 801 sprite is only the chin; a longer beard = a new animation that contains the original 801 pixels plus the part below the chin rendered by us on the fitted head pose (same canvas, same anchor; the hue is applied to the sum). Feasible because both are grey and rigid on the head; the join at the chin needs the extension to start under the original sprite (the original goes over it). Not tried beyond the composite above.
 3. **2D painting on the sprites** (no 3D): possible for a few frames, not for 1050: the head moves and tilts per frame, so an extension must follow the head pose of each frame - the 3D route gives that for free.
 - Draw order / hue flags (PartialHue is not set on hair; the client dyes every pixel) are client-side: test in the game once with one new item.
+
+## Result with a real sculpt (user's long wavy beard, 2026-10-28)
+`model/items/beard/` (`Beard_long_wavy.vd`, recipe, README). Measured against the original stand sprites 801 / 803 / 800 (dir 0-4):
+- Placement from the sprites, not from the head mesh: the body renders at 36 px/m, camera elevated ~30 deg, so a point 1 m higher is 31.2 rows up and 10 cm further forward is ~1.8 rows lower. The head mesh's lowest vertices are neck, not chin: chin ~1.63 m, mouth ~1.68, nose ~1.75, eyes ~1.79 (my first guess, from the head vertex group, was 8 cm too low).
+- Profile (dir 2): face front col 94-96; original 801 cols 94-98; ours 92-97 after moving the back plane of the sculpt onto the face (a first placement 6.5 cm further forward stuck out 3 px).
+- From behind: dir 4 39 px -> 2 px with `behind_torso`; the original has 14 px (ear-level wings).
+- Bulk 65 px front (original 51), 38 px profile (28); bottom row 102 vs 98 of the original (longer, as intended).
+- 1050 frames, all palettes grey (R = G = B within 8), no empty frame except behind the head (38, dir 2-4 of some actions).
+

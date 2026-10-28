@@ -12,4 +12,4 @@ description: Open issues of UO_Model3D (slots, robe, cloak, pauldrons, body 401,
 - First real free model (e.g. Curuata's hair, CC BY 4.0, https://sketchfab.com/3d-models/hair-cc7e804cc15340db92d9464b32f71a2c): the user adds the glTF to the repo; record the attribution.
 - Body 401 (female) in `anim.mul` ≈ copy of the male; check in game before working on it.
 - `.glb`/`.fbx` are not in the repo: `pipeline/export.py --blend model/UO_Body_0x190.blend`.
-- Hair / beards: no real model yet; the render defaults need `uo_head_hides` and a brightness calibration (`docs/qa/hair_beard_study_2026-10.md`). A longer beard = new 3D beard (or original 801 + our extension) as a new equipment animation id; nothing is built yet.
+- Hair / beards: one real sculpt done (`model/items/beard/`, long wavy beard, not tested in the game: hue, draw order, tiledata item with layer 16 + animation id); it has no cheeks / sideburns (original beards cover the jaw up to the ear). No hair yet. Study: `docs/qa/hair_beard_study_2026-10.md`.
