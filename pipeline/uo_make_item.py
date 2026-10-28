@@ -15,6 +15,7 @@ RECIPE.json (only "file" and "kind" are required):
    "bake_texture": 0,          # px (2048): the reduced model gets new UVs and a texture baked from the original (a reduction smears the UVs of a detailed texture; uo_import_item.py BAKE_TEXTURE)
    "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1},   # per-item settings of render_uo_layer.py (outline strength, hands / head hide a pixel less, the legs never hide a long robe; "uo_contrast": 1.5 = a contrast curve on the item (darker creases, brighter lights: sleeves and hands read thinner, README section 4; kind robe / skirt get uo_contrast 1.5, uo_shade_sleeve 0.4, uo_shade_width 4 unless the recipe says otherwise); "uo_samples": 1024 = more Cycles samples; "uo_edge_floor": 24 = the 1-px outline is never darker than 24/255 per channel, no pure black rim)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
+   "behind_torso": false,     # true for an item that hangs in front of the chest (a long beard): the torso hides the part of it that is behind the torso (render_uo_layer.py TORSO_HIDE_MARGIN); for hair / beard also "scene": {"uo_head_hides": 1}
    "stretch": [0.8, 1.25, 1.0],  # width, depth, height factors about the centre (a model made on a mannequin with other proportions than the UO body); "tune": {"uo_autofit_item.py": {"UNIT": 0.3}} = the file is not in metres
    "decimate": 30000,          # vertices above which the model is reduced
    "materials": {"SATURATION": 1.0, "METAL": null},   # uo_materials.py settings (grey item that takes a dye: SATURATION 0)
@@ -414,12 +415,15 @@ if wp:                                                           # a weapon: upr
     run("uo_bind_item.py", PART=wp["part"])
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
+if %(behind)r:                                                   # "behind_torso": the chest / neck hide the part of the item that is behind them (a beard hanging in front of the chest is not drawn over the back from behind)
+    for o in bpy.data.collections["Clothing"].all_objects:
+        o["uo_behind_torso"] = 1
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
     bpy.context.scene[k] = v
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})), behind=bool(recipe.get("behind_torso")))
 
 
 def run_blend(base, stage_text, log):
