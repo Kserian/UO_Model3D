@@ -31,6 +31,10 @@ SPIKE_WIDTH = 1.55           # their width x this: the original's are tiny at 90
 ROLL = 25.0                  # deg: the weapon turned about its axis (the 12 spikes are at 45 deg steps: one at the camera and down hid in front of the ball's collar)
 OUTLINE = 0.75               # the edge pixels (next to transparency): the mean colour of their inner neighbours x this
 RIM = 0.45                   # art: the ring outside the item: the mean colour of the neighbouring pixels x this
+WOOD_COLOR = (0.36, 0.23, 0.13)   # sRGB: the wood of the original's texture recoloured to the one brown of the game's .vd (pipeline/uo_mace2h_retexture.py WOOD_COLOR), so that the haft has the same colour in the gump, the art and the game
+WOOD_GRAIN = 0.25            # the grain (light / dark texels) of the original's wood kept: exponent of the texel / the median of the wood
+ART_WOOD_GAIN = 1.2          # the art is lit from above by the same sun, its wood came out darker (80 against 97 of the .vd): a little more
+WOOD_GAIN = 1.0              # x on WOOD_COLOR: the gump's light is not the game's (the mean wood colour of the gump is matched to the .vd's)
 HD_SCALE = 4                 # the large weapon-only pictures (gump_*_hd.png) at this x the gump's resolution (0 = none)
 
 
@@ -85,10 +89,31 @@ def grade(a, outline=OUTLINE, rim=None):
     return out
 
 
+_ORIG = {}
+
+
+def recolour_wood(gain=None):
+    """the texels of the base colour map that are not metal (the metal map: blue channel of the metallic-roughness image) get one wood brown with the original's grain; the steel is left"""
+    base, mr = bpy.data.images.get("Image_0"), bpy.data.images.get("Image_1")
+    if base is None or mr is None:
+        print("OG: no Image_0 / Image_1 in the glb, the wood is not recoloured"); return
+    w, h = base.size
+    if "b" not in _ORIG:
+        _ORIG["b"] = np.array(base.pixels[:], np.float32).reshape(h, w, 4); _ORIG["m"] = np.array(mr.pixels[:], np.float32).reshape(h, w, 4)[..., 2] > 0.5
+    b = _ORIG["b"].copy(); m = _ORIG["m"]
+    gain = WOOD_GAIN if gain is None else gain
+    luma = b[..., :3].mean(2); med = float(np.median(luma[~m]))
+    wood = np.clip(np.array(WOOD_COLOR, np.float32)[None, None, :] * gain * (np.clip(luma, 0.03, None) / med)[..., None] ** WOOD_GRAIN, 0, 1)
+    b[..., :3] = np.where(m[..., None], b[..., :3], wood)
+    base.pixels.foreach_set(b.reshape(-1)); base.update()
+    print("OG: wood recoloured, %.0f %% of the texels" % (100.0 * (~m).mean()))
+
+
 def main(src, out):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     bpy.ops.import_scene.gltf(filepath=os.path.abspath(src))
+    recolour_wood()
     objs = [o for o in sc.objects if o.type == "MESH"]
     bpy.ops.object.select_all(action="DESELECT")
     for o in objs:
@@ -183,6 +208,7 @@ def main(src, out):
         th = np.radians(G.TILT_UP); d_up = (-np.sin(th), 0.0, np.cos(th))
         put(gender, "gump_%s_up" % gender, G.pose(V, butt, hd, float(s.max()) / 2, d_up), gx, gy)
 
+    recolour_wood(ART_WOOD_GAIN)
     d45 = (np.sqrt(0.5), np.sqrt(0.5), 0.0)
     Va, _ = G.stretch_shaft(V, hd, s, bb, G.ART_STRETCH)
     R = np.array(Vector(hd.tolist()).rotation_difference(Vector(d45)).to_matrix())
