@@ -25,6 +25,7 @@ RECIPE.json (only "file" and "kind" are required):
    "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
+   "rigid": {"part": "front", "centre": [-0.02, -0.30, 1.25], "tilt": 0},   # an item that is only put at a place and stiff on a bone (a drum hung on the chest): rest-pose centre of the file's model in m, tilt = head turned up (deg), part = uo_bind_item.py RIGID entry
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
@@ -383,7 +384,7 @@ def build_stage(recipe, out_blend):
     if "parts" in recipe:
         return build_parts_stage(recipe, out_blend)
     kind = recipe.get("kind", "")
-    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), ARM_BLEND=float(recipe.get("arm_blend", 0.12)), TURN=int(recipe.get("turn", 0)), OUTER_SHELL=bool(recipe.get("outer_shell", False)), OUTER_REMESH=float(recipe["outer_shell"]) if not isinstance(recipe.get("outer_shell", False), bool) else 0.0, BAKE_TEXTURE=int(recipe.get("bake_texture", 0)), HOLES=recipe.get("holes"), BAKE_NORMAL=float(recipe.get("bake_normal", 0.0)), BAKE_AO=float(recipe.get("bake_ao", 0.0)),
+    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") or recipe.get("rigid") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), ARM_BLEND=float(recipe.get("arm_blend", 0.12)), TURN=int(recipe.get("turn", 0)), OUTER_SHELL=bool(recipe.get("outer_shell", False)), OUTER_REMESH=float(recipe["outer_shell"]) if not isinstance(recipe.get("outer_shell", False), bool) else 0.0, BAKE_TEXTURE=int(recipe.get("bake_texture", 0)), HOLES=recipe.get("holes"), BAKE_NORMAL=float(recipe.get("bake_normal", 0.0)), BAKE_AO=float(recipe.get("bake_ao", 0.0)),
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
     if "scale" in recipe:
         imp["SCALE"] = float(recipe["scale"])
@@ -408,7 +409,20 @@ run("uo_materials.py", **%(mat)r)
 prep = %(prep)r
 flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}      # settings of uo_prepare_item.py (a dict setting too: HEM_BAND)
 wp = %(weapon)r
-if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
+rg = %(rigid)r
+if rg:                                                           # an item that is not fitted to the skin but put at a place in front of / on the body and stiff on a bone (a drum on the chest): rest-pose centre (m), tilt (deg, head turned up), then bound rigid
+    import math
+    from mathutils import Matrix
+    obs = [o for o in bpy.context.selected_objects if o.type == "MESH"]
+    mx = Matrix.Translation(rg.get("centre", [0, 0, 1.2])) @ Matrix.Rotation(-math.radians(float(rg.get("tilt", 0.0))), 4, "X") @ Matrix.Rotation(math.radians(float(rg.get("yaw", 0.0))), 4, "Z")
+    for o in obs:
+        o.data.transform(mx)
+    bpy.context.view_layer.update()
+    run("uo_bind_item.py", PART=rg.get("part", "front"))
+    for o in obs:
+        for k in ("uo_no_body_gap",):
+            o[k] = 1
+elif wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
@@ -419,7 +433,7 @@ for k, v in %(scene)r.items():                                    # "scene": pro
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), rigid=recipe.get("rigid"), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):

@@ -18,6 +18,7 @@ It is meant for designing clothing, armour, hair and weapon layers: the `.blend`
 | `model/UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Albedo (grey like UO skin, lighting removed) and its variants for the 5 directions. |
 | `model/example_clothing/` | Example layer (a shirt) as `.vd` with a preview over the original body. |
 | `model/items/horn/` | Recipes of a horn item for the right and left hand. |
+| `model/items/drum/` | A geometric war drum on the chest (`"rigid"` recipe, `.vd`, how the place was chosen). |
 | `vdtool/` | `vdtool.py` unpacks and repacks `.vd` (section 6), `mul2vd.py` converts client `anim.mul`. |
 | `pipeline/` | Render, item fitting, tests, measurements (section 9). `body400.vd`, `horse200.vd` = original client files (body 0x190, horse 0xC8). |
 | `client/` | Original body (1050) and horse (300) frames as PNG + `meta.json`; `extract/` = data extracted from the client. |
@@ -125,6 +126,7 @@ It is meant for designing clothing, armour, hair and weapon layers: the `.blend`
       | `"shield"` | shield | rigid on `shield.L` |
       | `"bow"` / `"crossbow"` | bow / crossbow | bone `bow.L` (1.6-2.1 px) |
       | `"quiver"` | quiver | rigid on `chest` |
+      | `"front"` | something hung on the chest (drum) | rigid on `chest`; recipe `"rigid": {"part": "front", "centre": [x, y, z], "tilt": 0, "yaw": 0}` puts a model at that rest-pose place without fitting it to the skin |
 
       For `"chest"` a line like `"thigh": (0.3, 0.1, 0.4)` sets how much of a bone's weight stays on it: 30% on the thigh at the hip, 100% from 40% of its length.
    4. Manual way: Ctrl+P → *Armature Deform → With Empty Groups*, paint or copy weights (*Data Transfer*), delete groups of bones the item does not cover.
