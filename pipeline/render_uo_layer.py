@@ -88,6 +88,9 @@ DESPECKLE = 0                      # clothing: single dark pixels inside the ite
                                    # than this (0-255) take the colour around them - deep sculpt details / rivets that
                                    # turn into black dots at UO size. 0 = off. Was 28 while items were rendered at 1 sample (it cleaned that noise);
                                    # at SAMPLES it only erased dark texture detail (17 % of the pixels of a textured mask); per item: scene "uo_despeckle"
+EDGE_FREE = 0                      # per item (scene "uo_edge_free", 1): the dark 1-px outline only where the item meets the background, not where a hand / an arm hides part of it: the cut edge is drawn by the original body
+                                   # (its own outline), and a second dark line along a jagged cut reads as noise round the hand. The silhouette is that of the item rendered without the body
+DEBUG_DUMP = ""                    # "action,frame,direction" (e.g. "2,4,1"): the masks of that frame go to debug_A_I_D.npz in the layer folder
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
                                    # poking through or a gap in the item mesh, not a real occluder. 0 = off; scene property uo_fill_holes (a torn robe whose
                                    # rips should show the body: 0)
@@ -116,6 +119,7 @@ HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py se
 CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
 LIE_W = {}
 FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
+EDGE_FREE = int(sc.get("uo_edge_free", EDGE_FREE))
 INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
 EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
@@ -664,14 +668,16 @@ if LAYER == "clothing" and not any(not o.hide_render for o in clothes):
     raise RuntimeError("No visible meshes in the 'Clothing' collection")
 
 
-def uo_post(px, keep=None):
+def uo_post(px, keep=None, silhouette=None):
     """float RGBA (h,w,4), straight alpha -> UO look: over black, 1-bit alpha, dark outline. Returns uint8 RGBA.
-    keep: pixels that already carry original UO colours (no extra outline)."""
+    keep: pixels that already carry original UO colours (no extra outline).
+    silhouette: EDGE_FREE: the mask of the item without the body hiding it; only its rim is outlined (no outline along the cut a hand makes)."""
     a = px[..., 3:4]
     rgb = px[..., :3] * a
     m = px[..., 3] >= 0.5
-    inner = m.copy()
-    inner[1:] &= m[:-1]; inner[:-1] &= m[1:]; inner[:, 1:] &= m[:, :-1]; inner[:, :-1] &= m[:, 1:]
+    ms = m if silhouette is None else (silhouette | m)
+    inner = ms.copy()
+    inner[1:] &= ms[:-1]; inner[:-1] &= ms[1:]; inner[:, 1:] &= ms[:, :-1]; inner[:, :-1] &= ms[:, 1:]
     edge = m & ~inner
     if keep is not None:
         edge &= ~keep
@@ -1137,6 +1143,8 @@ def frame_job():
                         free = render_frame(a, i, d, "hidden")
                         hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
+                        if DEBUG_DUMP and DEBUG_DUMP == "%d,%d,%d" % (a, i, d):          # masks of one frame to a file (debugging the hiding)
+                            np.savez(os.path.join(root, "debug_%d_%d_%d.npz" % (a, i, d)), free=free, hold=hold, px=px, orig=orig_m, cov=cov)
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
                         lab = region_labels(a, i, d) if (INNER_LINE > 0 or SHADE_SLEEVE > 0) else None
@@ -1146,7 +1154,7 @@ def frame_job():
                             px = contact_shade(px, free, lab)
                         if EDGE_SMOOTH > 0:
                             px = edge_smooth(px, EDGE_SMOOTH)
-                        rgba = uo_post(px)
+                        rgba = uo_post(px, silhouette=(free[..., 3] >= 0.5) if EDGE_FREE else None)
                         if DESPECKLE > 0:
                             rgba = despeckle(rgba, DESPECKLE)
                         if MIN_PIECE > 0:
