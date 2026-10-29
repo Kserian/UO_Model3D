@@ -1,9 +1,9 @@
 """Put an ORIGINAL item animation (from a .vd made with vdtool/mul2vd.py, e.g. the body sash anim 490) under a rendered item layer into one .vd.
 
-    python compose_layers.py ORIGINAL.vd RENDER_DIR OUT.vd [--layer clothing] [--preview PREVIEW.png] [--body pipeline/body400.vd] [--over]
+    python compose_layers.py ORIGINAL.vd RENDER_DIR OUT.vd [--layer clothing] [--alt 0,1,2,3=DIR ...] [--preview PREVIEW.png] [--body pipeline/body400.vd] [--over]
 
 RENDER_DIR/LAYER/frames/NN_action/dirK/NN.png is what render_uo_layer.py writes (canvas 256x256, anchor (128, 192)). Every frame of the original is pasted on the same canvas by its centre
-(left = anchor_x - cx, top = anchor_y - cy - h, the rule of uo_vd_writer.crop_frame) and the rendered frame is laid over it (--over: the original over the rendered one); the frame counts of the two must
+(left = anchor_x - cx, top = anchor_y - cy - h, the rule of uo_vd_writer.crop_frame) and the rendered frame is laid over it (--over: the original over the rendered one); --alt ACTIONS=DIR (several times): the frames of those actions (numbers, comma separated) come from another render (a drum put further forward for the actions in which the torso bends into it: separate renders of the poses that need it, put together here); the frame counts of the two must
 match (they do: both follow the 35 actions of the body). The result is written like every other layer (15-bit colours, one 256-colour palette per block, median cut when more are used).
 --preview: a sheet of a few actions over the original body frames (body, original item, rendered item), to look at the join.
 """
@@ -38,11 +38,12 @@ def over(top, bottom):
     return np.dstack([np.round(rgb), np.round(na * 255)]).astype(np.uint8)
 
 
-def compose(orig, render, layer, over_=False):
+def compose(orig, render, layer, over_=False, alt=None):
+    alt = alt or {}
     _, _, an = vdread.read_vd(orig)
     blocks = {}
     for (a, d), frames in sorted(an.items()):
-        dirs = glob.glob(os.path.join(render, layer, "frames", "%02d_*" % a, "dir%d" % d))
+        dirs = glob.glob(os.path.join(alt.get(a, render), layer, "frames", "%02d_*" % a, "dir%d" % d))
         pngs = sorted(glob.glob(os.path.join(dirs[0], "*.png"))) if dirs else []
         if len(pngs) != len(frames):
             raise SystemExit("action %d dir %d: %d original frames, %d rendered" % (a, d, len(frames), len(pngs)))
@@ -57,9 +58,10 @@ def compose(orig, render, layer, over_=False):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("original"); ap.add_argument("render"); ap.add_argument("out")
-    ap.add_argument("--layer", default="clothing"); ap.add_argument("--over", action="store_true"); ap.add_argument("--preview"); ap.add_argument("--body", default=os.path.join(HERE, "body400.vd"))
+    ap.add_argument("--layer", default="clothing"); ap.add_argument("--over", action="store_true"); ap.add_argument("--alt", action="append", default=[]); ap.add_argument("--preview"); ap.add_argument("--body", default=os.path.join(HERE, "body400.vd"))
     a = ap.parse_args()
-    blocks = compose(a.original, a.render, a.layer, a.over)
+    alt = {int(x): os.path.abspath(spec.split("=", 1)[1]) for spec in a.alt for x in spec.split("=", 1)[0].split(",")}
+    blocks = compose(a.original, a.render, a.layer, a.over, alt)
     writer.write_vd(a.out, blocks, anim_type=2, anchor=ANCHOR)
     if a.preview:
         _, _, body = vdread.read_vd(a.body)
