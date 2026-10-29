@@ -90,7 +90,7 @@ DESPECKLE = 0                      # clothing: single dark pixels inside the ite
                                    # at SAMPLES it only erased dark texture detail (17 % of the pixels of a textured mask); per item: scene "uo_despeckle"
 HIDE_GROW = 0                      # per item (scene "uo_hide_grow"): px. A hand / arm hides the item also this far round the 3D hand (a depth-aware dilation: only where it is in front of the item; inside the ORIGINAL body): the 3D hand stands 1-2 px off the original, and the
                                    # fingers of the original that the 3D fingers miss were covered by the item (the fingers "cut off"). 0 = off
-EDGE_FREE = 0                      # per item (scene "uo_edge_free", 1): the dark 1-px outline only where the item meets the background, not where a hand / an arm hides part of it: the cut edge is drawn by the original body
+EDGE_FREE = 0                      # per item (scene "uo_edge_free", 1 = in uo_post, 2 = also in finish()): the dark 1-px outline only where the item meets the background, not where a hand / an arm hides part of it: the cut edge is drawn by the original body
                                    # (its own outline), and a second dark line along a jagged cut reads as noise round the hand. The silhouette is that of the item rendered without the body
 DEBUG_DUMP = ""                    # "action,frame,direction" (e.g. "2,4,1"): the masks of that frame go to debug_A_I_D.npz in the layer folder
 FILL_HOLES = 4                     # px: holes INSIDE an item (fully surrounded by it) up to this size are filled - skin
@@ -1172,8 +1172,8 @@ def frame_job():
                         if EDGE_SMOOTH > 0:
                             px = edge_smooth(px, EDGE_SMOOTH)
                         rgba = uo_post(px, silhouette=(free[..., 3] >= 0.5) if EDGE_FREE else None)
-                        if EDGE_FREE:
-                            RIM["sil"][(a, d, i)] = free[..., 3] >= 0.5          # finish() outlines the same rim
+                        if EDGE_FREE >= 2:                                      # level 2: finish() (a second outline pass over the PNGs) takes the same silhouette; level 1 (the version of 2026-10-29 20:14) outlines it in uo_post only
+                            RIM["sil"][(a, d, i)] = free[..., 3] >= 0.5
                         if DESPECKLE > 0:
                             rgba = despeckle(rgba, DESPECKLE)
                         if MIN_PIECE > 0:
