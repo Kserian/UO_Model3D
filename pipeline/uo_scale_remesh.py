@@ -1,9 +1,10 @@
 """A heavy sculpt (millions of vertices, authored large) -> a small solid glb at UO size, placed in the model's coordinates (metres, Z up, face to -Y).
 
-    python uo_scale_remesh.py IN.glb OUT.glb --scale 0.23 [--voxel 0.0035] [--tris 40000] [--move X Y Z] [--cut-z Z] [--stretch SX SY SZ] [--taper TOP_W END_W POWER]
+    python uo_scale_remesh.py IN.glb OUT.glb --scale 0.23 [--voxel 0.0035] [--tris 40000] [--move X Y Z] [--cut-z Z] [--stretch SX SY SZ] [--taper TOP_W END_W POWER] [--tuck Z0 Z1 DY]
 
 Scale first (the voxel size is then in metres of the result), a voxel remesh (the surface detail below the voxel size goes, the lobes of curls stay), triangulate,
 decimate to --tris, a plain grey material (the game dyes hair with a hue; uo_materials.py sets the brightness), then move by X Y Z; --cut-z removes everything above that height (after the move; the cut is closed by a flat cap).
+--tuck Z0 Z1 DY: above Z0 the beard is pushed backwards (+y) by up to DY m (smoothstep, full at Z1): its top goes into the head, so the head hides it and no flat top edge shows under the chin.
 --taper: the width (x) of the result is brought to a profile that is TOP_W m at the top (the jaw), END_W m at the tip, TOP_W..END_W falling as (1 - t) ** POWER along the height t: a beard whose widest part is in the middle (a sculpt of a diamond shape) becomes widest at the chin like the original beards. The model is not otherwise changed
 (a model made for the UO head can be placed by hand: --move; recipe "prepare": {"AUTOFIT": false, "FIT": false}). Needs bpy (4.2).
 """
@@ -19,6 +20,7 @@ ap.add_argument("--tris", type=int, default=40000)
 ap.add_argument("--move", type=float, nargs=3, default=[0.0, 0.0, 0.0])
 ap.add_argument("--cut-z", type=float, default=None)
 ap.add_argument("--taper", type=float, nargs=3, default=None, metavar=("TOP_W", "END_W", "POWER"))
+ap.add_argument("--tuck", type=float, nargs=3, default=None, metavar=("Z0", "Z1", "DY"))
 ap.add_argument("--stretch", type=float, nargs=3, default=[1.0, 1.0, 1.0], help="extra width / depth / height factors on top of --scale")
 a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
 
@@ -42,6 +44,11 @@ d = ob.modifiers.new("d", "DECIMATE"); d.ratio = min(1.0, a.tris / len(me.polygo
 for p in me.polygons:
     p.use_smooth = True
 me.transform(Matrix.Translation(a.move))
+if a.tuck:
+    z0_, z1_, dy_ = a.tuck
+    for v in me.vertices:
+        t_ = min(max((v.co.z - z0_) / max(z1_ - z0_, 1e-6), 0.0), 1.0); v.co.y += dy_ * t_ * t_ * (3 - 2 * t_)
+    me.update()
 if a.cut_z is not None:
     bm = bmesh.new(); bm.from_mesh(me)
     res = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(0, 0, a.cut_z), plane_no=(0, 0, 1), clear_outer=True)

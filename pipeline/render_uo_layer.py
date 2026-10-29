@@ -47,6 +47,8 @@ ANCHOR = (128, 192)                # UO anchor pixel inside the canvas (world po
                                    # 256x256 / (128, 192) holds 444 of the 449 people / equipment animations of the Nelderim client
                                    # (the original body frames are 136x120 with anchor (68, 86); use that pair for the old size)
 CLOTHING = "Clothing"              # collection with the clothing / equipment meshes
+ITEM_MOTION = ""                   # JSON file: the clothing items do not follow the skeleton but hang from a point of a bone: translate only, no turn (a long beard that must not swing with the roll of the head), plus a per-frame shift in pixels
+                                   # {"bone": "head", "pivot": [x, y, z] (m, rest), "shift": {"ACTION:DIR": [[dx, dy], ...]}}; the shift is applied to the 3D item BEFORE the body hides it (hands, head). Scene property uo_item_motion or this variable
 SHADOW_SUN_K = 1.0                 # calibration of the Sun of the own shadow (uo_materials.py SHADOW): 1 = a lit surface has (1 - s) of the UO diffuse light (checked with test_shadow.py)
 CLOAK_SWING = 1.0                  # cloaks (uo_cloth type cloak): scale of the swing taken from the original cloak (0 = hangs as bound)
 CLOTH_SIM = 1                      # 1 = add the cloth simulation of uo_cloth_sim.py (cloth_sim.npz next to the .blend, if there is one) to the push of the legs
@@ -131,6 +133,34 @@ rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
 clothes = [o for o in bpy.data.collections[CLOTHING].all_objects if o.type == "MESH"] if CLOTHING in bpy.data.collections else []
 HAS_CLOTH = any(o.get("uo_cloth") for o in clothes if not o.hide_render)
+
+MOTION, MOTION_BASIS = {}, {}
+_mpath = sc.get("uo_item_motion", ITEM_MOTION)
+if _mpath and LAYER == "clothing" and clothes:
+    MOTION = json.load(open(bpy.path.abspath(_mpath)))
+    for _o in clothes:
+        for _m in [m for m in _o.modifiers if m.type == "ARMATURE"]:
+            _o.modifiers.remove(_m)                          # in memory only: the item hangs from the bone, it is not skinned
+        MOTION_BASIS[_o.name] = _o.matrix_basis.copy()
+
+
+def item_motion(a, i, d):
+    """the items to the place their hanging point has on the posed bone (translation only) + the pixel shift of this frame; armature space = the space of the parent"""
+    if not MOTION:
+        return
+    from mathutils import Matrix
+    bpy.context.view_layer.update()
+    pv = Vector(MOTION["pivot"]); pb = rig.pose.bones[MOTION.get("bone", "head")]; rb = rig.data.bones[MOTION.get("bone", "head")]
+    delta = (pb.matrix @ rb.matrix_local.inverted() @ pv) - pv
+    sh = MOTION.get("shift", {}).get("%d:%d" % (a, d))
+    w = Vector((0.0, 0.0, 0.0))
+    if sh and i < len(sh):
+        R = sc.camera.matrix_world.to_3x3(); ppm = sc.get("uo_px_per_m", 36.0)
+        w = (R @ Vector((1.0, 0.0, 0.0))) * (sh[i][0] / ppm) + (R @ Vector((0.0, 1.0, 0.0))) * (-sh[i][1] / ppm)
+        w = rig.matrix_world.inverted().to_3x3() @ w
+    for o in clothes:
+        o.matrix_basis = Matrix.Translation(delta + w) @ MOTION_BASIS[o.name]
+    bpy.context.view_layer.update()
 
 # BODY_GAP: bound items pushed out of the posed limbs / head, per UO frame (shape key "uo_fix", Armature off)
 FIX_MESH, FIX_CACHE, FIX_ON, FIX_ADDED = {}, {}, {}, set()
@@ -1096,6 +1126,8 @@ def frame_job():
                         body_fix(a, i)
                     if LAYER != "body":
                         flail_fix(a, i)
+                    if MOTION:
+                        item_motion(a, i, d)
                     orig = original(a, i, d) if EXACT_ANY else None
                     orig_m = orig[..., 3] > 0 if orig is not None else None
                     if LAYER == "body" and EXACT_BODY and orig is not None:
