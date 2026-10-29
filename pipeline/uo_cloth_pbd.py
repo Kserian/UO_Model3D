@@ -16,7 +16,7 @@ Settings (key=value): substeps (8 per UO frame), iters (60 Gauss-Seidel iteratio
 damp (1.5 1/s: air drag + internal damping; a heavier, calmer cloth: 3-5; 0 = a pendulum that never stops), gravity (1: x 9.81), friction (0.3: share of the velocity a vertex loses in a sub-step
 in which it touches a leg), margin (0.015 m: the cloth stays this far outside the capsule), rpct (95: percentile of the skin distance that is the radius of a capsule; with 75 the thigh of the real body stood out of the capsule and 27-43 % of the banner sat inside the leg in the run, so the legs hid it), upper (z_top - 0.02 m: the band is
 the vertices above z_top + (upper - 0.02)), ramp (0.04 m: how far below the band the pin fades out to zero), island (1), preroll (20 UO-frame durations... in frames of 1/fps x STEP), cycles (2),
-lie (-1 = as the scene property uo_cloth_lie; 1 = the falls 21, 22 are not simulated: the renderer lays the cloth along the legs, which keeps it on the body in every frame of a death; 0 = simulated), glue (0; 0.025 m = pieces of the mesh that are not connected to the cloth, e.g. the strips of uo_fill_banner_gap.py, are tied to the nearest vertices within this distance), smooth (0.03 m: the move averaged over this distance in space, 2 passes, as in uo_cloth_sim.py; 0 = off), abs (0; 1 = also write <out>.abs.npz with the positions themselves), mounted (not simulated, as there).
+wrap (0 = off; 1 = the band and the fade below it are shrink-wrapped onto the body in every UO frame: the part of the distance to the skin above wrap_gap m (0.006) is removed by wrap_k (0.85), at most wrap_max m (0.12), along the normal of the nearest point of the posed body; a vertex inside the skin is pushed out to wrap_gap; the weight is the pin weight), project (0 = off; > 0 = the clearance in m (0.008) kept from the REAL posed body mesh, arms and hands included, in every output frame: the legs and the pelvis are capsules in the solver, the arms and hands are nothing, so a thigh or a hand poked through the cloth and the renderer, which hides what the body mesh is in front of, cut holes; every free vertex nearer to the skin than this, or inside it, is moved out along the normal of the nearest point), sdf (0 = off; 1 = the cloth also collides, in every iteration, with a signed distance field of the REAL posed body mesh (grid of 2 cm, blended between the UO frames), staying sdf_clear m (0.008) outside it: arms, hands, the whole leg and the buttocks, not only the capsules), caps (1 = the capsules of the legs / the pelvis are used; 0 = only the SDF), horse (1 = the horse mesh of the mounted actions is part of the SDF; needs mounted=1), lie (-1 = as the scene property uo_cloth_lie; 1 = the falls 21, 22 are not simulated: the renderer lays the cloth along the legs, which keeps it on the body in every frame of a death; 0 = simulated), glue (0; 0.025 m = pieces of the mesh that are not connected to the cloth, e.g. the strips of uo_fill_banner_gap.py, are tied to the nearest vertices within this distance), smooth (0.03 m: the move averaged over this distance in space, 2 passes, as in uo_cloth_sim.py; 0 = off), abs (0; 1 = also write <out>.abs.npz with the positions themselves), mounted (not simulated, as there).
 """
 import json, os, sys, time
 import numpy as np
@@ -28,7 +28,7 @@ import cloth_lib as cl                                                      # no
 STEP = 3
 LOOP = {0, 1, 2, 3, 4, 5, 6, 7, 8}
 CFG = dict(substeps=8, iters=60, stretch=1.0, bend=0.15, damp=1.5, gravity=1.0, friction=0.3, margin=0.015, rpct=95.0, upper=0.0, ramp=0.04, island=1.0, preroll=20, cycles=2,
-           smooth=0.03, abs=0.0, floor=0.012, mounted=0.0, glue=0.0, lie=-1.0)
+           smooth=0.03, abs=0.0, floor=0.012, mounted=0.0, glue=0.0, lie=-1.0, wrap=0.0, wrap_gap=0.006, wrap_k=0.85, wrap_max=0.12, project=0.0, sdf=0.0, sdf_clear=0.008, caps=1.0, horse=0.0)
 
 try:
     from numba import njit
@@ -38,7 +38,29 @@ except ImportError:                                                         # sl
 
 
 @njit(cache=True)
-def substep(x, v, tgt, pinw, invm, E, L0, B, LB, ch, ct, cr, dt, g, damp, iters, kst, kbe, fric, floor, nst):
+def sdf_sample(G0, G1, al, org, hh, px, py, pz):
+    """signed distance (m, > 0 outside) and its gradient of the blend (1 - al) G0 + al G1 of two grids at a point; (1e9, 0, 0, 0) outside the grid"""
+    nx, ny, nz = G0.shape
+    fx = (px - org[0]) / hh; fy = (py - org[1]) / hh; fz = (pz - org[2]) / hh
+    ix = int(np.floor(fx)); iy = int(np.floor(fy)); iz = int(np.floor(fz))
+    if ix < 0 or iy < 0 or iz < 0 or ix >= nx - 1 or iy >= ny - 1 or iz >= nz - 1:
+        return 1e9, 0.0, 0.0, 0.0
+    tx = fx - ix; ty = fy - iy; tz = fz - iz
+    v = 0.0; gx = 0.0; gy = 0.0; gz = 0.0
+    for a in range(2):
+        wx = tx if a else 1.0 - tx; dx = 1.0 if a else -1.0
+        for b in range(2):
+            wy = ty if b else 1.0 - ty; dy = 1.0 if b else -1.0
+            for c in range(2):
+                wz = tz if c else 1.0 - tz; dz = 1.0 if c else -1.0
+                q = (1.0 - al) * G0[ix + a, iy + b, iz + c] + al * G1[ix + a, iy + b, iz + c]
+                v += wx * wy * wz * q
+                gx += dx * wy * wz * q; gy += wx * dy * wz * q; gz += wx * wy * dz * q
+    return v, gx / hh, gy / hh, gz / hh
+
+
+@njit(cache=True)
+def substep(x, v, tgt, pinw, invm, E, L0, B, LB, ch, ct, cr, dt, g, damp, iters, kst, kbe, fric, floor, nst, G0, G1, al, org, hh, clear, use_sdf):
     """one sub-step: predict, project the constraints and the collisions, new velocity"""
     n = x.shape[0]; p = np.empty_like(x); hit = np.zeros(n, np.bool_)
     for i in range(n):
@@ -95,6 +117,14 @@ def substep(x, v, tgt, pinw, invm, E, L0, B, LB, ch, ct, cr, dt, g, damp, iters,
                     s = (cr[c] - d) / d
                     p[i, 0] += qx * s; p[i, 1] += qy * s; p[i, 2] += qz * s
                     hit[i] = True
+            if use_sdf > 0:                                                 # the real body (and the horse): out of the signed distance field of the mesh
+                sv, sgx, sgy, sgz = sdf_sample(G0, G1, al, org, hh, p[i, 0], p[i, 1], p[i, 2])
+                if sv < clear:
+                    gl = np.sqrt(sgx * sgx + sgy * sgy + sgz * sgz)
+                    if gl > 1e-9:
+                        s_ = (clear - sv) / gl
+                        p[i, 0] += sgx * s_; p[i, 1] += sgy * s_; p[i, 2] += sgz * s_
+                        hit[i] = True
             if p[i, 2] < floor:
                 p[i, 2] = floor; hit[i] = True
     for i in range(n):
@@ -152,7 +182,7 @@ def run_parallel(blend, out, only, jobs, extra):
     for e in extra:
         if e.startswith("lie=") and float(e[4:]) >= 0:
             lie = float(e[4:]) > 0
-    names = [a.name for a in sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"])) if not (23 <= int(a["uo_action"]) <= 29) and not (lie and int(a["uo_action"]) in (21, 22)) and (only is None or a.name in only)]
+    names = [a.name for a in sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"])) if (not (23 <= int(a["uo_action"]) <= 29) or "mounted=1" in extra or "mounted=1.0" in extra) and not (lie and int(a["uo_action"]) in (21, 22)) and (only is None or a.name in only)]
     groups = [names[k::jobs] for k in range(jobs)]
     tmp = tempfile.mkdtemp(prefix="uo_cloth_pbd_"); procs = []
     for k, g in enumerate(groups):
@@ -201,7 +231,9 @@ def main():
         raise SystemExit("no loose garment (custom property uo_cloth) in the Clothing collection")
     item = items[0]; prm = json.loads(item["uo_cloth"]); nv = len(item.data.vertices)
     for o in bpy.data.objects:
-        if o.type == "MESH" and o not in (body, item) and "Clothing" not in [c.name for c in o.users_collection]:
+        if o.type == "MESH" and o.name.startswith("Horse_"):
+            o.hide_viewport = cfg["horse"] <= 0                                          # the horse is a collider of the mounted actions (horse=1)
+        elif o.type == "MESH" and o not in (body, item) and "Clothing" not in [c.name for c in o.users_collection]:
             o.hide_viewport = True
     for o in items[1:]:
         o.hide_viewport = True
@@ -255,6 +287,74 @@ def main():
                                 z_top=prm["z_top"], z_hem=prm["z_hem"], ramp=prm.get("ramp", 0.15), drop=prm.get("drop", 1.0))
         return sk + push, sk
 
+    def body_tree():
+        """BVH of the body mesh in the current pose (world space)"""
+        from mathutils import Vector
+        from mathutils.bvhtree import BVHTree
+        dg = bpy.context.evaluated_depsgraph_get(); eb = body.evaluated_get(dg); mb = eb.to_mesh(); mb.transform(eb.matrix_world)
+        tree = BVHTree.FromPolygons([v.co.copy() for v in mb.vertices], [tuple(p.vertices) for p in mb.polygons]); eb.to_mesh_clear()
+        return tree
+
+    def project_out(P, tree, clear):
+        """every free vertex of P nearer than `clear` to the body, or inside it, moved out along the normal of the nearest point"""
+        from mathutils import Vector
+        P = P.copy(); n_moved = 0
+        for k in FREE_IDX:
+            loc, nrm, _, dist = tree.find_nearest(Vector(P[k]))
+            if loc is None:
+                continue
+            nn = np.array(nrm); g = float(np.dot(P[k] - np.array(loc), nn))
+            if g < clear:
+                P[k] += (clear - g) * nn; n_moved += 1
+        return P, n_moved
+
+    def wrap_band(sk):
+        """the pinned part follows the skeleton, but the skinned band stands 2-4 cm off the posed skin: shrink-wrap it (see `wrap`)"""
+        from mathutils import Vector
+        from mathutils.bvhtree import BVHTree
+        dg = bpy.context.evaluated_depsgraph_get(); eb = body.evaluated_get(dg); mb = eb.to_mesh(); mb.transform(eb.matrix_world)
+        tree = BVHTree.FromPolygons([v.co.copy() for v in mb.vertices], [tuple(p.vertices) for p in mb.polygons]); eb.to_mesh_clear()
+        out = sk.copy(); g0 = cfg["wrap_gap"]
+        for k in WRAP_IDX:
+            loc, nrm, _, dist = tree.find_nearest(Vector(sk[k]))
+            if loc is None:
+                continue
+            n = np.array(nrm); l = np.array(loc); g = float(np.dot(sk[k] - l, n))                         # signed: > 0 outside
+            new = g0 + (g - g0) * (1.0 - cfg["wrap_k"]) if g > g0 else g0                                 # pulled in, or pushed out of the skin
+            new = max(new, g - cfg["wrap_max"])
+            out[k] = sk[k] + pinw[k] * (new - g) * n
+        return out
+
+    GORG = np.array([-0.7, -0.7, 0.0]); GH = 0.02; GDIM = (71, 71, 66)
+    ZERO_G = np.zeros((2, 2, 2), np.float32)
+
+    def build_sdf(a, i):
+        """signed distance (m, > 0 outside) of the posed body mesh (and the horse of the mounted actions with horse=1) on a regular grid, the sign from the normal of the nearest face"""
+        from mathutils import Vector
+        from mathutils.bvhtree import BVHTree
+        from scipy.spatial import cKDTree
+        dg = bpy.context.evaluated_depsgraph_get(); verts = []; polys = []
+        obs = [body]
+        if cfg["horse"] > 0 and 23 <= a <= 29:
+            hz = bpy.data.objects.get("Horse_a%d_f%d" % (a, i))
+            if hz is not None:
+                obs.append(hz)
+        for ob in obs:
+            eo = ob.evaluated_get(dg); mb = eo.to_mesh(); mb.transform(eo.matrix_world); off = len(verts)
+            verts += [v.co.copy() for v in mb.vertices]; polys += [tuple(off + k for k in p.vertices) for p in mb.polygons]; eo.to_mesh_clear()
+        tree = BVHTree.FromPolygons(verts, polys)
+        pts = np.array([(v.x, v.y, v.z) for v in verts])
+        gx, gy, gz = np.meshgrid(*[GORG[k] + GH * np.arange(GDIM[k]) for k in range(3)], indexing="ij")
+        C = np.stack([gx, gy, gz], -1).reshape(-1, 3)
+        dnear, _ = cKDTree(pts).query(C)
+        G = np.full(len(C), 0.5, np.float32)
+        for k in np.nonzero(dnear < 0.25)[0]:
+            loc, nrm, _, dist = tree.find_nearest(Vector(C[k]))
+            if loc is None:
+                continue
+            G[k] = dist if np.dot(C[k] - np.array(loc), np.array(nrm)) >= 0 else -dist
+        return G.reshape(GDIM)
+
     # --- which vertices the skeleton holds ------------------------------------------------------------------------------------------------------------------------------------
     z = Vr[:, 2]; top = prm["z_top"] - 0.02 + cfg["upper"]
     pinw = np.clip(1.0 - (top - z) / max(cfg["ramp"], 1e-6), 0.0, 1.0)
@@ -266,8 +366,10 @@ def main():
         loose = ~held[comp]; pinw = np.where(loose, 1.0, pinw)
         print("uo_cloth_pbd: %d vertices pinned (the band), %d in the fade, %d in %d loose pieces follow the skin" % (int((pinw >= 0.999).sum() - loose.sum()), int(((pinw > 0) & (pinw < 0.999)).sum()), int(loose.sum()), int((~held).sum())), flush=True)
     invm = np.where(pinw >= 0.999, 0.0, 1.0)
+    FREE_IDX = np.nonzero(pinw < 0.999)[0]
+    WRAP_IDX = np.nonzero((pinw > 0) & ~(loose if cfg["island"] > 0 else np.zeros(nv, bool)))[0]
     margin = cfg["margin"]
-    res = {}; ABS = {}
+    res = {}; ABS = {}; TREES = {}
     acts = sorted([a for a in bpy.data.actions if "uo_action" in a], key=lambda a: int(a["uo_action"]))
     from bpy_compat import action_fcurves
     for act in acts:
@@ -276,12 +378,18 @@ def main():
             continue                                                                        # riding and (scene uo_cloth_lie > 0) the falls are not simulated: the renderer lays the cloth along the legs
         t0 = time.time(); rig.animation_data.action = act; rig["uo_direction"] = 0
         nfr = int(act["uo_frames"]); loop = a in LOOP
-        T = []; S = []; CH = []; CT = []
+        T = []; S = []; CH = []; CT = []; TREE = []; GR = []
         for i in range(nfr):
             sc.frame_set(1 + i * STEP); rig.update_tag(); bpy.context.view_layer.update()
             skin = skin_mats(); base, sk = kinematic(skin); h, t = leg_state(skin, caps)
+            if cfg["wrap"] > 0:
+                sk = wrap_band(sk)
             T.append(base); S.append(sk); CH.append(h); CT.append(t)
-        T = np.array(T); S = np.array(S); CH = np.array(CH); CT = np.array(CT); cr = caps.radius + margin
+            if cfg["project"] > 0:
+                TREE.append(body_tree())
+            if cfg["sdf"] > 0:
+                GR.append(build_sdf(a, i))
+        T = np.array(T); S = np.array(S); CH = np.array(CH); CT = np.array(CT); cr = (caps.radius + margin) if cfg["caps"] > 0 else np.full(len(caps.radius), -1.0)
         x = T[0].copy(); v = np.zeros_like(x)
         pre = int(round(cfg["preroll"])); cyc = int(cfg["cycles"]) if loop else 1
         seq = [0] * pre + [i for _ in range(cyc) for i in range(nfr)]                  # frame indices in the order they are played; the preroll holds the first pose
@@ -292,7 +400,8 @@ def main():
             for s in range(ns):
                 al = 0.0 if hold else (s + 1) / ns
                 tgt = S[i] + al * (S[j] - S[i]); ch = CH[i] + al * (CH[j] - CH[i]); ct = CT[i] + al * (CT[j] - CT[i])
-                substep(x, v, tgt, pinw, invm, E, L0, B, LB, ch, ct, cr, dt, 9.81 * cfg["gravity"], cfg["damp"], int(cfg["iters"]), cfg["stretch"], cfg["bend"], cfg["friction"], cfg["floor"], 0)
+                substep(x, v, tgt, pinw, invm, E, L0, B, LB, ch, ct, cr, dt, 9.81 * cfg["gravity"], cfg["damp"], int(cfg["iters"]), cfg["stretch"], cfg["bend"], cfg["friction"], cfg["floor"], 0,
+                       GR[i] if cfg["sdf"] > 0 else ZERO_G, GR[j] if cfg["sdf"] > 0 else ZERO_G, al, GORG, GH, cfg["sdf_clear"], 1 if cfg["sdf"] > 0 else 0)
             if not loop and q == pre - 1:                                                # the state after the preroll is frame 0 of an action that is played once
                 keep[0] = x.copy()
             if q >= pre and q >= len(seq) - nfr:                                         # the last loop: the state at the end of UO frame i is the pose of frame j = i + 1
@@ -302,10 +411,12 @@ def main():
             if c is None:
                 c = x.copy() if i == nfr - 1 else T[i]
             res["%d_%d" % (a, i)] = (c - T[i]).astype(np.float32)
+            if cfg["project"] > 0:
+                TREES["%d_%d" % (a, i)] = (TREE[i], T[i])
             if cfg["abs"]:
                 ABS["%d_%d" % (a, i)] = c.astype(np.float16)
         d = np.array([np.linalg.norm(res["%d_%d" % (a, i)], axis=1).max() for i in range(nfr)])
-        print("action %2d %-26s %d frames, loop %s, %.0f s, largest cloth move %.2f m" % (a, act.name, nfr, loop, time.time() - t0, d.max()), flush=True)
+        print("action %2d %-26s %d frames, loop %s, %.0f s, largest cloth move %.2f m%s" % (a, act.name, nfr, loop, time.time() - t0, d.max(), ""), flush=True)
     if cfg["smooth"] > 0 and res:
         from scipy.spatial import cKDTree
         from scipy.sparse import coo_matrix
@@ -318,6 +429,15 @@ def main():
             for _ in range(2):
                 D = (K @ D) / ks[:, None]
             res[k] = D.astype(np.float32)
+    if cfg["project"] > 0 and res:
+        tot = 0
+        for k in res:
+            tree, Tk = TREES[k]
+            P, nm = project_out(Tk + res[k].astype(np.float64), tree, cfg["project"])
+            res[k] = (P - Tk).astype(np.float32); tot += nm
+            if cfg["abs"]:
+                ABS[k] = P.astype(np.float16)
+        print("uo_cloth_pbd: %d vertices moved out of the body mesh (clearance %.0f mm) in %d frames" % (tot, 1000 * cfg["project"], len(res)), flush=True)
     np.savez_compressed(out, **res)
     if ABS:
         np.savez_compressed(out + ".abs.npz", **ABS)

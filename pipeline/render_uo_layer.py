@@ -19,6 +19,8 @@ from mathutils.bvhtree import BVHTree
 
 LAYER = "clothing"
 ONLY = []                          # e.g. ["04_stand", "00_walk_unarmed"]; empty = all 35 UO actions
+ONLY_FRAMES = []                   # e.g. [(2, 5), (4, 0)]: only these (direction, frame) pairs of the actions in ONLY (a quick look at single frames; the .vd of such a run is incomplete: use it
+                                   # for the PNGs, and render the whole action in a later run into the same OUT_DIR)
 OUTLINE = 0.38                     # dark 1-px outline like UO art (measured on the original body); 1.0 = off. Items: see OUTLINE_TARGET
 OUTLINE_TARGET = 0.38              # items without their own scene "uo_outline": the rim is darkened by one factor for the whole render so that the mean brightness
                                    # of the rim pixels / the pixels one in = this (the client's items 0.33-0.43, mean 0.38, body 0.40; with a fixed 0.38 a small
@@ -29,6 +31,10 @@ SAMPLES = 512                      # Cycles samples per pixel for items (adaptiv
                                    # render (64 samples: 2 %, 512: reference; time 11 -> 22 s for 2 actions). The body layer keeps 1 (its colours are the originals)
 SUBPIXEL = 1                       # per item (scene "uo_subpixel"): G > 1 = every pixel is the AVERAGE of a G x G grid of sub-pixel camera positions (one render per sub-pixel camera position, SAMPLES / G^2 samples each, at least SUBPIXEL_MIN_SAMPLES)
                                    # instead of the single point at its centre: the area average of the pixel (mosaic textures, fine patterns: 4 gave 2x closer to the area-average reference than point sampling)
+DEPTH_LINE = 0.0                   # clothing: > 0 = a seam where one part of the item lies in front of another (panels, folds, a strap over the cloth): the pixel that is farther than a neighbouring item
+                                   # pixel by more than DEPTH_THR m is darkened by up to this share (full at twice the threshold): one pixel, like the dark creases of the UO cloth. Without it
+                                   # two panels of the same colour one behind the other merge into one patch. A depth render per frame. 0 = off; scene properties uo_depth_line, uo_depth_thr
+DEPTH_THR = 0.03                   # m
 SHADE_BODY = 0.0                   # per item (scene "uo_shade_body", 0..1): contact shadow of the body parts in front of the item (hands, arms, head: what hides the item): the item pixels near them are darkened by up to this
                                    # share, smoothly over SHADE_WIDTH px (no line): the sides of a robe next to the hands. Per frame, in the posed picture
 SHADE_SLEEVE = 0.0                 # per item (scene "uo_shade_sleeve", 0..1): the same where a sleeve and the torso part of the item meet (needs uo_conform_item.py: attribute uo_region): the torso next to the arm
@@ -109,7 +115,8 @@ W, H = CANVAS
 DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original frames sit inside the canvas
 
 sc = bpy.context.scene
-MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
+MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))
+MIN_PIECE_MOUNTED = int(sc.get("uo_min_piece_mounted", MIN_PIECE))   # the riding actions 23-29: the hanging cloth leaves strands of a few pixels on the horse, bigger limit for those       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
@@ -119,7 +126,10 @@ CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
 LIE_W = {}
 FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
 INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
+DEPTH_LINE = float(sc.get("uo_depth_line", DEPTH_LINE))
+DEPTH_THR = float(sc.get("uo_depth_thr", DEPTH_THR))
 EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
+CLOTH_MOUNTED = float(sc.get("uo_cloth_mounted", CLOTH_MOUNTED))   # 0 = the riding actions use the simulation of uo_cloth_pbd.py (mounted=1) on top of the plain push of the legs
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
 SUBPIXEL = int(sc.get("uo_subpixel", SUBPIXEL))
 SUBPIXEL_MIN_SAMPLES = int(sc.get("uo_subpixel_samples", 16))
@@ -998,6 +1008,57 @@ def region_labels(a, i, d):
     return lab
 
 
+def depth_map(a, i, d):
+    """DEPTH_LINE: the distance of the item from the camera per pixel (m, relative; NaN where there is no item): a render of the item (without the body) as emission of its view depth, 1 sample, raw colour, 16 bit"""
+    global SUBPIXEL
+    obs = [o for o in clothes if not o.hide_render]
+    m = bpy.data.materials.get("uo_depth_label")
+    cam = sc.camera
+    fw = np.array(cam.matrix_world.to_3x3() @ __import__("mathutils").Vector((0, 0, -1))); c0 = np.array([0.0, 0.0, 0.9])
+    zc = float(np.dot(c0 - np.array(cam.matrix_world.translation), fw))
+    if m is None:
+        m = bpy.data.materials.new("uo_depth_label"); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+        cd_ = nt.nodes.new("ShaderNodeCameraData"); sb = nt.nodes.new("ShaderNodeMath"); sb.operation = "SUBTRACT"; sb.name = "dep_sub"
+        dv = nt.nodes.new("ShaderNodeMath"); dv.operation = "DIVIDE"; dv.inputs[1].default_value = 2.0
+        ad = nt.nodes.new("ShaderNodeMath"); ad.operation = "ADD"; ad.inputs[1].default_value = 0.5
+        em = nt.nodes.new("ShaderNodeEmission"); out = nt.nodes.new("ShaderNodeOutputMaterial")
+        nt.links.new(cd_.outputs["View Z Depth"], sb.inputs[0]); nt.links.new(sb.outputs[0], dv.inputs[0]); nt.links.new(dv.outputs[0], ad.inputs[0])
+        nt.links.new(ad.outputs[0], em.inputs["Color"]); nt.links.new(em.outputs[0], out.inputs["Surface"])
+    m.node_tree.nodes["dep_sub"].inputs[1].default_value = zc                       # value = (depth - zc) / 2 + 0.5: 2 m range
+    keep = {o.name: [sl.material for sl in o.material_slots] for o in obs}
+    for o in obs:
+        for sl in o.material_slots:
+            sl.material = m
+    st = (sc.cycles.samples, sc.cycles.use_adaptive_sampling, sc.view_settings.view_transform, sc.render.image_settings.color_depth, SUBPIXEL)
+    sc.cycles.samples = 1; sc.cycles.use_adaptive_sampling = False; sc.view_settings.view_transform = "Raw"; sc.render.image_settings.color_depth = "16"; SUBPIXEL = 1
+    try:
+        px = render_frame(a, i, d, "hidden")
+    finally:
+        sc.cycles.samples, sc.cycles.use_adaptive_sampling, sc.view_settings.view_transform, sc.render.image_settings.color_depth, SUBPIXEL = st
+        for o in obs:
+            for sl, mt in zip(o.material_slots, keep[o.name]):
+                sl.material = mt
+    dep = (px[..., 0] - 0.5) * 2.0
+    dep[px[..., 3] < 0.5] = np.nan
+    return dep
+
+
+def depth_lines(px, dep, thr, k):
+    """DEPTH_LINE: the item pixel that lies farther than a 4-neighbour item pixel by more than `thr` is darkened by k * clip((jump - thr) / thr, 0, 1)"""
+    on = (px[..., 3] >= 0.5) & ~np.isnan(dep)
+    dz = np.where(on, dep, 0.0); jump = np.zeros(on.shape, np.float32)
+    for sy, sx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        q = np.roll(dz, (sy, sx), (0, 1)); qo = np.roll(on, (sy, sx), (0, 1))
+        if sy > 0: qo[:sy] = False
+        if sy < 0: qo[sy:] = False
+        if sx > 0: qo[:, :sx] = False
+        if sx < 0: qo[:, sx:] = False
+        jump = np.maximum(jump, np.where(on & qo, dz - q, 0.0))
+    f = 1.0 - k * np.clip((jump - thr) / thr, 0.0, 1.0)
+    px = px.copy(); px[on, :3] *= f[on][:, None]
+    return px
+
+
 def inner_line(px, lab, k):
     """INNER_LINE: torso pixels next to a sleeve pixel darkened to k"""
     on = px[..., 3] >= 0.5
@@ -1115,6 +1176,8 @@ def frame_job():
                 os.makedirs(fdir, exist_ok=True)
                 frames, meta_frames = [], []
                 for i in range(int(act["uo_frames"])):
+                    if ONLY_FRAMES and (d, i) not in ONLY_FRAMES:
+                        continue
                     if os.path.exists(os.path.join(root, "STOP")):      # create an empty file named STOP to cancel
                         raise KeyboardInterrupt("STOP file found in " + root)
                     set_tile(a, i, d)
@@ -1129,11 +1192,17 @@ def frame_job():
                         rgba = orig                                    # the original UO body frame, pixel for pixel
                     elif LAYER == "clothing" and HOLDOUT_MARGIN > 0:
                         free = render_frame(a, i, d, "hidden")
+                        if sc.get("uo_dump_free"):                    # debug: the item without the body, float RGBA (premultiplied as rendered), next to the frames
+                            np.save(os.path.join(fdir, "free_%02d.npy" % i), free)
                         hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
+                        if sc.get("uo_dump_stats"):                   # debug: item pixels before / after the body hides some of them, per frame -> cut_stats.json in OUT_DIR
+                            CUT_STATS["%d.%d.%d" % (a, d, i)] = [int((free[..., 3] >= 0.5).sum()), int((hold[..., 3] >= 0.5).sum())]
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
                         lab = region_labels(a, i, d) if (INNER_LINE > 0 or SHADE_SLEEVE > 0) else None
+                        if DEPTH_LINE > 0:
+                            px = depth_lines(px, depth_map(a, i, d), DEPTH_THR, DEPTH_LINE)
                         if INNER_LINE > 0 and lab is not None:
                             px = inner_line(px, lab, INNER_LINE)
                         if SHADE_BODY > 0 or SHADE_SLEEVE > 0:
@@ -1144,14 +1213,14 @@ def frame_job():
                         if DESPECKLE > 0:
                             rgba = despeckle(rgba, DESPECKLE)
                         if MIN_PIECE > 0:
-                            rgba = drop_small_pieces(rgba, MIN_PIECE)
+                            rgba = drop_small_pieces(rgba, MIN_PIECE_MOUNTED if 23 <= a <= 29 else MIN_PIECE)
                     elif LAYER == "clothing":
                         px = render_frame(a, i, d, "holdout")
                         if EXACT_BODY and orig is not None:
                             px = exact_clothing(px, render_frame(a, i, d, "hidden"), orig_m, body_coverage())
                         rgba = uo_post(px)
                         if MIN_PIECE > 0:
-                            rgba = drop_small_pieces(rgba, MIN_PIECE)
+                            rgba = drop_small_pieces(rgba, MIN_PIECE_MOUNTED if 23 <= a <= 29 else MIN_PIECE)
                     else:
                         px = render_frame(a, i, d, "visible")
                         rgba = uo_post(px, keep=orig_m if (EXACT_COLORS and orig_m is not None) else None)
@@ -1186,8 +1255,21 @@ def restore_all():
     sc.render.resolution_x, sc.render.resolution_y = OW, OH
 
 
+CUT_STATS = {}
+
+
 def finish():
     global meta_blocks
+    if CUT_STATS:
+        old = {}
+        if os.path.exists(os.path.join(root, "cut_stats.json")):
+            old = json.load(open(os.path.join(root, "cut_stats.json")))
+        old.update(CUT_STATS); json.dump(old, open(os.path.join(root, "cut_stats.json"), "w"))
+    if ONLY_FRAMES:
+        print("render_uo_layer: ONLY_FRAMES run: the PNGs are in", root, "(no meta.json / .vd)")
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        return
     if os.path.exists(tmp):
         os.remove(tmp)
     # actions rendered in EARLIER runs into the same folder are kept: each run can use a different item setup (e.g. another

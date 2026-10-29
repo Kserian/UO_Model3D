@@ -21,7 +21,12 @@
   "uo_behind_torso": 1,
   "uo_samples": 1024,
   "uo_edge_smooth": 3,
-  "uo_subpixel": 4
+  "uo_subpixel": 4,
+  "uo_cloth_mounted": 0,
+  "uo_depth_line": 0.45,
+  "uo_depth_thr": 0.035,
+  "uo_hide_erode": 1,
+  "uo_min_piece_mounted": 30
  },
  "sim": {
   "engine": "pbd",
@@ -29,7 +34,13 @@
   "upper": -0.04,
   "glue": 0.025,
   "rpct": 95,
-  "margin": 0.015
+  "margin": 0.015,
+  "wrap": 1,
+  "sdf": 1,
+  "project": 0.008,
+  "mounted": 1,
+  "horse": 1,
+  "lie": 0
  },
  "stretch": [
   0.87,
