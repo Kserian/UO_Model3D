@@ -441,6 +441,8 @@ if rg:                                                           # an item that 
         obs = [o for o in bpy.context.view_layer.objects if o.type == "MESH" and o.select_get()]
     run("uo_bind_item.py", PART=rg.get("part", "front"))
     for o in obs:
+        if rg.get("motion"):                                    # an own motion in some actions (item_motion.npz next to the .blend, render_uo_layer.py motion_fix)
+            o["uo_motion"] = 1
         for k in ("uo_no_body_gap", "uo_behind_torso"):         # not bent away from limbs; the torso hides the part of it that is behind it (a drum seen from the back)
             if rg.get(k[3:], True):
                 o[k] = 1

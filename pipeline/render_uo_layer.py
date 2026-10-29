@@ -364,6 +364,38 @@ def flail_fix(a, i):
         fix_on(o, FIX_CACHE[(o.name, a, i)].astype(np.float64))
 
 
+MOTION = {}
+
+
+def motion_fix(a, i):
+    """items with a motion of their own (custom property uo_motion; item_motion.npz next to the .blend: "a_i" -> 4x4 matrix, armature space, from the rest pose of the item to the pose of this frame):
+    the whole item is moved by that matrix instead of following its bone (a drum that falls off a character who dies and lies beside the body)"""
+    obs = [o for o in clothes if not o.hide_render and o.get("uo_motion")]
+    if not obs:
+        return
+    if "t" not in MOTION:
+        path = os.path.join(os.path.dirname(bpy.data.filepath), "item_motion.npz") if bpy.data.filepath else ""
+        MOTION["t"] = dict(np.load(path)) if path and os.path.exists(path) else {}
+        print("render_uo_layer: item motion %s (%d frames)" % (path, len(MOTION["t"])))
+    M = MOTION["t"].get("%d_%d" % (a, i))
+    for o in obs:
+        fix_off(o)
+    if M is None:
+        return
+    bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+    Mrig = np.array(rig.matrix_world)
+    for o in obs:
+        if (o.name, a, i, "motion") not in FIX_CACHE:
+            co = np.empty(len(o.data.vertices) * 3, np.float32); o.data.vertices.foreach_get("co", co); co = co.reshape(-1, 3).astype(np.float64)
+            Mo = np.linalg.inv(Mrig) @ np.array(o.matrix_world)                      # object -> armature (does not change with the direction)
+            Vr = co @ Mo[:3, :3].T + Mo[:3, 3]
+            ev, me, cur = evaluated_co(o, dg); Mw = np.array(ev.matrix_world); ev.to_mesh_clear()
+            Mi = np.linalg.inv(Mw) @ Mrig
+            X = Vr @ M[:3, :3].T + M[:3, 3]
+            FIX_CACHE[(o.name, a, i, "motion")] = (X @ Mi[:3, :3].T + Mi[:3, 3]).astype(np.float32)
+        fix_on(o, FIX_CACHE[(o.name, a, i, "motion")].astype(np.float64))
+
+
 def lie_drop(o, first, X, bvh, bco, E, deg):
     """CLOTH_LIE_DROP: the lying skirt (body space X) falls onto the posed body under it (ray straight down) or the ground; displacement in body space"""
     prm = json.loads(o["uo_cloth"]); n = len(o.data.vertices)
@@ -1096,6 +1128,7 @@ def frame_job():
                         body_fix(a, i)
                     if LAYER != "body":
                         flail_fix(a, i)
+                        motion_fix(a, i)
                     orig = original(a, i, d) if EXACT_ANY else None
                     orig_m = orig[..., 3] > 0 if orig is not None else None
                     if LAYER == "body" and EXACT_BODY and orig is not None:
