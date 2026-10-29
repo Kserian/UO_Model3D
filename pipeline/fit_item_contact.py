@@ -1,6 +1,6 @@
 """Per-frame distance of a rigid item to the ORIGINAL body in a side view: the item is moved along its parent's local y (towards the body) so that the visible gap between it and the original body sprite is the target one.
 
-    python fit_item_contact.py ITEM.blend RENDER_DIR --action 00_walk_unarmed [--action 01_walk_armed ...] [--parent pelvis] [--target 1.0] [--dir 2] [--body pipeline/body400.vd] [--out item_motion.npz]
+    python fit_item_contact.py ITEM.blend RENDER_DIR --action 00_walk_unarmed [--action 01_walk_armed ...] [--parent pelvis] [--target 1.0] [--only-above 1.6] [--cap 2.0] [--dir 2] [--body pipeline/body400.vd] [--out item_motion.npz]
 
 ITEM.blend: an item with a "rigid" recipe with "motion": true (property uo_motion) bound to the bone --parent, rendered once as it is: RENDER_DIR/clothing/frames/NN_action/dirK/NN.png (render_uo_layer.py, LAYER clothing).
 The gap of a frame: for every row of the item sprite the distance in pixels between its back edge and the nearest pixel of the original body (frames of --body, anchored like the sprites) on that row (a hand in front of the
@@ -38,7 +38,7 @@ def gap_px(render, act, d, i, body):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("blend"); ap.add_argument("render"); ap.add_argument("--action", action="append", required=True)
     ap.add_argument("--parent", default="pelvis"); ap.add_argument("--target", type=float, default=1.0); ap.add_argument("--dir", type=int, default=2)
-    ap.add_argument("--body", default=os.path.join(HERE, "body400.vd")); ap.add_argument("--out"); ap.add_argument("--merge", action="store_true", help="keep the frames already in the npz"); ap.add_argument("--smooth", type=float, default=0.0, help="share of the neighbours in a looping action (0 = the raw shifts: the gaps of a walk change slowly)")
+    ap.add_argument("--body", default=os.path.join(HERE, "body400.vd")); ap.add_argument("--out"); ap.add_argument("--merge", action="store_true", help="keep the frames already in the npz"); ap.add_argument("--only-above", type=float, default=0.0, help="frames whose gap is at most this many px stay where they are (the frames the user approved)"); ap.add_argument("--cap", type=float, default=99.0, help="largest shift in px (2 px = 5.6 cm)"); ap.add_argument("--smooth", type=float, default=0.0, help="share of the neighbours in a looping action (0 = the raw shifts: the gaps of a walk change slowly)")
     a = ap.parse_args()
     import vd, bpy
     _, _, body = vd.read_vd(a.body)
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     for act in a.action:
         action = bpy.data.actions[act]; rig.animation_data.action = action; n = int(action["uo_frames"]); num = int(act[:2])
         g = np.array([gap_px(a.render, act, a.dir, i, body) for i in range(n)])
-        sh = np.maximum(g - a.target, 0.0)
+        sh = np.where(g > a.only_above, np.clip(g - a.target, 0.0, a.cap), 0.0)
         if num in LOOP and n > 2:
             sh = a.smooth / 2 * np.roll(sh, 1) + (1 - a.smooth) * sh + a.smooth / 2 * np.roll(sh, -1)
         print("%s: gap px %s -> shift px %s" % (act, " ".join("%.1f" % x for x in g), " ".join("%.1f" % x for x in sh)))

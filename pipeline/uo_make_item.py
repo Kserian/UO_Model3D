@@ -408,6 +408,8 @@ def run(script, **over):
     exec(compile(text, script, "exec"), {"__name__": "__main__"})
 run("uo_import_item.py", **%(imp)r)
 run("uo_materials.py", **%(mat)r)
+if %(heal)r:                                                     # smudges of the bake on the membranes of a drum (uo_fix_texture.py)
+    run("uo_fix_texture.py", **(%(heal)r if isinstance(%(heal)r, dict) else {}))
 prep = %(prep)r
 flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}      # settings of uo_prepare_item.py (a dict setting too: HEM_BAND)
 wp = %(weapon)r
@@ -457,7 +459,7 @@ for k, v in %(scene)r.items():                                    # "scene": pro
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), rigid=recipe.get("rigid"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), rigid=recipe.get("rigid"), heal=recipe.get("heal_heads", False), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):

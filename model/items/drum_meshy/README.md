@@ -12,17 +12,21 @@ Drum (the clamps and rods stick out ~2 cm past the hoops), heads to the sides, t
 
 | Actions | Recipe | Parent, y of the centre | Why (torso hits = share of the frames in which the drum is in the torso, measured on the 578 frames) |
 |---|---|---|---|
-| all others | `drum_only.json` | chest, -0.355 | the back of the drum 1 cm from the chest in the stand pose; 0 % |
+| all others | `drum_only_motion.json` | chest, -0.355 | the back of the drum 1 cm from the chest in the stand pose; 0 % |
 | 0, 1 (walk, walk armed) | `drum_only_pelvis_motion.json` + `pipeline/fit_item_contact.py` | PELVIS, -0.345, shifted per frame | as 2, 3, then measured on the sprites: the drum is fitted to OUR body, and in some frames of a walk the ORIGINAL body is further from it, so the drum hung 2-3 px in front of the torso in the side view (the gap in pixels between the back of the drum and the original body, mean over the rows of the drum: walk 0.7-3.0 px, walk armed 0.9-2.2, stand 1.5, run 1.0). `fit_item_contact.py` moves it per frame towards the body (along the pelvis's local +y) by the gap above the target 1.0 px (0.0-2.0 px = 0-5.6 cm, `item_motion.npz`, `motion_fix`): after it walk 0.7-1.6 px, walk armed 0.9-1.3, in the side views 1 and 3 nothing worse |
 | 2, 3 (run) | `drum_only_pelvis.json` | PELVIS, -0.345 | the torso swings and turns on the chest: on the chest the drum needed +3 cm; on the pelvis it keeps 0 % torso hits even 1 cm closer than the base (chest at the base: 97 / 77 / 45 / 81 %) and the arms hit it far less (walk armed 100 % -> 9 %) |
 | 6 (fidget 2) | `drum_only_pelvis0.json` | pelvis, -0.355 | on the chest +2 cm needed; pelvis: 0 % at the base |
-| 4, 5, 17 (stand, fidget 1, cast area) | `drum_only_close.json` | chest, -0.345 | 0 % torso hits at 1 cm closer; at 2 cm 100 % (the stand-pose fit leaves 1 cm) |
-| 26, 31 (mounted 1H attack, punch) | `drum_only_fwd3.json` | chest, -0.385 | the torso turns into it: 23 / 26 % -> 0 % |
+| 4, 5, 17 (stand, fidget 1, cast area) | `drum_only_close_motion.json` | chest, -0.345 | 0 % torso hits at 1 cm closer; at 2 cm 100 % (the stand-pose fit leaves 1 cm) |
+| 26, 31 (mounted 1H attack, punch) | `drum_only_fwd3_motion.json` | chest, -0.385 | the torso turns into it: 23 / 26 % -> 0 % |
 | 32 (bow) | `drum_only_fwd45.json` | chest, -0.40 | 77 % -> 23 % at 3 cm, 0 % at 4.5 cm |
 | 22 (`22_die_backward`, the death that ends on the belly; `21_die_forward` ends on the back) | `drum_only_death.json` + `pipeline/drum_death_motion.py` | own motion | the drum follows the chest while the body is upright and comes off along a smoothstep from 10 % of the action to the last frame: it ends on the ground at the RIGHT side of the body (the side of the right arm), head up (axis vertical), its side overlapping the torso by 2 cm and the lower edge of the right arm by 2 cm; before it lay under the belly |
 
 Measured on the 578 frames (`model/items/drum/README.md`), the legs 10.4 %, the arms and hands 27 % of the frames at the first placement.
 - **B (own strap):** 28 cm, 23 cm deep (x0.76), centre (-0.02, -0.32, 1.325) m, as in `model/items/drum/README.md`.
+
+Contact in the side view (direction 2), all 210 frames: besides the walks, the frames in which the drum still hung more than 1.6 px in front of the original body (spell directed 3-5, spell area 4-6, mounted 1H attack 0-2, mounted 2H attack 1, 1H slash 2, 1H bash 6, die forward 0 and 5) are moved towards the body by `fit_item_contact.py --only-above 1.6 --cap 2.0` (at most 2 px = 5.6 cm; the frames below 1.6 px stay as they were; the shifts are in `item_motion.npz` of the `*_motion.json` item, its `--parent chest` run). Result: the mean gap (daylight between the drum and the body over the rows of the drum) is 0.0-1.8 px in all visible frames, 207 of 210 touch the body in at least one row (3 frames the drum is hidden behind the body or the arms: attack 2h slash 2, crossbow 6, block 2); the last frame of the death on the belly (22) lies beside the body on purpose. The mean gap is not zero because the drum is round and the torso is flat: they touch at the chest ridge.
+
+The membrane: the texture baked from the model's high-poly original had black smudges on both heads (rays of the bake hitting the inside of the hoop); `uo_fix_texture.py` (recipe `"heal_heads": true`) finds the dark pixels on the head islands (darker than 0.62 of the median of the membrane) and fills them with the colour of the surrounding membrane and its grain taken from random healthy pixels, not with one flat colour (151 of 498 head pixels).
 
 Quality (all recipes here): 100k vertices (was 30k), texture baked at 4096 px (was 2048; the sprite still gets the texture averaged to its resolution), `"scene": {"uo_samples": 2048}` (default 512, adaptive sampling with the strict threshold): the full 35-action render takes ~25 min on 4 cores, the partial ones 2-5 min.
 
