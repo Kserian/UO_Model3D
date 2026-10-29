@@ -29,7 +29,7 @@ The sculpt plus the cheek whiskers of the original beard 801 (two strips beside 
 ## Hybrid: `Beard_long_hybrid.vd` (current)
 Feedback on the sideburn shell ("unnatural, the beard should sit under the chin, the sideburns are weak, take the original ones and soften the join"): the sideburns are now the **pixels of the original beard 801**, the beard is the sculpt **moved under the chin**, and the join is softened. 1050 frames (8 empty from behind, dir 4, where the beard is hidden), exactly grey, <= 27 colours per block.
 
-    python pipeline/uo_scale_remesh.py beard.glb model/items/beard/beard_under_chin.glb --scale 0.21 --stretch 0.85 1 1 --voxel 0.007 --move 0 -0.205 1.493 --cut-z 1.665
+    python pipeline/uo_scale_remesh.py beard.glb model/items/beard/beard_under_chin.glb --scale 0.21 --voxel 0.007 --move 0.014 -0.205 1.493 --cut-z 1.665 --taper 0.22 0.03 0.85
     python pipeline/uo_jaw_zone.py model/items/beard/jaw_zone.glb 1.64 1.74
     python pipeline/uo_make_item.py model/items/beard/beard_under_chin.json --out BEARD --vd      # all actions
     python pipeline/uo_make_item.py model/items/beard/jaw_zone.json --out ZONE --vd
@@ -41,4 +41,10 @@ Feedback on the sideburn shell ("unnatural, the beard should sit under the chin,
 - Sideburns: `jaw_zone.glb` is a wedge above a plane rising from the chin (z 1.64) to the ear (1.74), rigid on the head, rendered like an item: its silhouette in each frame is the face above the jaw line, whatever the head does (walk, die, mounted). The original pixels inside it are kept, the original pixels below it (the original beard proper) are dropped.
 - Join (`uo_hybrid_beard.py`): the tone of the model beard is matched to the sideburn along the seam (gain 0.8-1.25, fading over 5 px), a 1-2 px gap between the two is filled with the colours above and below, dark outline pixels between the two (opaque on both sides, near the seam) take the colour of their light neighbours, no pixel of the model lighter than 200 (the originals peak at 197), all pixels exactly grey (R = G = B).
 - Not checked in the game; the model part is a smooth bib (the sculpt's curls do not survive at 36 px/m, the original 801 is a smooth V as well).
+
+### Fix: the shape and the hanging (2026-10-29, second round)
+"In the front view it is thin at first and then wider": the sculpt is a diamond (widest in the middle; its top under the chin is the narrow arch of the moustache), the original beard 801 is widest at the jaw (7 px) and falls to a point (2 px). And a second effect: rigid on the head, a long beard turns with the head's roll in the fitted pose (the foot of the stand beard drifted 1-2 px sideways), which a hanging beard does not.
+- `uo_scale_remesh.py --taper 0.22 0.03 0.85`: the width is brought to a profile of 0.22 m at the chin falling to 0.03 m at the tip ((1 - t) ** 0.85); measured from the 4-96 percentile of x per height (single strands that stick out do not set the width) and centred on x = 0. Front view, stand: widths 6-7 px under the chin falling to 3 px and a 1 px point, centred (99.0, the original 801 99.5).
+- Recipe key `"hang": {"bone": "chest", "z_top": 1.64, "z_end": 1.45}` (`uo_make_item.py`): weights go from the head (above z_top) to the chest (below z_end), smoothstep in between, so the foot of the beard hangs with the torso instead of turning with the head. The `stretch` of the previous round (0.85 wide) is gone: the taper sets the width.
+- Result: 1050 frames, 6 empty (behind, dir 3-4), exactly grey, <= 27 colours per block.
 
