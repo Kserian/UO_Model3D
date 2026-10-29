@@ -1,0 +1,4 @@
+{"name": "beard_long_wavy_sideburns", "file": "model/items/beard/beard_long_wavy_sideburns.glb", "kind": "beard", "turn": 0, "behind_torso": true,
+ "prepare": {"AUTOFIT": false, "FIT": false},
+ "materials": {"BRIGHTNESS": 0.65},
+ "scene": {"uo_head_hides": 1, "uo_min_piece": 0, "uo_contrast": 2.4, "uo_contrast_pivot": 0.6}}

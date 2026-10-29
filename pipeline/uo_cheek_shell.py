@@ -15,12 +15,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ap = argparse.ArgumentParser()
 ap.add_argument("beard"); ap.add_argument("out")
 ap.add_argument("--base", default=os.path.join(HERE, "..", "model", "UO_Body_0x190.blend"))
-ap.add_argument("--x-in", type=float, default=0.055)      # m, |x| of the inner edge of the band: the face between the two bands (nose, mouth) stays free
-ap.add_argument("--y-max", type=float, default=-0.06)     # m, the band starts in front of the ear (front is -Y)
-ap.add_argument("--z-top", type=float, default=1.765)     # m, height of the top edge at y = --y-max (next to the ear)
-ap.add_argument("--slope", type=float, default=0.5)       # the top edge falls by this much per metre towards the front (the sideburn is high at the ear, low at the cheek)
-ap.add_argument("--z-bottom", type=float, default=1.62)   # m, lower edge (jaw corner, where the beard proper begins)
-ap.add_argument("--thick", type=float, default=0.016)     # m, the shell stands this far off the skin
+ap.add_argument("--x-in", type=float, default=0.029)      # m, |x| of the inner edge of the band: the face between the two bands (nose, mouth) stays free
+ap.add_argument("--y-max", type=float, default=-0.05)     # m, the band starts in front of the ear (front is -Y)
+ap.add_argument("--z-top", type=float, default=1.785)     # m, height of the top edge at y = --y-max (next to the ear)
+ap.add_argument("--slope", type=float, default=-0.05)       # the top edge falls by this much per metre towards the front (fitted: ~flat)
+ap.add_argument("--z-bottom", type=float, default=1.6075)   # m, lower edge (jaw corner, where the beard proper begins)
+ap.add_argument("--thick", type=float, default=0.03)     # m, the shell stands this far off the skin
 ap.add_argument("--clear", type=float, default=0.006)     # m, cut away what is closer than this to the beard
 ap.add_argument("--smooth", type=int, default=4)
 ap.add_argument("--no-beard", action="store_true", help="write the sideburns only")
