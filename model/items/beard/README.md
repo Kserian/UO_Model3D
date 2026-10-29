@@ -34,7 +34,7 @@ Feedback on the sideburn shell ("unnatural, the beard should sit under the chin,
     python pipeline/uo_make_item.py model/items/beard/beard_under_chin.json --out BEARD --vd      # all actions
     python pipeline/uo_make_item.py model/items/beard/jaw_zone.json --out ZONE --vd
     python vdtool/vdtool.py extract <anim_801.vd> ORIG                                           # python vdtool/mul2vd.py anim.idx anim.mul out 801
-    python pipeline/uo_hybrid_beard.py ORIG BEARD/render/clothing ZONE/render/clothing OUT --damp 0.7 0.4
+    python pipeline/uo_hybrid_beard.py ORIG BEARD/render/clothing ZONE/render/clothing OUT --damp 0.7 0.4 --straight 0.9
     python vdtool/vdtool.py pack OUT Beard_long_hybrid.vd
 
 - Under the chin: the sculpt is x0.21 (0.85 wide, so 0.36 m long, 15 cm wide), its mouth arch at the chin (z 1.635), cut off flat at z 1.665 (no moustache, no tips on the cheeks), back plane 2 cm behind the previous placement; voxel remesh 7 mm (3.5 mm kept the slits between the strands, the body showed through them and the renderer drew an outline round every one: loops over the chest). Stand, dir 0-2: the mass sits on rows 93-98 like the original 801 (it had been 91-101 and 7 px wide).
@@ -52,4 +52,7 @@ Feedback on the sideburn shell ("unnatural, the beard should sit under the chin,
 "Less mobile, more static, like the original." Measured (centroid of the beard minus centroid of the head zone, std over the frames of an action and direction; the zone is rigid on the head, so this is how much the beard moves against the head in the picture): original 801 below the jaw x 1.01 / y 0.58 px (mean over 140 blocks), our rigid beard 1.34 / 1.03: the long beard has a longer lever arm for the pitch / roll of the head, mostly vertically (2.2x the original in walk, run, attack, spell).
 - Weights do not help: neck 100 %, neck 60 %, chest 50 % at the foot (`hang` with `share`) gave vertical sway 1.85x / 1.95x / 2.33x the original and more sideways sway (the neck and the chest move as much as the head); chest-pinned also lost the head direction. Not used.
 - `uo_hybrid_beard.py --damp KX KY` (`--max-shift` 2 px): per action and direction the beard is moved by whole pixels towards its mean position against the head by (1 - K) of its deviation. With `--damp 0.7 0.4`: sway x 1.34 -> 1.04, y 1.03 -> 0.63 (original 1.01 / 0.58). The beard still follows the head (its mean position and the direction of every swing are kept); the seam to the original sideburns stays closed (gaps of 1-2 px are filled).
+
+### Straight beard (2026-10-29, fourth round)
+"The tip of the beard bends, it is not straight." A rigid long beard leans with the roll of the fitted head: front view, stand, the centre of the rows fell from 99.0 under the chin to 97.0 at the foot (the original 801 is straight). `uo_hybrid_beard.py --straight 0.9 --max-bend 4`: every row of the beard is moved sideways so that its centre lies over the centre of the top three rows (90 % of the drift removed), only when the drift stays within 4 px (a beard really lying sideways in a fall keeps its direction). Stand dir 0 after: centre 99.0 at all rows. The first rows (the seam to the sideburns) do not move. The tip is blunt (3-4 px interior + outline, flat end), not a point: the sculpt's tip is 3-5 cm wide.
 

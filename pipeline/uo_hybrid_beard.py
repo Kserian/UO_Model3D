@@ -23,6 +23,8 @@ ap.add_argument("--fade", type=float, default=5.0)        # px over which the to
 ap.add_argument("--gap", type=int, default=2)
 ap.add_argument("--damp", type=float, nargs=2, default=[1.0, 1.0], metavar=("KX", "KY"), help="share of the sway of the beard against the head that is kept (1 = all, 0.5 = half); the sway is the centroid of the beard minus the centroid of the zone, per action and direction, damped towards its mean by whole pixels")
 ap.add_argument("--max-shift", type=int, default=2)
+ap.add_argument("--straight", type=float, default=0.0, help="share (0-1) of the sideways drift of the beard along its length that is removed: every row of the beard is moved so that its centre lies over the centre of the top of the beard (a hanging beard is straight; a rigid one leans with the roll of the head); only when the drift stays within --max-bend px")
+ap.add_argument("--max-bend", type=int, default=4)
 ap.add_argument("--max-light", type=int, default=200, help="no pixel of the rendered beard lighter than this (the original beards peak at 197)")
 a = ap.parse_args()
 
@@ -59,6 +61,27 @@ def shift(im, dx, dy):
     ys, xs = slice(max(dy, 0), H + min(dy, 0)), slice(max(dx, 0), W + min(dx, 0))
     yd, xd = slice(max(-dy, 0), H + min(-dy, 0)), slice(max(-dx, 0), W + min(-dx, 0))
     out[ys, xs] = im[yd, xd]
+    return out
+
+
+def straighten(B, k, max_bend):
+    """rows of the beard shifted sideways so that their centres lie over the centre of its top rows"""
+    al = B[..., 3] > 0
+    rows = np.nonzero(al.any(1))[0]
+    if k <= 0 or len(rows) < 4:
+        return B
+    cen = {r: np.nonzero(al[r])[0].mean() for r in rows}
+    ref = np.mean([cen[r] for r in rows[:3]])
+    if max(abs(cen[r] - ref) for r in rows) > max_bend:
+        return B
+    out = np.zeros_like(B)
+    for r in rows:
+        dx = int(np.rint(-k * (cen[r] - ref)))
+        out[r] = np.roll(B[r], dx, axis=0)
+        if dx > 0:
+            out[r, :dx] = 0
+        elif dx < 0:
+            out[r, dx:] = 0
     return out
 
 
@@ -144,7 +167,7 @@ def main():
             if r is not None and len(ok) > 2 and (k < 1).any():
                 sh = np.clip(np.rint(-(1.0 - k) * (r - mean)), -a.max_shift, a.max_shift).astype(int)
                 Bc = shift(Bc, sh[0], sh[1])
-            shifted.append(Bc)
+            shifted.append(straighten(Bc, a.straight, a.max_bend))
         if len(ok) > 2:
             after = [np.array([np.nonzero(Bc[..., 3] > 0)[1].mean() - np.nonzero(Zc)[1].mean(), np.nonzero(Bc[..., 3] > 0)[0].mean() - np.nonzero(Zc)[0].mean()]) for (fr, Oc, _, Zc), Bc in zip(frames, shifted) if (Bc[..., 3] > 0).any() and Zc.any()]
             stats.append((np.std(ok, 0), np.std(after, 0)))
