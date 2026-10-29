@@ -34,7 +34,7 @@ Feedback on the sideburn shell ("unnatural, the beard should sit under the chin,
     python pipeline/uo_make_item.py model/items/beard/beard_under_chin.json --out BEARD --vd      # all actions
     python pipeline/uo_make_item.py model/items/beard/jaw_zone.json --out ZONE --vd
     python vdtool/vdtool.py extract <anim_801.vd> ORIG                                           # python vdtool/mul2vd.py anim.idx anim.mul out 801
-    python pipeline/uo_hybrid_beard.py ORIG BEARD/render/clothing ZONE/render/clothing OUT --damp 0.7 0.4 --straight 0.9
+    python pipeline/uo_hybrid_beard.py ORIG BEARD/render/clothing ZONE/render/clothing OUT --align 6 --align-window 1 --straight 0.9
     python vdtool/vdtool.py pack OUT Beard_long_hybrid.vd
 
 - Under the chin: the sculpt is x0.21 (0.85 wide, so 0.36 m long, 15 cm wide), its mouth arch at the chin (z 1.635), cut off flat at z 1.665 (no moustache, no tips on the cheeks), back plane 2 cm behind the previous placement; voxel remesh 7 mm (3.5 mm kept the slits between the strands, the body showed through them and the renderer drew an outline round every one: loops over the chest). Stand, dir 0-2: the mass sits on rows 93-98 like the original 801 (it had been 91-101 and 7 px wide).
@@ -55,4 +55,11 @@ Feedback on the sideburn shell ("unnatural, the beard should sit under the chin,
 
 ### Straight beard (2026-10-29, fourth round)
 "The tip of the beard bends, it is not straight." A rigid long beard leans with the roll of the fitted head: front view, stand, the centre of the rows fell from 99.0 under the chin to 97.0 at the foot (the original 801 is straight). `uo_hybrid_beard.py --straight 0.9 --max-bend 4`: every row of the beard is moved sideways so that its centre lies over the centre of the top three rows (90 % of the drift removed), only when the drift stays within 4 px (a beard really lying sideways in a fall keeps its direction). Stand dir 0 after: centre 99.0 at all rows. The first rows (the seam to the sideburns) do not move. The tip is blunt (3-4 px interior + outline, flat end), not a point: the sculpt's tip is 3-5 cm wide.
+
+### Audit of all 1050 frames and alignment to the original frame by frame (2026-10-29, fifth round)
+"Check all frames and fit the beard so that there is no shift, it has to be even." Measured on every frame (top of the beard proper = the top 3 rows of the hybrid below the jaw zone; the same for the original 801 below the zone), before = the previous file:
+- Ours minus the original beard of the same frame, top anchor: x mean -0.67 px, std 1.75, p95 3.8; y std 1.10; only **42 %** of the 760 frames within 1 px in both axes (dir 1 -1.12 px, dir 4 std 3.4 px). Jumps of the beard top against the head between two frames up to 8-11 px in fast actions (die, bow, spell).
+- `uo_hybrid_beard.py --align 6 --align-window 1`: per frame the top of our beard (mean column of the top 3 rows, first row) is moved onto the top of the original beard of the same frame (at most 6 px): the original follows the real head, so the beard sits where the original sat in every frame, also in the fast ones. Replaces `--damp`. Result: x mean +0.08, std **0.46**, p95 1.0; y std **0.28**; **97 %** of 774 frames within 1 px. A 3-frame median of the offset (`--align-window 3`) gave 85 %: not used. The frame-to-frame change of the top against the head stays at the original's level (mean 1.27, p95 3.8 px; original 1.11 / 3.6: the original jumps by about a pixel itself).
+- Then straightened (`--straight 0.9`): centre of the rows in stand dir 0: 97.0-99.0 (the original's 97.5-99.5), the foot is no longer bent.
+- The 3 % that stay off are frames where the original has no beard below the zone or its anchor is ambiguous (a head turned away).
 

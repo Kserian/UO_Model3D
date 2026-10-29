@@ -23,6 +23,8 @@ ap.add_argument("--fade", type=float, default=5.0)        # px over which the to
 ap.add_argument("--gap", type=int, default=2)
 ap.add_argument("--damp", type=float, nargs=2, default=[1.0, 1.0], metavar=("KX", "KY"), help="share of the sway of the beard against the head that is kept (1 = all, 0.5 = half); the sway is the centroid of the beard minus the centroid of the zone, per action and direction, damped towards its mean by whole pixels")
 ap.add_argument("--max-shift", type=int, default=2)
+ap.add_argument("--align", type=int, default=0, metavar="MAX_PX", help="per frame, the top of the beard is moved onto the top of the original beard (the part of the original below the zone) of the same frame: the original follows the real head, so the beard sits where the original one sat; the offset is median-filtered over 3 frames, at most MAX_PX; 0 = off; replaces --damp")
+ap.add_argument("--align-window", type=int, default=3, help="frames of the median filter of the --align offset (1 = none)")
 ap.add_argument("--straight", type=float, default=0.0, help="share (0-1) of the sideways drift of the beard along its length that is removed: every row of the beard is moved so that its centre lies over the centre of the top of the beard (a hanging beard is straight; a rigid one leans with the roll of the head); only when the drift stays within --max-bend px")
 ap.add_argument("--max-bend", type=int, default=4)
 ap.add_argument("--max-light", type=int, default=200, help="no pixel of the rendered beard lighter than this (the original beards peak at 197)")
@@ -61,6 +63,23 @@ def shift(im, dx, dy):
     ys, xs = slice(max(dy, 0), H + min(dy, 0)), slice(max(dx, 0), W + min(dx, 0))
     yd, xd = slice(max(-dy, 0), H + min(-dy, 0)), slice(max(-dx, 0), W + min(-dx, 0))
     out[ys, xs] = im[yd, xd]
+    return out
+
+
+def top_anchor(m, n=3):
+    """(x, y) of the top n rows of a boolean mask: mean column, first row"""
+    rows = np.nonzero(m.any(1))[0]
+    if len(rows) < 2:
+        return None
+    return np.array([np.mean([np.nonzero(m[r])[0].mean() for r in rows[:n]]), float(rows[0])])
+
+
+def median3(vals, win=3):
+    out = []
+    h = win // 2
+    for i in range(len(vals)):
+        w = [v for v in vals[max(0, i - h):i + h + 1] if v is not None]
+        out.append(np.median(w, 0) if w else None)
     return out
 
 
@@ -162,6 +181,26 @@ def main():
         ok = [r for r in rel if r is not None]
         mean = np.mean(ok, 0) if ok else None
         k = np.array(a.damp)
+        if a.align:                                              # the top of the beard onto the top of the original beard of the same frame
+            diffs = []
+            for fr, Oc, Bc, Zc in frames:
+                ao = top_anchor((Oc[..., 3] > 0) & ~Zc); ab = top_anchor(Bc[..., 3] > 0)
+                diffs.append(ao - ab if ao is not None and ab is not None else None)
+            sm = median3(diffs, a.align_window)
+            known = [x for x in sm if x is not None]
+            fill = np.median(known, 0) if known else np.zeros(2)
+            aligned = []
+            for (fr, Oc, Bc, Zc), dv in zip(frames, sm):
+                dv = fill if dv is None else dv
+                dv = np.clip(np.rint(dv), -a.align, a.align).astype(int)
+                aligned.append((fr, Oc, shift(Bc, int(dv[0]), int(dv[1])) if (Bc[..., 3] > 0).any() else Bc, Zc))
+            frames = aligned
+            rel = []
+            for fr, Oc, Bc, Zc in frames:
+                ys, xs = np.nonzero(Bc[..., 3] > 0); zy, zx = np.nonzero(Zc)
+                rel.append(np.array([xs.mean() - zx.mean(), ys.mean() - zy.mean()]) if len(xs) and len(zx) else None)
+            ok = [r for r in rel if r is not None]
+            mean = np.mean(ok, 0) if ok else None
         shifted = []
         for (fr, Oc, Bc, Zc), r in zip(frames, rel):
             if r is not None and len(ok) > 2 and (k < 1).any():
