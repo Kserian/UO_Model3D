@@ -425,8 +425,9 @@ if rg:                                                           # an item that 
         obs = [o for o in bpy.context.view_layer.objects if o.type == "MESH" and o.select_get()]
     run("uo_bind_item.py", PART=rg.get("part", "front"))
     for o in obs:
-        for k in ("uo_no_body_gap",):
-            o[k] = 1
+        for k in ("uo_no_body_gap", "uo_behind_torso"):         # not bent away from limbs; the torso hides the part of it that is behind it (a drum seen from the back)
+            if rg.get(k[3:], True):
+                o[k] = 1
 elif wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
