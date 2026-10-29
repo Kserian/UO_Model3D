@@ -59,6 +59,7 @@ CLOTH_LIE = 0.0                    # loose garments in the falls 21, 22: share i
 CLOTH_LIE_DROP = 1.0               # with CLOTH_LIE: below the waist the lying garment falls by gravity onto what is under it (the posed legs / body, else the ground): its height above
                                    # that support is cut to this share (smoothed over the cloth; full 0.3 m under the waist, as far as the body lies). The front between the legs is
                                    # weighted to both of them and stood up over the raised knees as a sail. 1 = off; scene property uo_cloth_lie_drop
+HORSE_OFF_DIRS = ()                # directions (0-4) in which the horse does NOT hide the item (scene "uo_horse_off_dirs", e.g. "2"): a drum on the chest of a rider, seen from the side, was cut by the horse
 HORSE_HOLDOUT = True               # mounted actions: the horse hides what is behind it, clipped to the exact horse sprite
 EXACT_COLORS = True                # body in the UO look: colours projected from the original UO frames packed in the file
 EXACT_BODY = True                  # body = original UO frames: the "body" layer reproduces the original exactly, and in
@@ -121,6 +122,7 @@ HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py se
 CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
 LIE_W = {}
 FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
+HORSE_OFF_DIRS = tuple(int(x) for x in str(sc.get("uo_horse_off_dirs", "")).split(",") if x.strip()) or tuple(HORSE_OFF_DIRS)
 EDGE_FREE = int(sc.get("uo_edge_free", EDGE_FREE))
 HIDE_GROW = int(sc.get("uo_hide_grow", HIDE_GROW))
 INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
@@ -891,6 +893,9 @@ def render_frame(a, i, d, body_mode):
     """body_mode: 'visible' | 'holdout' | 'hidden'. Includes the horse holdout of mounted actions."""
     body.hide_render = body_mode == "hidden"
     body.is_holdout = body_mode == "holdout"
+    if d in HORSE_OFF_DIRS:                             # the horse hides nothing in this direction
+        set_horse(-1, 0)
+        return render_px()
     set_horse(a, i)
     px = render_px()
     hm = HORSE_MASKS.get((a, i, d)) if HORSE_HOLDOUT else None
