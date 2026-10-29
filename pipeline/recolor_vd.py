@@ -5,18 +5,19 @@
 
 A .vd frame stores indices into the palette of its block (256 colours, 15 bit, the first 512 bytes of every block of an action and direction): only the palette entries are rewritten, the pixels
 and the sizes stay, so the file keeps its layout and every frame of every action is recoloured at once. A colour is recoloured when its hue lies within +-RANGE degrees of FROM_HUE and its
-saturation is at least MIN_SAT; hue goes to TO_HUE, saturation and the luminance (0.299 R + 0.587 G + 0.114 B) are kept (a blue of the same value is much darker than a red). 15-bit 0 is transparent: a result of 0 becomes 1.
+saturation is at least MIN_SAT (or, for the DARK outline of the red parts: hue within +-DARK_RANGE, saturation >= DARK_SAT, value < DARK_VAL: after the darkening of the rim the saturation of a dark red falls to 0.12-0.25 and the old threshold left it red); hue goes to TO_HUE, saturation and the luminance (0.299 R + 0.587 G + 0.114 B) are kept (a blue of the same value is much darker than a red). 15-bit 0 is transparent: a result of 0 becomes 1.
 """
 import argparse, colorsys, struct, sys
 import numpy as np
 
 
-def make_map(to_hue, from_hue, rng, min_sat):
+def make_map(to_hue, from_hue, rng, min_sat, dark_rng=18.0, dark_sat=0.08, dark_val=0.5):
     def f(rgb):
         r, g, b = [c / 255.0 for c in rgb]
         h, s, v = colorsys.rgb_to_hsv(r, g, b)
         d = abs(((h * 360.0 - from_hue) + 180.0) % 360.0 - 180.0)
-        if s < min_sat or d > rng:
+        dark = d <= dark_rng and s >= dark_sat and v < dark_val              # the dark outline of the red parts: low saturation after the darkening, still the same hue
+        if not dark and (s < min_sat or d > rng):
             return rgb
         lum = 0.299 * r + 0.587 * g + 0.114 * b
         r2, g2, b2 = colorsys.hsv_to_rgb(to_hue / 360.0, s, v)
@@ -64,8 +65,9 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("src"); ap.add_argument("dst")
     ap.add_argument("--to-hue", type=float, default=215.0); ap.add_argument("--from-hue", type=float, default=0.0)
     ap.add_argument("--range", type=float, default=28.0); ap.add_argument("--min-sat", type=float, default=0.30)
+    ap.add_argument("--dark-range", type=float, default=18.0); ap.add_argument("--dark-sat", type=float, default=0.08); ap.add_argument("--dark-val", type=float, default=0.5)
     a = ap.parse_args()
-    f = make_map(a.to_hue, a.from_hue, a.range, a.min_sat)
+    f = make_map(a.to_hue, a.from_hue, a.range, a.min_sat, a.dark_range, a.dark_sat, a.dark_val)
     if a.src.lower().endswith(".png"):
         n, c = recolor_png(a.src, a.dst, f); print("%d colours, %d recoloured -> %s" % (n, c, a.dst))
     else:
