@@ -22,7 +22,9 @@ GW, GH = 260, 237
 GX0, GY_FEET = 94.5, 221.0
 SS = 4
 # the drum on the paperdoll (gump pixels of its centre; female: the waist of the body gump 13 is ca. 7 px higher)
-CENTRE = {"male": (70.0, 157.0), "female": (70.0, 152.0)}
+CENTRE = {"male": (71.0, 150.0), "female": (71.0, 145.0)}            # the height is then set so that the rim of the drum covers the lower end of the original sash (EXTEND_STRAP off)
+EXTEND_STRAP = False                            # True: a strap of the same grey is drawn from the end of the original sash to the rim (the drum hangs lower)
+TUCK = 2.0                                      # px: the drum covers the end of the sash by this much
 HEAD_N = Vector((-0.34, -0.52, 0.79))           # direction the upper head looks (x: to the left of the picture = the right of the character, -y: to the viewer, z: up)
 STRAP_END = {"male": (80.0, 130.0), "female": (80.0, 125.0)}   # the lower end of the original sash on each gump
 STRAP_W = 6.5                                   # px; the original sash is 7-9 px wide
@@ -130,44 +132,59 @@ for gender, gid in (("male", 50490), ("female", 60490)):
     drum = make_drum("drum_" + gender)
     aim(drum, HEAD_N, Vector((0, -1, 0.2)))
     gx, gy = CENTRE[gender]
-    drum.location = ((gx - GX0) / PXM, -0.5, (GY_FEET - gy) / PXM)
-    bpy.context.view_layer.update()
     W, H = GW * SS, GH * SS
     cxw = (GW / 2 - GX0) / PXM; czw = (GY_FEET - GH / 2) / PXM
-    a = render(tmp, W, H, PXM * SS, cxw, czw, [drum])
-    da = box_down(a, SS); da[..., :3] = np.minimum(da[..., :3] * GAIN, CEIL / 255.0)
-    d = rim(np.clip(da * 255 + 0.5, 0, 255).astype(np.uint8), OUTLINE)
-    dm = d[..., 3] > 0
-    ys, xs = np.nonzero(dm)
-    print("%s: drum px %d, bbox x %d..%d y %d..%d" % (gender, dm.sum(), xs.min(), xs.max(), ys.min(), ys.max()))
-    # the strap from the lower end of the original sash to the rim of the drum: the point of the silhouette nearest to the end of the sash, on its upper left side
     sx, sy = STRAP_END[gender]
-    cand = np.stack([xs, ys], 1).astype(float)
-    top = cand[cand[:, 1] < gy - 0.1 * (ys.max() - ys.min())]
-    att = top[np.argmin(((top - [sx - 1.0, sy + 3.0]) ** 2).sum(1))]
-    tang = np.array([-0.37, 0.93])                                      # the direction in which the original sash arrives at its lower end (measured on the client's gumps)
-    dist = float(np.hypot(att[0] - sx, att[1] - sy))
-    ctrl = (sx + tang[0] * dist * 0.5, sy + tang[1] * dist * 0.5)
-    path = bezier((sx, sy), ctrl, (att[0] + 0.5, att[1] + 1.0))
-    # grey levels like the original sash near its end
-    mm = sash[..., 3] > 0
-    yy, xx = np.nonzero(mm)
-    end = sash[yy.max() - 8:yy.max() - 2][sash[yy.max() - 8:yy.max() - 2, :, 3] > 0][:, :3].mean(0) if mm.any() else np.array([60, 60, 60])
-    lvl = float(end.mean()) if not np.isnan(end).any() else 60.0
-    S2 = 4
-    st = Image.new("RGBA", (GW * S2, GH * S2), (0, 0, 0, 0)); dr = ImageDraw.Draw(st)
-    dr.line([tuple(p * S2) for p in path], fill=(int(lvl * 0.8), int(lvl * 0.8), int(lvl * 0.8), 255), width=int(STRAP_W * S2), joint="curve")
-    dr.line([tuple((p + [-0.2, -0.2]) * S2) for p in path], fill=(int(lvl * 1.3), int(lvl * 1.3), int(lvl * 1.3), 255), width=int((STRAP_W - 2.5) * S2), joint="curve")
-    st = np.array(st).reshape(GH, S2, GW, S2, 4)
-    sa = st[..., 3].mean((1, 3)) >= 0.5
-    srgb = (st[..., :3].astype(float) * st[..., 3:] / 255.0).sum((1, 3)) / np.maximum((st[..., 3] / 255.0).sum((1, 3)), 1e-6)[..., None]
-    strap = np.zeros((GH, GW, 4), np.uint8); strap[..., :3] = np.clip(srgb + 0.5, 0, 255).astype(np.uint8); strap[..., 3] = sa * 255
-    strap = rim(strap, 0.55)
+    for it in range(4):                           # the drum is put at (gx, gy); then moved so that its top edge in the columns of the sash end lies TUCK px above the end of the sash
+        drum.location = ((gx - GX0) / PXM, -0.5, (GY_FEET - gy) / PXM)
+        bpy.context.view_layer.update()
+        a = render(tmp, W, H, PXM * SS, cxw, czw, [drum])
+        da = box_down(a, SS); da[..., :3] = np.minimum(da[..., :3] * GAIN, CEIL / 255.0)
+        d = rim(np.clip(da * 255 + 0.5, 0, 255).astype(np.uint8), OUTLINE)
+        dm = d[..., 3] > 0
+        ys, xs = np.nonzero(dm)
+        if EXTEND_STRAP:
+            break
+        cols = dm[:, int(sx) - 2:int(sx) + 3]
+        if not cols.any():
+            gx += 1.0; continue
+        top_at_end = np.nonzero(cols.any(1))[0].min()
+        err = (sy - TUCK) - top_at_end
+        if abs(err) < 0.5:
+            break
+        gy += err
+    print("%s: drum centre (%.1f, %.1f)" % (gender, gx, gy))
+    print("%s: drum px %d, bbox x %d..%d y %d..%d" % (gender, dm.sum(), xs.min(), xs.max(), ys.min(), ys.max()))
+    # (EXTEND_STRAP) the strap from the lower end of the original sash to the rim of the drum: the point of the silhouette nearest to the end of the sash
+    strap = np.zeros((GH, GW, 4), np.uint8)
+    if EXTEND_STRAP:
+        cand = np.stack([xs, ys], 1).astype(float)
+        top = cand[cand[:, 1] < gy - 0.1 * (ys.max() - ys.min())]
+        att = top[np.argmin(((top - [sx - 1.0, sy + 3.0]) ** 2).sum(1))]
+        tang = np.array([-0.37, 0.93])                                      # the direction in which the original sash arrives at its lower end (measured on the client's gumps)
+        dist = float(np.hypot(att[0] - sx, att[1] - sy))
+        ctrl = (sx + tang[0] * dist * 0.5, sy + tang[1] * dist * 0.5)
+        path = bezier((sx, sy), ctrl, (att[0] + 0.5, att[1] + 1.0))
+        # grey levels like the original sash near its end
+        mm = sash[..., 3] > 0
+        yy, xx = np.nonzero(mm)
+        end = sash[yy.max() - 8:yy.max() - 2][sash[yy.max() - 8:yy.max() - 2, :, 3] > 0][:, :3].mean(0) if mm.any() else np.array([60, 60, 60])
+        lvl = float(end.mean()) if not np.isnan(end).any() else 60.0
+        S2 = 4
+        st = Image.new("RGBA", (GW * S2, GH * S2), (0, 0, 0, 0)); dr = ImageDraw.Draw(st)
+        dr.line([tuple(p * S2) for p in path], fill=(int(lvl * 0.8), int(lvl * 0.8), int(lvl * 0.8), 255), width=int(STRAP_W * S2), joint="curve")
+        dr.line([tuple((p + [-0.2, -0.2]) * S2) for p in path], fill=(int(lvl * 1.3), int(lvl * 1.3), int(lvl * 1.3), 255), width=int((STRAP_W - 2.5) * S2), joint="curve")
+        st = np.array(st).reshape(GH, S2, GW, S2, 4)
+        sa = st[..., 3].mean((1, 3)) >= 0.5
+        srgb = (st[..., :3].astype(float) * st[..., 3:] / 255.0).sum((1, 3)) / np.maximum((st[..., 3] / 255.0).sum((1, 3)), 1e-6)[..., None]
+        strap = np.zeros((GH, GW, 4), np.uint8); strap[..., :3] = np.clip(srgb + 0.5, 0, 255).astype(np.uint8); strap[..., 3] = sa * 255
+        strap = rim(strap, 0.55)
     out = np.zeros((GH, GW, 4), np.uint8)
     out = paste(out, sash); out = paste(out, strap); out = paste(out, d)
-    ax, ay = int(round(att[0] + 0.5)), int(round(att[1] + 1.0))            # the ring over the end of the strap and the rim of the drum
-    for dx, dy, f in ((0, 0, 1.0), (1, 0, 0.8), (0, 1, 0.8), (-1, 0, 0.6), (0, -1, 0.6)):
-        out[ay + dy, ax + dx] = (int(RING[0] * f), int(RING[1] * f), int(RING[2] * f), 255)
+    if EXTEND_STRAP:
+        ax, ay = int(round(att[0] + 0.5)), int(round(att[1] + 1.0))            # the ring over the end of the strap and the rim of the drum
+        for dx, dy, f in ((0, 0, 1.0), (1, 0, 0.8), (0, 1, 0.8), (-1, 0, 0.6), (0, -1, 0.6)):
+            out[ay + dy, ax + dx] = (int(RING[0] * f), int(RING[1] * f), int(RING[2] * f), 255)
     Image.fromarray(out).save(os.path.join(OUT, "gump_%s.png" % gender))
     results[gender] = out
     bpy.data.objects.remove(drum, do_unlink=True)
