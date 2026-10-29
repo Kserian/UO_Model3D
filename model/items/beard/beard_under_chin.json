@@ -1,0 +1,4 @@
+{"name": "beard_under_chin", "file": "model/items/beard/beard_under_chin.glb", "kind": "beard", "turn": 0, "behind_torso": true,
+ "prepare": {"AUTOFIT": false, "FIT": false},
+ "materials": {"BRIGHTNESS": 0.65},
+ "scene": {"uo_head_hides": 1, "uo_min_piece": 0, "uo_contrast": 2.0, "uo_contrast_pivot": 0.6, "uo_edge_smooth": 1}}

@@ -26,3 +26,19 @@ The sculpt plus the cheek whiskers of the original beard 801 (two strips beside 
 - The sideburns are thicker than in the original in the front view (ours 87 px, original 51 px in the whole beard, 70 % of it is the sculpt).
 - A seam: the cut leaves a 6 mm gap, the renderer draws its 1-px outline there (visible in the front view as a dark line where the strip meets the beard, like the dark edge of the original strips); a seamless join would need the shell and the sculpt to share their border.
 
+## Hybrid: `Beard_long_hybrid.vd` (current)
+Feedback on the sideburn shell ("unnatural, the beard should sit under the chin, the sideburns are weak, take the original ones and soften the join"): the sideburns are now the **pixels of the original beard 801**, the beard is the sculpt **moved under the chin**, and the join is softened. 1050 frames (8 empty from behind, dir 4, where the beard is hidden), exactly grey, <= 27 colours per block.
+
+    python pipeline/uo_scale_remesh.py beard.glb model/items/beard/beard_under_chin.glb --scale 0.21 --stretch 0.85 1 1 --voxel 0.007 --move 0 -0.205 1.493 --cut-z 1.665
+    python pipeline/uo_jaw_zone.py model/items/beard/jaw_zone.glb 1.64 1.74
+    python pipeline/uo_make_item.py model/items/beard/beard_under_chin.json --out BEARD --vd      # all actions
+    python pipeline/uo_make_item.py model/items/beard/jaw_zone.json --out ZONE --vd
+    python vdtool/vdtool.py extract <anim_801.vd> ORIG                                           # python vdtool/mul2vd.py anim.idx anim.mul out 801
+    python pipeline/uo_hybrid_beard.py ORIG BEARD/render/clothing ZONE/render/clothing OUT
+    python vdtool/vdtool.py pack OUT Beard_long_hybrid.vd
+
+- Under the chin: the sculpt is x0.21 (0.85 wide, so 0.36 m long, 15 cm wide), its mouth arch at the chin (z 1.635), cut off flat at z 1.665 (no moustache, no tips on the cheeks), back plane 2 cm behind the previous placement; voxel remesh 7 mm (3.5 mm kept the slits between the strands, the body showed through them and the renderer drew an outline round every one: loops over the chest). Stand, dir 0-2: the mass sits on rows 93-98 like the original 801 (it had been 91-101 and 7 px wide).
+- Sideburns: `jaw_zone.glb` is a wedge above a plane rising from the chin (z 1.64) to the ear (1.74), rigid on the head, rendered like an item: its silhouette in each frame is the face above the jaw line, whatever the head does (walk, die, mounted). The original pixels inside it are kept, the original pixels below it (the original beard proper) are dropped.
+- Join (`uo_hybrid_beard.py`): the tone of the model beard is matched to the sideburn along the seam (gain 0.8-1.25, fading over 5 px), a 1-2 px gap between the two is filled with the colours above and below, dark outline pixels between the two (opaque on both sides, near the seam) take the colour of their light neighbours, no pixel of the model lighter than 200 (the originals peak at 197), all pixels exactly grey (R = G = B).
+- Not checked in the game; the model part is a smooth bib (the sculpt's curls do not survive at 36 px/m, the original 801 is a smooth V as well).
+

@@ -1,0 +1,3 @@
+{"name": "jaw_zone", "file": "model/items/beard/jaw_zone.glb", "kind": "beard", "turn": 0, "behind_torso": true,
+ "prepare": {"AUTOFIT": false, "FIT": false},
+ "scene": {"uo_min_piece": 0, "uo_samples": 16}}
