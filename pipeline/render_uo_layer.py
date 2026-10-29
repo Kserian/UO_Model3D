@@ -111,6 +111,7 @@ DX, DY = ANCHOR[0] - OANCHOR[0], ANCHOR[1] - OANCHOR[1]     # where the original
 sc = bpy.context.scene
 MIN_PIECE = int(sc.get("uo_min_piece", MIN_PIECE))       # uo_make_item.py "min_piece" of a part: an item of thin straps (a vest) needs a bigger limit than 8 px for the bits an arm cuts off
 HIDE_ERODE = int(sc.get("uo_hide_erode", HIDE_ERODE))
+TORSO_HIDE_MARGIN = float(sc.get("uo_torso_hide_margin", TORSO_HIDE_MARGIN))   # per item, e.g. 0.03 for a beard: the torso hides it where it is only 3 cm behind the torso (back views, leaning poses)
 LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
                                    # a flail held in the hand: arms and hands cut it far more than the original

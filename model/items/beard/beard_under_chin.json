@@ -11,4 +11,5 @@
  "uo_contrast": 1.6,
  "uo_contrast_pivot": 0.6,
  "uo_edge_smooth": 1,
- "uo_outline": 0.6}}
+ "uo_outline": 0.6,
+ "uo_torso_hide_margin": 0.03}}
