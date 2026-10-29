@@ -425,7 +425,7 @@ if hg:                                                           # "hang": a lon
         gh = o.vertex_groups.new(name="head"); gb = o.vertex_groups.new(name=hg.get("bone", "chest"))
         for v, z in zip(o.data.vertices, zs):
             t = min(max((z - hg["z_end"]) / max(hg["z_top"] - hg["z_end"], 1e-6), 0.0), 1.0); t = t * t * (3 - 2 * t)
-            share = (1.0 - t) * float(hg.get("share", 1.0))          # "share": the part of the weight the bone gets at z_end and below (0.4 = the foot of the beard follows the head with 60 %)
+            share = (1.0 - t) * float(hg.get("share", 1.0))          # "share": the part of the weight the bone gets at z_end and below (0.4 = the foot of the beard follows the head with 60 percent)
             gh.add([v.index], 1.0 - share, "REPLACE"); gb.add([v.index], share, "REPLACE")
         print("uo_make_item: %%s hangs: head -> %%s between z %%.2f and %%.2f" %% (o.name, hg.get("bone", "chest"), hg["z_top"], hg["z_end"]))
 if %(behind)r:                                                   # "behind_torso": the chest / neck hide the part of the item that is behind them (a beard hanging in front of the chest is not drawn over the back from behind)
