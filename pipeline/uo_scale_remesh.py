@@ -1,9 +1,10 @@
 """A heavy sculpt (millions of vertices, authored large) -> a small solid glb at UO size, placed in the model's coordinates (metres, Z up, face to -Y).
 
-    python uo_scale_remesh.py IN.glb OUT.glb --scale 0.23 [--voxel 0.0035] [--tris 40000] [--move X Y Z] [--cut-z Z] [--stretch SX SY SZ]
+    python uo_scale_remesh.py IN.glb OUT.glb --scale 0.23 [--voxel 0.0035] [--tris 40000] [--move X Y Z] [--cut-z Z] [--stretch SX SY SZ] [--taper TOP_W END_W POWER]
 
 Scale first (the voxel size is then in metres of the result), a voxel remesh (the surface detail below the voxel size goes, the lobes of curls stay), triangulate,
-decimate to --tris, a plain grey material (the game dyes hair with a hue; uo_materials.py sets the brightness), then move by X Y Z; --cut-z removes everything above that height (after the move; the cut is closed by a flat cap). The model is not otherwise changed
+decimate to --tris, a plain grey material (the game dyes hair with a hue; uo_materials.py sets the brightness), then move by X Y Z; --cut-z removes everything above that height (after the move; the cut is closed by a flat cap).
+--taper: the width (x) of the result is brought to a profile that is TOP_W m at the top (the jaw), END_W m at the tip, TOP_W..END_W falling as (1 - t) ** POWER along the height t: a beard whose widest part is in the middle (a sculpt of a diamond shape) becomes widest at the chin like the original beards. The model is not otherwise changed
 (a model made for the UO head can be placed by hand: --move; recipe "prepare": {"AUTOFIT": false, "FIT": false}). Needs bpy (4.2).
 """
 import argparse, sys, time
@@ -17,6 +18,7 @@ ap.add_argument("--voxel", type=float, default=0.0035)
 ap.add_argument("--tris", type=int, default=40000)
 ap.add_argument("--move", type=float, nargs=3, default=[0.0, 0.0, 0.0])
 ap.add_argument("--cut-z", type=float, default=None)
+ap.add_argument("--taper", type=float, nargs=3, default=None, metavar=("TOP_W", "END_W", "POWER"))
 ap.add_argument("--stretch", type=float, nargs=3, default=[1.0, 1.0, 1.0], help="extra width / depth / height factors on top of --scale")
 a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
 
@@ -47,6 +49,27 @@ if a.cut_z is not None:
     if border:
         bmesh.ops.holes_fill(bm, edges=border, sides=0)
     bm.to_mesh(me); bm.free()
+if a.taper:
+    top_w, end_w, pw = a.taper
+    co = np.array([v.co[:] for v in me.vertices])
+    z0, z1 = co[:, 2].max(), co[:, 2].min()
+    bins = np.linspace(z1, z0, 31)
+    lo_x, hi_x = [], []
+    for lo, hi in zip(bins[:-1], bins[1:]):
+        m = (co[:, 2] >= lo) & (co[:, 2] <= hi)
+        lo_x.append(np.percentile(co[m, 0], 4) if m.any() else np.nan); hi_x.append(np.percentile(co[m, 0], 96) if m.any() else np.nan)      # percentiles: single strands that stick out do not set the width
+    lo_x, hi_x = np.array(lo_x), np.array(hi_x)
+    mid = (bins[:-1] + bins[1:]) / 2; ok = ~np.isnan(lo_x)
+    smooth = lambda v: np.convolve(np.pad(v[ok], 1, mode="edge"), np.ones(3) / 3, mode="valid")
+    centre = np.interp(co[:, 2], mid[ok], smooth((lo_x + hi_x) / 2))       # the sculpt is not exactly symmetric: the beard is centred on x = 0
+    cur = np.interp(co[:, 2], mid[ok], smooth((hi_x - lo_x) / 2))
+    t = (z0 - co[:, 2]) / max(z0 - z1, 1e-6)
+    want = ((top_w - end_w) * (1 - t) ** pw + end_w) / 2
+    f = np.clip(want / np.maximum(cur, 1e-6), 0.3, 5.0)
+    for v, c, k in zip(me.vertices, centre, f):
+        v.co.x = (v.co.x - c) * k
+    me.update()
+    print("uo_scale_remesh: taper: width %.3f at the top, %.3f in the middle, %.3f at the tip; factors %.2f .. %.2f" % (top_w, (top_w - end_w) * 0.5 ** pw + end_w, end_w, f.min(), f.max()))
 me.materials.clear()
 mat = bpy.data.materials.new("grey"); mat.use_nodes = True
 mat.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.7, 0.7, 0.7, 1)
