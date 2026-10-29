@@ -21,6 +21,8 @@ ap.add_argument("--margin", type=float, default=0.0)
 ap.add_argument("--dark", type=int, default=75)           # luminance below which a pixel counts as an outline pixel
 ap.add_argument("--fade", type=float, default=5.0)        # px over which the tone of the beard is matched to the sideburn along the seam
 ap.add_argument("--gap", type=int, default=2)
+ap.add_argument("--damp", type=float, nargs=2, default=[1.0, 1.0], metavar=("KX", "KY"), help="share of the sway of the beard against the head that is kept (1 = all, 0.5 = half); the sway is the centroid of the beard minus the centroid of the zone, per action and direction, damped towards its mean by whole pixels")
+ap.add_argument("--max-shift", type=int, default=2)
 ap.add_argument("--max-light", type=int, default=200, help="no pixel of the rendered beard lighter than this (the original beards peak at 197)")
 a = ap.parse_args()
 
@@ -48,6 +50,15 @@ def on_canvas(im, meta, W, H, ax, ay):
     y0, x0 = max(oy, 0), max(ox, 0); y1, x1 = min(oy + h, H), min(ox + w, W)
     if y1 > y0 and x1 > x0:
         out[y0:y1, x0:x1] = im[y0 - oy:y1 - oy, x0 - ox:x1 - ox]
+    return out
+
+
+def shift(im, dx, dy):
+    out = np.zeros_like(im)
+    H, W = im.shape[:2]
+    ys, xs = slice(max(dy, 0), H + min(dy, 0)), slice(max(dx, 0), W + min(dx, 0))
+    yd, xd = slice(max(-dy, 0), H + min(-dy, 0)), slice(max(-dx, 0), W + min(-dx, 0))
+    out[ys, xs] = im[yd, xd]
     return out
 
 
@@ -108,19 +119,42 @@ def main():
     W, H = mb["canvas"]; ax, ay = mb["anchor"]
     sel = [x for x in a.actions.split(",") if x]
     out_meta = json.loads(json.dumps(mb))
+    stats = []
     for blk in out_meta["blocks"]:
         name = blk["name"]
         if sel and name not in sel:
             continue
         action, d = blk["action"], blk["dir"]
+        frames = []
         for i, fr in enumerate(blk["frames"]):
             B, _ = load(a.beard, action, d, i)
             O, _ = load(a.orig, action, d, i)
             Zim, _ = load(a.zone, action, d, i)
-            Bc = on_canvas(B, mb, W, H, ax, ay); Oc = on_canvas(O, mo, W, H, ax, ay); Zc = on_canvas(Zim, mz, W, H, ax, ay)[..., 3] > 0
+            frames.append((fr, on_canvas(O, mo, W, H, ax, ay), on_canvas(B, mb, W, H, ax, ay), on_canvas(Zim, mz, W, H, ax, ay)[..., 3] > 0))
+        # sway of the beard against the head: damped towards its mean by whole pixels
+        rel = []
+        for fr, Oc, Bc, Zc in frames:
+            ys, xs = np.nonzero(Bc[..., 3] > 0); zy, zx = np.nonzero(Zc)
+            rel.append(np.array([xs.mean() - zx.mean(), ys.mean() - zy.mean()]) if len(xs) and len(zx) else None)
+        ok = [r for r in rel if r is not None]
+        mean = np.mean(ok, 0) if ok else None
+        k = np.array(a.damp)
+        shifted = []
+        for (fr, Oc, Bc, Zc), r in zip(frames, rel):
+            if r is not None and len(ok) > 2 and (k < 1).any():
+                sh = np.clip(np.rint(-(1.0 - k) * (r - mean)), -a.max_shift, a.max_shift).astype(int)
+                Bc = shift(Bc, sh[0], sh[1])
+            shifted.append(Bc)
+        if len(ok) > 2:
+            after = [np.array([np.nonzero(Bc[..., 3] > 0)[1].mean() - np.nonzero(Zc)[1].mean(), np.nonzero(Bc[..., 3] > 0)[0].mean() - np.nonzero(Zc)[0].mean()]) for (fr, Oc, _, Zc), Bc in zip(frames, shifted) if (Bc[..., 3] > 0).any() and Zc.any()]
+            stats.append((np.std(ok, 0), np.std(after, 0)))
+        for (fr, Oc, _, Zc), Bc in zip(frames, shifted):
             res = merge(Oc, Bc, Zc)
             p = os.path.join(a.out, "frames", "%s" % name, "dir%d" % d); os.makedirs(p, exist_ok=True)
             Image.fromarray(res).save(os.path.join(p, fr["file"]))
+    if stats:
+        b4 = np.mean([s_[0] for s_ in stats], 0); af = np.mean([s_[1] for s_ in stats], 0)
+        print("sway of the beard against the head (std over the frames of a block, px, mean over the blocks): x %.2f -> %.2f, y %.2f -> %.2f" % (b4[0], af[0], b4[1], af[1]))
     json.dump(out_meta, open(os.path.join(a.out, "meta.json"), "w"), indent=1)
 
 
