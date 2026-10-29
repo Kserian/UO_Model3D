@@ -1,6 +1,6 @@
 """Per-frame sideways position of a rigid item against the ORIGINAL body in the front view: the item is moved along x (the width of the body) until its centre is on the centre of the original torso.
 
-    python fit_item_center.py ITEM.blend RENDER_DIR --action 02_run_unarmed [--action ...] [--parent pelvis] [--dir 0] [--pxm 30] [--body pipeline/body400.vd] [--target 0.0]
+    python fit_item_center.py ITEM.blend RENDER_DIR --action 02_run_unarmed [--action ...] [--constant] [--parent pelvis] [--dir 0] [--pxm 30] [--body pipeline/body400.vd] [--target 0.0]
 
 Like fit_item_contact.py (which sets the distance in the side view), for an item bound to --parent with the property uo_motion, rendered once into RENDER_DIR. The offset of a frame: the middle of the item's pixels minus the
 mean over its rows of the middle of the run of body pixels (of that row) nearest to the head's axis (the rows of the arms, which swing, make separate runs; the head axis is the middle of the body's first rows),
@@ -43,7 +43,7 @@ def offset_px(render, act, d, i, body):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("blend"); ap.add_argument("render"); ap.add_argument("--action", action="append", required=True)
     ap.add_argument("--parent", default="pelvis"); ap.add_argument("--dir", type=int, default=0); ap.add_argument("--pxm", type=float, default=30.0); ap.add_argument("--target", type=float, default=0.0)
-    ap.add_argument("--body", default=os.path.join(HERE, "body400.vd")); ap.add_argument("--out")
+    ap.add_argument("--body", default=os.path.join(HERE, "body400.vd")); ap.add_argument("--out"); ap.add_argument("--constant", action="store_true", help="ONE shift per action (the mean offset) in the item's own frame, like moving its starting place: the motion of the item stays as it was; without it the item is put on the torso in every frame, which removes its natural swing")
     a = ap.parse_args()
     import vd, bpy
     _, _, body = vd.read_vd(a.body)
@@ -58,6 +58,10 @@ if __name__ == "__main__":
         action = bpy.data.actions[act]; rig.animation_data.action = action; n = int(action["uo_frames"]); num = int(act[:2])
         off = [offset_px(a.render, act, a.dir, i, body) for i in range(n)]
         print("%s: offset px %s" % (act, " ".join("%+.1f" % o if o is not None else "  n/a" for o in off)))
+        valid = [o for o in off if o is not None]
+        dx_const = (a.target - float(np.mean(valid))) / a.pxm if valid else 0.0
+        if a.constant:
+            print("   constant shift %+.1f px = %+.1f cm along the item's own x" % (a.pxm * dx_const, 100 * dx_const))
         for i in range(n):
             key = "%d_%d" % (num, i)
             if key in res:
@@ -65,7 +69,11 @@ if __name__ == "__main__":
             else:
                 sc.frame_set(1 + i * STEP); bpy.context.view_layer.update()
                 P = np.array([list(r) for r in rig.pose.bones[a.parent].matrix]); M0 = P @ np.linalg.inv(rest)
-            T = np.eye(4); T[0, 3] = 0.0 if off[i] is None else (a.target - off[i]) / a.pxm
-            res[key] = T @ M0
+            T = np.eye(4)
+            if a.constant:
+                T[0, 3] = dx_const; res[key] = M0 @ T                          # in the rest frame of the item, before the parent's pose: moves with the body, the swing is kept
+            else:
+                T[0, 3] = 0.0 if off[i] is None else (a.target - off[i]) / a.pxm
+                res[key] = T @ M0
     np.savez(out, **res)
     print("fit_item_center: saved", out, "(%d frames)" % len(res))
