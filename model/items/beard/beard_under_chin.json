@@ -5,9 +5,10 @@
  "behind_torso": true,
  "prepare": {"AUTOFIT": false,
  "FIT": false},
- "materials": {"BRIGHTNESS": 0.65},
+ "materials": {"BRIGHTNESS": 0.85},
  "scene": {"uo_head_hides": 1,
  "uo_min_piece": 0,
- "uo_contrast": 2.0,
+ "uo_contrast": 1.6,
  "uo_contrast_pivot": 0.6,
- "uo_edge_smooth": 1}}
+ "uo_edge_smooth": 1,
+ "uo_outline": 0.6}}

@@ -29,12 +29,12 @@ The sculpt plus the cheek whiskers of the original beard 801 (two strips beside 
 ## Hybrid: `Beard_long_hybrid.vd` (current)
 Feedback on the sideburn shell ("unnatural, the beard should sit under the chin, the sideburns are weak, take the original ones and soften the join"): the sideburns are now the **pixels of the original beard 801**, the beard is the sculpt **moved under the chin**, and the join is softened. 1050 frames (8 empty from behind, dir 4, where the beard is hidden), exactly grey, <= 27 colours per block.
 
-    python pipeline/uo_scale_remesh.py beard.glb model/items/beard/beard_under_chin.glb --scale 0.21 --voxel 0.007 --move 0.014 -0.205 1.493 --cut-z 1.665 --taper 0.22 0.03 0.85
+    python pipeline/uo_scale_remesh.py beard.glb model/items/beard/beard_under_chin.glb --scale 0.21 --voxel 0.007 --move 0.014 -0.205 1.493 --tuck 1.60 1.68 0.08 --cut-z 1.70 --taper 0.22 0.03 0.85
     python pipeline/uo_jaw_zone.py model/items/beard/jaw_zone.glb 1.64 1.74
     python pipeline/uo_make_item.py model/items/beard/beard_under_chin.json --out BEARD --vd      # all actions
     python pipeline/uo_make_item.py model/items/beard/jaw_zone.json --out ZONE --vd
     python vdtool/vdtool.py extract <anim_801.vd> ORIG                                           # python vdtool/mul2vd.py anim.idx anim.mul out 801
-    python pipeline/uo_hybrid_beard.py ORIG BEARD/render/clothing ZONE/render/clothing OUT --align 6 --align-window 1 --straight 0.9
+    python pipeline/uo_hybrid_beard.py ORIG BEARD/render/clothing ZONE/render/clothing OUT
     python vdtool/vdtool.py pack OUT Beard_long_hybrid.vd
 
 - Under the chin: the sculpt is x0.21 (0.85 wide, so 0.36 m long, 15 cm wide), its mouth arch at the chin (z 1.635), cut off flat at z 1.665 (no moustache, no tips on the cheeks), back plane 2 cm behind the previous placement; voxel remesh 7 mm (3.5 mm kept the slits between the strands, the body showed through them and the renderer drew an outline round every one: loops over the chest). Stand, dir 0-2: the mass sits on rows 93-98 like the original 801 (it had been 91-101 and 7 px wide).
@@ -62,4 +62,23 @@ Feedback on the sideburn shell ("unnatural, the beard should sit under the chin,
 - `uo_hybrid_beard.py --align 6 --align-window 1`: per frame the top of our beard (mean column of the top 3 rows, first row) is moved onto the top of the original beard of the same frame (at most 6 px): the original follows the real head, so the beard sits where the original sat in every frame, also in the fast ones. Replaces `--damp`. Result: x mean +0.08, std **0.46**, p95 1.0; y std **0.28**; **97 %** of 774 frames within 1 px. A 3-frame median of the offset (`--align-window 3`) gave 85 %: not used. The frame-to-frame change of the top against the head stays at the original's level (mean 1.27, p95 3.8 px; original 1.11 / 3.6: the original jumps by about a pixel itself).
 - Then straightened (`--straight 0.9`): centre of the rows in stand dir 0: 97.0-99.0 (the original's 97.5-99.5), the foot is no longer bent.
 - The 3 % that stay off are frames where the original has no beard below the zone or its anchor is ambiguous (a head turned away).
+
+### Sixth round: "the beard floats and flickers, hard joins, hands do not cut it" (2026-10-29, current file)
+Looked at filmstrips of all kinds of actions (walk, run, attack, spell, bow, eat, die, mounted) against the original, then measured. Causes found:
+1. **Flicker:** the beard was rigid on the head, so in every frame it turned with the head's yaw / roll: a 5-px-wide ribbon that flipped its silhouette (an S-shaped sliver one frame, a blob the next), nothing like the stable V of the original. The 2D shifts of the earlier rounds (align, damp, straighten row by row) added jitter of their own.
+2. **Hands:** the hands / head hide an item inside the renderer, at the place the beard is rendered at; the 2D shifts (mean 2 px, 28-50 % of the frames >= 3 px, up to 7) moved the beard after that, so the cut was in the wrong place.
+3. **Seams:** a flat top edge of the beard cut at z 1.665 (a dark horizontal line under the chin, visible in every frame) and the inner loops of an outline round holes of the sculpt.
+Changes:
+- `render_uo_layer.py` `ITEM_MOTION` (a JSON file, or scene property `uo_item_motion`): the items hang from a point of a bone (`"bone": "head"`, `"pivot"`): **translation only, no turn**, so the beard moves with the head and keeps its shape; plus a per-frame shift in px applied to the 3D item **before** the body hides it, so hands and head cut it where they really are. Off by default (no baseline changes).
+- `uo_scale_remesh.py --tuck 1.60 1.68 0.08 --cut-z 1.70`: the top of the beard is pushed back into the head (up to 8 cm), the head hides it, no flat top edge under the chin. Scene: `uo_outline 0.6` (softer rim), brightness 0.85, contrast 1.6 (the interior is lighter than the skin, as in the original beards).
+- `uo_beard_shift.py`: pass 1 renders the beard with `ITEM_MOTION` without a shift; the script writes `beard_motion.json` (dx per frame = centre of mass of the original beard below the zone minus ours, 3-frame median, at most 3 px, no dy); pass 2 renders with it. The first version aligned the visible top edge, which depends on what the head hides: moving the beard changed the anchor and the fit chased itself (61 % of the frames within 1 px, not 97 %); the centre of mass of the whole beard does not.
+```
+python pipeline/uo_make_item.py model/items/beard/beard_under_chin.json --out BEARD         # prepare
+run_render_headless.py BEARD/item.blend BEARD/render_p1 LAYER='"clothing"' CANVAS='(256,256)' ANCHOR='(128,192)' ITEM_MOTION='"motion0.json"'   # {"bone": "head", "pivot": [0.014, -0.205, 1.64]}
+python pipeline/uo_beard_shift.py ORIG BEARD/render_p1/clothing ZONE/render/clothing beard_motion.json
+run_render_headless.py BEARD/item.blend BEARD/render_p3 ... ITEM_MOTION='"beard_motion.json"'      # pass 2
+python pipeline/uo_hybrid_beard.py ORIG BEARD/render_p3/clothing ZONE/render/clothing OUT && python vdtool/vdtool.py pack OUT Beard_long_hybrid.vd
+```
+Measured on all 1050 frames (beard below the jaw zone; original 801 / previous file / now): between two frames the area changes by 0.20 / 0.21 / 0.22 (mean), the silhouette after centring has an IoU of 0.61 / 0.67 / 0.64, the centroid jump against the head is 1.00 / 1.44 / **1.16** px (p90 2.17 / 2.82 / 2.48): the beard moves against the head like the original, not more. Centroid x against the original frame by frame: std 1.16 px (the previous file chased the original's own jitter: 0.71, but jumped more against the head). Eat / spell filmstrips: the forearm now covers the beard (the previous file drew it across the arm).
+Not done: pointed tip (still blunt), hair. Not checked in the game.
 
