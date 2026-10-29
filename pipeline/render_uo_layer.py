@@ -88,6 +88,8 @@ DESPECKLE = 0                      # clothing: single dark pixels inside the ite
                                    # than this (0-255) take the colour around them - deep sculpt details / rivets that
                                    # turn into black dots at UO size. 0 = off. Was 28 while items were rendered at 1 sample (it cleaned that noise);
                                    # at SAMPLES it only erased dark texture detail (17 % of the pixels of a textured mask); per item: scene "uo_despeckle"
+HIDE_GROW = 0                      # per item (scene "uo_hide_grow"): px. A hand / arm hides the item also this far round the 3D hand (a depth-aware dilation: only where it is in front of the item; inside the ORIGINAL body): the 3D hand stands 1-2 px off the original, and the
+                                   # fingers of the original that the 3D fingers miss were covered by the item (the fingers "cut off"). 0 = off
 EDGE_FREE = 0                      # per item (scene "uo_edge_free", 1): the dark 1-px outline only where the item meets the background, not where a hand / an arm hides part of it: the cut edge is drawn by the original body
                                    # (its own outline), and a second dark line along a jagged cut reads as noise round the hand. The silhouette is that of the item rendered without the body
 DEBUG_DUMP = ""                    # "action,frame,direction" (e.g. "2,4,1"): the masks of that frame go to debug_A_I_D.npz in the layer folder
@@ -120,6 +122,7 @@ CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
 LIE_W = {}
 FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
 EDGE_FREE = int(sc.get("uo_edge_free", EDGE_FREE))
+HIDE_GROW = int(sc.get("uo_hide_grow", HIDE_GROW))
 INNER_LINE = float(sc.get("uo_inner_line", INNER_LINE))
 EDGE_SMOOTH = int(sc.get("uo_edge_smooth", EDGE_SMOOTH))
 CLOTH_LIE = float(sc.get("uo_cloth_lie", CLOTH_LIE))   # uo_make_item.py "tune": {"scene": {"uo_hide_erode": 1}}
@@ -836,6 +839,9 @@ def body_coverage():
     return raster([body])[0]
 
 
+NEAR = {}
+
+
 def body_occlusion(free, margin):
     """the clothing render without the body, with the body in front of the item removed. The body hides a pixel only
     where it is more than `margin` in front of the visible item surface. Returns (hold, body coverage)."""
@@ -852,6 +858,15 @@ def body_occlusion(free, margin):
         zi = np.where(miss, nb, zi)
     hold = free.copy()
     hold[occ & (zb < zi - margin)] = 0.0
+    NEAR["m"] = None
+    if HIDE_GROW > 0:                                    # round the 3D hand / arm that is in front of the item: the neighbours within HIDE_GROW px (a diamond), by the depth of THIS item pixel
+        G = HIDE_GROW; Hh, Ww = occ.shape
+        po = np.pad(occ, G); pz = np.pad(zb, G, constant_values=np.inf); near = np.zeros_like(occ)
+        for dy in range(-G, G + 1):
+            for dx in range(-G, G + 1):
+                if (dx or dy) and abs(dx) + abs(dy) <= G:
+                    near |= po[G + dy:G + dy + Hh, G + dx:G + dx + Ww] & (pz[G + dy:G + dy + Hh, G + dx:G + dx + Ww] < zi - margin)
+        NEAR["m"] = near & seen
     if HIDE_ERODE > 0:                                   # hands and head: their hiding area shrunk (they stand off the original sprite by a pixel or two)
         vis = [o for o in clothes if not o.hide_render]
         for part_tris, near_sleeve in ((HIDER_TRIS & HEAD_TRIS, False), (HIDER_TRIS & HANDHEAD_TRIS & ~HEAD_TRIS, True)):
@@ -1093,6 +1108,8 @@ def exact_clothing(hold, free, orig_body, cov):
     out[use_hold] = hold[use_hold]
     rim = orig_body & ~cov & binary_dilation(hidden, iterations=2)   # thin rim the model body does not reach
     out[rim] = 0.0
+    if NEAR.get("m") is not None:                       # HIDE_GROW: next to the 3D hand / arm in front of the item, inside the original body: the fingers the 3D hand misses
+        out[NEAR["m"] & a_f & orig_body] = 0.0
     return out
 
 
