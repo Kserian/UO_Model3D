@@ -11,7 +11,7 @@ import argparse, colorsys, struct, sys
 import numpy as np
 
 
-def make_map(to_hue, from_hue, rng, min_sat, dark_rng=18.0, dark_sat=0.08, dark_val=0.5):
+def make_map(to_hue, from_hue, rng, min_sat, dark_rng=18.0, dark_sat=0.08, dark_val=0.5, sat_mult=None, lum_mult=None):
     def f(rgb):
         r, g, b = [c / 255.0 for c in rgb]
         h, s, v = colorsys.rgb_to_hsv(r, g, b)
@@ -19,6 +19,9 @@ def make_map(to_hue, from_hue, rng, min_sat, dark_rng=18.0, dark_sat=0.08, dark_
         dark = d <= dark_rng and s >= dark_sat and v < dark_val              # the dark outline of the red parts: low saturation after the darkening, still the same hue
         if not dark and (s < min_sat or d > rng):
             return rgb
+        if sat_mult is not None:                                        # the drum colours (drum_colors.py): hue, saturation and luminance factors
+            from drum_colors import recolor_rgb
+            return recolor_rgb(rgb, to_hue, sat_mult, lum_mult)
         lum = 0.299 * r + 0.587 * g + 0.114 * b
         r2, g2, b2 = colorsys.hsv_to_rgb(to_hue / 360.0, s, v)
         l2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2
@@ -65,9 +68,15 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("src"); ap.add_argument("dst")
     ap.add_argument("--to-hue", type=float, default=215.0); ap.add_argument("--from-hue", type=float, default=0.0)
     ap.add_argument("--range", type=float, default=28.0); ap.add_argument("--min-sat", type=float, default=0.30)
-    ap.add_argument("--dark-range", type=float, default=18.0); ap.add_argument("--dark-sat", type=float, default=0.08); ap.add_argument("--dark-val", type=float, default=0.5)
+    ap.add_argument("--color", help="NAME:SHADE from drum_colors.py (light / dark), e.g. teal:dark"); ap.add_argument("--dark-range", type=float, default=18.0); ap.add_argument("--dark-sat", type=float, default=0.08); ap.add_argument("--dark-val", type=float, default=0.5)
     a = ap.parse_args()
-    f = make_map(a.to_hue, a.from_hue, a.range, a.min_sat, a.dark_range, a.dark_sat, a.dark_val)
+    if a.color:
+        import os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from drum_colors import params
+        hue, sm, lm = params(*a.color.split(":"))
+        f = make_map(hue, a.from_hue, a.range, a.min_sat, a.dark_range, a.dark_sat, a.dark_val, sm, lm)
+    else:
+        f = make_map(a.to_hue, a.from_hue, a.range, a.min_sat, a.dark_range, a.dark_sat, a.dark_val)
     if a.src.lower().endswith(".png"):
         n, c = recolor_png(a.src, a.dst, f); print("%d colours, %d recoloured -> %s" % (n, c, a.dst))
     else:

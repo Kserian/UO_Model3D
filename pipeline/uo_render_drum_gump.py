@@ -1,6 +1,6 @@
 """Paperdoll gumps (male 50000 + 490, female 60000 + 490: on the body gumps 12 / 13) and item art (two IDs, the second mirrored) of a drum on a sash, from the same 3D drum as its animation.
 
-    PD_OUT=DIR PD_GUMPS=DIR_WITH_PNGS  python run_script_in_blend.py ITEM.blend uo_render_drum_gump.py
+    PD_OUT=DIR PD_GUMPS=DIR_WITH_PNGS  [PD_COLOR=teal:dark PD_SCRIPTS=pipeline]  python run_script_in_blend.py ITEM.blend uo_render_drum_gump.py
 
 PD_GUMPS: gump12.png, gump13.png (the drawn bodies), gump50490.png, gump60490.png (the ORIGINAL body sash of the client, anim 490), made by uo_gump_art.py.
 Gump (260 x 237, 90.5 px/m like uo_render_paperdoll.py: head top y 54 .. feet y 221): the original sash is kept pixel for pixel (it already fits the drawn body: it runs from the left shoulder to the right waist),
@@ -9,7 +9,8 @@ that the head looks up, out and to the front, lower than on the animation (the d
 Art (45 x 32): the drum lying on the ground with the strap in a loop beside it, seen like the other lying items (tilted towards the camera, turned), and its mirror.
 Writes gump_male.png, gump_female.png, art.png, art_mirror.png and preview.png in PD_OUT.
 """
-import json, os
+import json, os, sys
+import colorsys
 import bpy
 import numpy as np
 from mathutils import Matrix, Vector
@@ -17,6 +18,11 @@ from PIL import Image, ImageDraw
 from scipy import ndimage
 
 OUT = os.environ["PD_OUT"]; GUMPS = os.environ["PD_GUMPS"]
+sys.path.insert(0, os.environ.get("PD_SCRIPTS", os.path.abspath("pipeline")))
+COLOR = os.environ.get("PD_COLOR", "")           # "teal:dark" (drum_colors.py): the red shell of the drum is recoloured; "" = as it is
+if COLOR:
+    from drum_colors import params as color_params, recolor_rgb
+    HUE, SAT_M, LUM_M = color_params(*COLOR.split(":"))
 PXM = 90.5
 GW, GH = 260, 237
 GX0, GY_FEET = 94.5, 221.0
@@ -57,6 +63,9 @@ src = next(o for o in bpy.data.objects if o.type == "MESH" and o.name.startswith
 tmp = os.path.join(OUT, "_tmp.png")
 
 
+SHELL = {}
+
+
 def make_drum(name):
     """an unbound copy of the drum with its mesh in world coordinates, centred on its middle"""
     ob = src.copy(); ob.data = src.data.copy(); sc.collection.objects.link(ob)
@@ -67,7 +76,61 @@ def make_drum(name):
     V = np.array([v.co[:] for v in ob.data.vertices]); c = (V.min(0) + V.max(0)) / 2
     ob.data.transform(Matrix.Translation(-Vector(c.tolist())))
     ob.name = name; ob.hide_render = False
+    SHELL[name] = shell_faces(ob)
     return ob
+
+
+def shell_faces(ob):
+    """per polygon: is it part of the drum that takes the new colour = everything but the heads (the cream membranes): the shell, the hoops (brass: they read dark red-brown in the render, and stood out red on a blue drum), the rods, the
+    clamps and the badge; a head = a face that looks along the axis at an end of it, inside the hoop; the mesh in the frame of the model (axis along x)"""
+    me = ob.data
+    V = np.array([v.co[:] for v in me.vertices])
+    idx = [np.array(p.vertices) for p in me.polygons]
+    cen = np.array([V[i].mean(0) for i in idx]); nrm = np.array([p.normal[:] for p in me.polygons])
+    depth = V[:, 0].max() - V[:, 0].min()
+    r = np.hypot(cen[:, 1], cen[:, 2])
+    head = (np.abs(nrm[:, 0]) > 0.9) & (np.abs(cen[:, 0]) > 0.35 * depth) & (r < 0.9 * np.percentile(r, 99))
+    return ~head
+
+
+def emission(name, v):
+    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+    em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Color"].default_value = (v, v, v, 1); em.inputs["Strength"].default_value = 1.0
+    out = nt.nodes.new("ShaderNodeOutputMaterial"); nt.links.new(em.outputs[0], out.inputs[0])
+    return m
+
+
+MAT_W, MAT_B = None, None
+
+
+def shell_cov(ob, shell, w, h, px_per_m, cx, cz, k):
+    """share of every output pixel (k x k samples) that is the recoloured part of the drum (everything but the heads): the same view with it white and the heads black (emission)"""
+    global MAT_W, MAT_B
+    if MAT_W is None:
+        MAT_W, MAT_B = emission("m_shell", 1.0), emission("m_rest", 0.0)
+    mk = ob.copy(); mk.data = ob.data.copy(); sc.collection.objects.link(mk)
+    mk.data.materials.clear(); mk.data.materials.append(MAT_B); mk.data.materials.append(MAT_W)
+    for p, s in zip(mk.data.polygons, shell):
+        p.material_index = 1 if s else 0
+    a = render(tmp, w, h, px_per_m, cx, cz, [mk])
+    bpy.data.objects.remove(mk, do_unlink=True)
+    bit = ((a[..., 0] > 0.5) & (a[..., 3] > 0.5)).astype(np.float32)
+    return bit[:h // k * k, :w // k * k].reshape(h // k, k, w // k, k).mean((1, 3))
+
+
+def colorize(da, cov, lo=0.25):
+    """float RGBA: the pixels of the recoloured part (coverage > lo) whose colour is red / orange (hue within -60..+50 degrees, saturation >= 0.08) get the new hue, saturation and luminance"""
+    out = da.copy()
+    sel = (da[..., 3] > 0.5) & (cov > lo)
+    ys, xs = np.nonzero(sel)
+    cache = {}
+    for y, x in zip(ys, xs):
+        c = tuple(int(round(v * 255)) for v in da[y, x, :3])
+        if c not in cache:
+            h, s, v = colorsys.rgb_to_hsv(*[q / 255.0 for q in c]); hd = ((h * 360 + 180) % 360) - 180
+            cache[c] = recolor_rgb(c, HUE, SAT_M, LUM_M) if (-60 <= hd <= 50 and s >= 0.08) else c
+        out[y, x, :3] = [q / 255.0 for q in cache[c]]
+    return out
 
 
 def aim(ob, head_n, badge_to):
@@ -139,7 +202,10 @@ for gender, gid in (("male", 50490), ("female", 60490)):
         drum.location = ((gx - GX0) / PXM, -0.5, (GY_FEET - gy) / PXM)
         bpy.context.view_layer.update()
         a = render(tmp, W, H, PXM * SS, cxw, czw, [drum])
-        da = box_down(a, SS); da[..., :3] = np.minimum(da[..., :3] * GAIN, CEIL / 255.0)
+        da = box_down(a, SS)
+        if COLOR:
+            da = colorize(da, shell_cov(drum, SHELL["drum_" + gender], W, H, PXM * SS, cxw, czw, SS))
+        da[..., :3] = np.minimum(da[..., :3] * GAIN, CEIL / 255.0)
         d = rim(np.clip(da * 255 + 0.5, 0, 255).astype(np.uint8), OUTLINE)
         dm = d[..., 3] > 0
         ys, xs = np.nonzero(dm)
@@ -208,7 +274,10 @@ drum.location = (0, 0, 0)
 bpy.context.view_layer.update()
 DX, DY = 15.0, 17.0                                              # the pixel of the drum's centre in the art
 a = render(tmp, AW * S2, AH * S2, ART_PXM * S2, (AW / 2 - DX) / ART_PXM, (DY - AH / 2) / ART_PXM, [drum])
-da = box_down(a, S2); da[..., :3] = np.minimum(da[..., :3] * GAIN, CEIL / 255.0)
+da = box_down(a, S2)
+if COLOR:
+    da = colorize(da, shell_cov(drum, SHELL["drum_art"], AW * S2, AH * S2, ART_PXM * S2, (AW / 2 - DX) / ART_PXM, (DY - AH / 2) / ART_PXM, S2))
+da[..., :3] = np.minimum(da[..., :3] * GAIN, CEIL / 255.0)
 dart = rim(np.clip(da * 255 + 0.5, 0, 255).astype(np.uint8), OUTLINE)
 dm = dart[..., 3] > 0; ys, xs = np.nonzero(dm)
 print("art: drum px %d, bbox x %d..%d y %d..%d" % (dm.sum(), xs.min(), xs.max(), ys.min(), ys.max()))
