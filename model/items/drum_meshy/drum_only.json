@@ -1,0 +1,1 @@
+{"name": "drum_meshy", "file": "models/split/drum.glb", "rigid": {"part": "front", "centre": [-0.02, -0.32, 1.325], "tilt": 0, "yaw": -90}, "decimate": 30000, "bake_texture": 2048}
