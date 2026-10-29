@@ -129,7 +129,7 @@ SHADE_BODY = float(sc.get("uo_shade_body", SHADE_BODY)); SHADE_SLEEVE = float(sc
 CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get("uo_contrast_pivot", CONTRAST_PIVOT))
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
-RIM = dict(edge=0.0, inner=0.0, ne=0, ni=0, paths={})   # OUTLINE_AUTO: brightness sums of the rim / one pixel in, and the frames of this run
+RIM = dict(edge=0.0, inner=0.0, ne=0, ni=0, paths={}, sil={})   # OUTLINE_AUTO: brightness sums of the rim / one pixel in, and the frames of this run
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
 rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
@@ -1155,6 +1155,8 @@ def frame_job():
                         if EDGE_SMOOTH > 0:
                             px = edge_smooth(px, EDGE_SMOOTH)
                         rgba = uo_post(px, silhouette=(free[..., 3] >= 0.5) if EDGE_FREE else None)
+                        if EDGE_FREE:
+                            RIM["sil"][(a, d, i)] = free[..., 3] >= 0.5          # finish() outlines the same rim
                         if DESPECKLE > 0:
                             rgba = despeckle(rgba, DESPECKLE)
                         if MIN_PIECE > 0:
@@ -1229,7 +1231,8 @@ def finish():
         print("render_uo_layer: rim / one pixel in %.2f before the outline, outline factor %.2f (target %.2f)" % (r, k, OUTLINE_TARGET))
         for (a, d, i), path in RIM["paths"].items():
             fr = blocks[(a, d)][i]; m = fr[..., 3] > 0
-            inner = m.copy(); inner[1:] &= m[:-1]; inner[:-1] &= m[1:]; inner[:, 1:] &= m[:, :-1]; inner[:, :-1] &= m[:, 1:]
+            ms = m if (a, d, i) not in RIM["sil"] else (m | RIM["sil"][(a, d, i)])     # EDGE_FREE: only the rim of the silhouette without the body, not the cut a hand makes
+            inner = ms.copy(); inner[1:] &= ms[:-1]; inner[:-1] &= ms[1:]; inner[:, 1:] &= ms[:, :-1]; inner[:, :-1] &= ms[:, 1:]
             edge = m & ~inner
             fr[..., :3][edge] = np.clip(fr[..., :3][edge].astype(np.float32) * k + 0.5, 0, 255).astype(np.uint8)
             if EDGE_FLOOR:
