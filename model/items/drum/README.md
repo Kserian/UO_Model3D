@@ -1,6 +1,6 @@
 # War drum (geometric) worn on the chest
 
-`Drum_chest.vd`: all 35 actions x 5 directions, rigid on the bone `chest`. A geometric drum (`drum.glb`, made by `pipeline/make_drum_model.py`: shell, two heads, two hoops, a red band; 28 cm across, 22 cm deep; no strap).
+`Drum_chest.vd`: all 35 actions x 5 directions, rigid on the bone `chest`. A geometric drum (`drum.glb`, made by `pipeline/make_drum_model.py`: shell, two heads, two hoops, a red band; 28 cm across, 22 cm deep) with a carrying sash: two leather straps (6 cm wide) from the top of the drum over the shoulders, down the upper back, joined in a U (`pipeline/uo_make_sash.py`, built on the skin of the rest pose, 8 mm off it, rigid on `chest` like the drum). Recipe `"sash": {...}` inside `"rigid"` (settings by name: `WIDTH`, `THICK`, `COLOR`, `ATTACH`, `SHOULDER`, `BACK`, `JOIN`).
 
 Rebuild: `python pipeline/make_drum_model.py model/items/drum/drum.glb`, then `python pipeline/uo_make_item.py model/items/drum/drum.json --out OUT --vd` (~20 min; `--preview` alone gives `preview.png`, do not give both).
 
@@ -17,5 +17,5 @@ Why this place (measured on the 578 frames of the 35 actions): the drum is a rig
 | z 1.30 m, heads forward | 2.2 % | 22 % |
 
 Lower is worse for the legs (thighs come up in walk and run), higher is worse for the arms; the least of both is at 1.30-1.35 m (under the chin, head 0 %). The rest of the arm share is hands going to the chest (bow, crossbow, salute, eating, two-hand blows), which no front item avoids. Heads to the sides were slightly better than forward (23 % vs 24 % in total).
-`item_qa.py` of the finished item: inside the body 1.1 % of the vertices (worst: area spell), deepest 90 mm.
+`item_qa.py` of the finished item: inside the body 2.6 % of the vertices (worst: 1H slash; the drum alone 1.1 %, the straps add the rest at the shoulder when the arm goes up), deepest 90 mm.
 Not checked: the horse in the mounted actions (23-29), a drumming animation (the hands do not strike the drum), `test_items` baselines (the item is not a replica of an original).
