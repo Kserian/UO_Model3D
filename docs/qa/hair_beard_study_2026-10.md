@@ -49,3 +49,6 @@ A throw-away beard (cheek shell + tapered tube 20 cm below the chin, solidified 
 - Bulk 65 px front (original 51), 38 px profile (28); bottom row 102 vs 98 of the original (longer, as intended).
 - 1050 frames, all palettes grey (R = G = B within 8), no empty frame except behind the head (38, dir 2-4 of some actions).
 
+## Sideburns for the sculpt beard (2026-10-29)
+`pipeline/uo_cheek_shell.py`, `model/items/beard/Beard_long_wavy_sideburns.vd`. The original 801 above the beard line (stand, rows <= 92) is two 2-px strips in the front view, a cheek-to-ear patch in profile and 14 px of wings at the head edges from behind. A skin shell on the cheeks, cut away from the sculpt (no overlap), fitted by a coordinate search on IoU with those pixels (0.14 -> 0.32; thick 0.016 gave 0.14, 0.022 0.26, 0.035 0.32). Pixels of the original covered: front 18 / 22, 3/4 15 / 20, profile 19 / 19, back-left 10 / 17, behind 1 / 14. The camera is elevated ~30 deg (31.2 rows per m of height), so a cheek point 10 cm forward appears 1.8 rows lower: the strips seen in the front view at rows 88-92 are the cheeks at z 1.63-1.76, and the outer 2 px of the face are the lateral head surface, not the front of the cheek.
+
