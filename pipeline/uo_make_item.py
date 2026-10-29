@@ -15,7 +15,7 @@ RECIPE.json (only "file" and "kind" are required):
    "bake_texture": 0,          # px (2048): the reduced model gets new UVs and a texture baked from the original (a reduction smears the UVs of a detailed texture; uo_import_item.py BAKE_TEXTURE)
    "scene": {"uo_outline": 0.6, "uo_hide_erode": 1, "uo_legs_under": 1},   # per-item settings of render_uo_layer.py (outline strength, hands / head hide a pixel less, the legs never hide a long robe; "uo_contrast": 1.5 = a contrast curve on the item (darker creases, brighter lights: sleeves and hands read thinner, README section 4; kind robe / skirt get uo_contrast 1.5, uo_shade_sleeve 0.4, uo_shade_width 4 unless the recipe says otherwise); "uo_samples": 1024 = more Cycles samples; "uo_edge_floor": 24 = the 1-px outline is never darker than 24/255 per channel, no pure black rim)
    "turn": 0,                  # 180 when the model came in back to front (the fit also tries it)
-   "hang": {"bone": "chest", "z_top": 1.64, "z_end": 1.45},   # a long beard hangs instead of turning with the head: weights from the head (above z_top) to the bone (below z_end), smoothstep between
+   "hang": {"bone": "chest", "z_top": 1.64, "z_end": 1.45, "share": 1.0},   # a long beard swings less than the head: weights from the head (above z_top) to the bone (below z_end, at most "share" of the weight), smoothstep between
    "behind_torso": false,     # true for an item that hangs in front of the chest (a long beard): the torso hides the part of it that is behind the torso (render_uo_layer.py TORSO_HIDE_MARGIN); for hair / beard also "scene": {"uo_head_hides": 1}
    "stretch": [0.8, 1.25, 1.0],  # width, depth, height factors about the centre (a model made on a mannequin with other proportions than the UO body); "tune": {"uo_autofit_item.py": {"UNIT": 0.3}} = the file is not in metres
    "decimate": 30000,          # vertices above which the model is reduced
@@ -425,7 +425,8 @@ if hg:                                                           # "hang": a lon
         gh = o.vertex_groups.new(name="head"); gb = o.vertex_groups.new(name=hg.get("bone", "chest"))
         for v, z in zip(o.data.vertices, zs):
             t = min(max((z - hg["z_end"]) / max(hg["z_top"] - hg["z_end"], 1e-6), 0.0), 1.0); t = t * t * (3 - 2 * t)
-            gh.add([v.index], t, "REPLACE"); gb.add([v.index], 1.0 - t, "REPLACE")
+            share = (1.0 - t) * float(hg.get("share", 1.0))          # "share": the part of the weight the bone gets at z_end and below (0.4 = the foot of the beard follows the head with 60 %)
+            gh.add([v.index], 1.0 - share, "REPLACE"); gb.add([v.index], share, "REPLACE")
         print("uo_make_item: %%s hangs: head -> %%s between z %%.2f and %%.2f" %% (o.name, hg.get("bone", "chest"), hg["z_top"], hg["z_end"]))
 if %(behind)r:                                                   # "behind_torso": the chest / neck hide the part of the item that is behind them (a beard hanging in front of the chest is not drawn over the back from behind)
     for o in bpy.data.collections["Clothing"].all_objects:
