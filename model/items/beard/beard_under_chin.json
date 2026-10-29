@@ -10,7 +10,4 @@
  "uo_min_piece": 0,
  "uo_contrast": 2.0,
  "uo_contrast_pivot": 0.6,
- "uo_edge_smooth": 1},
- "hang": {"bone": "chest",
- "z_top": 1.64,
- "z_end": 1.45}}
+ "uo_edge_smooth": 1}}
