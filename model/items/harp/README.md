@@ -21,37 +21,32 @@ Share of the item inside the body (grip zone of 6 cm left out); the same metric 
 
 - **Nothing below the hand** matters most: butt -0.04 is 3-7x better than the default -0.19.
 - Width 0.30 or 0.40 hardly changes anything; taller is a little better (0.75: 0.80 %).
-- A classic harp with the pillar over the foot collides as little, but the pipeline would put the hand in the middle of the strings (foot 0.2 m off the grip line). The **V frame with the foot in the middle** is the shape that needs no code change. The worst actions are the same for every shape (18, 27 bow, 29 mounted 2H, 21 die forward: hands together or on the ground).
+- A classic harp with the pillar over the foot collides as little, but the pipeline would put the hand in the middle of the strings (foot 0.2 m off the grip line). The V frame with the foot in the middle needs no code change, but the user wants the harp held by its frame (pillar), not by a handle or foot. The worst actions are the same for every shape (18, 27 bow, 29 mounted 2H, 21 die forward: hands together or on the ground).
 
-## The shape
+## The shape (user decision: held by the harp itself, no handle, no foot)
 
-- Total height **0.65 m** (23 px at 36 px/m), width **~0.35 m** (13 px), depth 5-6 cm (2 px edge-on); height:width about 1.9:1 so the long axis is unambiguous.
-- No handle (user decision): the hand holds the harp itself, round the bottom of the frame. The lowest sixth (~10 cm) is a solid, narrow, rounded wooden foot where pillar and soundbox join, without strings; the fist closes on it (butt -0.05: the frame ends 5 cm below the grip, nothing else hangs below the hand).
-- V frame from the foot: a slim straight **pillar** (>= 4 cm) on one side, a thicker tapered **soundbox** (>= 7 cm) on the other; on top a thick S-curved **neck** (>= 5 cm). Every part >= 1.5-2 px wide (a 3 cm part is 1 px: `thicken` exists, but better the model has it).
-- Strings: no thin cords (1 px or less: they flicker from frame to frame); a thin flat panel inside the frame with 5-6 thick raised strings, lighter than the frame, reads as the strings area.
+- A classic triangular lap harp: the hand closes round the **front pillar** (straight, smooth, round, Ø 3-4 cm, full height), the harp body hangs to one side of the hand. Height 0.65 m (23 px at 36 px/m), width ~0.38 m, height:width ~1.7 so that the long axis is the pillar; depth 5-6 cm (2 px edge-on).
+- **Needs a pipeline change before it can be built**: `uo_place_weapon.py` puts the middle of the cross-section on the grip line (the hand would be in the strings). It needs an offset that puts the pillar on the grip line, and the body of the harp on the free side (-X of `weapon1h.R`, > 0.45 m free in almost every action; +X has only 0.15-0.25 m). Not measured yet with the grip on the pillar: measure (as above) before choosing the grip height and the side.
+- Soundbox >= 7 cm, neck >= 5 cm; every part >= 1.5-2 px wide (a 3 cm part is 1 px).
+- Strings: no thin cords with gaps (1 px or less: they flicker from frame to frame); a thin flat panel inside the frame with 5-6 thick raised strings, lighter than the frame.
 - Colour: warm, medium (honey-brown) wood and pale gold strings; no black, no shiny metal (UO light darkens, `METAL` null); no carvings, knots, gems, tuning pins.
 
 ## meshy.ai (Text to 3D; prompt max 600 characters)
 
-Prompt (549 characters):
+Prompt (537 characters):
 
 ```
-Stylized low-poly fantasy lap harp game prop, standing upright, front view, strings facing the viewer. V-shaped wooden frame almost twice as tall as wide: a slim straight pillar on the left and a thicker tapered soundbox on the right join at the bottom in one solid, narrow, rounded wooden foot, the lowest sixth of the harp, without strings; the frame ends there. A thick gently S-curved neck on top. Strings: a thin flat panel filling the frame with 6 thick raised vertical strings. Chunky smooth shapes, warm honey-brown wood, pale gold strings.
+Stylized low-poly fantasy lap harp game prop, standing upright, strings facing the viewer. Classic triangular harp about 1.7 times as tall as wide: a thick, straight, smooth round front pillar on the left, full height, a thicker tapered soundbox slanting up on the right, and a thick gently S-curved neck on top. Pillar and soundbox meet in a small rounded bottom corner, nothing below it. Strings: a thin flat panel filling the frame with 6 thick raised vertical strings. Chunky smooth shapes, warm honey-brown wood, pale gold strings.
 ```
 
 Negative prompt:
 
 ```
-handle, grip, pommel, knob, ball, stick below the harp, carvings, engravings, filigree, celtic knots, gems, ornaments, tiny details, many thin strings, gaps between strings, tuning pins, thin fragile parts, floating parts, stand, base, ground plane, hands, person, text, black, shiny metal, transparency
+handle, grip, pommel, knob, ball, foot, stick below the harp, stand, base, ground plane, carvings, engravings, filigree, celtic knots, gems, ornaments, tiny details, many thin strings, gaps between strings, tuning pins, thin fragile parts, floating parts, hands, person, text, black, shiny metal, transparency
 ```
 
-Settings: symmetry off (pillar and soundbox differ), triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle, the solid foot at the bottom in the middle of the width, no holes in the frame, strings not a mess of thin wires.
+Settings: symmetry off, triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle or foot, the pillar straight and free of ornaments, no holes in the frame, strings not a mess of thin wires.
 
-## Recipes (when the model exists; kept outside the repo in `models/harp.glb`)
+## Recipes (after the grip offset exists; the model kept outside the repo in `models/harp.glb`)
 
-```
-{"name": "harp_R", "file": "models/harp.glb", "weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "butt": -0.05}, "decimate": 30000, "materials": {"METAL": null}}
-{"name": "harp_L", "file": "models/harp.glb", "weapon": {"class": "mace", "part": "weapon.L", "length": 0.65, "tip": "+z", "butt": -0.05}, "decimate": 30000, "materials": {"METAL": null}}
-```
-
-`tip` = the model axis of the top (the neck); check with `--preview` (and `--list`) and change it if the import turns the model. Measure with `qa.json` (horn: 4.3 % inside the body).
+Like the horn: `"weapon": {"class": "mace", "part": "weapon1h" | "weapon.L", "length": 0.65, "tip": "+z"}`, `"decimate": 30000`, `"materials": {"METAL": null}`, plus the new grip offset onto the pillar. Measure with `qa.json` (horn: 4.3 % inside the body).
