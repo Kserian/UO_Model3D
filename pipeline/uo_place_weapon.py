@@ -19,6 +19,7 @@ from mathutils import Vector, Matrix
 PART = "polearm"      # "polearm", "axe2h", "bow", "weapon1h" or "weapon.L" (1H in the left hand, mirror of weapon1h)
 REF_ANIM = None       # original weapon whose head orientation to copy (anim id, e.g. 624 halberd, 613 executioner's axe, 623 cutlass); None = the reference of the class
 ROLL_DEG = None       # or: offset of the head about the shaft in degrees (overrides REF_ANIM)
+AXIS = "mean"        # "mean": the shaft line goes through the mean of the vertices in XY (a sword, a horn); "origin": through the origin (x = y = 0), as uo_orient_weapon.py left it with GRIP_H (an item held by an arm)
 BUTT = None           # m along the class line where the butt goes (the hand pivot is at 0): None = the class's usual `butt`; e.g. -0.06 = held close to the butt end (a flail's short haft)
 BONE = {"polearm": "polearm.L", "axe2h": "axe2h.L", "bow": "bow.L", "weapon1h": "weapon1h.R", "weapon.L": "weapon1h.R"}[PART]
 MIRROR = PART == "weapon.L"                                                    # the grip of the right hand mirrored onto hand.L
@@ -38,7 +39,7 @@ if RO:                                                                         #
     ru = (H.to_3x3() @ ruloc).normalized()
 for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
     co = np.array([ob.matrix_world @ v.co for v in ob.data.vertices])
-    z0, ctr = co[:, 2].min(), co[:, :2].mean(0)                                # butt height, shaft axis (middle of the bounds in XY)
+    z0, ctr = co[:, 2].min(), (np.zeros(2) if AXIS == "origin" else co[:, :2].mean(0))                                # butt height, shaft axis (middle of the bounds in XY)
     R = Vector((0, 0, 1)).rotation_difference(d).to_matrix().to_4x4()
     start = piv + d * (WM["butt"] if BUTT is None else BUTT)                  # where the butt goes
     Rr = Matrix.Identity(4)

@@ -70,7 +70,12 @@ def run():
     if GRIP_H > 0:                                # the arm at that height: its middle (across the slice) goes onto the shaft line
         sl = np.abs(U[:, 2] - (zmin + GRIP_H / s)) < 0.015 / s
         xs = U[sl, 0]; xm = (xs.min() + xs.max()) / 2
-        arm = xs[xs > xm] if GRIP_SIDE > 0 else xs[xs < xm]
+        half = np.sort(xs[xs > xm])[::-1] if GRIP_SIDE > 0 else np.sort(xs[xs < xm])      # from the outer edge inwards
+        arm = [half[0]]                                                                  # the ARM = the outermost compact group of vertices (a gap of 1.5 cm ends it): the strings
+        for v in half[1:]:                                                               # and other things inside the frame are not part of it
+            if abs(v - arm[-1]) * s > 0.015: break
+            arm.append(v)
+        arm = np.array(arm)
         mid[0] = (arm.min() + arm.max()) / 2
         print("uo_orient_weapon: held by the arm at %.2f m above the lowest point: %.3f m from the middle of the width, %.1f cm thick in the slice" % (
             GRIP_H, (mid[0] - (U[:, 0].min() + U[:, 0].max()) / 2) * s, 100 * (arm.max() - arm.min()) * s))

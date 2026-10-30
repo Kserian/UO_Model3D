@@ -411,7 +411,7 @@ wp = %(weapon)r
 if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)),
         **({"GRIP_H": float(wp["grip"]), "GRIP_SIDE": 1 if wp.get("grip_side", "+x") == "+x" else -1} if wp.get("grip") else {}), **({"TURN": int(wp["turn"])} if wp.get("turn") else {}))
-    run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
+    run("uo_place_weapon.py", PART=wp["part"], **({"AXIS": "origin"} if wp.get("grip") else {}), **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
