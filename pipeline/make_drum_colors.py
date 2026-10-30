@@ -36,6 +36,25 @@ def make_one(out, name, shade, vd_src, blend, gumps, idx):
     return d, vd_out
 
 
+def arts(out, cells, ncol=8):
+    """OUT/arts/art_1541_name_shade.png (+ art_1542_ the mirror) and OUT/preview_arts.png (the art 3x on grey, the mirror beside it)"""
+    ad = os.path.join(out, "arts"); os.makedirs(ad, exist_ok=True)
+    cw, ch = 300, 120
+    nrow = (len(cells) + ncol - 1) // ncol
+    sh = Image.new("RGB", (ncol * cw, nrow * ch), (28, 30, 32)); dr = ImageDraw.Draw(sh)
+    for n, (label, d, vdp) in enumerate(cells):
+        tag = os.path.basename(os.path.dirname(d))[3:] + "_" + os.path.basename(d)
+        shutil.copy(os.path.join(d, "art.png"), os.path.join(ad, "art_1541_%s.png" % tag))
+        shutil.copy(os.path.join(d, "art_mirror.png"), os.path.join(ad, "art_1542_%s.png" % tag))
+        x0, y0 = (n % ncol) * cw, (n // ncol) * ch
+        for k, fn in enumerate(("art.png", "art_mirror.png")):
+            a = Image.open(os.path.join(d, fn)).convert("RGBA"); bg = Image.new("RGBA", a.size, (70, 70, 70, 255)); bg.alpha_composite(a)
+            sh.paste(bg.convert("RGB").resize((45 * 3, 32 * 3), Image.NEAREST), (x0 + 6 + k * 145, y0 + 18))
+        dr.text((x0 + 6, y0 + 4), label, fill=(240, 240, 120))
+    p = os.path.join(out, "preview_arts.png"); sh.save(p)
+    return p
+
+
 def sheet(out, cells, ncol=8):
     """cells: [(label, dir, vd path)]: the gump (male, the drum and the hip), the art and a frame of the stand (direction 2) of each variant"""
     body = vdread.read_vd(os.path.join(HERE, "body400.vd"))[2]
@@ -64,7 +83,7 @@ Every variant is in `NN_name/light|dark/`:
 - `Drum_meshy_sash_<name>_<shade>.vd`: the animation (the original body sash + the drum), palettes recoloured, frames unchanged;
 - `gump_male.png` (gump 50490), `gump_female.png` (gump 60490): paperdoll gumps, 260x237 (UOFiddler: Gumps, replace);
 - `art.png` (art 0x1541, 45x32), `art_mirror.png` (art 0x1542).
-`preview_all.png`: the gump, the art and a frame of the stand animation of each variant.
+`arts/`: all arts (`art_1541_name_shade.png`, mirror `art_1542_...`), `preview_arts.png`: them all on one sheet.\n`preview_all.png`: the gump, the art and a frame of the stand animation of each variant.
 Light: saturation x0.85, luminance x1.45. Dark: saturation x1.0, luminance x0.62. The heads (cream) and the sash (grey) keep their colour; the shell and the brass hoops follow the hue.
 Colours and shades: `pipeline/drum_colors.py`; generator: `pipeline/make_drum_colors.py`.
 """
@@ -89,6 +108,7 @@ if __name__ == "__main__":
             print("done %02d %s %s" % (idx, name, shade), flush=True)
     open(os.path.join(a.out, "README_COLORS.md"), "w").write(README)
     p = sheet(a.out, cells)
+    print("arts:", arts(a.out, cells))
     print("preview:", p)
     shutil.rmtree(bodies, ignore_errors=True)
     if a.zip:

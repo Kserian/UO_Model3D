@@ -1,4 +1,4 @@
-"""The colours of the drum: 20 hues x 2 shades (light, dark), and the one function that turns a red colour into another.
+"""The colours of the drum: 20 colours x 2 shades (light, dark), and the one function that turns a red colour into another.
 
     from drum_colors import COLORS, SHADES, recolor_rgb
 
@@ -9,10 +9,10 @@ light and the dark of the shell survive. Used for the palettes of the .vd (recol
 import colorsys
 
 COLORS = [
-    ("red", 0, 1.00, 1.00), ("crimson", 348, 1.00, 0.95), ("rose", 332, 0.85, 1.10), ("magenta", 308, 0.95, 1.00), ("purple", 285, 0.90, 0.95),
-    ("violet", 265, 0.95, 1.00), ("indigo", 245, 1.00, 0.90), ("blue", 225, 1.00, 1.00), ("azure", 205, 0.95, 1.10), ("cyan", 187, 0.90, 1.15),
-    ("teal", 170, 0.90, 1.00), ("emerald", 148, 0.90, 1.05), ("green", 125, 0.90, 1.00), ("lime", 88, 0.85, 1.20), ("yellow", 55, 0.85, 1.45),
-    ("amber", 42, 1.00, 1.30), ("orange", 24, 1.00, 1.10), ("brown", 22, 0.60, 0.70), ("olive", 68, 0.70, 0.85), ("silver", 0, 0.00, 1.20),
+    ("yellow", 55, 0.85, 1.45), ("orange", 24, 1.00, 1.10), ("red", 0, 1.00, 1.00), ("green", 125, 0.90, 1.00), ("blue", 225, 1.00, 1.00),
+    ("violet", 265, 0.95, 1.00), ("brown", 22, 0.60, 0.70), ("grey", 0, 0.00, 1.10), ("navy", 232, 1.00, 0.50), ("pink", 335, 0.60, 1.25),
+    ("turquoise", 178, 0.90, 1.10), ("lime", 88, 0.85, 1.20), ("teal", 168, 0.90, 0.80), ("burgundy", 345, 1.00, 0.60), ("gold", 43, 1.00, 1.15),
+    ("olive", 68, 0.70, 0.85), ("magenta", 308, 0.95, 1.00), ("sky", 205, 0.80, 1.25), ("beige", 40, 0.30, 1.30), ("purple", 285, 0.90, 0.85),
 ]
 SHADES = {"light": (0.85, 1.45), "dark": (1.00, 0.62)}
 
