@@ -5,7 +5,7 @@
 --vd: the animation of the red drum (recolor_vd.py rewrites the palettes of every block: no render). --blend: the item of the drum (uo_make_item.py); --gumps: the folder with gump12.png, gump13.png,
 gump50490.png, gump60490.png (uo_gump_art.py). The paperdoll and the art are RENDERED again for every colour (uo_render_drum_gump.py, PD_COLOR): the texture's red is not enough to tell the shell from the hoops, and a
 recolour of the finished pixels left the brass hoops red on a blue drum. The sheet previews: the gump, the art and a frame of the animation of each variant. Colours: drum_colors.py.
-OUT_DIR/NN_name/light|dark/{PREFIX.vd, PREFIX_gump_male.png, PREFIX_gump_female.png, PREFIX_art_1541.png, PREFIX_art_1542.png}, PREFIX = Wearable_drum_by_Levy_name_shade, OUT_DIR/preview_all.png, OUT_DIR/README_COLORS.md.
+OUT_DIR/NN_name/light|dark/{PREFIX.vd, PREFIX_gump_male.png, PREFIX_gump_female.png, PREFIX_art_1541.png, PREFIX_art_1542.png}, PREFIX = Wearable_drum_by_Levy_name_shade, OUT_DIR/preview_all.png, OUT_DIR/preview_arts.png.
 """
 import argparse, os, shutil, subprocess, sys, zipfile
 import numpy as np
@@ -46,15 +46,11 @@ def make_one(out, name, shade, vd_src, blend, gumps, idx):
 
 
 def arts(out, cells, ncol=8):
-    """OUT/arts/art_1541_name_shade.png (+ art_1542_ the mirror) and OUT/preview_arts.png (the art 3x on grey, the mirror beside it)"""
-    ad = os.path.join(out, "arts"); os.makedirs(ad, exist_ok=True)
+    """OUT/preview_arts.png: the art of every variant 3x on grey, the mirror beside it"""
     cw, ch = 300, 120
     nrow = (len(cells) + ncol - 1) // ncol
     sh = Image.new("RGB", (ncol * cw, nrow * ch), (28, 30, 32)); dr = ImageDraw.Draw(sh)
     for n, (label, d, vdp) in enumerate(cells):
-        tag = os.path.basename(os.path.dirname(d))[3:] + "_" + os.path.basename(d)
-        shutil.copy(pick(d, "_art_1541.png"), os.path.join(ad, "Wearable_drum_by_Levy_%s_art_1541.png" % tag))
-        shutil.copy(pick(d, "_art_1542.png"), os.path.join(ad, "Wearable_drum_by_Levy_%s_art_1542.png" % tag))
         x0, y0 = (n % ncol) * cw, (n // ncol) * ch
         for k, fn in enumerate(("_art_1541.png", "_art_1542.png")):
             a = Image.open(pick(d, fn)).convert("RGBA"); bg = Image.new("RGBA", a.size, (70, 70, 70, 255)); bg.alpha_composite(a)
@@ -86,19 +82,6 @@ def sheet(out, cells, ncol=8):
     return p
 
 
-README = """# Drum_meshy: 20 colours x 2 shades
-
-Every variant is in `NN_name/light|dark/`:
-All files are named `Wearable_drum_by_Levy_<name>_<shade>` + a suffix:
-- `.vd`: the animation (the original body sash + the drum), palettes recoloured, frames unchanged;
-- `_gump_male.png`, `_gump_female.png`: paperdoll gumps, 260x237 (UOFiddler: Gumps, replace);
-- `_art_1541.png` (art 0x1541, 45x32), `_art_1542.png` (its mirror, art 0x1542).
-`arts/`: all arts (`Wearable_drum_by_Levy_name_shade_art_1541.png`, mirror `..._art_1542.png`), `preview_arts.png`: them all on one sheet.\n`preview_all.png`: the gump, the art and a frame of the stand animation of each variant.
-Light: saturation x0.85, luminance x1.45. Dark: saturation x1.0, luminance x0.62. The heads (cream) and the sash (grey) keep their colour; the shell and the brass hoops follow the hue.
-Colours and shades: `pipeline/drum_colors.py`; generator: `pipeline/make_drum_colors.py`.
-"""
-
-
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("out"); ap.add_argument("--vd", required=True); ap.add_argument("--blend", required=True); ap.add_argument("--gumps", required=True)
     ap.add_argument("--only", default=""); ap.add_argument("--shades", default="light,dark"); ap.add_argument("--zip", action="store_true")
@@ -116,7 +99,6 @@ if __name__ == "__main__":
             d, vdp = make_one(a.out, name, shade, a.vd, a.blend, a.gumps, idx)
             cells.append(("%02d %s %s  (hue %d)" % (idx, name, shade, hue), d, vdp))
             print("done %02d %s %s" % (idx, name, shade), flush=True)
-    open(os.path.join(a.out, "README_COLORS.md"), "w").write(README)
     p = sheet(a.out, cells)
     print("arts:", arts(a.out, cells))
     print("preview:", p)
