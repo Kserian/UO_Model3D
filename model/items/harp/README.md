@@ -31,6 +31,12 @@ Recipe: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": 
 
 `python pipeline/uo_make_item.py model/items/harp/harp_R.json --out OUT --preview` (the recipe's `file` is `models/harp.glb`; `"decimate": 400000` keeps the strings: the usual 30000 would eat them).
 
+## Packed files
+
+`Harp_right_hand.vd` (285 KB) and `Harp_left_hand.vd` (341 KB): all 35 actions x 5 directions (1050 frames each, 256 x 256 canvas layer of the item only, like `Horn_*.vd`), made from `harp_R.json` / `harp_L.json` (every second string = 5 strings, arm grip at 0.38 m, outline 0.7, edge smoothing 2, 1024 samples per pixel, no highlight). `python pipeline/uo_make_item.py model/items/harp/harp_R.json --out OUT --vd` (and `harp_L.json`); about 65 minutes each with both running on 4 cores.
+
+Texture quality: the 4096 px source textures go in whole; the material step box-averages them to the sprite scale (1.5 texels per game pixel, 67 px for this model) because the renderer samples a pixel in one point and an unfiltered 4K texture turns into speckles at 36 px/m. `"materials": {"TEXTURE_FILTER": false}` keeps the full texture (used for the big stills in section 3, where it is correct). QA of the grip: see the end of this file.
+
 ## 3. Pictures
 
 - Game size (36 px/m): `--preview` (sprites of 0.65 m = 23 px; the 10 strings are 0.8 px apart at the top: they read as a grey haze between the arms, not as lines).
