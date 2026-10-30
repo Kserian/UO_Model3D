@@ -20,9 +20,11 @@ The original had strings, pin heads and eyelets on BOTH faces of the frame. `pyt
 
 ## 2. In the hand
 
-`harp_R.json`: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "grip": 0.30, "grip_side": "+x", "turn": 180, "butt": -0.30}` (`uo_orient_weapon.py`: `GRIP_H` / `GRIP_SIDE` / `TURN`, new). The arm of the V at 0.30 m above its lowest point (not by the bottom tip) (its middle across the slice) goes onto the grip line, so the hand closes on the arm and the harp hangs to -X, the side of the right hand that has > 0.45 m of free room (+X only 0.15-0.25 m: see the measurements below). `"butt": -0.30` puts the hand at that height. `"turn": 180` holds the OTHER arm of the V (the thin one with the scroll, held at the +X side) and turns the face with the strings the other way; without it the thick arm is held.
+Three builds of the same repaired, grown model (`build_harp.py ... 0.09 0.03 0.028 all|half|none`; `STRINGS`): `harp_R.json` (10 strings, `models/harp.glb`), `harp_R_half.json` (every second string, `models/harp_half.glb`), `harp_R_none.json` (no strings, `models/harp_none.glb`). The pin heads stay in all three (0.3 px). At game size the no-string harp reads best (a clean wooden V); with half of the strings the inside shows a few faint dark lines, with ten a grey haze.
 
-`"materials": {"METAL": false}`: no highlight on the whole item (it is wood; the strings come out as matte light lines too).
+Recipe: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "grip": 0.30, "grip_side": "+x", "turn": 180, "butt": -0.30}` (`uo_orient_weapon.py`: `GRIP_H` / `GRIP_SIDE` / `TURN`, new). The arm of the V at 0.30 m above its lowest point (not by the bottom tip) goes onto the grip line, so the hand closes on the arm and the harp hangs to -X, the side of the right hand that has > 0.45 m of free room (+X only 0.15-0.25 m: see the measurements below). `"butt": -0.30` puts the hand at that height. `"turn": 180` holds the OTHER arm of the V (the thin one with the scroll, held at the +X side) and turns the face with the strings the other way; without it the thick arm is held.
+
+`"materials": {"METAL": false}`: no highlight on the item (it is wood). `"scene": {"uo_outline": 0.7, "uo_edge_smooth": 2}`: the 1-px outline is darkened to 0.7 of the wood (the default 0.38 is a near black rim: a rim in the colour of the wood, a little darker) and the render drops 1-px spikes and fills 1-px notches of the silhouette twice (rounder corners; 0 / 1 / 2 differ only slightly).
 
 `python pipeline/uo_make_item.py model/items/harp/harp_R.json --out OUT --preview` (the recipe's `file` is `models/harp.glb`; `"decimate": 400000` keeps the strings: the usual 30000 would eat them).
 
