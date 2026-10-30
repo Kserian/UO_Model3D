@@ -41,6 +41,12 @@ Texture quality: the 4096 px source textures go in whole; the material step box-
 
 `Harp_right_hand_stand_3strings.vd` (5 KB) and `Harp_left_hand_stand_3strings.vd` (6 KB): the model with 3 strings (`build_harp.py ... 0.09 0.07 0.04 third`: every fourth of the ten), only the action 04_stand (5 directions, the other actions are empty). Recipes `harp_R_3strings.json` / `harp_L_3strings.json`; made with `uo_make_item.py` (prepare only) and `run_render_headless.py item.blend OUT 'LAYER="clothing"' 'ONLY=["04_stand"]' 'CANVAS=(256,256)' 'ANCHOR=(128,192)'`.
 
+### No strings, `stand` only (the latest)
+
+`Harp_right_hand_stand_nostrings.vd` (5 KB) and `Harp_left_hand_stand_nostrings.vd` (6 KB): a plain wooden V (`build_harp.py ... 0.09 0.07 0.04 none`, then `retexture.py`), only the action 04_stand. Recipes `harp_R_none.json` / `harp_L_none.json` (`models/harp_none_wood.glb`). The wire leftovers of the scan (low saturation, metal map > 70) and the pale wear marks of the texture are gone; the pin heads stay as wooden pegs. Known: round the removed pins on the neck the scan has holes and patches that show only in close-ups (below a pixel at 36 px/m); fan patches over them were tried and left off (`CLOSE_HOLES`).
+
+At game size the grain of the wood is below a pixel (arms are 3-4 px): texture filtering 54 / 108 / 216 texels per metre and no filter give the same sprites.
+
 ## 3. Pictures
 
 - Game size (36 px/m): `--preview` (sprites of 0.65 m = 23 px; the 10 strings are 0.8 px apart at the top: they read as a grey haze between the arms, not as lines).
