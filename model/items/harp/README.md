@@ -21,31 +21,31 @@ Share of the item inside the body (grip zone of 6 cm left out); the same metric 
 
 - **Nothing below the hand** matters most: butt -0.04 is 3-7x better than the default -0.19.
 - Width 0.30 or 0.40 hardly changes anything; taller is a little better (0.75: 0.80 %).
-- A classic harp with the pillar over the foot collides as little, but the pipeline would put the hand in the middle of the strings (foot 0.2 m off the grip line). The **V frame with the foot (and the handle) in the middle** is the shape that needs no code change. The worst actions are the same for every shape (18, 27 bow, 29 mounted 2H, 21 die forward: hands together or on the ground).
+- A classic harp with the pillar over the foot collides as little, but the pipeline would put the hand in the middle of the strings (foot 0.2 m off the grip line). The **V frame with the foot in the middle** is the shape that needs no code change. The worst actions are the same for every shape (18, 27 bow, 29 mounted 2H, 21 die forward: hands together or on the ground).
 
 ## The shape
 
 - Total height **0.65 m** (23 px at 36 px/m), width **~0.35 m** (13 px), depth 5-6 cm (2 px edge-on); height:width about 1.9:1 so the long axis is unambiguous.
-- Bottom: a round handle Ø 3-4 cm, ~10 cm long (1/6 of the height), with a ball pommel; the harp foot starts right above the fist.
+- No handle (user decision): the hand holds the harp itself, round the bottom of the frame. The lowest sixth (~10 cm) is a solid, narrow, rounded wooden foot where pillar and soundbox join, without strings; the fist closes on it (butt -0.05: the frame ends 5 cm below the grip, nothing else hangs below the hand).
 - V frame from the foot: a slim straight **pillar** (>= 4 cm) on one side, a thicker tapered **soundbox** (>= 7 cm) on the other; on top a thick S-curved **neck** (>= 5 cm). Every part >= 1.5-2 px wide (a 3 cm part is 1 px: `thicken` exists, but better the model has it).
 - Strings: no thin cords (1 px or less: they flicker from frame to frame); a thin flat panel inside the frame with 5-6 thick raised strings, lighter than the frame, reads as the strings area.
 - Colour: warm, medium (honey-brown) wood and pale gold strings; no black, no shiny metal (UO light darkens, `METAL` null); no carvings, knots, gems, tuning pins.
 
 ## meshy.ai (Text to 3D; prompt max 600 characters)
 
-Prompt (556 characters):
+Prompt (549 characters):
 
 ```
-Stylized low-poly fantasy lap harp game prop, standing upright, front view, strings facing the viewer. V-shaped wooden frame almost twice as tall as wide: a slim straight pillar on the left and a thicker tapered soundbox on the right meet at the bottom in one narrow foot, joined on top by a thick, gently S-curved neck. Under the foot a short round wooden handle with a ball pommel, one sixth of the height. Strings: a thin flat panel filling the frame with 6 thick raised vertical strings. Chunky smooth shapes, warm honey-brown wood, pale gold strings.
+Stylized low-poly fantasy lap harp game prop, standing upright, front view, strings facing the viewer. V-shaped wooden frame almost twice as tall as wide: a slim straight pillar on the left and a thicker tapered soundbox on the right join at the bottom in one solid, narrow, rounded wooden foot, the lowest sixth of the harp, without strings; the frame ends there. A thick gently S-curved neck on top. Strings: a thin flat panel filling the frame with 6 thick raised vertical strings. Chunky smooth shapes, warm honey-brown wood, pale gold strings.
 ```
 
 Negative prompt:
 
 ```
-carvings, engravings, filigree, celtic knots, gems, inlays, ornaments, tiny details, many thin strings, tuning pins, fragile thin parts, floating parts, stand, pedestal, base, ground plane, hands, person, text, black, dark wood, shiny metal, glass, transparency
+handle, grip, pommel, knob, ball, stick below the harp, carvings, engravings, filigree, celtic knots, gems, ornaments, tiny details, many thin strings, gaps between strings, tuning pins, thin fragile parts, floating parts, stand, base, ground plane, hands, person, text, black, shiny metal, transparency
 ```
 
-Settings: symmetry off (pillar and soundbox differ), triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, the handle at the bottom in the middle of the width, no holes in the frame, strings not a mess of thin wires.
+Settings: symmetry off (pillar and soundbox differ), triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle, the solid foot at the bottom in the middle of the width, no holes in the frame, strings not a mess of thin wires.
 
 ## Recipes (when the model exists; kept outside the repo in `models/harp.glb`)
 
