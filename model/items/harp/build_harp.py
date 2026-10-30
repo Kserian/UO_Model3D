@@ -3,16 +3,18 @@ Input: a glb whose strings, pins and eyelets are on BOTH faces of the frame (the
 the hole of every removed pin / eyelet closed flush with the wood, the frame grown in every plane, and the 10 strings rebuilt as clean round cylinders with a pin ball on each.
 The textures stay byte-identical (only the index / vertex buffers change).
 
-    python build_harp.py in.glb out.glb [FRAME 0.045] [STRING_R 0.016] [PIN_R 0.022]      (model units; the model is 1.9 high: a 0.65 m item is x0.33)
+    python build_harp.py in.glb out.glb [FRAME_W 0.11] [FRAME_T 0.03] [STRING_R 0.028]      (model units; the model is 1.9 high: a 0.65 m item is x0.33; 1 game px = 2.8 cm = 0.085 units)
+    FRAME_W grows the frame IN ITS PLANE (the width of the arms and the neck), FRAME_T across it (the thickness). Measure with widths.py (pixels at 36 px/m).
 """
 import json, struct, io, sys
 import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
 src, dst = sys.argv[1], sys.argv[2]
-FRAME = float(sys.argv[3]) if len(sys.argv) > 3 else 0.045
-STRING_R = float(sys.argv[4]) if len(sys.argv) > 4 else 0.016
-PIN_R = float(sys.argv[5]) if len(sys.argv) > 5 else 0.022
+FRAME_W = float(sys.argv[3]) if len(sys.argv) > 3 else 0.11
+FRAME_T = float(sys.argv[4]) if len(sys.argv) > 4 else 0.03
+STRING_R = float(sys.argv[5]) if len(sys.argv) > 5 else 0.028
+FRAME = FRAME_T
 SEG = 12
 d = open(src, "rb").read()
 L = struct.unpack_from("<I", d, 12)[0]; j = json.loads(d[20:20+L]); bo = 20 + L
@@ -109,14 +111,14 @@ print("loose debris dropped: %d faces (components kept: %d large)" % (drop, int(
 # ---- the frame grows in every plane: along the smoothed normals welded by position (UV seams do not open)
 key = np.round(pos / 2e-5).astype(np.int64); _, wl = np.unique(key, axis=0, return_inverse=True); wl = wl.ravel()
 nn = np.zeros((wl.max() + 1, 3)); np.add.at(nn, wl, nor); nn /= np.maximum(np.linalg.norm(nn, axis=1, keepdims=True), 1e-9)
-dn = nn[wl] * FRAME
+dn = nn[wl] * np.array([FRAME_W, FRAME_W, FRAME_T])                # glTF (x, up, z = across the plane)
 vlF = labF[vx, vz]
 for k in range(1, nlF + 1):                                         # front pin heads / eyelets stay whole and ride on the grown surface under them
     ys, xs_ = np.nonzero(labF == k); ring = (dlabF == dlabF[ys[0], xs_[0]]) & ~maskF
     rv = ring[vx, vz] & (yb < -0.02) & (vm < 56); selk = (vlF == k) & (yb < 0.0)
     if rv.sum() >= 4 and selk.any(): dn[selk] = dn[rv].mean(0)
 pos0 = pos.copy(); pos = pos + dn
-print("frame grown by %.3f; bbox %s -> %s" % (FRAME, np.ptp(pos0, 0).round(3), np.ptp(pos, 0).round(3)))
+print("frame grown by %.3f in the plane, %.3f across; bbox %s -> %s" % (FRAME_W, FRAME_T, np.ptp(pos0, 0).round(3), np.ptp(pos, 0).round(3)))
 # ---- new strings (cylinders) and pin balls on the front
 usedv = np.zeros(len(pos), bool); usedv[idx[~dele].ravel()] = True
 surf = np.nonzero(usedv & (yb < -0.02) & (vm < 56) & (zb > 0.55))[0]                # wood of the front neck (to find its surface under a pin)
