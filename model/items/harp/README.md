@@ -38,7 +38,7 @@ Recipe: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": 
 
 ## Measurements behind the grip (point clouds of the shape on `weapon1h.R`, all 35 actions)
 
-Share of the item inside the body (grip zone of 6 cm left out): a V frame held by its tip with nothing below the hand 0.9 % (hand 4 cm above the lowest point), 3.1 % at 10 cm, 6.4 % at 19 cm (the class default `butt`); a column like the horn 1.45 % / 9.4 %. Free room round the shaft (closest body part 2 cm): -X and +Y almost always > 0.45 m; +X and -Y only 0.15-0.25 m in walk, run, 1H slash / pierce, fidget 2. Worst actions for every shape: 18 and 27 bow, 29 mounted 2H, 21 die forward (hands together or on the ground). `item_qa.py` of the final grip (arm at 0.38 m, FRAME_T 0.07): right hand 5.3 % inside the body (worst: 17_spell_area), deepest 132 mm; left hand 2.7 % (worst: 00_walk_unarmed), deepest 95 mm (the horn: 4.3 % / 97 mm and 3.8 % / 88 mm).
+Share of the item inside the body (grip zone of 6 cm left out): a V frame held by its tip with nothing below the hand 0.9 % (hand 4 cm above the lowest point), 3.1 % at 10 cm, 6.4 % at 19 cm (the class default `butt`); a column like the horn 1.45 % / 9.4 %. Free room round the shaft (closest body part 2 cm): -X and +Y almost always > 0.45 m; +X and -Y only 0.15-0.25 m in walk, run, 1H slash / pierce, fidget 2. Worst actions for every shape: 18 and 27 bow, 29 mounted 2H, 21 die forward (hands together or on the ground). `item_qa.py` of the final grip (arm at 0.38 m, FRAME_T 0.07): right hand 6.1 % inside the body (worst: 20_get_hit), deepest 99 mm; left hand 2.6 % (worst: 17_spell_area), deepest 144 mm (the horn: 4.3 % / 97 mm and 3.8 % / 88 mm).
 
 ## Reference
 
