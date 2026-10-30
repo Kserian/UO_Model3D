@@ -37,6 +37,10 @@ Recipe: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": 
 
 Texture quality: the 4096 px source textures go in whole; the material step box-averages them to the sprite scale (1.5 texels per game pixel, 67 px for this model) because the renderer samples a pixel in one point and an unfiltered 4K texture turns into speckles at 36 px/m. `"materials": {"TEXTURE_FILTER": false}` keeps the full texture (used for the big stills in section 3, where it is correct). QA of the grip: see the end of this file.
 
+### 3 strings, `stand` only
+
+`Harp_right_hand_stand_3strings.vd` (5 KB) and `Harp_left_hand_stand_3strings.vd` (6 KB): the model with 3 strings (`build_harp.py ... 0.09 0.07 0.04 third`: every fourth of the ten), only the action 04_stand (5 directions, the other actions are empty). Recipes `harp_R_3strings.json` / `harp_L_3strings.json`; made with `uo_make_item.py` (prepare only) and `run_render_headless.py item.blend OUT 'LAYER="clothing"' 'ONLY=["04_stand"]' 'CANVAS=(256,256)' 'ANCHOR=(128,192)'`.
+
 ## 3. Pictures
 
 - Game size (36 px/m): `--preview` (sprites of 0.65 m = 23 px; the 10 strings are 0.8 px apart at the top: they read as a grey haze between the arms, not as lines).
