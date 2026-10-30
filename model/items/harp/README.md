@@ -23,30 +23,32 @@ Share of the item inside the body (grip zone of 6 cm left out); the same metric 
 - Width 0.30 or 0.40 hardly changes anything; taller is a little better (0.75: 0.80 %).
 - A classic harp with the pillar over the foot collides as little, but the pipeline would put the hand in the middle of the strings (foot 0.2 m off the grip line). The V frame with the foot in the middle needs no code change, but the user wants the harp held by its frame (pillar), not by a handle or foot. The worst actions are the same for every shape (18, 27 bow, 29 mounted 2H, 21 die forward: hands together or on the ground).
 
-## The shape (user decision: held by the harp itself, no handle, no foot)
+## The shape: the UO lap harp (user decision: held by the harp itself, no handle, no foot)
 
-- A realistic small handheld (bard's) lap harp, not a floor harp: soundbox wide at the bottom, narrowing to the top, S-curved neck; the hand closes round the **front pillar** (straight, smooth, round, Ø 3-4 cm, full height), the harp body hangs to one side of the hand. Height 0.65 m (23 px at 36 px/m), width ~0.38 m, height:width ~1.7 so that the long axis is the pillar; depth 5-6 cm (2 px edge-on).
-- **Needs a pipeline change before it can be built**: `uo_place_weapon.py` puts the middle of the cross-section on the grip line (the hand would be in the strings). It needs an offset that puts the pillar on the grip line, and the body of the harp on the free side (-X of `weapon1h.R`, > 0.45 m free in almost every action; +X has only 0.15-0.25 m). Not measured yet with the grip on the pillar: measure (as above) before choosing the grip height and the side.
-- Soundbox >= 7 cm, neck >= 5 cm; every part >= 1.5-2 px wide (a 3 cm part is 1 px).
-- Strings (user decision): like a real harp, 10 separate strings with open see-through gaps, no panel, a soft rounded bottom. A real string (2-8 mm) is 0.1-0.3 px and flickers from frame to frame: ask for slightly thick strings, and if they still vanish in the render, `thicken` them after the import.
-- Colour: warm, medium (honey-brown) wood and pale gold strings; no black, no shiny metal (UO light darkens, `METAL` null); no carvings, knots, gems, tuning pins.
+Reference: the client's `lap harp` (art 0x0EB2, 22x29 px; `standing harp` 0x0EB1 is the floor harp; no harp in tiledata is wearable, so there is no original animation to match). Read off the art:
+
+- One closed, rounded wooden frame, a little taller than wide (29:22 in the art). Left: a thick front pillar bowed outward in a C-curve that flows into a soft round bottom. Top: a neck rising to the right, ending in a small rolled scroll, the highest point. Right: a straight slim bar. **No soundbox**.
+- About 6 vertical strings from the neck down to the bottom of the frame, with open gaps between them (drawn dark: the inside of the frame shows through).
+- Light honey-tan wood with dark outlines; matte dark grey strings.
+- For the pipeline: height ~0.6 m (22 px at 36 px/m), width ~0.45 m, depth 5-6 cm; every part of the frame >= 4-5 cm (1.5-2 px). The hand closes round the frame itself (the bowed pillar or the straight bar), so **the pipeline needs a grip offset before it can be built**: `uo_place_weapon.py` puts the middle of the cross-section on the grip line (the hand would be in the strings); the body of the harp should go to the free side (-X of `weapon1h.R`, > 0.45 m free in almost every action; +X has only 0.15-0.25 m). Not measured yet with the grip on the frame: measure (as above) before choosing the grip point and the side. Height:width is only ~1.3, so check that the long axis comes out along the height (else give the axis explicitly).
+- Strings: a real string (2-8 mm) is 0.1-0.3 px and flickers from frame to frame; if they vanish in the render, `thicken` them after the import.
 
 ## meshy.ai (Text to 3D; prompt max 600 characters)
 
-Prompt (535 characters; "lap harp" alone gave a big floor-standing harp: the size and "handheld" must be said, and floor / concert / pedal harp excluded):
+Prompt (510 characters; earlier prompts gave a big floor-standing harp and a soundbox: the UO harp has neither):
 
 ```
-Small handheld medieval bard's lap harp, about 60 cm tall, light enough to carry in one hand, realistic simple wooden game prop, shown upright, strings facing the viewer. Compact triangle about 1.7 times as tall as wide: a straight smooth round front pillar, a slim soundbox slanting up on the other side, slightly wider at the bottom, and a gently S-curved neck. Soft rounded bottom corner. 10 separate taut strings, slightly thick, with open see-through space between them. Smooth surfaces, warm honey-brown wood, pale gold strings.
+Small handheld lap harp, simple low-detail game prop, upright, strings facing the viewer. One closed rounded wooden frame, a bit taller than wide: on the left a thick front pillar bowed outward in a smooth C-curve that flows into a soft round bottom; on top a neck rising to the right, ending in a small rolled scroll, the highest point; on the right a straight slim wooden bar. 6 vertical strings from neck to bottom with open see-through gaps. Light honey-tan wood, matte dark grey strings, smooth surfaces.
 ```
 
 Negative prompt:
 
 ```
-floor harp, concert harp, pedal harp, large standing harp, pedals, column base, crown, handle, pommel, foot, stand, base, ground plane, panel behind the strings, background, cartoon, carvings, engravings, filigree, knots, gems, ornaments, tiny details, tuning pins, pointed bottom, floating parts, hands, person, text, black, shiny metal
+soundbox, box, floor harp, concert harp, pedal harp, large harp, triangle, handle, foot, stand, base, ground plane, panel behind the strings, background, carvings, engravings, ornaments, knots, gems, tuning pins, tiny details, floating parts, hands, person, text, shiny metal, gold, black
 ```
 
-Settings: symmetry off, triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle or foot, the pillar straight and free of ornaments, no holes in the frame, strings separate with open gaps (no backing panel), not a mess of thin wires.
+Settings: symmetry off, triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle or foot, no soundbox, no holes in the frame, strings separate with open gaps (no backing panel), not a mess of thin wires.
 
 ## Recipes (after the grip offset exists; the model kept outside the repo in `models/harp.glb`)
 
-Like the horn: `"weapon": {"class": "mace", "part": "weapon1h" | "weapon.L", "length": 0.65, "tip": "+z"}`, `"decimate": 30000`, `"materials": {"METAL": null}`, plus the new grip offset onto the pillar. Measure with `qa.json` (horn: 4.3 % inside the body).
+Like the horn: `"weapon": {"class": "mace", "part": "weapon1h" | "weapon.L", "length": 0.6, "tip": "+z"}`, `"decimate": 30000`, `"materials": {"METAL": null}`, plus the new grip offset onto the frame. Measure with `qa.json` (horn: 4.3 % inside the body).
