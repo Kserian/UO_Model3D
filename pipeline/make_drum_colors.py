@@ -5,7 +5,7 @@
 --vd: the animation of the red drum (recolor_vd.py rewrites the palettes of every block: no render). --blend: the item of the drum (uo_make_item.py); --gumps: the folder with gump12.png, gump13.png,
 gump50490.png, gump60490.png (uo_gump_art.py). The paperdoll and the art are RENDERED again for every colour (uo_render_drum_gump.py, PD_COLOR): the texture's red is not enough to tell the shell from the hoops, and a
 recolour of the finished pixels left the brass hoops red on a blue drum. The sheet previews: the gump, the art and a frame of the animation of each variant. Colours: drum_colors.py.
-OUT_DIR/NN_name/light|dark/{Drum_meshy_sash_name_shade.vd, gump_male.png, gump_female.png, art.png, art_mirror.png}, OUT_DIR/preview_all.png, OUT_DIR/README_COLORS.md.
+OUT_DIR/NN_name/light|dark/{PREFIX.vd, PREFIX_gump_male_50490.png, PREFIX_gump_female_60490.png, PREFIX_art_1541.png, PREFIX_art_1542.png}, PREFIX = Wearable_drum_by_Levy_name_shade, OUT_DIR/preview_all.png, OUT_DIR/README_COLORS.md.
 """
 import argparse, os, shutil, subprocess, sys, zipfile
 import numpy as np
@@ -19,11 +19,20 @@ import vd as vdread
 import compose_layers as cl
 
 
+PREFIX = "Wearable_drum_by_Levy_%s_%s"
+NAMES = {"gump_male.png": "_gump_male_50490.png", "gump_female.png": "_gump_female_60490.png", "art.png": "_art_1541.png", "art_mirror.png": "_art_1542.png"}
+
+
+def pick(d, suffix):
+    """the file of a variant folder that ends with suffix"""
+    return next(os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith(suffix))
+
+
 def make_one(out, name, shade, vd_src, blend, gumps, idx):
     d = os.path.join(out, "%02d_%s" % (idx, name), shade); os.makedirs(d, exist_ok=True)
     hue, sm, lm = dc.params(name, shade)
     f = rv.make_map(hue, 0.0, 28.0, 0.30, 18.0, 0.08, 0.5, sm, lm)
-    vd_out = os.path.join(d, "Drum_meshy_sash_%s_%s.vd" % (name, shade))
+    vd_out = os.path.join(d, (PREFIX % (name, shade)) + ".vd")
     rv.recolor_vd(vd_src, vd_out, f)
     tmp = os.path.join(d, "_pd"); os.makedirs(tmp, exist_ok=True)
     env = dict(os.environ, PD_OUT=tmp, PD_GUMPS=gumps, PD_SCRIPTS=HERE, PD_COLOR="%s:%s" % (name, shade))
@@ -31,7 +40,7 @@ def make_one(out, name, shade, vd_src, blend, gumps, idx):
     if "PD art done" not in r.stdout:
         raise SystemExit("the paperdoll of %s %s failed:\n%s\n%s" % (name, shade, r.stdout[-1500:], r.stderr[-800:]))
     for fn in ("gump_male.png", "gump_female.png", "art.png", "art_mirror.png"):
-        shutil.move(os.path.join(tmp, fn), os.path.join(d, fn))
+        shutil.move(os.path.join(tmp, fn), os.path.join(d, (PREFIX % (name, shade)) + NAMES[fn]))
     shutil.rmtree(tmp)
     return d, vd_out
 
@@ -44,11 +53,11 @@ def arts(out, cells, ncol=8):
     sh = Image.new("RGB", (ncol * cw, nrow * ch), (28, 30, 32)); dr = ImageDraw.Draw(sh)
     for n, (label, d, vdp) in enumerate(cells):
         tag = os.path.basename(os.path.dirname(d))[3:] + "_" + os.path.basename(d)
-        shutil.copy(os.path.join(d, "art.png"), os.path.join(ad, "art_1541_%s.png" % tag))
-        shutil.copy(os.path.join(d, "art_mirror.png"), os.path.join(ad, "art_1542_%s.png" % tag))
+        shutil.copy(pick(d, "_art_1541.png"), os.path.join(ad, "Wearable_drum_by_Levy_%s_art_1541.png" % tag))
+        shutil.copy(pick(d, "_art_1542.png"), os.path.join(ad, "Wearable_drum_by_Levy_%s_art_1542.png" % tag))
         x0, y0 = (n % ncol) * cw, (n // ncol) * ch
-        for k, fn in enumerate(("art.png", "art_mirror.png")):
-            a = Image.open(os.path.join(d, fn)).convert("RGBA"); bg = Image.new("RGBA", a.size, (70, 70, 70, 255)); bg.alpha_composite(a)
+        for k, fn in enumerate(("_art_1541.png", "_art_1542.png")):
+            a = Image.open(pick(d, fn)).convert("RGBA"); bg = Image.new("RGBA", a.size, (70, 70, 70, 255)); bg.alpha_composite(a)
             sh.paste(bg.convert("RGB").resize((45 * 3, 32 * 3), Image.NEAREST), (x0 + 6 + k * 145, y0 + 18))
         dr.text((x0 + 6, y0 + 4), label, fill=(240, 240, 120))
     p = os.path.join(out, "preview_arts.png"); sh.save(p)
@@ -63,10 +72,10 @@ def sheet(out, cells, ncol=8):
     sh = Image.new("RGB", (ncol * cw, nrow * ch), (28, 30, 32)); dr = ImageDraw.Draw(sh)
     for n, (label, d, vdp) in enumerate(cells):
         x0, y0 = (n % ncol) * cw, (n // ncol) * ch
-        g = Image.open(os.path.join(d, "gump_male.png")).convert("RGBA"); b = Image.open(os.path.join(os.path.dirname(os.path.dirname(d)), "_bodies", "gump12.png")).convert("RGBA")
+        g = Image.open(pick(d, "_gump_male_50490.png")).convert("RGBA"); b = Image.open(os.path.join(os.path.dirname(os.path.dirname(d)), "_bodies", "gump12.png")).convert("RGBA")
         bg = Image.new("RGBA", b.size, (22, 22, 22, 255)); bg.alpha_composite(b); bg.alpha_composite(g)
         sh.paste(bg.crop((38, 112, 112, 182)).convert("RGB").resize((74 * 3, 70 * 3), Image.NEAREST), (x0 + 4, y0 + 20))
-        a = Image.open(os.path.join(d, "art.png")).convert("RGBA"); abg = Image.new("RGBA", a.size, (60, 60, 60, 255)); abg.alpha_composite(a)
+        a = Image.open(pick(d, "_art_1541.png")).convert("RGBA"); abg = Image.new("RGBA", a.size, (60, 60, 60, 255)); abg.alpha_composite(a)
         sh.paste(abg.convert("RGB").resize((45 * 3, 32 * 3), Image.NEAREST), (x0 + 4, y0 + 20 + 216))
         fr = vdread.read_vd(vdp)[2][(4, 2)][0]; bf = body[(4, 2)][0]
         c = cl.over(cl.to_canvas(fr["img"], fr["cx"], fr["cy"]), cl.to_canvas(bf["img"], bf["cx"], bf["cy"]))
@@ -80,10 +89,11 @@ def sheet(out, cells, ncol=8):
 README = """# Drum_meshy: 20 colours x 2 shades
 
 Every variant is in `NN_name/light|dark/`:
-- `Drum_meshy_sash_<name>_<shade>.vd`: the animation (the original body sash + the drum), palettes recoloured, frames unchanged;
-- `gump_male.png` (gump 50490), `gump_female.png` (gump 60490): paperdoll gumps, 260x237 (UOFiddler: Gumps, replace);
-- `art.png` (art 0x1541, 45x32), `art_mirror.png` (art 0x1542).
-`arts/`: all arts (`art_1541_name_shade.png`, mirror `art_1542_...`), `preview_arts.png`: them all on one sheet.\n`preview_all.png`: the gump, the art and a frame of the stand animation of each variant.
+All files are named `Wearable_drum_by_Levy_<name>_<shade>` + a suffix:
+- `.vd`: the animation (the original body sash + the drum), palettes recoloured, frames unchanged;
+- `_gump_male_50490.png`, `_gump_female_60490.png`: paperdoll gumps, 260x237 (UOFiddler: Gumps, replace);
+- `_art_1541.png` (art 0x1541, 45x32), `_art_1542.png` (its mirror, art 0x1542).
+`arts/`: all arts (`Wearable_drum_by_Levy_name_shade_art_1541.png`, mirror `..._art_1542.png`), `preview_arts.png`: them all on one sheet.\n`preview_all.png`: the gump, the art and a frame of the stand animation of each variant.
 Light: saturation x0.85, luminance x1.45. Dark: saturation x1.0, luminance x0.62. The heads (cream) and the sash (grey) keep their colour; the shell and the brass hoops follow the hue.
 Colours and shades: `pipeline/drum_colors.py`; generator: `pipeline/make_drum_colors.py`.
 """
