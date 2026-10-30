@@ -1,1 +1,1 @@
-{"name": "harp_R", "file": "models/harp.glb", "weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "grip": 0.22, "grip_side": "+x", "butt": -0.22}, "decimate": 400000, "scene": {"uo_samples": 1024}}
+{"name": "harp_R", "file": "models/harp.glb", "weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "grip": 0.30, "grip_side": "+x", "turn": 180, "butt": -0.30}, "decimate": 400000, "materials": {"METAL": false}, "scene": {"uo_samples": 1024}}

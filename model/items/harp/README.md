@@ -4,16 +4,25 @@ The user's own model of a harp (`models/harp_orig.glb`, 44 MB, **not in the repo
 
 ## 1. The model was wrong: repair (`build_harp.py`)
 
-The original had strings, pin heads and eyelets on BOTH faces of the frame. `python model/items/harp/build_harp.py models/harp_orig.glb models/harp.glb` (needs numpy, pillow, scipy; ~1 min):
+The original had strings, pin heads and eyelets on BOTH faces of the frame. `python model/items/harp/build_harp.py models/harp_orig.glb models/harp.glb 0.09 0.03 0.028` (FRAME_W FRAME_T STRING_R; needs numpy, pillow, scipy; ~1 min):
 
 - Metal is told from wood by the metal-roughness texture (blue channel > 128), strings from pins by thickness (thick blobs after an erosion of 4 mm = pin heads and eyelets). The glb is edited in its index / vertex buffers only: the textures stay byte-identical.
 - **Back face** (Blender y > 0): strings deleted, pin heads and eyelets with the walls of their holes flattened onto the plane of the wood round them (UV and normal of that wood), loose debris of the old strings dropped. What is left of it: pale patches on the neck, a few 3 mm dark dots where the strings ended on the inner face of the arm.
 - **Front face**: the old string ribbons (zero thickness, not fit to be made thicker) are replaced by 10 round cylinders on the old axes (radius 0.016 of a model unit = 5 mm at 0.65 m); pin heads and eyelets stay and ride on the grown surface.
-- **Frame grown in every plane** (the first complaint: too thin): every vertex moves 0.045 model units (1.4 cm at 0.65 m) along its smoothed normal, welded by position so that UV seams do not open: the arms 4 -> 7 cm in the plane, 5 -> 8 cm thick.
+- **Frame grown separately in its plane and across it** (the user: arms at least 3 px, better 4, thickness about 2 px, at 36 px/m): every vertex moves along its smoothed normal (welded by position so that UV seams do not open) by FRAME_W in the plane and FRAME_T across it. `widths.py harp.glb 0.65 240` measures the silhouette in game pixels (ridge of the distance transform = the width of the arms and the neck; 1 px = 27.8 mm at 0.65 m):
+
+  | | arms: thinnest 5 % / median | thickness |
+  |---|---|---|
+  | original | 1.4 / 2.2 px | 1.4 px |
+  | FRAME_W 0.065 (variant A) | 3.0 / 3.2 px | 2.1 px |
+  | **FRAME_W 0.09 (variant B, the recipe)** | 3.6 / 3.9 px | 2.1 px |
+  | FRAME_W 0.10 | 3.8 / 4.4 px | 2.0 px |
 
 ## 2. In the hand
 
-`harp_R.json`: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "grip": 0.22, "grip_side": "+x", "butt": -0.22}` (`uo_orient_weapon.py`: `GRIP_H` / `GRIP_SIDE` / `TURN`, new). The arm of the V at 0.22 m above its lowest point (its middle across the slice) goes onto the grip line, so the hand closes on the arm and the harp hangs to -X, the side of the right hand that has > 0.45 m of free room (+X only 0.15-0.25 m: see the measurements below). `"butt": -0.22` puts the hand at that height. `"turn": 180` swaps the arm and the face with the strings.
+`harp_R.json`: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "grip": 0.30, "grip_side": "+x", "turn": 180, "butt": -0.30}` (`uo_orient_weapon.py`: `GRIP_H` / `GRIP_SIDE` / `TURN`, new). The arm of the V at 0.30 m above its lowest point (not by the bottom tip) (its middle across the slice) goes onto the grip line, so the hand closes on the arm and the harp hangs to -X, the side of the right hand that has > 0.45 m of free room (+X only 0.15-0.25 m: see the measurements below). `"butt": -0.30` puts the hand at that height. `"turn": 180` holds the OTHER arm of the V (the thin one with the scroll, held at the +X side) and turns the face with the strings the other way; without it the thick arm is held.
+
+`"materials": {"METAL": false}`: no highlight on the whole item (it is wood; the strings come out as matte light lines too).
 
 `python pipeline/uo_make_item.py model/items/harp/harp_R.json --out OUT --preview` (the recipe's `file` is `models/harp.glb`; `"decimate": 400000` keeps the strings: the usual 30000 would eat them).
 
