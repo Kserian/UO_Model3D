@@ -1,56 +1,31 @@
-# Harp (instrument) for the right and the left hand: design for a generated model
+# Harp (instrument) held in the right hand
 
-Not built yet: no model file. This is the shape the model must have so that the item pipeline (`uo_orient_weapon.py` -> `uo_place_weapon.py` -> `uo_bind_item.py`, part `weapon1h` / `weapon.L`, like the horn) puts it in the hand well, and the meshy.ai prompt to generate it.
+The user's own model of a harp (`models/harp_orig.glb`, 44 MB, **not in the repo**; scan-like mesh of 302k vertices, one 4K PBR material). Item: part `weapon1h` (bone `weapon1h.R`), held by **one arm of the V**, not by a handle.
 
-## What the pipeline does with a held item (why the shape is what it is)
+## 1. The model was wrong: repair (`build_harp.py`)
 
-- The long axis of the mesh (principal axis) becomes the shaft, the widest side the flat (+X), the thinnest side +Y. **The bounding-box middle of the cross-section goes onto the grip line**: the hand holds the item in the middle of its width, never on one side. So the part held in the hand must sit at the bottom, in the middle of the width.
-- In the stand pose bone `weapon1h.R` holds the item like a sword: shaft forward at hip height (0.92 m), flat plane vertical. In profile (directions 1-3) the camera sees the whole face of the harp, in direction 0 its edge.
-- Free room around the shaft over all 35 actions (closest body part 2 cm, the hand itself left out): towards -X and +Y almost always > 0.45 m; towards +X and -Y only 0.15-0.25 m in walk, run, 1H slash / pierce, fidget 2. Anything 0.15 m below the hand touches the body in nearly every action.
+The original had strings, pin heads and eyelets on BOTH faces of the frame. `python model/items/harp/build_harp.py models/harp_orig.glb models/harp.glb` (needs numpy, pillow, scipy; ~1 min):
 
-## Measured candidate shapes (point clouds of a triangular frame + string plane on `weapon1h.R`, all 35 actions, every frame)
+- Metal is told from wood by the metal-roughness texture (blue channel > 128), strings from pins by thickness (thick blobs after an erosion of 4 mm = pin heads and eyelets). The glb is edited in its index / vertex buffers only: the textures stay byte-identical.
+- **Back face** (Blender y > 0): strings deleted, pin heads and eyelets with the walls of their holes flattened onto the plane of the wood round them (UV and normal of that wood), loose debris of the old strings dropped. What is left of it: pale patches on the neck, a few 3 mm dark dots where the strings ended on the inner face of the arm.
+- **Front face**: the old string ribbons (zero thickness, not fit to be made thicker) are replaced by 10 round cylinders on the old axes (radius 0.016 of a model unit = 5 mm at 0.65 m); pin heads and eyelets stay and ride on the grown surface.
+- **Frame grown in every plane** (the first complaint: too thin): every vertex moves 0.045 model units (1.4 cm at 0.65 m) along its smoothed normal, welded by position so that UV seams do not open: the arms 4 -> 7 cm in the plane, 5 -> 8 cm thick.
 
-Share of the item inside the body (grip zone of 6 cm left out); the same metric gives a horn-like column 1.45 % (butt -0.04) and 9.4 % (butt -0.19, the class default the horn uses):
+## 2. In the hand
 
-| shape | butt -0.04 | butt -0.10 | butt -0.19 |
-|---|---|---|---|
-| V frame, foot in the middle, H 0.65, W 0.40 | 0.92 % | 3.1 % | 6.4 % |
-| V frame, foot in the middle, H 0.65, W 0.30 | 0.98 % | 3.1 % | 6.1 % |
-| classic triangle, pillar over the foot (foot off-centre) H 0.65, W 0.40 | 0.88 % | 1.2 % | 2.1 % |
-| classic triangle, soundbox over the foot, H 0.65, W 0.40 | 2.2 % | 4.1 % | 7.1 % |
+`harp_R.json`: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "grip": 0.22, "grip_side": "+x", "butt": -0.22}` (`uo_orient_weapon.py`: `GRIP_H` / `GRIP_SIDE` / `TURN`, new). The arm of the V at 0.22 m above its lowest point (its middle across the slice) goes onto the grip line, so the hand closes on the arm and the harp hangs to -X, the side of the right hand that has > 0.45 m of free room (+X only 0.15-0.25 m: see the measurements below). `"butt": -0.22` puts the hand at that height. `"turn": 180` swaps the arm and the face with the strings.
 
-- **Nothing below the hand** matters most: butt -0.04 is 3-7x better than the default -0.19.
-- Width 0.30 or 0.40 hardly changes anything; taller is a little better (0.75: 0.80 %).
-- A classic harp with the pillar over the foot collides as little, but the pipeline would put the hand in the middle of the strings (foot 0.2 m off the grip line). The V frame with the foot in the middle needs no code change, but the user wants the harp held by its frame (pillar), not by a handle or foot. The worst actions are the same for every shape (18, 27 bow, 29 mounted 2H, 21 die forward: hands together or on the ground).
+`python pipeline/uo_make_item.py model/items/harp/harp_R.json --out OUT --preview` (the recipe's `file` is `models/harp.glb`; `"decimate": 400000` keeps the strings: the usual 30000 would eat them).
 
-## The shape: the UO lap harp (user decision: held by the harp itself, no handle, no foot)
+## 3. Pictures
 
-Reference: the client's `lap harp` (art 0x0EB2, 22x29 px; `standing harp` 0x0EB1 is the floor harp; no harp in tiledata is wearable, so there is no original animation to match). Read off the art:
+- Game size (36 px/m): `--preview` (sprites of 0.65 m = 23 px; the 10 strings are 0.8 px apart at the top: they read as a grey haze between the arms, not as lines).
+- Full quality: recipe with `"materials": {"TEXTURE_FILTER": false}` (keeps the 4096 px textures; the default filter box-averages them to 67 px for the sprite), then `python pipeline/item_still.py -- OUT/item.blend OUT/idle 07_combat_idle_1h 0 0,2,3,1 2.3 1500 160`.
 
-- A V-shaped wooden frame (user decision, as in the art): wide at the top, narrowing to one softly rounded bottom tip, a little taller than wide (29:22 in the art). Left: a thick pillar bowed outward, curving down to the tip. Top: a neck rising to the right, ending in a small rolled scroll, the highest point. Right: a straight slim bar down to the same tip. **No soundbox**.
-- About 6 strings with open gaps between them (drawn dark: the inside of the frame shows through). The prompt asks for 10 strings from the neck to the side arm, as on a real harp (user decision).
-- Light honey-tan wood with dark outlines; matte dark grey strings.
-- For the pipeline: height ~0.6 m (22 px at 36 px/m), width ~0.45 m, depth 5-6 cm; every part of the frame >= 4-5 cm (1.5-2 px). The hand closes round the frame itself (the bowed pillar or the straight bar), so **the pipeline needs a grip offset before it can be built**: `uo_place_weapon.py` puts the middle of the cross-section on the grip line (the hand would be in the strings); the body of the harp should go to the free side (-X of `weapon1h.R`, > 0.45 m free in almost every action; +X has only 0.15-0.25 m). Not measured yet with the grip on the frame: measure (as above) before choosing the grip point and the side. Height:width is only ~1.3, so check that the long axis comes out along the height (else give the axis explicitly).
-- Strings: a real string (2-8 mm) is 0.1-0.3 px and flickers from frame to frame; if they vanish in the render, `thicken` them after the import.
+## Measurements behind the grip (point clouds of the shape on `weapon1h.R`, all 35 actions)
 
-## meshy.ai (Text to 3D; prompt max 600 characters)
+Share of the item inside the body (grip zone of 6 cm left out): a V frame held by its tip with nothing below the hand 0.9 % (hand 4 cm above the lowest point), 3.1 % at 10 cm, 6.4 % at 19 cm (the class default `butt`); a column like the horn 1.45 % / 9.4 %. Free room round the shaft (closest body part 2 cm): -X and +Y almost always > 0.45 m; +X and -Y only 0.15-0.25 m in walk, run, 1H slash / pierce, fidget 2. Worst actions for every shape: 18 and 27 bow, 29 mounted 2H, 21 die forward (hands together or on the ground). **Not measured for the final grip on the arm**: run `item_qa.py` (`uo_make_item.py` without `--no-qa`) before packing a `.vd`.
 
-Prompt (531 characters; user decision: realistic, more detail (tuning pins, carved trim), strings from the neck down to the slanted side arm as on a real harp; V shape of the UO lap harp kept; earlier prompts gave a big floor-standing harp and a soundbox):
+## Reference
 
-```
-Realistic detailed medieval lap harp held in one hand, wooden game prop, upright, strings facing the viewer. V-shaped frame, wide at the top, narrowing to a softly rounded bottom tip: on the left a thick pillar bowed outward; on the right a slim slanted side arm; on top a curved neck ending in a rolled scroll. 10 taut strings run from tuning pins along the neck down to the side arm, like a real harp, getting shorter towards it, open gaps between them. Polished wood grain, light honey-tan wood, brass pins, subtle carved trim.
-```
-
-Negative prompt:
-
-```
-cartoon, stylized, toy, low poly, soundbox, floor harp, concert harp, pedal harp, large harp, flat bottom, U-shape, handle, foot, stand, base, ground plane, panel behind the strings, background, gems, floating parts, hands, person, text, black
-```
-
-The extra detail (pins, trim, wood grain) is below 1 px in the game: it only changes the average colour of the frame.
-
-Settings: symmetry off, triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle or foot, no soundbox, the strings ending on the side arm, no holes in the frame, strings separate with open gaps (no backing panel), not a mess of thin wires.
-
-## Recipes (after the grip offset exists; the model kept outside the repo in `models/harp.glb`)
-
-Like the horn: `"weapon": {"class": "mace", "part": "weapon1h" | "weapon.L", "length": 0.6, "tip": "+z"}`, `"decimate": 30000`, `"materials": {"METAL": null}`, plus the new grip offset onto the frame. Measure with `qa.json` (horn: 4.3 % inside the body).
+The client's own harps (art, from `art.mul` via `tiledata.mul`): `lap harp` 0x0EB2 (V frame, bowed pillar, scroll neck, no soundbox; 22 x 29 px), `standing harp` 0x0EB1, a big ornate one 0xA775. None is wearable: no original animation to match.

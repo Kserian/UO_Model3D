@@ -15,6 +15,9 @@ CLASS = "sword"       # sword, dagger, mace, axe, axe2h, polearm, staff, spear, 
 LENGTH = 0.0          # m, total length along the shaft; 0 = from CLASS
 TIP = "auto"          # "auto" (narrower end), "heavy" (the end with more vertices / mass is the head: mace, hammer, axe), or "+x", "-x", "+y", "-y", "+z", "-z" (model axis the tip points to)
 FLAT = True           # turn the widest side perpendicular to the shaft to +X
+GRIP_H = 0.0          # m above the lowest point: hold the item by the ARM that is there (a harp: one arm of the V) instead of by the middle of its width; 0 = the middle (a sword, a horn). The item then hangs to the other side
+GRIP_SIDE = 1         # with GRIP_H: +1 = the arm on the +X side is held (the item hangs to -X, the free side of the right hand), -1 = the arm on the -X side
+TURN = 0              # 0 or 180: half turn about the shaft (the arm and the face of the item change sides)
 LENGTHS = {"sword": 1.1, "dagger": 0.5, "mace": 1.2, "axe": 1.35, "axe2h": 1.4, "polearm": 2.5, "staff": 2.4, "spear": 2.7, "bow": 1.34, "crossbow": 1.1, "gun": 1.2}
 # measured on the original weapons of the client: the longest bounding-box diagonal over all frames of the animation, m. 1H blades 0.83 katana /
 # 0.97 cutlass / 1.12 scimitar / 1.21 broadsword / 1.31 viking sword; maces, hammers, clubs 1.06-1.29; 1H axes 1.34-1.39; 2H axes 1.39-1.65; bardiche 2.37, halberd 2.51, long spear
@@ -56,12 +59,21 @@ def run():
     x = wide - (wide @ z) * z; x /= np.linalg.norm(x)
     if not FLAT:
         x = np.cross([0, 0, 1.0], z) if abs(z[2]) < 0.99 else np.array([1.0, 0, 0]); x /= np.linalg.norm(x)
+    if TURN == 180:
+        x = -x
     y = np.cross(z, x)
     Rm = np.array([x, y, z])                      # model -> upright: rows are the new axes
     U = (allv - c) @ Rm.T
     L = np.ptp(U[:, 2]); target = LENGTH if LENGTH > 0 else LENTH_OF(CLASS)
     s = target / L
     zmin = U[:, 2].min(); mid = [(U[:, 0].min() + U[:, 0].max()) / 2, (U[:, 1].min() + U[:, 1].max()) / 2]
+    if GRIP_H > 0:                                # the arm at that height: its middle (across the slice) goes onto the shaft line
+        sl = np.abs(U[:, 2] - (zmin + GRIP_H / s)) < 0.015 / s
+        xs = U[sl, 0]; xm = (xs.min() + xs.max()) / 2
+        arm = xs[xs > xm] if GRIP_SIDE > 0 else xs[xs < xm]
+        mid[0] = (arm.min() + arm.max()) / 2
+        print("uo_orient_weapon: held by the arm at %.2f m above the lowest point: %.3f m from the middle of the width, %.1f cm thick in the slice" % (
+            GRIP_H, (mid[0] - (U[:, 0].min() + U[:, 0].max()) / 2) * s, 100 * (arm.max() - arm.min()) * s))
     T = np.eye(4); T[:3, :3] = s * Rm; T[:3, 3] = -s * (Rm @ c) - np.array([s * mid[0], s * mid[1], s * zmin])
     for o in obs:
         o.data.transform(Matrix(T) @ o.matrix_world)

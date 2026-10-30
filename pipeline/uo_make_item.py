@@ -26,7 +26,7 @@ RECIPE.json (only "file" and "kind" are required):
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
-                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
+                               # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class), grip (m above the lowest point: hold the ARM of the item at that height, e.g. a harp by one arm of its V, instead of the middle of its width; then "butt": -grip), grip_side ("+x" default: the arm on the +X side, the item hangs to the free -X side; "-x"), turn (180: half turn about the shaft)
 
 A model of several items (straps + a sword on the back; the file has the model's mannequin): "reference": {"keep": ["mannequin mesh"], "kind": "shirt", "turn_back": false} (false = do not try the half turn: for a model whose front is known, e.g. a belt with a sword) is fitted to the body and its
 transform goes to every part of "parts": [{"name": "straps", "keep": [...], "kind": "harness"}, {"name": "sword", "keep": [...], "rigid": "quiver"}] (rigid = stiff on a bone; its
@@ -409,7 +409,8 @@ prep = %(prep)r
 flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}      # settings of uo_prepare_item.py (a dict setting too: HEM_BAND)
 wp = %(weapon)r
 if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
-    run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
+    run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)),
+        **({"GRIP_H": float(wp["grip"]), "GRIP_SIDE": 1 if wp.get("grip_side", "+x") == "+x" else -1} if wp.get("grip") else {}), **({"TURN": int(wp["turn"])} if wp.get("turn") else {}))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
 else:
