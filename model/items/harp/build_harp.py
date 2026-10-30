@@ -14,7 +14,8 @@ src, dst = sys.argv[1], sys.argv[2]
 FRAME_W = float(sys.argv[3]) if len(sys.argv) > 3 else 0.09
 FRAME_T = float(sys.argv[4]) if len(sys.argv) > 4 else 0.03
 STRING_R = float(sys.argv[5]) if len(sys.argv) > 5 else 0.028
-STRINGS = sys.argv[6] if len(sys.argv) > 6 else "all"            # all 10, half = every second one (5), third = every fourth (3), none = no strings (the pin heads stay: they are 0.3 px)
+STRINGS = sys.argv[6] if len(sys.argv) > 6 else "all"
+BARE = STRINGS == "none"                                         # no strings: the front pin heads and eyelets stay (there is no surface under them to flatten them onto) but take the colour of the wood round them: wooden pegs            # all 10, half = every second one (5), third = every fourth (3), none = no strings (the pin heads stay: they are 0.3 px)
 FRAME = FRAME_T
 SEG = 12
 d = open(src, "rb").read()
@@ -66,7 +67,7 @@ for side in (+1, -1):                                               # +1 = back 
         if cz[sel].max() - cz[sel].min() < 0.2: continue
         near |= np.abs(fc[:, 0] - xk) < 0.014
         cols.append((xk, float(np.median(cy[sel])), float(cz[sel].max()), float(cz[sel].min()), sel))
-    stringy = near & (side * cy > 0.04) & (fb > 56) & (lab[gx, gz] == 0)          # debris of the scanned strings (metal-ish, not the pale wood of the neck)
+    stringy = near & (side * cy > 0.04) & (fb > 56) & (lab[gx, gz] == 0) & (cz < 0.55)      # below the neck only: on the neck the pale wood has the same texels as the wire          # debris of the scanned strings (metal-ish, not the pale wood of the neck)
     dele |= cand | stringy
     if side == -1:
         strings_front = cols
@@ -94,6 +95,24 @@ for side in (+1, -1):                                               # +1 = back 
         uv[moved] = uv[ri[np.argmin(np.linalg.norm(cl - m, axis=1))]]
         nfl += 1
     print("side %s: discs %d (flattened %d), strings %d, faces deleted so far %d" % ("back" if side > 0 else "front", nl, nfl, len(cols), dele.sum()))
+# ---- silver leftovers of the scanned wire (neutral grey texels: the saturation of the pale wood is clearly higher): out, except under the pin heads that stay
+grey = (fsat < 0.08) & (fb > 40) & ~dele
+prot = np.zeros(len(idx), bool)
+for sd, lb in ((0, lab_back_any), (1, labF)): prot |= lb[gx, gz] > 0
+print("grey wire leftovers deleted: %d faces (%d inside the pin discs kept)" % (int((grey & ~prot).sum()), int((grey & prot).sum())))
+dele |= grey & ~prot
+# ---- the opening of the V: nothing belongs between the inner edges of the two arms (below the neck): the debris of the strings that hangs there goes, whatever its texture
+fwood = (fsat >= 0.35) & (fb < 56) & ~dele
+opened = np.zeros(len(idx), bool)
+for z0 in np.arange(-0.95, 0.56, 0.01):
+    rowm = fwood & (cz >= z0) & (cz < z0 + 0.01)
+    if rowm.sum() < 40: continue
+    xm = np.median(fc[rowm, 0]); left = fc[rowm & (fc[:, 0] < xm), 0]; right = fc[rowm & (fc[:, 0] >= xm), 0]
+    if len(left) < 10 or len(right) < 10: continue
+    lo, hi = np.percentile(left, 99.5) + 0.002, np.percentile(right, 0.5) - 0.002
+    if hi > lo: opened |= (cz >= z0) & (cz < z0 + 0.01) & (fc[:, 0] > lo) & (fc[:, 0] < hi)
+dele |= opened & ~dele
+print("debris in the opening of the V: %d faces" % int((opened & ~dele).sum() + opened.sum()))
 # ---- loose debris of the scanned strings: pieces of the mesh that no longer touch the frame (small connected components outside the pin / eyelet discs) are dropped
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
@@ -109,6 +128,48 @@ for c in np.nonzero((sizes > 0) & (sizes < 4000))[0]:
     if protect[sel].mean() > 0.5: continue
     dele[alive[sel]] = True; drop += int(sel.sum())
 print("loose debris dropped: %d faces (components kept: %d large)" % (drop, int((sizes >= 4000).sum())))
+CLOSE_HOLES = False                                               # fan patches over small holes: tried, they leave pale streaks (the UV of the wire texels / one wood colour); off
+# ---- small holes in the shell (the sockets of pins and of the string ends, the pits left by deleted debris) are closed with a fan from the middle of each hole; the UV comes from the wood round it
+keyq = np.round(pos / 2e-5).astype(np.int64); _, wq = np.unique(keyq, axis=0, return_inverse=True); wq = wq.ravel()
+vsat = (vc.max(1) - vc.min(1)) / np.maximum(vc.max(1), 1.0)
+alive = np.nonzero(~dele)[0]; fq = wq[idx[alive]]
+ekey = lambda a, b: np.minimum(a, b).astype(np.int64) * (wq.max() + 1) + np.maximum(a, b)
+ek = np.concatenate([ekey(fq[:, 0], fq[:, 1]), ekey(fq[:, 1], fq[:, 2]), ekey(fq[:, 2], fq[:, 0])])
+uq, cq = np.unique(ek, return_counts=True); once = set(uq[cq == 1].tolist())
+bedges = []                                                       # (original vertex a, original vertex b, welded a, welded b) in the winding of the kept face
+for fi, f in zip(alive, fq):
+    for ca, cb in ((0, 1), (1, 2), (2, 0)):
+        if ekey(f[ca], f[cb]) in once: bedges.append((idx[fi, ca], idx[fi, cb], f[ca], f[cb]))
+bedges = np.array(bedges, dtype=np.int64).reshape(-1, 4)
+hv = np.unique(np.concatenate([bedges[:, 2], bedges[:, 3]])) if len(bedges) else np.zeros(0, int); hm = {v: i for i, v in enumerate(hv)}
+hp, hn, hu, ht = [], [], [], []
+if CLOSE_HOLES and len(bedges):
+    gq = coo_matrix((np.ones(len(bedges)), ([hm[x] for x in bedges[:, 2]], [hm[x] for x in bedges[:, 3]])), shape=(len(hv), len(hv)))
+    nq, lq = connected_components(gq, directed=False)
+    closed = 0
+    for c in range(nq):
+        E = bedges[np.array([lq[hm[a]] == c for a in bedges[:, 2]])]
+        per = float(np.linalg.norm(pos[E[:, 0]] - pos[E[:, 1]], axis=1).sum())
+        if len(E) < 3 or per > 0.5: continue
+        ow = {}
+        for ia, ib, wa, wb in E: ow.setdefault(wa, ia)
+        ids = np.array(list(ow.values())); okw = (vm[ids] < 56) & (vsat[ids] > 0.3)                   # a hole is closed only when its rim is wood (not the stump of a wire)
+        if okw.mean() < 0.7: continue
+        ids = ids[okw]; uvs = uv[ids]; um = np.median(uvs, 0)
+        cols = sample(bc, uvs).astype(float); mc = np.median(cols, 0); ref = ids[np.argmin(np.linalg.norm(cols - mc, axis=1))]
+        same = False                                               # one wood colour for the whole patch
+        base_ = len(pos) + len(hp); cm = {}
+        for w_, o in ow.items():
+            cm[w_] = base_ + len(cm); hp.append(pos[o]); hn.append(nor[o]); hu.append(uv[o] if same else uv[ref])
+        cn_ = nor[ids].mean(0); cn_ /= max(np.linalg.norm(cn_), 1e-9)
+        hp.append(pos[ids].mean(0)); hn.append(cn_); hu.append(um if same else uv[ref]); ci = base_ + len(cm)
+        for ia, ib, wa, wb in E: ht.append((cm[wb], cm[wa], ci))
+        closed += 1
+    print("holes closed: %d of %d (%d fan triangles)" % (closed, nq, len(ht)))
+if hp:
+    pos = np.concatenate([pos, np.array(hp).reshape(-1, 3)]); nor = np.concatenate([nor, np.array(hn).reshape(-1, 3)]); uv = np.concatenate([uv, np.array(hu).reshape(-1, 2)])
+    idx = np.concatenate([idx, np.array(ht, dtype=np.int64).reshape(-1, 3)]); dele = np.concatenate([dele, np.zeros(len(ht), bool)])
+    yb = -pos[:, 2]; zb = pos[:, 1]; xb = pos[:, 0]; vm = sample(mr, uv).astype(float); vc = sample(bc, uv).astype(float); vsat = (vc.max(1) - vc.min(1)) / np.maximum(vc.max(1), 1.0); vx, vz = cell(xb, zb)      # per-vertex arrays follow the new vertices
 # ---- the frame grows in every plane: along the smoothed normals welded by position (UV seams do not open)
 key = np.round(pos / 2e-5).astype(np.int64); _, wl = np.unique(key, axis=0, return_inverse=True); wl = wl.ravel()
 nn = np.zeros((wl.max() + 1, 3)); np.add.at(nn, wl, nor); nn /= np.maximum(np.linalg.norm(nn, axis=1, keepdims=True), 1e-9)
@@ -118,6 +179,8 @@ for k in range(1, nlF + 1):                                         # front pin 
     ys, xs_ = np.nonzero(labF == k); ring = (dlabF == dlabF[ys[0], xs_[0]]) & ~maskF
     rv = ring[vx, vz] & (yb < -0.02) & (vm < 56); selk = (vlF == k) & (yb < 0.0)
     if rv.sum() >= 4 and selk.any(): dn[selk] = dn[rv].mean(0)
+    if BARE and rv.sum() >= 4 and selk.any():                                  # a peg of the colour of the wood round it
+        ri = np.nonzero(rv)[0]; cl = sample(bc, uv[ri]).astype(float); mdn = np.median(cl, 0); uv[selk] = uv[ri[np.argmin(np.linalg.norm(cl - mdn, axis=1))]]
 pos0 = pos.copy(); pos = pos + dn
 print("frame grown by %.3f in the plane, %.3f across; bbox %s -> %s" % (FRAME_W, FRAME_T, np.ptp(pos0, 0).round(3), np.ptp(pos, 0).round(3)))
 # ---- new strings (cylinders) and pin balls on the front
