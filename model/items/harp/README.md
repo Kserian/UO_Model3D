@@ -28,26 +28,28 @@ Share of the item inside the body (grip zone of 6 cm left out); the same metric 
 Reference: the client's `lap harp` (art 0x0EB2, 22x29 px; `standing harp` 0x0EB1 is the floor harp; no harp in tiledata is wearable, so there is no original animation to match). Read off the art:
 
 - A V-shaped wooden frame (user decision, as in the art): wide at the top, narrowing to one softly rounded bottom tip, a little taller than wide (29:22 in the art). Left: a thick pillar bowed outward, curving down to the tip. Top: a neck rising to the right, ending in a small rolled scroll, the highest point. Right: a straight slim bar down to the same tip. **No soundbox**.
-- About 6 vertical strings from the neck down to the bottom of the frame, with open gaps between them (drawn dark: the inside of the frame shows through).
+- About 6 strings with open gaps between them (drawn dark: the inside of the frame shows through). The prompt asks for 10 strings from the neck to the side arm, as on a real harp (user decision).
 - Light honey-tan wood with dark outlines; matte dark grey strings.
 - For the pipeline: height ~0.6 m (22 px at 36 px/m), width ~0.45 m, depth 5-6 cm; every part of the frame >= 4-5 cm (1.5-2 px). The hand closes round the frame itself (the bowed pillar or the straight bar), so **the pipeline needs a grip offset before it can be built**: `uo_place_weapon.py` puts the middle of the cross-section on the grip line (the hand would be in the strings); the body of the harp should go to the free side (-X of `weapon1h.R`, > 0.45 m free in almost every action; +X has only 0.15-0.25 m). Not measured yet with the grip on the frame: measure (as above) before choosing the grip point and the side. Height:width is only ~1.3, so check that the long axis comes out along the height (else give the axis explicitly).
 - Strings: a real string (2-8 mm) is 0.1-0.3 px and flickers from frame to frame; if they vanish in the render, `thicken` them after the import.
 
 ## meshy.ai (Text to 3D; prompt max 600 characters)
 
-Prompt (540 characters; realistic look, user decision; earlier prompts gave a big floor-standing harp and a soundbox: the UO harp has neither):
+Prompt (531 characters; user decision: realistic, more detail (tuning pins, carved trim), strings from the neck down to the slanted side arm as on a real harp; V shape of the UO lap harp kept; earlier prompts gave a big floor-standing harp and a soundbox):
 
 ```
-Realistic small medieval lap harp held in one hand, wooden game prop, upright, strings facing the viewer. V-shaped frame, wide at the top, narrowing to one softly rounded bottom tip, a bit taller than wide: on the left a thick pillar bowed outward down to the tip; on the right a straight slimmer bar to the same tip; on top a neck rising to the right, ending in a small rolled scroll. 6 taut vertical strings with open see-through gaps. Natural proportions, real polished wood grain, light honey-tan wood, dark grey strings, clean shapes.
+Realistic detailed medieval lap harp held in one hand, wooden game prop, upright, strings facing the viewer. V-shaped frame, wide at the top, narrowing to a softly rounded bottom tip: on the left a thick pillar bowed outward; on the right a slim slanted side arm; on top a curved neck ending in a rolled scroll. 10 taut strings run from tuning pins along the neck down to the side arm, like a real harp, getting shorter towards it, open gaps between them. Polished wood grain, light honey-tan wood, brass pins, subtle carved trim.
 ```
 
 Negative prompt:
 
 ```
-cartoon, stylized, toy, low poly, soundbox, box, floor harp, concert harp, pedal harp, large harp, flat bottom, U-shape, handle, foot, stand, base, ground plane, panel behind the strings, background, carvings, engravings, ornaments, knots, gems, tuning pins, tiny details, floating parts, hands, person, text, shiny metal, gold, black
+cartoon, stylized, toy, low poly, soundbox, floor harp, concert harp, pedal harp, large harp, flat bottom, U-shape, handle, foot, stand, base, ground plane, panel behind the strings, background, gems, floating parts, hands, person, text, black
 ```
 
-Settings: symmetry off, triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle or foot, no soundbox, no holes in the frame, strings separate with open gaps (no backing panel), not a mess of thin wires.
+The extra detail (pins, trim, wood grain) is below 1 px in the game: it only changes the average colour of the frame.
+
+Settings: symmetry off, triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle or foot, no soundbox, the strings ending on the side arm, no holes in the frame, strings separate with open gaps (no backing panel), not a mess of thin wires.
 
 ## Recipes (after the grip offset exists; the model kept outside the repo in `models/harp.glb`)
 
