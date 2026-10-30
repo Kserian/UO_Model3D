@@ -4,23 +4,26 @@ The user's own model of a harp (`models/harp_orig.glb`, 44 MB, **not in the repo
 
 ## 1. The model was wrong: repair (`build_harp.py`)
 
-The original had strings, pin heads and eyelets on BOTH faces of the frame. `python model/items/harp/build_harp.py models/harp_orig.glb models/harp.glb 0.09 0.03 0.028` (FRAME_W FRAME_T STRING_R; needs numpy, pillow, scipy; ~1 min):
+The original had strings, pin heads and eyelets on BOTH faces of the frame. `python model/items/harp/build_harp.py models/harp_orig.glb models/harp_half.glb 0.09 0.07 0.04 half` (FRAME_W FRAME_T STRING_R STRINGS; needs numpy, pillow, scipy; ~1 min):
 
 - Metal is told from wood by the metal-roughness texture (blue channel > 128), strings from pins by thickness (thick blobs after an erosion of 4 mm = pin heads and eyelets). The glb is edited in its index / vertex buffers only: the textures stay byte-identical.
 - **Back face** (Blender y > 0): strings deleted, pin heads and eyelets with the walls of their holes flattened onto the plane of the wood round them (UV and normal of that wood), loose debris of the old strings dropped. What is left of it: pale patches on the neck, a few 3 mm dark dots where the strings ended on the inner face of the arm.
-- **Front face**: the old string ribbons (zero thickness, not fit to be made thicker) are replaced by 10 round cylinders on the old axes (radius 0.016 of a model unit = 5 mm at 0.65 m); pin heads and eyelets stay and ride on the grown surface.
+- **Front face**: the old string ribbons (zero thickness, not fit to be made thicker) are replaced by 10 round cylinders on the old axes (radius 0.04 of a model unit = 1.2 cm at 0.65 m, 0.85 px: stable lines; the item is rigid on the hand bone, the strings do not move against the frame); pin heads and eyelets stay and ride on the grown surface.
 - **Frame grown separately in its plane and across it** (the user: arms at least 3 px, better 4, thickness about 2 px, at 36 px/m): every vertex moves along its smoothed normal (welded by position so that UV seams do not open) by FRAME_W in the plane and FRAME_T across it. `widths.py harp.glb 0.65 240` measures the silhouette in game pixels (ridge of the distance transform = the width of the arms and the neck; 1 px = 27.8 mm at 0.65 m):
 
   | | arms: thinnest 5 % / median | thickness |
   |---|---|---|
   | original | 1.4 / 2.2 px | 1.4 px |
   | FRAME_W 0.065 (variant A) | 3.0 / 3.2 px | 2.1 px |
-  | **FRAME_W 0.09 (variant B, the recipe)** | 3.6 / 3.9 px | 2.1 px |
+  | FRAME_W 0.09, FRAME_T 0.03 | 3.6 / 3.9 px | 2.1 px (thinnest bands 1.5 px: seen edge-on it was a 1-px line) |
+  | **FRAME_W 0.09, FRAME_T 0.07 (the recipe)** | 3.6 / 3.9 px | 2.9 px (thinnest bands 2.3 px) |
   | FRAME_W 0.10 | 3.8 / 4.4 px | 2.0 px |
 
 ## 2. In the hand
 
-Three builds of the same repaired, grown model (`build_harp.py ... 0.09 0.03 0.028 all|half|none`; `STRINGS`): `harp_R.json` (10 strings, `models/harp.glb`), `harp_R_half.json` (every second string, `models/harp_half.glb`), `harp_R_none.json` (no strings, `models/harp_none.glb`). The pin heads stay in all three (0.3 px). At game size the no-string harp reads best (a clean wooden V); with half of the strings the inside shows a few faint dark lines, with ten a grey haze.
+Builds of the same repaired, grown model (`STRINGS`): `harp_R.json` / `harp_L.json` use `models/harp_half.glb` (every second string: 5 strings; the user's choice), `harp_R_none.json` uses `models/harp_none.glb` (no strings, the cleanest at game size: a plain wooden V). The pin heads stay in all (0.3 px).
+
+**Left hand** (`harp_L.json`, part `weapon.L`: the grip of `weapon1h.R` mirrored onto `hand.L`, no original to calibrate on, like the horn): the mirror flips which side is free, so the same (thin) arm is held with `"grip_side": "-x"` and no `turn`; the harp then hangs outward. In the combat idle the left arm is down at the belly and the harp lies across it (the same for any item on `weapon.L`); in the attack it stands in front of the chest.
 
 Recipe: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": "+z", "grip": 0.30, "grip_side": "+x", "turn": 180, "butt": -0.30}` (`uo_orient_weapon.py`: `GRIP_H` / `GRIP_SIDE` / `TURN`, new). The arm of the V at 0.30 m above its lowest point (not by the bottom tip) goes onto the grip line, so the hand closes on the arm and the harp hangs to -X, the side of the right hand that has > 0.45 m of free room (+X only 0.15-0.25 m: see the measurements below). `"butt": -0.30` puts the hand at that height. `"turn": 180` holds the OTHER arm of the V (the thin one with the scroll, held at the +X side) and turns the face with the strings the other way; without it the thick arm is held.
 
@@ -35,7 +38,7 @@ Recipe: `"weapon": {"class": "mace", "part": "weapon1h", "length": 0.65, "tip": 
 
 ## Measurements behind the grip (point clouds of the shape on `weapon1h.R`, all 35 actions)
 
-Share of the item inside the body (grip zone of 6 cm left out): a V frame held by its tip with nothing below the hand 0.9 % (hand 4 cm above the lowest point), 3.1 % at 10 cm, 6.4 % at 19 cm (the class default `butt`); a column like the horn 1.45 % / 9.4 %. Free room round the shaft (closest body part 2 cm): -X and +Y almost always > 0.45 m; +X and -Y only 0.15-0.25 m in walk, run, 1H slash / pierce, fidget 2. Worst actions for every shape: 18 and 27 bow, 29 mounted 2H, 21 die forward (hands together or on the ground). **Not measured for the final grip on the arm**: run `item_qa.py` (`uo_make_item.py` without `--no-qa`) before packing a `.vd`.
+Share of the item inside the body (grip zone of 6 cm left out): a V frame held by its tip with nothing below the hand 0.9 % (hand 4 cm above the lowest point), 3.1 % at 10 cm, 6.4 % at 19 cm (the class default `butt`); a column like the horn 1.45 % / 9.4 %. Free room round the shaft (closest body part 2 cm): -X and +Y almost always > 0.45 m; +X and -Y only 0.15-0.25 m in walk, run, 1H slash / pierce, fidget 2. Worst actions for every shape: 18 and 27 bow, 29 mounted 2H, 21 die forward (hands together or on the ground). `item_qa.py` of the final grip (arm at 0.38 m, FRAME_T 0.07): right hand 5.3 % inside the body (worst: 17_spell_area), deepest 132 mm; left hand 2.7 % (worst: 00_walk_unarmed), deepest 95 mm (the horn: 4.3 % / 97 mm and 3.8 % / 88 mm).
 
 ## Reference
 

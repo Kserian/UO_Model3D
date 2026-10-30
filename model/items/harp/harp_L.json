@@ -1,0 +1,1 @@
+{"name": "harp_L", "file": "models/harp_half.glb", "weapon": {"class": "mace", "part": "weapon.L", "length": 0.65, "tip": "+z", "grip": 0.38, "grip_side": "-x", "butt": -0.38}, "decimate": 400000, "materials": {"METAL": false}, "scene": {"uo_samples": 1024, "uo_outline": 0.7, "uo_edge_smooth": 2}}
