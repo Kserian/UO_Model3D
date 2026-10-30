@@ -3,7 +3,7 @@ Input: a glb whose strings, pins and eyelets are on BOTH faces of the frame (the
 the hole of every removed pin / eyelet closed flush with the wood, the frame grown in every plane, and the 10 strings rebuilt as clean round cylinders with a pin ball on each.
 The textures stay byte-identical (only the index / vertex buffers change).
 
-    python build_harp.py in.glb out.glb [FRAME_W 0.09] [FRAME_T 0.03] [STRING_R 0.028] [STRINGS all|half|none]      (model units; the model is 1.9 high: a 0.65 m item is x0.33; 1 game px = 2.8 cm = 0.085 units)
+    python build_harp.py in.glb out.glb [FRAME_W 0.09] [FRAME_T 0.03] [STRING_R 0.028] [STRINGS all|half|third|none]      (model units; the model is 1.9 high: a 0.65 m item is x0.33; 1 game px = 2.8 cm = 0.085 units)
     FRAME_W grows the frame IN ITS PLANE (the width of the arms and the neck), FRAME_T across it (the thickness). Measure with widths.py (pixels at 36 px/m).
 """
 import json, struct, io, sys
@@ -14,7 +14,7 @@ src, dst = sys.argv[1], sys.argv[2]
 FRAME_W = float(sys.argv[3]) if len(sys.argv) > 3 else 0.09
 FRAME_T = float(sys.argv[4]) if len(sys.argv) > 4 else 0.03
 STRING_R = float(sys.argv[5]) if len(sys.argv) > 5 else 0.028
-STRINGS = sys.argv[6] if len(sys.argv) > 6 else "all"            # all 10, half = every second one (5), none = no strings (the pin heads stay: they are 0.3 px)
+STRINGS = sys.argv[6] if len(sys.argv) > 6 else "all"            # all 10, half = every second one (5), third = every fourth (3), none = no strings (the pin heads stay: they are 0.3 px)
 FRAME = FRAME_T
 SEG = 12
 d = open(src, "rb").read()
@@ -146,7 +146,7 @@ def ball(c, R):
         for iu in range(nu):
             a0 = b + iv * nu + iu; a1 = b + iv * nu + (iu + 1) % nu
             newt.extend([(a0, a0 + nu, a1), (a1, a0 + nu, a1 + nu)])
-keep_strings = {"all": strings_front, "half": strings_front[::2], "none": []}[STRINGS]
+keep_strings = {"all": strings_front, "half": strings_front[::2], "third": strings_front[::4], "none": []}[STRINGS]       # third = every fourth of the ten: 3 strings
 for xk, yk, ztop, zbot, sel in keep_strings:
     ys_ = yk - FRAME                                                # as before: just in front of the surface the string lay on, now that the surface moved out
     near_ = surf[np.argmin((xb[surf] - xk) ** 2 + (zb[surf] - ztop) ** 2)]
