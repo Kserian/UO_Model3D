@@ -18,6 +18,7 @@ It is meant for designing clothing, armour, hair and weapon layers: the `.blend`
 | `model/UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Albedo (grey like UO skin, lighting removed) and its variants for the 5 directions. |
 | `model/example_clothing/` | Example layer (a shirt) as `.vd` with a preview over the original body. |
 | `model/items/horn/` | Recipes of a horn item for the right and left hand. |
+| `model/items/harp/` | Design of a held harp (shape measured on the 1H grip, meshy.ai prompt, recipes); no model yet. |
 | `vdtool/` | `vdtool.py` unpacks and repacks `.vd` (section 6), `mul2vd.py` converts client `anim.mul`. |
 | `pipeline/` | Render, item fitting, tests, measurements (section 9). `body400.vd`, `horse200.vd` = original client files (body 0x190, horse 0xC8). |
 | `client/` | Original body (1050) and horse (300) frames as PNG + `meta.json`; `extract/` = data extracted from the client. |
