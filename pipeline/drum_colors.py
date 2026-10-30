@@ -14,7 +14,8 @@ COLORS = [
     ("turquoise", 178, 0.90, 1.10), ("lime", 88, 0.85, 1.20), ("teal", 168, 0.90, 0.80), ("burgundy", 345, 1.00, 0.60), ("gold", 43, 1.00, 1.15),
     ("olive", 68, 0.70, 0.85), ("magenta", 308, 0.95, 1.00), ("sky", 205, 0.80, 1.25), ("beige", 40, 0.30, 1.30), ("purple", 285, 0.90, 0.85),
 ]
-SHADES = {"light": (0.85, 1.45), "dark": (1.00, 0.62)}
+SHADES = {"light": (0.85, 1.45), "dark": (1.00, 0.62), "base": (1.00, 1.00)}
+LIGHTGREY = ("lightgrey", 0, 0.00, 3.40)       # the neutral light grey for dyeing in the client (make_drum_grey.py): the shell is r = g = b, all the other pixels are made neutral too
 
 
 def recolor_rgb(rgb, hue, sat_mult, lum_mult):
@@ -22,6 +23,9 @@ def recolor_rgb(rgb, hue, sat_mult, lum_mult):
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
     lum = 0.299 * r + 0.587 * g + 0.114 * b
     s2 = 0.0 if sat_mult == 0 else min(1.0, s * sat_mult)
+    if s2 == 0.0:                                 # grey: the luminance alone (the value of a saturated colour would cap the brightness)
+        g = int(round(min(1.0, lum * lum_mult) * 255))
+        return (g, g, g)
     r2, g2, b2 = colorsys.hsv_to_rgb(hue / 360.0, s2, v)
     l2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2
     k = lum * lum_mult / max(l2, 1e-6)
@@ -30,6 +34,6 @@ def recolor_rgb(rgb, hue, sat_mult, lum_mult):
 
 def params(name, shade):
     """(hue, sat_mult, lum_mult) of a colour name and a shade"""
-    n, hue, sm, lm = next(c for c in COLORS if c[0] == name)
+    n, hue, sm, lm = next(c for c in COLORS + [LIGHTGREY] if c[0] == name)
     ss, ls = SHADES[shade]
     return hue, sm * ss, lm * ls

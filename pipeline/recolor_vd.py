@@ -48,7 +48,7 @@ def recolor_vd(src, dst, f):
             n2 = f(rgb)
             if n2 != rgb:
                 c2 = ((n2[0] * 31 + 127) // 255 << 10) | ((n2[1] * 31 + 127) // 255 << 5) | ((n2[2] * 31 + 127) // 255)
-                struct.pack_into("<H", d, off + 2 * k, c2 if c2 else 1); changed += 1
+                struct.pack_into("<H", d, off + 2 * k, c2 if c2 else 0x0421); changed += 1
     open(dst, "wb").write(bytes(d))
     return len(done), changed
 
