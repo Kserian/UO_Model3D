@@ -25,7 +25,7 @@ Share of the item inside the body (grip zone of 6 cm left out); the same metric 
 
 ## The shape (user decision: held by the harp itself, no handle, no foot)
 
-- A realistic classic (Celtic) lap harp: soundbox wide at the bottom, narrowing to the top, S-curved neck; the hand closes round the **front pillar** (straight, smooth, round, Ø 3-4 cm, full height), the harp body hangs to one side of the hand. Height 0.65 m (23 px at 36 px/m), width ~0.38 m, height:width ~1.7 so that the long axis is the pillar; depth 5-6 cm (2 px edge-on).
+- A realistic small handheld (bard's) lap harp, not a floor harp: soundbox wide at the bottom, narrowing to the top, S-curved neck; the hand closes round the **front pillar** (straight, smooth, round, Ø 3-4 cm, full height), the harp body hangs to one side of the hand. Height 0.65 m (23 px at 36 px/m), width ~0.38 m, height:width ~1.7 so that the long axis is the pillar; depth 5-6 cm (2 px edge-on).
 - **Needs a pipeline change before it can be built**: `uo_place_weapon.py` puts the middle of the cross-section on the grip line (the hand would be in the strings). It needs an offset that puts the pillar on the grip line, and the body of the harp on the free side (-X of `weapon1h.R`, > 0.45 m free in almost every action; +X has only 0.15-0.25 m). Not measured yet with the grip on the pillar: measure (as above) before choosing the grip height and the side.
 - Soundbox >= 7 cm, neck >= 5 cm; every part >= 1.5-2 px wide (a 3 cm part is 1 px).
 - Strings (user decision): like a real harp, 10 separate strings with open see-through gaps, no panel, a soft rounded bottom. A real string (2-8 mm) is 0.1-0.3 px and flickers from frame to frame: ask for slightly thick strings, and if they still vanish in the render, `thicken` them after the import.
@@ -33,16 +33,16 @@ Share of the item inside the body (grip zone of 6 cm left out); the same metric 
 
 ## meshy.ai (Text to 3D; prompt max 600 characters)
 
-Prompt (526 characters):
+Prompt (535 characters; "lap harp" alone gave a big floor-standing harp: the size and "handheld" must be said, and floor / concert / pedal harp excluded):
 
 ```
-Realistic wooden lap harp, simple game prop, standing upright, strings facing the viewer. Classic Celtic harp shape about 1.7 times as tall as wide: a straight smooth round front pillar, full height; a soundbox slanting up on the other side, wide at the bottom, narrowing to the top; an elegant S-curved neck joining them. Soft, gently rounded bottom where pillar and soundbox meet. 10 separate taut strings, slightly thick, with open see-through space between them. Smooth surfaces, warm honey-brown wood, pale gold strings.
+Small handheld medieval bard's lap harp, about 60 cm tall, light enough to carry in one hand, realistic simple wooden game prop, shown upright, strings facing the viewer. Compact triangle about 1.7 times as tall as wide: a straight smooth round front pillar, a slim soundbox slanting up on the other side, slightly wider at the bottom, and a gently S-curved neck. Soft rounded bottom corner. 10 separate taut strings, slightly thick, with open see-through space between them. Smooth surfaces, warm honey-brown wood, pale gold strings.
 ```
 
 Negative prompt:
 
 ```
-handle, grip, pommel, knob, ball, foot, stand, base, ground plane, panel or board behind the strings, filled space between strings, background, cartoon, carvings, engravings, filigree, celtic knots, gems, ornaments, tiny details, tuning pins, sharp pointed bottom, floating parts, hands, person, text, black, shiny metal
+floor harp, concert harp, pedal harp, large standing harp, pedals, column base, crown, handle, pommel, foot, stand, base, ground plane, panel behind the strings, background, cartoon, carvings, engravings, filigree, knots, gems, ornaments, tiny details, tuning pins, pointed bottom, floating parts, hands, person, text, black, shiny metal
 ```
 
 Settings: symmetry off, triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle or foot, the pillar straight and free of ornaments, no holes in the frame, strings separate with open gaps (no backing panel), not a mess of thin wires.
