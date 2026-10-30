@@ -35,16 +35,16 @@ Reference: the client's `lap harp` (art 0x0EB2, 22x29 px; `standing harp` 0x0EB1
 
 ## meshy.ai (Text to 3D; prompt max 600 characters)
 
-Prompt (552 characters; earlier prompts gave a big floor-standing harp and a soundbox: the UO harp has neither):
+Prompt (540 characters; realistic look, user decision; earlier prompts gave a big floor-standing harp and a soundbox: the UO harp has neither):
 
 ```
-Small handheld lap harp, simple low-detail game prop, upright, strings facing the viewer. V-shaped wooden frame, wide at the top, narrowing down to one softly rounded bottom tip, a bit taller than wide: on the left a thick pillar bowed outward in a smooth curve down to the tip; on the right a straight slim bar down to the same tip; on top a neck rising to the right, ending in a small rolled scroll, the highest point. 6 vertical strings from neck to bottom with open see-through gaps. Light honey-tan wood, matte dark grey strings, smooth surfaces.
+Realistic small medieval lap harp held in one hand, wooden game prop, upright, strings facing the viewer. V-shaped frame, wide at the top, narrowing to one softly rounded bottom tip, a bit taller than wide: on the left a thick pillar bowed outward down to the tip; on the right a straight slimmer bar to the same tip; on top a neck rising to the right, ending in a small rolled scroll. 6 taut vertical strings with open see-through gaps. Natural proportions, real polished wood grain, light honey-tan wood, dark grey strings, clean shapes.
 ```
 
 Negative prompt:
 
 ```
-soundbox, box, floor harp, concert harp, pedal harp, large harp, flat bottom, U-shape, handle, foot, stand, base, ground plane, panel behind the strings, background, carvings, engravings, ornaments, knots, gems, tuning pins, tiny details, floating parts, hands, person, text, shiny metal, gold, black
+cartoon, stylized, toy, low poly, soundbox, box, floor harp, concert harp, pedal harp, large harp, flat bottom, U-shape, handle, foot, stand, base, ground plane, panel behind the strings, background, carvings, engravings, ornaments, knots, gems, tuning pins, tiny details, floating parts, hands, person, text, shiny metal, gold, black
 ```
 
 Settings: symmetry off, triangle mesh, 10-30k polygons (the pipeline reduces to 30k), texture without metallic. Check before using: one piece, no handle or foot, no soundbox, no holes in the frame, strings separate with open gaps (no backing panel), not a mess of thin wires.
