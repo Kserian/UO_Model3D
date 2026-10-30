@@ -3,7 +3,7 @@ Input: a glb whose strings, pins and eyelets are on BOTH faces of the frame (the
 the hole of every removed pin / eyelet closed flush with the wood, the frame grown in every plane, and the 10 strings rebuilt as clean round cylinders with a pin ball on each.
 The textures stay byte-identical (only the index / vertex buffers change).
 
-    python build_harp.py in.glb out.glb [FRAME_W 0.11] [FRAME_T 0.03] [STRING_R 0.028]      (model units; the model is 1.9 high: a 0.65 m item is x0.33; 1 game px = 2.8 cm = 0.085 units)
+    python build_harp.py in.glb out.glb [FRAME_W 0.09] [FRAME_T 0.03] [STRING_R 0.028] [STRINGS all|half|none]      (model units; the model is 1.9 high: a 0.65 m item is x0.33; 1 game px = 2.8 cm = 0.085 units)
     FRAME_W grows the frame IN ITS PLANE (the width of the arms and the neck), FRAME_T across it (the thickness). Measure with widths.py (pixels at 36 px/m).
 """
 import json, struct, io, sys
@@ -11,9 +11,10 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
 src, dst = sys.argv[1], sys.argv[2]
-FRAME_W = float(sys.argv[3]) if len(sys.argv) > 3 else 0.11
+FRAME_W = float(sys.argv[3]) if len(sys.argv) > 3 else 0.09
 FRAME_T = float(sys.argv[4]) if len(sys.argv) > 4 else 0.03
 STRING_R = float(sys.argv[5]) if len(sys.argv) > 5 else 0.028
+STRINGS = sys.argv[6] if len(sys.argv) > 6 else "all"            # all 10, half = every second one (5), none = no strings (the pin heads stay: they are 0.3 px)
 FRAME = FRAME_T
 SEG = 12
 d = open(src, "rb").read()
@@ -145,12 +146,13 @@ def ball(c, R):
         for iu in range(nu):
             a0 = b + iv * nu + iu; a1 = b + iv * nu + (iu + 1) % nu
             newt.extend([(a0, a0 + nu, a1), (a1, a0 + nu, a1 + nu)])
-for xk, yk, ztop, zbot, sel in strings_front:
+keep_strings = {"all": strings_front, "half": strings_front[::2], "none": []}[STRINGS]
+for xk, yk, ztop, zbot, sel in keep_strings:
     ys_ = yk - FRAME                                                # as before: just in front of the surface the string lay on, now that the surface moved out
     near_ = surf[np.argmin((xb[surf] - xk) ** 2 + (zb[surf] - ztop) ** 2)]
     ysurf = -pos[near_, 2]                                          # the grown surface of the neck under this pin (Blender y, negative)
     tube(xk, ys_, zbot - 0.05, ztop, STRING_R)
-print("strings %d, new vertices %d, triangles %d" % (len(strings_front), len(newp), len(newt)))
+print("strings %d of %d (%s), new vertices %d, triangles %d" % (len(keep_strings), len(strings_front), STRINGS, len(newp), len(newt)))
 pos = np.concatenate([pos, np.array(newp).reshape(-1, 3)]); nor = np.concatenate([nor, np.array(newn).reshape(-1, 3)]); uv = np.concatenate([uv, np.array(newu).reshape(-1, 2)])
 tri = np.concatenate([idx[~dele], np.array(newt, dtype=np.int64).reshape(-1, 3)]).astype("<u4")
 b = binc
