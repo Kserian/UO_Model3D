@@ -96,7 +96,7 @@ for side in (+1, -1):                                               # +1 = back 
         nfl += 1
     print("side %s: discs %d (flattened %d), strings %d, faces deleted so far %d" % ("back" if side > 0 else "front", nl, nfl, len(cols), dele.sum()))
 # ---- silver leftovers of the scanned wire (neutral grey texels: the saturation of the pale wood is clearly higher): out, except under the pin heads that stay
-grey = (fsat < 0.08) & (fb > 40) & ~dele
+grey = (fsat < 0.30) & (fb > 70) & ~dele                          # wire texels: low saturation and a metal value of 100-120 in the metal map (wood: about 5)
 prot = np.zeros(len(idx), bool)
 for sd, lb in ((0, lab_back_any), (1, labF)): prot |= lb[gx, gz] > 0
 print("grey wire leftovers deleted: %d faces (%d inside the pin discs kept)" % (int((grey & ~prot).sum()), int((grey & prot).sum())))
