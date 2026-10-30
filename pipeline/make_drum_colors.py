@@ -20,6 +20,7 @@ import compose_layers as cl
 
 
 PREFIX = "Wearable_drum_by_Levy_%s_%s"
+SUFFIX = ""                                     # "_nosash" with --nosash
 NAMES = {"gump_male.png": "_gump_male.png", "gump_female.png": "_gump_female.png", "art.png": "_art_1541.png", "art_mirror.png": "_art_1542.png"}
 
 
@@ -32,15 +33,15 @@ def make_one(out, name, shade, vd_src, blend, gumps, idx):
     d = os.path.join(out, "%02d_%s" % (idx, name), shade); os.makedirs(d, exist_ok=True)
     hue, sm, lm = dc.params(name, shade)
     f = rv.make_map(hue, 0.0, 28.0, 0.30, 18.0, 0.08, 0.5, sm, lm)
-    vd_out = os.path.join(d, (PREFIX % (name, shade)) + ".vd")
+    vd_out = os.path.join(d, (PREFIX % (name, shade) + SUFFIX) + ".vd")
     rv.recolor_vd(vd_src, vd_out, f)
     tmp = os.path.join(d, "_pd"); os.makedirs(tmp, exist_ok=True)
-    env = dict(os.environ, PD_OUT=tmp, PD_GUMPS=gumps, PD_SCRIPTS=HERE, PD_COLOR="%s:%s" % (name, shade))
+    env = dict(os.environ, PD_OUT=tmp, PD_GUMPS=gumps, PD_SCRIPTS=HERE, PD_COLOR="%s:%s" % (name, shade), PD_NOSASH="1" if SUFFIX else "")
     r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "run_script_in_blend.py"), blend, os.path.join(HERE, "uo_render_drum_gump.py")], env=env, capture_output=True, text=True)
     if "PD art done" not in r.stdout:
         raise SystemExit("the paperdoll of %s %s failed:\n%s\n%s" % (name, shade, r.stdout[-1500:], r.stderr[-800:]))
     for fn in ("gump_male.png", "gump_female.png", "art.png", "art_mirror.png"):
-        shutil.move(os.path.join(tmp, fn), os.path.join(d, (PREFIX % (name, shade)) + NAMES[fn]))
+        shutil.move(os.path.join(tmp, fn), os.path.join(d, (PREFIX % (name, shade) + SUFFIX) + NAMES[fn]))
     shutil.rmtree(tmp)
     return d, vd_out
 
@@ -84,8 +85,10 @@ def sheet(out, cells, ncol=8):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("out"); ap.add_argument("--vd", required=True); ap.add_argument("--blend", required=True); ap.add_argument("--gumps", required=True)
-    ap.add_argument("--only", default=""); ap.add_argument("--shades", default="light,dark"); ap.add_argument("--zip", action="store_true")
+    ap.add_argument("--only", default=""); ap.add_argument("--shades", default="light,dark"); ap.add_argument("--zip", action="store_true"); ap.add_argument("--nosash", action="store_true", help="--vd is the drum without the body sash: the gumps and arts are rendered without the sash too, the files end with _nosash")
     a = ap.parse_args()
+    if a.nosash:
+        SUFFIX = "_nosash"
     os.makedirs(a.out, exist_ok=True)
     bodies = os.path.join(a.out, "_bodies"); os.makedirs(bodies, exist_ok=True)
     for g in ("gump12.png", "gump13.png"):

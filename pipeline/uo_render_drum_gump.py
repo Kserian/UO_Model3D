@@ -19,6 +19,7 @@ from scipy import ndimage
 
 OUT = os.environ["PD_OUT"]; GUMPS = os.environ["PD_GUMPS"]
 sys.path.insert(0, os.environ.get("PD_SCRIPTS", os.path.abspath("pipeline")))
+NOSASH = os.environ.get("PD_NOSASH", "") == "1"   # the drum alone: the same place, no original sash on the gump, no strap loop in the art
 COLOR = os.environ.get("PD_COLOR", "")           # "teal:dark" (drum_colors.py): the red shell of the drum is recoloured; "" = as it is
 if COLOR:
     from drum_colors import params as color_params, recolor_rgb
@@ -246,7 +247,7 @@ for gender, gid in (("male", 50490), ("female", 60490)):
         strap = np.zeros((GH, GW, 4), np.uint8); strap[..., :3] = np.clip(srgb + 0.5, 0, 255).astype(np.uint8); strap[..., 3] = sa * 255
         strap = rim(strap, 0.55)
     out = np.zeros((GH, GW, 4), np.uint8)
-    out = paste(out, sash); out = paste(out, strap); out = paste(out, d)
+    out = paste(out, sash) if not NOSASH else out; out = paste(out, strap); out = paste(out, d)
     if EXTEND_STRAP:
         ax, ay = int(round(att[0] + 0.5)), int(round(att[1] + 1.0))            # the ring over the end of the strap and the rim of the drum
         for dx, dy, f in ((0, 0, 1.0), (1, 0, 0.8), (0, 1, 0.8), (-1, 0, 0.6), (0, -1, 0.6)):
@@ -294,7 +295,7 @@ la = lp[..., 3].mean((1, 3)) >= 0.5
 lrgb = (lp[..., :3].astype(float) * lp[..., 3:] / 255.0).sum((1, 3)) / np.maximum((lp[..., 3] / 255.0).sum((1, 3)), 1e-6)[..., None]
 lart = np.zeros((AH, AW, 4), np.uint8); lart[..., :3] = np.clip(lrgb + 0.5, 0, 255).astype(np.uint8); lart[..., 3] = la * 255
 lart = rim(lart, 0.5)
-art_img = paste(paste(np.zeros((AH, AW, 4), np.uint8), lart), dart)                 # the drum over the loop
+art_img = paste(paste(np.zeros((AH, AW, 4), np.uint8), lart if not NOSASH else np.zeros_like(lart)), dart)                 # the drum over the loop
 Image.fromarray(art_img).save(os.path.join(OUT, "art.png"))
 Image.fromarray(art_img[:, ::-1].copy()).save(os.path.join(OUT, "art_mirror.png"))
 bg = Image.new("RGBA", (AW * 2 + 6, AH), (60, 60, 60, 255))
