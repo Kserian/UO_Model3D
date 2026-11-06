@@ -12,9 +12,10 @@ run() {   # pose, python list of action names, extra settings...
 }
 HANDS=("HAND_OVER=0.12" "HAND_OVER_GROW=1" "HAND_OVER_SIDE='.R'")
 run carry "['00_walk_unarmed','01_walk_armed','02_run_unarmed','03_run_armed']"
-run stand "['04_stand']" "HAND_OVER=0.3" "HAND_OVER_GROW=2" "HAND_OVER_SIDE='.R'"
-run fid1 "['05_fidget_1']" "${HANDS[@]}"
-run fid2 "['06_fidget_2']" "${HANDS[@]}"
+BOTH=("HAND_OVER=0.15" "HAND_OVER_GROW=1")      # both hands on top of the lute (two-handed poses)
+run stand "['04_stand']" "${BOTH[@]}"
+run fid1 "['05_fidget_1']" "${BOTH[@]}"
+run fid2 "['06_fidget_2']" "${BOTH[@]}"
 run h07 "['07_combat_idle_1h','20_get_hit']"
 run h15 "['15_combat_advance']"
 run sp "['16_spell_directed','17_spell_area']"
@@ -22,7 +23,7 @@ run d21 "['21_die_forward']"
 run d22 "['22_die_backward']" "HAND_OVER=0.2" "HAND_OVER_GROW=1" "HAND_OVER_PARTS=('hand','forearm','upper_arm')"
 run m23 "['23_mounted_walk']" "HORSE_HOLDOUT=False" "HAND_OVER=0.2" "HAND_OVER_GROW=1" "HAND_OVER_SIDE='.R'" "HAND_OVER_PARTS=('hand','forearm','upper_arm')"
 run m24 "['24_mounted_run']" "HORSE_HOLDOUT=False" "HAND_OVER=0.2" "HAND_OVER_GROW=1" "HAND_OVER_SIDE='.R'" "HAND_OVER_PARTS=('hand','forearm','upper_arm')"
-run m25 "['25_mounted_stand']" "HORSE_HOLDOUT=False" "HAND_OVER=0.3" "HAND_OVER_GROW=2" "HAND_OVER_SIDE='.R'"
+run m25 "['25_mounted_stand']" "HORSE_HOLDOUT=False" "${BOTH[@]}"
 run h26 "['26_mounted_attack_1h']"
 run h30 "['30_block']"
 run h33 "['33_salute']"

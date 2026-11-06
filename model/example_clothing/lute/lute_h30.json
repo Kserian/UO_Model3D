@@ -4,13 +4,13 @@
  "weapon": {
   "class": "staff",
   "part": "weapon1h",
-  "length": 1.0,
+  "length": 1.15,
   "tip": "auto",
   "strings": true,
   "bind": "weapon",
   "occlude": true,
   "carry": {
-   "grip": 0.55,
+   "grip": 0.575,
    "front": [
     0.0,
     -1.0,
@@ -22,6 +22,17 @@
     -0.5,
     1
    ]
+  },
+  "neck_grow": {
+   "z0": 0.575,
+   "ramp": 0.06899999999999999,
+   "grow": 0.014,
+   "width_only": true
   }
+ },
+ "materials": {
+  "TEXTURE_BLUR": 0.05,
+  "NORMAL_MAP": false,
+  "SHADOW": 0.2
  }
 }

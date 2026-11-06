@@ -8,6 +8,7 @@ Z0 = 0.5
 RAMP = 0.06
 GROW = 0.014
 BIN = 0.02
+WIDTH_ONLY = False    # True: only the width (model X, the plane the strings lie in) grows, the thickness (Y) stays: every vertex above Z0 moves GROW along X away from the middle of its slice
 
 for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
     me = ob.data
@@ -22,6 +23,9 @@ for ob in [o for o in bpy.context.selected_objects if o.type == "MESH"]:
         n = np.linalg.norm(d, axis=1)
         w = np.clip((z[m] - Z0) / RAMP, 0.0, 1.0); w = w * w * (3 - 2 * w)  # smoothstep: 0 at the end of the bowl, 1 on the neck
         push = np.where(n > 1e-4, GROW * w / np.maximum(n, 1e-4), 0.0)
-        new[m, :2] = co[m, :2] + d * push[:, None]
+        if WIDTH_ONLY:
+            new[m, 0] = co[m, 0] + np.where(np.abs(d[:, 0]) > 1e-4, np.sign(d[:, 0]) * GROW * w, 0.0)
+        else:
+            new[m, :2] = co[m, :2] + d * push[:, None]
     me.vertices.foreach_set("co", new.ravel()); me.update()
     print("uo_grow_neck: %s: %d vertices above z %.2f pushed out by up to %.1f mm" % (ob.name, int((z > Z0).sum()), Z0, 1000 * GROW))

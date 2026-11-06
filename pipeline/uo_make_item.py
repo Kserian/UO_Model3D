@@ -325,6 +325,8 @@ if wp:                                                           # a weapon: upr
         cfg = dict(wp["carry"]); part = cfg.pop("bind", "weapon")
         run("uo_place_carry.py", **{k.upper(): v for k, v in cfg.items()})
         run("uo_bind_item.py", PART=part)
+        if wp.get("follow2") is not None:                        # held with both hands in every frame (uo_follow_hands.py settings: ACTION, FRAME, BONE, BONE2, S_R, S_L, FRONT, TILT)
+            run("uo_follow_hands.py", **{k.upper(): v for k, v in dict(wp["follow2"]).items()})
         if wp.get("follow") is not None:                         # follows the hand's position, keeps its orientation (uo_follow_hand.py settings: ACTION, FRAME, BONE, LOCAL)
             run("uo_follow_hand.py", **{k.upper(): v for k, v in dict(wp["follow"]).items()})
     else:

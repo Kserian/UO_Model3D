@@ -4,11 +4,11 @@
  "weapon": {
   "class": "staff",
   "part": "weapon",
-  "length": 1.0,
+  "length": 1.15,
   "tip": "auto",
   "strings": true,
   "carry": {
-   "grip": 0.7,
+   "grip": 0.575,
    "action": "22_die_backward",
    "frame": 16,
    "lie": true,
@@ -20,6 +20,17 @@
    "side": 0.0,
    "lieyaw": 0
   },
-  "occlude": true
+  "occlude": true,
+  "neck_grow": {
+   "z0": 0.575,
+   "ramp": 0.06899999999999999,
+   "grow": 0.014,
+   "width_only": true
+  }
+ },
+ "materials": {
+  "TEXTURE_BLUR": 0.05,
+  "NORMAL_MAP": false,
+  "SHADOW": 0.2
  }
 }
