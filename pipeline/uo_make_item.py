@@ -56,7 +56,8 @@ WEAPON_ACTIONS = {"weapon1h": "07_combat_idle_1h,09_attack_1h_slash,10_attack_1h
                   "polearm": "08_combat_idle_2h,13_attack_2h_slash,14_attack_2h_pierce,12_attack_2h_bash,03_run_armed,21_die_forward",
                   "axe2h": "08_combat_idle_2h,13_attack_2h_slash,12_attack_2h_bash,03_run_armed,21_die_forward,20_get_hit",
                   "weapon.L": "07_combat_idle_1h,09_attack_1h_slash,08_combat_idle_2h,03_run_armed,16_spell_directed,21_die_forward",
-                  "bow": "04_stand,19_attack_crossbow,18_attack_bow,03_run_armed,20_get_hit,21_die_forward"}
+                  "bow": "04_stand,19_attack_crossbow,18_attack_bow,03_run_armed,20_get_hit,21_die_forward",
+                  "harp": "04_stand,05_fidget_1,34_eat,00_walk_unarmed,09_attack_1h_slash,21_die_forward"}
 
 
 def source(name):
@@ -383,7 +384,7 @@ def build_stage(recipe, out_blend):
     if "parts" in recipe:
         return build_parts_stage(recipe, out_blend)
     kind = recipe.get("kind", "")
-    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if recipe.get("weapon") else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), ARM_BLEND=float(recipe.get("arm_blend", 0.12)), TURN=int(recipe.get("turn", 0)), OUTER_SHELL=bool(recipe.get("outer_shell", False)), OUTER_REMESH=float(recipe["outer_shell"]) if not isinstance(recipe.get("outer_shell", False), bool) else 0.0, BAKE_TEXTURE=int(recipe.get("bake_texture", 0)), HOLES=recipe.get("holes"), BAKE_NORMAL=float(recipe.get("bake_normal", 0.0)), BAKE_AO=float(recipe.get("bake_ao", 0.0)),
+    imp = dict(FILE=os.path.abspath(recipe["file"]), KIND="" if (recipe.get("weapon") or recipe.get("harp")) else kind, SKIP=list(recipe.get("skip", [])), KEEP=list(recipe.get("keep", [])), DROP_MATERIALS=list(recipe.get("drop_materials", [])), ARMS_DOWN=float(recipe.get("arms_down", 0.0)), ARM_BLEND=float(recipe.get("arm_blend", 0.12)), TURN=int(recipe.get("turn", 0)), OUTER_SHELL=bool(recipe.get("outer_shell", False)), OUTER_REMESH=float(recipe["outer_shell"]) if not isinstance(recipe.get("outer_shell", False), bool) else 0.0, BAKE_TEXTURE=int(recipe.get("bake_texture", 0)), HOLES=recipe.get("holes"), BAKE_NORMAL=float(recipe.get("bake_normal", 0.0)), BAKE_AO=float(recipe.get("bake_ao", 0.0)),
                DECIMATE_TO=int(recipe.get("decimate", 30000)), NAME=recipe.get("name", ""))
     if "scale" in recipe:
         imp["SCALE"] = float(recipe["scale"])
@@ -408,7 +409,10 @@ run("uo_materials.py", **%(mat)r)
 prep = %(prep)r
 flat = {k: v for k, v in prep.items() if not isinstance(v, dict) or k.isupper()}      # settings of uo_prepare_item.py (a dict setting too: HEM_BAND)
 wp = %(weapon)r
-if wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
+hp = %(harp)r
+if hp is not None:                                                           # an instrument held by a thin pillar (harp): its own bone, one hand or both (uo_harp.py: HEIGHT, GRIP, ROLL, TWO_HAND, ...)
+    run("uo_harp.py", **hp)
+elif wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
     run("uo_bind_item.py", PART=wp["part"])
@@ -419,7 +423,7 @@ for k, v in %(scene)r.items():                                    # "scene": pro
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), harp=recipe.get("harp") if isinstance(recipe.get("harp"), dict) else ({} if recipe.get("harp") else None), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):
@@ -535,7 +539,7 @@ if __name__ == "__main__":
     if a.preview or a.vd:
         render = os.path.join(out, "render")
         layer = "clothing" if a.vd else "all"
-        wpart = (recipe.get("weapon") or {}).get("part")
+        wpart = "harp" if recipe.get("harp") else (recipe.get("weapon") or {}).get("part")
         acts = [x for x in (a.actions or WEAPON_ACTIONS.get(wpart, PREVIEW_ACTIONS)).split(",")] if not a.vd else []
         cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, render, 'LAYER="all"' if a.preview else 'LAYER="clothing"',
                "ONLY=%r" % (acts,), "CANVAS=(256,256)", "ANCHOR=(128,192)"]
