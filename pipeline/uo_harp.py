@@ -1,6 +1,6 @@
 # A harp (or any one-hand instrument held by a thin pillar) for the right hand, and for both hands when the body stands still.
 # Run inside the base .blend (uo_make_item.py does it for a recipe with "harp": {...}) after uo_import_item.py (KIND = "") and uo_materials.py; the harp is the selected / only mesh
-# of the collection Clothing, modelled upright (pipeline/make_harp_model.py: Z up along the pillar, the pillar axis x = y = 0, the soundbox leans to +X, Y is the depth).
+# of the collection Clothing, modelled upright (pipeline/harp_prepare_model.py makes it: Z up along the thin arm = the pillar, its axis x = y = 0, the sound box arm on the +X side, Y is the depth).
 #
 # One hand (every action not in TWO_HAND): the pillar lies on the grip line of weapon1h.R (the calibrated motion of the right hand's 1H weapons), at GRIP of its height,
 #   the harp turned about the pillar by ROLL degrees from the roll of a sword: it moves like a 1H weapon.
@@ -13,7 +13,8 @@ import bpy, json, math, sys, os
 import numpy as np
 from mathutils import Matrix, Vector, Quaternion
 
-HEIGHT = 0.54         # m: total height of the finished harp (the model of make_harp_model.py is 0.54 m: scaled uniformly if different); a hand harp, not taller than the torso
+HEIGHT = 0.56         # m: total height of the finished harp (the model is scaled uniformly to it); a hand harp, not taller than the torso
+THICKEN = 0.019       # m: the shell is pushed out along its normals by this much after scaling (a 2 cm frame is 0.7 px at 36 px/m and vanishes)
 GRIP = 0.5            # the right hand holds the pillar at this fraction of its height (0.5 = the middle)
 ROLL = 45.0           # deg: turn of the harp about the pillar in the one-hand actions, from the roll of a sword (+X of the model -> the flat side of a sword)
 TWO_HAND = [4, 5, 6, 25, 33, 34]       # actions in which both hands hold the harp (UO numbers)
@@ -79,6 +80,10 @@ def main():
     C1[:3, 3] = piv - R2 @ grip_c                                                     # grip point of the pillar on the pivot of the hand
     C0 = C1 @ S0                                                                      # model coordinates -> rest world
     assert np.allclose(mat4(ob.matrix_world), np.eye(4), atol=1e-6), "the imported harp should be baked in world space"
+    if THICKEN > 0:
+        ob.data.calc_normals() if hasattr(ob.data, "calc_normals") else None
+        for v in ob.data.vertices:
+            v.co = v.co + v.normal * (THICKEN / sc_k)
     ob.data.transform(Matrix(C0.tolist()))
     bpy.context.view_layer.update()
     V = np.array([v.co[:] for v in ob.data.vertices])

@@ -18,7 +18,7 @@ Służy do projektowania warstw ubrań, zbroi, włosów i broni: plik `.blend` r
 | `model/UO_Body_Texture.png`, `UO_Body_Albedo_dir0..4.png` | Albedo (szare jak skóra UO, bez oświetlenia) i jego warianty dla 5 kierunków. |
 | `model/example_clothing/` | Przykładowa warstwa (koszula) jako `.vd` z podglądem na oryginalnym ciele. |
 | `model/items/horn/` | Receptury rogu dla prawej i lewej ręki. |
-| `model/items/harp/` | Mała drewniana harfa bez strun (własny model, `pipeline/make_harp_model.py`): prawa ręka za filar; obie ręce w stand, fidget, mounted stand, salute, eat (`pipeline/uo_harp.py`). |
+| `model/items/harp/` | Mała drewniana harfa bez strun (celtycka harfa z glTF użytkownika, struny wycięte przez `pipeline/harp_prepare_model.py`): prawa ręka za filar; obie ręce w stand, fidget, mounted stand, salute, eat (`pipeline/uo_harp.py`). |
 | `vdtool/` | `vdtool.py` rozpakowuje i pakuje `.vd` (rozdział 6), `mul2vd.py` zamienia `anim.mul` klienta. |
 | `pipeline/` | Render, dopasowanie przedmiotów, testy, pomiary (rozdział 9). `body400.vd`, `horse200.vd` = oryginalne pliki klienta (body 0x190, koń 0xC8). |
 | `client/` | Oryginalne klatki ciała (1050) i konia (300) jako PNG + `meta.json`; `extract/` = dane wyciągnięte z klienta. |
