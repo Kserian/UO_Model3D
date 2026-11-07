@@ -2,8 +2,8 @@
 # Run inside the base .blend (uo_make_item.py does it for a recipe with "harp": {...}) after uo_import_item.py (KIND = "") and uo_materials.py; the harp is the selected / only mesh
 # of the collection Clothing, modelled upright (pipeline/harp_prepare_model.py makes it: Z up along the thin arm = the pillar, its axis x = y = 0, the sound box arm on the +X side, Y is the depth).
 #
-# One hand (every action not in TWO_HAND): the pillar lies on the grip line of weapon1h.R (the calibrated motion of the right hand's 1H weapons), at GRIP of its height,
-#   the harp turned about the pillar by ROLL degrees from the roll of a sword: it moves like a 1H weapon.
+# One hand (every action not in TWO_HAND): the right hand holds the pillar (the thin arm) at GRIP of its height, from behind: the pillar upright at the back, the rest of the harp
+#   (the sound box) pointing forward. The orientation is the chest's (it does not swing about with the arm like a sword), the grip point is the pivot of the right fist.
 # Both hands (TWO_HAND: stand, fidgets, idles, eat ... the actions where the body does not travel): the right hand still holds the pillar (the pivot of weapon1h.R on the
 #   pillar), the harp is turned about that grip (and slid a little along the pillar) so that the LEFT hand touches it: the pivot of the left fist is a few mm to 4 cm from the
 #   surface of the harp, never inside the wood, the harp does not go through the body (the hands excepted), stays near upright and near the one-hand pose (tilt only as much
@@ -16,8 +16,9 @@ from mathutils import Matrix, Vector, Quaternion
 HEIGHT = 0.56         # m: total height of the finished harp (the model is scaled uniformly to it); a hand harp, not taller than the torso
 THICKEN = 0.019       # m: the shell is pushed out along its normals by this much after scaling (a 2 cm frame is 0.7 px at 36 px/m and vanishes)
 GRIP = 0.5            # the right hand holds the pillar at this fraction of its height (0.5 = the middle)
-ROLL = 45.0           # deg: turn of the harp about the pillar in the one-hand actions, from the roll of a sword (+X of the model -> the flat side of a sword)
+YAW = 0.0             # deg: turn of the harp about the vertical in the one-hand actions (0 = the sound box points straight forward, the pillar is at the back)
 TWO_HAND = [4, 5, 6, 25, 33, 34]       # actions in which both hands hold the harp (UO numbers)
+STEADY = [0, 1, 2, 3, 23, 24]          # walking and running (on foot, mounted): the harp keeps ONE orientation (the mean of the chest's over the action: upright, sound box forward), only the grip follows the hand: no swaying
 TOUCH = (0.0, 0.055)  # m: distance of the left fist's pivot from the harp's surface (outside the wood): from .. to .. (the fist is ~4 cm thick)
 TILT_MAX = 0.62       # rad: the pillar's angle from vertical that costs 1 (0.62 = 35 deg)
 BODY_CLEAR = 0.012    # m: harp points closer than this to the body (not the hands) count as inside it
@@ -62,20 +63,13 @@ def main():
     ctr = np.array([0.0, 0.0, zmin])
     S0 = np.eye(4); S0[:3, :3] *= sc_k; S0[:3, 3] = -sc_k * ctr                     # floor under the pillar at the origin, pillar HEIGHT tall
     grip_c = np.array([0.0, 0.0, GRIP * HEIGHT])                                      # grip point on the pillar axis (canonical, scaled)
-    # ---- one-hand placement C0: pillar on the grip line of weapon1h.R at rest
+    # ---- one-hand placement C0: the pillar upright on the pivot of the right hand, the sound box pointing FORWARD (the body faces -Y at rest)
     hb = rig.data.bones[WM["parent"]]
     H = mat4(rig.matrix_world @ hb.matrix_local)
-    piv = (H @ np.append(WM["pivot"], 1.0))[:3]; d = H[:3, :3] @ np.array(WM["dir"]); d /= np.linalg.norm(d)
-    RO = WM["roll"]; ref = str(RO["ref"])
-    e1 = np.array(RO["e1"]); dloc = np.array(WM["dir"]) / np.linalg.norm(WM["dir"])
-    Rd = Ro.from_rotvec(dloc * RO["offsets"].get(ref, 0.0)).as_matrix()
-    ru = H[:3, :3] @ (Rd @ e1); ru -= (ru @ d) * d; ru /= np.linalg.norm(ru)
-    z = np.array([0.0, 0.0, 1.0])
-    ax = np.cross(z, d); s_, c_ = np.linalg.norm(ax), z @ d
-    R1 = np.eye(3) if s_ < 1e-9 else Ro.from_rotvec(ax / s_ * math.atan2(s_, c_)).as_matrix()
-    x1 = R1 @ np.array([1.0, 0, 0])
-    ang = math.atan2(d @ np.cross(x1, ru), x1 @ ru) + math.radians(ROLL)
-    R2 = Ro.from_rotvec(d * ang).as_matrix() @ R1
+    piv = (H @ np.append(WM["pivot"], 1.0))[:3]
+    z = np.array([0.0, 0.0, 1.0]); fwd = np.array([0.0, -1.0, 0.0])
+    R2 = np.array([fwd, np.cross(z, fwd), z]).T                                      # columns: model X (sound box) -> forward, model Y -> the body's left, model Z (pillar) -> up
+    R2 = Ro.from_rotvec(z * math.radians(YAW)).as_matrix() @ R2
     C1 = np.eye(4); C1[:3, :3] = R2
     C1[:3, 3] = piv - R2 @ grip_c                                                     # grip point of the pillar on the pivot of the hand
     C0 = C1 @ S0                                                                      # model coordinates -> rest world
@@ -87,8 +81,8 @@ def main():
     ob.data.transform(Matrix(C0.tolist()))
     bpy.context.view_layer.update()
     V = np.array([v.co[:] for v in ob.data.vertices])
-    log("rest placement: pillar %.2f m, grip %.0f%% of it at the pivot of weapon1h.R (%.2f %.2f %.2f), roll %+.0f deg; harp spans x %.2f..%.2f y %.2f..%.2f z %.2f..%.2f" % (
-        HEIGHT, 100 * GRIP, *piv, ROLL, V[:, 0].min(), V[:, 0].max(), V[:, 1].min(), V[:, 1].max(), V[:, 2].min(), V[:, 2].max()))
+    log("rest placement: pillar %.2f m upright, grip %.0f%% of it at the pivot of the right hand (%.2f %.2f %.2f), sound box forward (yaw %+.0f deg); harp spans x %.2f..%.2f y %.2f..%.2f z %.2f..%.2f" % (
+        HEIGHT, 100 * GRIP, *piv, YAW, V[:, 0].min(), V[:, 0].max(), V[:, 1].min(), V[:, 1].max(), V[:, 2].min(), V[:, 2].max()))
     # ---- surface samples (rest world) with normals, for the contact and body tests
     import bmesh
     bm = bmesh.new(); bm.from_mesh(ob.data); bmesh.ops.triangulate(bm, faces=bm.faces)
@@ -110,7 +104,6 @@ def main():
     acts = {int(a["uo_action"]): a for a in bpy.data.actions if "uo_action" in a}
     rig.data.pose_position = "POSE"; rig["uo_direction"] = 0
     pR = np.array(WM["pivot"]); pL = np.array([-pR[0], pR[1], pR[2]])
-    wb = rig.data.bones["weapon1h.R"]
 
     def delta(bn):
         b = rig.data.bones[bn]; return mat4(rig.pose.bones[bn].matrix) @ np.linalg.inv(mat4(b.matrix_local))
@@ -128,9 +121,19 @@ def main():
     prev = None; report = []
     for a in sorted(acts):
         act = acts[a]; rig.animation_data.action = act; n = int(act["uo_frames"]); prev = None
+        Dsteady = None
+        if a in STEADY:                                                               # the mean orientation of the chest over the whole action (a walk twists the chest +-13 deg with the steps)
+            rots = []
+            for i in range(n):
+                sc.frame_set(1 + STEP * i); bpy.context.view_layer.update(); rots.append(delta("chest")[:3, :3])
+            Dsteady = Ro.from_matrix(np.array(rots)).mean().as_matrix()
         for i in range(n):
             sc.frame_set(1 + STEP * i); bpy.context.view_layer.update()
-            D = delta("weapon1h.R")
+            # one hand: the harp keeps its orientation relative to the CHEST (upright and pointing forward as the body stands; it follows a lean or a fall, but it does not swing about with the
+            # arm like a sword), and its grip point goes with the right hand
+            Dc = Dsteady if Dsteady is not None else delta("chest")[:3, :3]
+            Rm = np.eye(4); Rm[:3, :3] = Dc
+            D = trans(hand_pt("hand.R", pR)) @ Rm @ trans(-piv)
             if a not in TWO_HAND:
                 keys[(a, i)] = D; continue
             dg = bpy.context.evaluated_depsgraph_get()
@@ -146,6 +149,13 @@ def main():
             log("action %2d %-22s %d frames: touch %.1f..%.1f cm (signed, outside +), tilt %.0f..%.0f deg, body points inside %d, off-pose %.0f deg" % (
                 a, acts[a].name[3:], len(rows), 100 * min(r["touch"] for r in rows), 100 * max(r["touch"] for r in rows), min(r["tilt"] for r in rows), max(r["tilt"] for r in rows),
                 max(r["pen"] for r in rows), max(r["dev"] for r in rows)))
+    for a in sorted(acts):                                                            # how much the one-hand harp turns in an action (a sword swings about; this one should not)
+        if a in TWO_HAND:
+            continue
+        us = np.array([keys[(a, i)][:3, :3] @ R2 @ np.array([0, 0, 1.0]) for i in range(int(acts[a]["uo_frames"]))])
+        fs = np.array([keys[(a, i)][:3, :3] @ R2 @ np.array([1.0, 0, 0]) for i in range(int(acts[a]["uo_frames"]))])
+        tl = np.degrees(np.arccos(np.clip(us[:, 2], -1, 1))); yw = np.degrees(np.arctan2(fs[:, 0], -fs[:, 1]))
+        log("one hand, action %2d %-22s: pillar from vertical %.0f..%.0f deg, sound box yaw %+.0f..%+.0f deg" % (a, acts[a].name[3:], tl.min(), tl.max(), yw.min(), yw.max()))
     # ---- the bone and the keys
     bpy.context.view_layer.objects.active = rig
     bpy.ops.object.mode_set(mode="EDIT")
@@ -180,7 +190,7 @@ def main():
     arm = next((m for m in ob.modifiers if m.type == "ARMATURE"), None) or ob.modifiers.new("Armature", "ARMATURE")
     arm.object = rig; arm.use_vertex_groups = True; arm.use_bone_envelopes = False
     ob["uo_no_body_gap"] = 1                                                          # rigid: the renderer never bends it around the limbs
-    ob["uo_harp"] = json.dumps(dict(height=HEIGHT, grip=GRIP, roll=ROLL, two_hand=TWO_HAND))
+    ob["uo_harp"] = json.dumps(dict(height=HEIGHT, grip=GRIP, yaw=YAW, two_hand=TWO_HAND, steady=STEADY))
     log("%s -> rigid on the bone harp, keyed in %d actions (%d frames)" % (ob.name, len(acts), len(keys)))
 
 

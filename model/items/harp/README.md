@@ -7,6 +7,6 @@ Model: the user's glTF of a carved Celtic harp (Google Drive link given in the s
 Rebuild: `python pipeline/uo_make_item.py model/items/harp/harp.json --out OUT --vd`.
 
 - Size 0.56 m (a hand harp, not taller than the torso of the body), ~0.37 m wide; the shell is pushed out by `THICKEN` 1.9 cm (a 2 cm frame is under 1 px at 36 px/m).
-- Held by the thin arm (the pillar) at half of its height in the right hand; in all moving actions it rides like a 1H weapon (it copies the calibrated motion of `weapon1h.R`).
+- One hand (all other actions): held by the thin arm (the pillar) from behind, at half of its height, in the right hand: the pillar upright at the back, the rest of the harp (the sound box) pointing forward. The orientation is the chest's, so it follows a lean or a fall but does not swing about with the arm like a sword; in walking and running (`STEADY`: 0-3, 23, 24) it is ONE orientation for the whole cycle (the mean of the chest's), only the grip follows the hand: no swaying.
 - Both hands touch the harp in stand (4), fidget_1/2 (5, 6), mounted_stand (25), salute (33), eat (34): `pipeline/uo_harp.py` turns the harp about the right grip (and slides it along the pillar) so that the pivot of the left fist is 0-6 cm from the wood, per frame, smooth in time, tilted 25-70 deg, away from the body. The arms are the original animation's, only the harp moves. `TWO_HAND` in the recipe (`"harp": {...}`) changes the list.
-- QA (`item_qa.py`): inside the body 5.7 % (worst: 2H slash), deepest 100 mm.
+- QA (`item_qa.py`): inside the body 7.0 % (worst: stand, the two-hand pose), deepest 125 mm.
