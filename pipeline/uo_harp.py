@@ -22,16 +22,20 @@ TWO_HAND = [4, 5, 6, 25, 33, 34]       # actions in which both hands hold the ha
 STEADY = [0, 1, 2, 3, 23, 24]          # walking and running (on foot, mounted): the harp keeps ONE orientation (the mean of the chest's over the action: upright, sound box forward), only the grip follows the hand: no swaying
 TOUCH = (0.0, 0.04)   # m: distance of the left fist's pivot from the harp's surface (outside the wood): from .. to .. (the fist is ~4 cm thick)
 TILT_MAX = 0.62       # rad: the pillar's angle from vertical that costs 1 (0.62 = 35 deg)
+CLEAR_PARALLEL = 0.025  # m: in the PARALLEL poses the harp keeps this far from the body
 BODY_CLEAR = 0.012    # m: harp points closer than this to the body (not the hands) count as inside it
-FLAT_WALK = [0, 1]    # walk, walk armed (user): the harp is tilted to the ground, its plane parallel to the floor (rolled FLAT_ROLL deg about the body's forward axis: the pillar crosses the hand sideways, the sound box still points forward)
-FLAT_ROLL = 90.0
-FLAT_PEN = 12         # body points (of 750) that may be inside the flat harp in the walk
+LEAN_WALK = [0, 1]    # walk, walk armed (user): held NORMALLY by the pillar in the right fist (the usual hold: pillar upright, the rest forward), but leaned away from the legs, outward: WALK_LEAN deg about
+                      # the forward axis (the top of the pillar goes out), and tipped towards the ground: WALK_PITCH deg (the far end of the harp goes down). More lean when the legs would touch it.
+WALK_LEAN = 12.0
+WALK_PITCH = 20.0
+WALK_PEN = 8          # body points (of 750) that may be inside the harp in the walk; the lean grows (5 deg steps, up to 35) until that holds
 YAW_OUT = {17: -12.0, 26: -12.0}   # area spell, mounted 1H attack (user: "wychylona na zewnatrz", an extension of the arm): the usual hold (pillar upright, the sound box forward) turned by a FEW degrees about the
                       # axis of the held side, the pillar (negative = the sound box swings outward, away from the body, towards the arm)
 FLAT_DIE = [21, 22]   # both deaths (user): held in the hand, as far from the body as it goes, lying flat (plane horizontal), the sound box pointing away from the body
 FIST_FREE = {33: 0.3, 34: 0.3}   # rad per action: in salute and eat (user: the harp was not in the hand) the pillar stays within this angle of the axis of the right fist (a fist round a rod holds it along its own axis)
 FIST_DEFAULT = 0.9    # the other two-hand poses: only a loose limit (a stricter one turned the triangle edge-on in stand: it read as a bar)      # rad: in the two-hand poses the pillar may differ this much from the axis of the right fist (a fist round a rod holds it along its own axis); beyond that it costs
 FRONT = [4, 25]       # two-hand poses in which the harp is IN FRONT of the body (its middle ahead of the chest), as in the ordinary stand (user: mounted stand like stand)
+PARALLEL = [4, 25]      # stand, mounted stand (user: "rownolegle do brzucha", no tilt, no collisions): the harp's plane parallel to the belly (within ~10 deg), the pillar within ~8 deg of vertical, 2.5 cm clear of the body; the right hand may hold the pillar higher or lower
 FRONT_PLANE = [4, 5, 6, 25, 33, 34]   # two-hand poses in which the triangle faces the front (its plane across the line of sight), not edge-on
 SEED = 11
 REPORT = True
@@ -145,7 +149,7 @@ def main():
     for a in sorted(acts):
         act = acts[a]; rig.animation_data.action = act; n = int(act["uo_frames"]); prev = None
         Dsteady = None
-        if a in STEADY or a in FLAT_WALK:                                             # the mean orientation of the chest over the whole action (a walk twists the chest +-13 deg with the steps)
+        if a in STEADY or a in LEAN_WALK:                                             # the mean orientation of the chest over the whole action (a walk twists the chest +-13 deg with the steps)
             rots = []
             for i in range(n):
                 sc.frame_set(1 + STEP * i); bpy.context.view_layer.update(); rots.append(delta("chest")[:3, :3])
@@ -157,32 +161,30 @@ def main():
             Dc = Dsteady if Dsteady is not None else delta("chest")[:3, :3]
             chest = np.array(rig.pose.bones["chest"].head)                       # armature space = world at direction 0
             frames.append(dict(gf=gf, af=af, Dc=Dc, chest=chest, fc=delta("chest")[:3, :3] @ fwd0))
-        # the flat walk: the roll (plane horizontal) can go either way and the harp may be turned about the vertical (the sound box forward -> forward-outward ...): the smallest turn from
-        # "forward" at which the harp does not go through the body (hips, thigh) is taken; the same for every frame of the action
-        roll_sign, yaw_flat = 1.0, 0.0
-        if a in FLAT_WALK:
+        # the walk: lean outward (and tip to the ground) as set; more lean when the harp would touch the legs (the same for every frame of the action)
+        lean = WALK_LEAN
+        if a in LEAN_WALK:
             trees = []
             for i in range(0, n, 2):
                 sc.frame_set(1 + STEP * i); bpy.context.view_layer.update(); trees.append((i, cKDTree(body_pts(bpy.context.evaluated_depsgraph_get()))))
-            cands = []
-            for yaw in (0, 15, -15, 30, -30, 45, -45, 60, -60, 75, -75, 90, -90):
-                for sg in (1.0, -1.0):
-                    pen = 0
-                    for i, tr in trees:
-                        fr = frames[i]
-                        Dk = orient(Ro.from_rotvec(zup * math.radians(yaw)).as_matrix() @ fr["Dc"] @ Ro.from_rotvec(fwd0 * math.radians(FLAT_ROLL) * sg).as_matrix() @ R2, fr["gf"])
-                        dd, _ = tr.query((Dk[:3, :3] @ P0[::4].T).T + Dk[:3, 3]); pen += int((dd < BODY_CLEAR).sum())
-                    cands.append((pen / len(trees), abs(yaw), yaw, sg))
-            ok = [c for c in cands if c[0] <= FLAT_PEN]
-            pick = min(ok, key=lambda c: (c[1], c[0])) if ok else min(cands, key=lambda c: c[0])
-            yaw_flat, roll_sign = float(pick[2]), pick[3]
-            log("flat walk, action %d: roll %+.0f deg about the forward axis, turned %+.0f deg about the vertical (body points inside: %.0f of %d)" % (a, roll_sign * FLAT_ROLL, yaw_flat, pick[0], len(P0[::4])))
+
+            def walk_R(fr, ln):
+                return fr["Dc"] @ Ro.from_rotvec(np.array([1.0, 0, 0]) * math.radians(WALK_PITCH)).as_matrix() @ Ro.from_rotvec(fwd0 * math.radians(ln)).as_matrix() @ R2
+            while True:
+                pen = 0
+                for i, tr in trees:
+                    Dk = orient(walk_R(frames[i], lean), frames[i]["gf"])
+                    dd, _ = tr.query((Dk[:3, :3] @ P0[::4].T).T + Dk[:3, 3]); pen += int((dd < BODY_CLEAR).sum())
+                pen /= len(trees)
+                if pen <= WALK_PEN or lean >= 35.0:
+                    break
+                lean += 5.0
+            log("walk, action %d: held by the pillar, leaned %.0f deg outward, tipped %.0f deg towards the ground (body points inside: %.0f of %d)" % (a, lean, WALK_PITCH, pen, len(P0[::4])))
         zprev = None
         for i in range(n):
             fr = frames[i]; gf, af, Dc = fr["gf"], fr["af"], fr["Dc"]
-            if a in FLAT_WALK:
-                Rdes = Ro.from_rotvec(zup * math.radians(yaw_flat)).as_matrix() @ Dc @ Ro.from_rotvec(fwd0 * math.radians(FLAT_ROLL) * roll_sign).as_matrix() @ R2
-                D = orient(Rdes, gf)
+            if a in LEAN_WALK:
+                D = orient(walk_R(fr, lean), gf)
             elif a in FLAT_DIE:
                 h = af - (af @ zup) * zup
                 if np.linalg.norm(h) < 0.3:
@@ -201,7 +203,7 @@ def main():
             sc.frame_set(1 + STEP * i); bpy.context.view_layer.update()
             dg = bpy.context.evaluated_depsgraph_get()
             Lp = hand_pt("hand.L", pL); BP = body_pts(dg)
-            ctx = dict(af=af, fc=fr["fc"], chest=fr["chest"], front=(a in FRONT), plane=(a in FRONT_PLANE), fist_free=FIST_FREE.get(a, FIST_DEFAULT))
+            ctx = dict(af=af, fc=fr["fc"], chest=fr["chest"], front=(a in FRONT), plane=(a in FRONT_PLANE), parallel=(a in PARALLEL), fist_free=FIST_FREE.get(a, FIST_DEFAULT))
             X, info = solve_frame(D, P0, N0, piv, R2, Lp, BP, prev, ctx)
             prev = info["w"]
             keys[(a, i)] = X; meta[(a, i)] = dict(af=af, gf=gf, chest=fr["chest"], fc=fr["fc"], **{k: v for k, v in info.items() if k != "w"})
@@ -226,8 +228,8 @@ def main():
             cen = [np.mean((K[i][:3, :3] @ P0[::6].T).T + K[i][:3, 3], axis=0) for i in range(n)]
             dist = [np.linalg.norm((cen[i] - meta[(a, i)]["gf"])[:2]) for i in range(n)]
             extra = " | FLAT: harp's middle %.0f..%.0f cm from the hand (horizontal), grip on the fist" % (100 * min(dist), 100 * max(dist))
-        elif a in FLAT_WALK:
-            extra = " | FLAT"
+        elif a in LEAN_WALK:
+            extra = " | WALK: normal hold, leaned outward and tipped to the ground (see above)"
         log("action %2d %-22s plane from horizontal %.0f..%.0f deg, pillar from vertical %.0f..%.0f deg, sound box yaw %+.0f..%+.0f deg%s" % (
             a, acts[a].name[3:], plane.min(), plane.max(), tilt.min(), tilt.max(), yaw.min(), yaw.max(), extra))
     # ---- the bone and the keys
@@ -264,7 +266,7 @@ def main():
     arm = next((m for m in ob.modifiers if m.type == "ARMATURE"), None) or ob.modifiers.new("Armature", "ARMATURE")
     arm.object = rig; arm.use_vertex_groups = True; arm.use_bone_envelopes = False
     ob["uo_no_body_gap"] = 1                                                          # rigid: the renderer never bends it around the limbs
-    ob["uo_harp"] = json.dumps(dict(height=HEIGHT, grip=GRIP, yaw=YAW, two_hand=TWO_HAND, steady=STEADY, flat_walk=FLAT_WALK, yaw_out=YAW_OUT, flat_die=FLAT_DIE, front=FRONT))
+    ob["uo_harp"] = json.dumps(dict(height=HEIGHT, grip=GRIP, yaw=YAW, two_hand=TWO_HAND, steady=STEADY, lean_walk=LEAN_WALK, yaw_out=YAW_OUT, flat_die=FLAT_DIE, front=FRONT))
     log("%s -> rigid on the bone harp, keyed in %d actions (%d frames)" % (ob.name, len(acts), len(keys)))
 
 
@@ -287,7 +289,7 @@ def solve_frame(D, P0, N0, piv, R2, Lp, BP, prev_w, ctx):
 
     def apply(p, P, Nn=None):
         R = Ro.from_rotvec(p[:3]).as_matrix()
-        Q = (P - g) @ R.T + g + (R @ u0) * p[3]
+        Q = (P - g) @ R.T + g + (R @ u0) * p[3] + (R @ n0) * p[4]                       # p[3]: slide along the pillar, p[4]: the pillar sits this far to the side of the fist's centre (along the plane's normal)
         return Q if Nn is None else (Q, Nn @ R.T)
 
     def touch_of(p):
@@ -312,14 +314,21 @@ def solve_frame(D, P0, N0, piv, R2, Lp, BP, prev_w, ctx):
         u = R @ u0
         tilt = math.acos(max(-1, min(1, u[2])))
         Ju = (tilt / TILT_MAX) ** 2 + 10.0 * (max(0.0, tilt - 1.25) / 0.1) ** 2           # beyond ~70 deg the harp would hang upside down
-        Jw = 0.1 * (np.linalg.norm(p[:3]) / 1.0) ** 2 + (p[3] / 0.25) ** 2 * 0.1
+        if ctx["parallel"]:
+            Ju += 4.0 * (max(0.0, tilt - 0.14) / 0.05) ** 2                               # stand: not tilted
+        gp = GRIP * HEIGHT - p[3]                                                      # where the right fist is on the pillar (m from its foot) after the slide
+        Jw = 0.1 * (np.linalg.norm(p[:3]) / 1.0) ** 2 + (p[3] / 0.25) ** 2 * 0.1 + (max(0.0, 0.08 * HEIGHT - gp) / 0.02) ** 2 + (max(0.0, gp - 0.95 * HEIGHT) / 0.02) ** 2 + (max(0.0, abs(p[4]) - 0.03) / 0.01) ** 2
         Jf = (max(0.0, fist_of(p) - ctx["fist_free"]) / 0.15) ** 2                              # held in the fist: the pillar along its axis
         Jp = 0.0
         if with_body:
-            Q = apply(p, P1[sub]); dd, _ = tree.query(Q); Jp = 0.6 * float((dd < BODY_CLEAR).sum()) / 10.0
+            Q = apply(p, P1[sub]); dd, _ = tree.query(Q)
+            Jp = 0.6 * float((dd < (CLEAR_PARALLEL if ctx["parallel"] else BODY_CLEAR)).sum()) / (1.2 if ctx["parallel"] else 10.0)
         Jr = 0.0
         if ctx["front"]:                                                              # in front of the chest (as in the ordinary stand)
             Jr += (max(0.0, 0.16 - ahead_of(p)) / 0.05) ** 2
+        if ctx["parallel"]:                                                           # parallel to the belly: the plane's normal along the body's forward axis
+            nn = R @ n0
+            Jr += 6.0 * (max(0.0, math.acos(min(1.0, abs(float(nn @ fc)))) - 0.17) / 0.06) ** 2
         if ctx["plane"]:                                                              # the triangle faces the front, not edge-on
             nn = R @ n0
             Jr += 3.0 * (max(0.0, 0.8 - abs(float(nn @ fc))) / 0.15) ** 2
@@ -329,23 +338,23 @@ def solve_frame(D, P0, N0, piv, R2, Lp, BP, prev_w, ctx):
     # coarse search: random rotations + zero, cheap terms first
     rng = np.random.default_rng(SEED)
     if prev_w is not None:                                                            # later frames of an action: track the previous solution (the harp does not jump about)
-        cand = np.vstack([prev_w[None, :], prev_w[None, :] + rng.normal(0, [0.1, 0.1, 0.1, 0.03], (30, 4))])
+        cand = np.vstack([prev_w[None, :], prev_w[None, :] + rng.normal(0, [0.1, 0.1, 0.1, 0.03, 0.01], (30, 5))])
     else:
-        cand = np.zeros((1, 4))
+        cand = np.zeros((1, 5))
         rv = Ro.random(4000, random_state=SEED).as_rotvec()
         rv = rv * np.minimum(1.0, 2.8 / np.maximum(np.linalg.norm(rv, axis=1, keepdims=True), 1e-9))
-        cand = np.vstack([cand, np.c_[rv, rng.uniform(-0.25, 0.25, len(rv))]])
+        cand = np.vstack([cand, np.c_[rv, rng.uniform(-0.3, 0.3, len(rv)), rng.uniform(-0.03, 0.03, len(rv))]])
     cheap = np.array([cost(c, with_body=False) for c in cand])
     best = cand[np.argsort(cheap)[:12]]
     sols = []
     for c in best:
-        r = minimize(cost, c, method="Nelder-Mead", options=dict(xatol=2e-3, fatol=1e-3, maxiter=600, initial_simplex=np.vstack([c] + [c + np.eye(4)[k] * (0.08 if k < 3 else 0.03) for k in range(4)])))
+        r = minimize(cost, c, method="Nelder-Mead", options=dict(xatol=2e-3, fatol=1e-3, maxiter=600, initial_simplex=np.vstack([c] + [c + np.eye(5)[k] * (0.08 if k < 3 else (0.03 if k == 3 else 0.01)) for k in range(5)])))
         sols.append((r.fun, r.x))
     f_, p = min(sols, key=lambda s: s[0])
     if prev_w is not None and touch_of(p)[0] > TOUCH[1] + 0.02:                       # tracking lost the contact: search again from scratch (the temporal term still pulls towards the last pose)
         return solve_frame(D, P0, N0, piv, R2, Lp, BP, None, ctx)
     R = Ro.from_rotvec(p[:3]).as_matrix()
-    X = np.eye(4); X[:3, :3] = R; X[:3, 3] = g - R @ g + (R @ u0) * p[3]
+    X = np.eye(4); X[:3, :3] = R; X[:3, 3] = g - R @ g + (R @ u0) * p[3] + (R @ n0) * p[4]
     X = X @ B                                                                         # first the one-hand pose, then the turn about the grip
     t, _ = touch_of(p)
     Q = apply(p, P1[sub]); dd, _ = tree.query(Q)
