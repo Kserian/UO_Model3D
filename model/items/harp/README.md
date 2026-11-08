@@ -26,3 +26,14 @@ Rebuild: `python pipeline/uo_make_item.py model/items/harp/harp.json --out OUT -
 ## Replacing frames in a finished vd
 
 `pipeline/vd_merge.py BASE.vd OUT.vd RENDER_DIR ACTION:DIRS ...` replaces single (action, direction) blocks with frames rendered later (`run_render_headless.py ... ONLY=[...]`), every other block stays byte for byte (a re-encoded unchanged block is identical to the original: checked). The delivered `Harp_right_hand.vd` was corrected this way: walk and walk armed directions 0 and 4, stand, both falls (19 blocks).
+
+## Paperdoll: gumps and art (`paperdoll/no_strings`, `paperdoll/strings`)
+
+`pipeline/uo_render_harp_gump.py GUMP.blend ART.blend OUT` (same 3D model, light and colours as the animation; the wood's colour matches the animation's: median RGB 104/64/32 against 107/71/38). Per version (no strings / strings):
+- `gump_<hold>_<male|female>.png` + `.bin` (a Gumpart.mul entry; male 50000 + AnimID on body gump 12, female 60000 + AnimID on 13: the IDs are yours to choose), 260 x 237, front view, 90.5 px/m, the harp held by the pillar in the fist of the body gump (the pillar is cut out under the fist, the fist holds it):
+  - `weapon`: like a weapon at the side of the right hand, the pillar leaning 15 deg out, the sound box out of the body (turned 45 deg to the viewer so it stays in the picture);
+  - `play`: close to the body, as if about to play: the sound box over the torso, the pillar leaning 8 deg to the body, the hand lower on the pillar so the harp rises to the chest;
+  - `weapon_left`, `play_left`: the same two holds in the OTHER hand (the character's left, the right of the picture), mirrored.
+- `art.png` + `.bin` and `art_mirror.png` + `.bin`: the item icon (art.mul, two IDs), the harp lying flat seen from above with the pillar along the diagonal, a dark rim, 44 x 28 px.
+- `sheet.png`: the gumps over the body gumps (rows male / female, columns weapon, play, weapon_left, play_left).
+The gump uses a thinner frame than the animation (`harp_gump.json`, THICKEN 0.004: 3-4 px at 90.5 px/m; the animation's 0.019 is 2-3 px at 36 px/m), the art the animation's item. Strings in the gumps: 7 dark grey ones (`harp_gump_strings.json`, 14 mm, no darkened edge, value 40-72), a string shorter than `STRING_MIN` 5 cm is not made (the span shrinks: the last string of seven would have been 2 cm "negative"); in the art 3 strings like the animation. The .bin files decode back to their PNGs (checked, 16 gumps).

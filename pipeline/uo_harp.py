@@ -59,6 +59,7 @@ ARM_GRIP = 0.45       # LEFT_HOLD: where the left fist holds the sound box arm (
 STRINGS = 0           # number of dark grey strings between the neck and the sound box arm, evenly spaced (0 = none: the user's harp has none)
 STRING_DIAM = 0.014   # m: a real string is 1 mm, at 36 px/m (1 px = 2.8 cm) a thinner one is not drawn
 STRING_ALBEDO = 0.09  # linear: dark grey
+STRING_MIN = 0.05     # m: a string shorter than this (near the corner where the neck meets the arm there is no room) is not made: the span of the strings is shortened until the last one fits
 SEED = 11
 REPORT = True
 
@@ -472,6 +473,17 @@ def add_strings(ob, canon, C1, R2, a_arm, b_arm):
     mid = (np.abs(canon[:, 2] - 0.5 * H) < 0.02) & (canon[:, 0] < 0.12)
     x_pil = float(canon[mid, 0].max())                                                # the right edge of the pillar
     x_arm = float(np.interp(0.8 * H, zs, xin))                                        # the inner edge of the arm up by the neck
+    def attach(xk):
+        near = (np.abs(canon[:, 0] - xk) < 0.012) & (canon[:, 2] > 0.65 * H)
+        z_top = float(canon[near, 2].min()) + 0.004 if near.any() else None            # the underside of the neck there
+        z_bot = float(np.interp(xk, xin, zs)) - 0.004                                  # where the arm's inner edge is at xk, a little way into it
+        return z_top, z_bot
+    while STRINGS > 0:                                                                 # the span ends where the outermost string is still STRING_MIN long
+        xs_ = [x_pil + (x_arm - x_pil) * k / (STRINGS + 1) for k in range(1, STRINGS + 1)]
+        ends = [attach(x) for x in xs_]
+        if all(zt is not None and zt - zb >= STRING_MIN for zt, zb in ends):
+            break
+        x_arm -= 0.005
     bm = bmesh.new(); bm.from_mesh(ob.data)
     mat = bpy.data.materials.get("harp_string") or bpy.data.materials.new("harp_string")
     mat.use_nodes = True; bsdf = mat.node_tree.nodes["Principled BSDF"]
@@ -482,9 +494,7 @@ def add_strings(ob, canon, C1, R2, a_arm, b_arm):
     sides = 6; made = []
     for k in range(1, STRINGS + 1):
         xk = x_pil + (x_arm - x_pil) * k / (STRINGS + 1)
-        near = (np.abs(canon[:, 0] - xk) < 0.012) & (canon[:, 2] > 0.65 * H)
-        z_top = float(canon[near, 2].min()) + 0.004                                  # the underside of the neck there
-        z_bot = float(np.interp(xk, xin, zs)) - 0.004                                 # where the arm's inner edge is at xk, a little way into it
+        z_top, z_bot = attach(xk)
         ring = []
         for z in (z_top, z_bot):
             row = []
