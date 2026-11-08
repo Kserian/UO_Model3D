@@ -36,9 +36,9 @@ VARIANTS = {"weapon": dict(hand="right", side=-1, yaw=45.0, tilt=-15.0, grip_at=
 GRIP_LEFT = {"male": (132.5, 123.5), "female": (131.0, 121.5)}   # the fist of the body gump on the right of the picture (male bbox x 124..138 y 111..130, the fist itself x 131..138 y 119..130)
 WOOD = (38.0, 80.0, 124.0)       # gump: output luma at the wood's 10th / 50th / 90th percentile (the client's wooden hafts 17-25 / 42-58 / 65-91: a harp is a large piece, lighter, like the animation's)
 ART_WOOD = (52.0, 92.0, 140.0)
-STRING_LEVELS = (50.0, 62.0, 76.0)  # the dark grey strings (version with strings)
-STRING_MAX = 84                  # no string pixel brighter than this (a few highlights came out at 136); the strings get no darkened edge in the gump (a 1-px line is all edge: it came out at 24, nearly black)
-ART_STRING_LEVELS = (56.0, 66.0, 80.0)
+STRING_GREY = 60                 # the strings' grey (dark grey) in the gump: they are drawn as 1-px lines between their ends (a 1.3-px rendered tube broke into pieces: a pixel needs 50 % coverage, and 20 % made solid stripes); the art's below
+ART_STRING_GREY = 70
+ART_METAL_LEVELS = (56.0, 66.0, 80.0)   # the art's tone for the non-wood pixels (the dark rim's neighbours)
 ART_YAW = 45.0                   # deg: the pillar of the art along the picture's diagonal (up to the right), the harp's front face up
 
 
@@ -62,18 +62,46 @@ def open_harp(path):
     for o in bpy.data.objects:
         if o.type == "MESH" and o is not ob:
             o.hide_render = True
-    nv = len(ob.data.vertices); co = np.empty(nv * 3); ob.data.vertices.foreach_get("co", co)
-    Mw = np.array(ob.matrix_world); V = co.reshape(-1, 3) @ Mw[:3, :3].T + Mw[:3, 3]
-    canon, info = canon_of(ob, rig, V)
+
+    def verts():
+        nv = len(ob.data.vertices); co = np.empty(nv * 3); ob.data.vertices.foreach_get("co", co)
+        Mw = np.array(ob.matrix_world); return co.reshape(-1, 3) @ Mw[:3, :3].T + Mw[:3, 3]
+    canon, info = canon_of(ob, rig, verts())
+    # the strings (material 1): their centre lines, then out of the mesh: a 1.3-px tube broke into pieces (a pixel needs 50 % coverage); they are drawn as 1-px lines (draw_strings)
+    lines = []
+    sv = sorted({v for p_ in ob.data.polygons if p_.material_index > 0 for v in p_.vertices})
+    if sv:
+        S = canon[sv]; order = np.argsort(S[:, 0]); xs_ = S[order, 0]; cut = np.nonzero(np.diff(xs_) > 0.008)[0] + 1
+        for grp in np.split(order, cut):
+            g = S[grp]; lines.append(((float(g[:, 0].mean()), 0.0, float(g[:, 2].max()) - 0.003), (float(g[:, 0].mean()), 0.0, float(g[:, 2].min()) + 0.003)))
+        import bmesh
+        bm = bmesh.new(); bm.from_mesh(ob.data)
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index > 0], context="FACES")
+        bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+        bm.to_mesh(ob.data); bm.free(); ob.data.update()
+        canon, info = canon_of(ob, rig, verts())
     for m in list(ob.modifiers):
         ob.modifiers.remove(m)
     if ob.data.shape_keys:
         ob.shape_key_clear()
     ob.parent = None; ob.matrix_world = Matrix.Identity(4)
-    # which pixels are wood (material 0) and which string (material 1): a face attribute read by W.part_pass
-    mi = np.array([p.material_index for p in ob.data.polygons], np.float32)
-    ob.data.attributes.new("uo_flail_part", "FLOAT", "FACE").data.foreach_set("value", mi)
-    return sc, ob, canon, info, bool((mi > 0).any())
+    ob.data.attributes.new("uo_flail_part", "FLOAT", "FACE").data.foreach_set("value", np.zeros(len(ob.data.polygons), np.float32))
+    return sc, ob, canon, info, lines
+
+
+def draw_strings(img, lines, world_of, to_px, grey, cut=None):
+    """the strings as 1-px lines between their ends (3D -> picture px), only where the harp itself is not drawn (the strings end inside the wood) and not under `cut` (the fist)"""
+    from PIL import ImageDraw
+    h, w = img.shape[:2]; m = Image.new("L", (w, h), 0); d = ImageDraw.Draw(m)
+    for top, bot in lines:
+        (x0, y0), (x1, y1) = to_px(world_of(np.array(top))), to_px(world_of(np.array(bot)))
+        d.line([(int(round(x0 - 0.5)), int(round(y0 - 0.5))), (int(round(x1 - 0.5)), int(round(y1 - 0.5)))], fill=255, width=1)
+    add = (np.array(m) > 0) & (img[..., 3] == 0)
+    if cut is not None:
+        add &= ~cut
+    v = (int(grey) >> 3) << 3
+    img[add, :3] = v; img[add, 3] = 255
+    return int(add.sum())
 
 
 def gump_R(side, yaw, tilt):
@@ -88,9 +116,9 @@ def gump_R(side, yaw, tilt):
 
 def main(gump_blend, art_blend, out):
     os.makedirs(out, exist_ok=True); tmp = os.path.join(out, "_tmp.png")
-    strings_levels = STRING_LEVELS
+    strings_levels = (50.0, 62.0, 76.0)                                            # (no metal in the picture: the strings are drawn apart)
     # ---------------------------------------------------------------- gumps
-    sc, ob, canon, info, has_strings = open_harp(gump_blend)
+    sc, ob, canon, info, lines = open_harp(gump_blend)
     cam = W.setup_render(sc)
     H = info["height"]
 
@@ -106,14 +134,10 @@ def main(gump_blend, art_blend, out):
             gx, gy = (GRIP_LEFT if v["hand"] == "left" else GRIP)[gender]
             cx = (GW / 2 - gx) / PXM; cz = (gy - GH / 2) / PXM
             a = W.box_down(W.render(sc, cam, tmp, GW * SS, GH * SS, PXM * SS, cx, cz, False), SS)
-            pp = W.part_pass(sc, cam, ob, tmp, GW * SS, GH * SS, PXM * SS, cx, cz, False)
+            pp = np.zeros(a.shape[:2], np.int32)
             W.PART_GAIN = (1.0, 1.0, 1.0)
             img = W.tone(a, strings_levels, pp, WOOD, W.OUTLINE)
-            st = (pp == 1) & (img[..., 3] > 0)
-            if st.any():
-                flat = W.tone(a, strings_levels, pp, WOOD, 1.0)
-                flat[..., :3] = (np.minimum(flat[..., :3], STRING_MAX).astype(np.int32) >> 3) << 3
-                img[st] = flat[st]
+            nstr = 0
             body = np.array(Image.open(BODY_PNG[gender]).convert("RGBA"))[..., 3] > 0
             bm = np.zeros((GH, GW), bool); bm[:body.shape[0], :body.shape[1]] = body[:GH, :GW]
             yy, xx = np.mgrid[0:GH, 0:GW]
@@ -123,28 +147,33 @@ def main(gump_blend, art_blend, out):
             bottom = np.where(fist.any(0), GH - 1 - np.argmax(fist[::-1], 0), -1)
             cut &= yy <= bottom[None, :] - W.HOLD_SHOW[gender]
             img[cut] = 0
+            if lines:                                                                     # the strings: 1-px lines, under the hand (the fist window), over the wood's holes only
+                Rg = gump_R(v["side"], v["yaw"], v["tilt"]); off = np.array([0.0, 0.0, v["grip_at"] * H])
+                nstr = draw_strings(img, lines, lambda q: (q - off) @ Rg.T, lambda P_: (GW / 2 + (P_[0] - cx) * PXM, GH / 2 - (P_[2] - cz) * PXM), STRING_GREY, win & bm)
             ys, xs = np.nonzero(img[..., 3])
-            print("HG gump %s %s: bbox x %d..%d y %d..%d, %d px, %d px cut under the fist%s" % (var, gender, xs.min(), xs.max(), ys.min(), ys.max(), len(xs), cut.sum(),
+            print("HG gump %s %s: bbox x %d..%d y %d..%d, %d px (%d of them strings), %d px cut under the fist%s" % (var, gender, xs.min(), xs.max(), ys.min(), ys.max(), len(xs), nstr, cut.sum(),
                                                                                      "  (!) the left edge of the gump is touched" if xs.min() <= 0 else ""))
             name = "gump_%s_%s" % (var, gender)
             Image.fromarray(img).save(os.path.join(out, name + ".png"))
             data, extra = ga.encode_gump(img); open(os.path.join(out, name + ".bin"), "wb").write(data)
             res[(var, gender)] = img
     # ---------------------------------------------------------------- art
-    sc, ob, canon, info, has_strings = open_harp(art_blend)
+    sc, ob, canon, info, lines = open_harp(art_blend)
     cam = W.setup_render(sc)
     d = np.radians(ART_YAW)
     z = np.array([np.cos(d), np.sin(d), 0.0]); yv = np.array([0.0, 0.0, 1.0]); x = np.cross(yv, z)           # X x Y = Z: the sound box to the upper left of the pillar
     R = np.array([x, yv, z]).T
-    P = canon @ R.T; P[:, 2] -= P[:, 2].min()
+    P = canon @ R.T; zmin_art = float(P[:, 2].min()); P[:, 2] -= zmin_art
     place_obj = lambda Q: (ob.data.vertices.foreach_set("co", Q.astype(np.float64).ravel()), ob.data.update())
     place_obj(P)
     lo, hi = P[:, :2].min(0), P[:, :2].max(0); c = (lo + hi) / 2
     wpx = int(np.ceil((hi[0] - lo[0]) * W.ART_PXM)) + 3; hpx = int(np.ceil((hi[1] - lo[1]) * W.ART_PXM)) + 3
     w = max(W.ART_W, wpx); h = hpx
     a = W.box_down(W.render(sc, cam, tmp, w * SS, h * SS, W.ART_PXM * SS, c[0], c[1], True), SS)
-    pp = W.part_pass(sc, cam, ob, tmp, w * SS, h * SS, W.ART_PXM * SS, c[0], c[1], True)
-    art = W.tone(a, ART_STRING_LEVELS, pp, ART_WOOD, W.ART_OUTLINE, W.ART_RIM)
+    pp = np.zeros(a.shape[:2], np.int32)
+    art = W.tone(a, ART_METAL_LEVELS, pp, ART_WOOD, W.ART_OUTLINE, W.ART_RIM)
+    if lines:                                                                             # the strings as 1-px lines, no dark rim round them
+        draw_strings(art, lines, lambda q: q @ R.T - np.array([0.0, 0.0, zmin_art]), lambda P_: (w / 2 + (P_[0] - c[0]) * W.ART_PXM, h / 2 - (P_[1] - c[1]) * W.ART_PXM), ART_STRING_GREY)
     ys, xs = np.nonzero(art[..., 3]); art = art[ys.min():ys.max() + 1]
     for name, im in (("art", art), ("art_mirror", art[:, ::-1].copy())):
         Image.fromarray(im).save(os.path.join(out, name + ".png")); open(os.path.join(out, name + ".bin"), "wb").write(ga.encode_art(im))

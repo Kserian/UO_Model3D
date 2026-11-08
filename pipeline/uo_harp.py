@@ -473,11 +473,20 @@ def add_strings(ob, canon, C1, R2, a_arm, b_arm):
     mid = (np.abs(canon[:, 2] - 0.5 * H) < 0.02) & (canon[:, 0] < 0.12)
     x_pil = float(canon[mid, 0].max())                                                # the right edge of the pillar
     x_arm = float(np.interp(0.8 * H, zs, xin))                                        # the inner edge of the arm up by the neck
+    bpy.context.view_layer.update()
+
     def attach(xk):
-        near = (np.abs(canon[:, 0] - xk) < 0.012) & (canon[:, 2] > 0.65 * H)
-        z_top = float(canon[near, 2].min()) + 0.004 if near.any() else None            # the underside of the neck there
+        """(z of the underside of the neck, z inside the arm) at x = xk in the harp's frame. The underside by a ray from above down the plane y = 0: the first hit is the top of the neck, the second its underside
+        (the vertices of a reduced mesh are too sparse to read it from them: a string near the pillar started 12 cm below the neck)"""
         z_bot = float(np.interp(xk, xin, zs)) - 0.004                                  # where the arm's inner edge is at xk, a little way into it
-        return z_top, z_bot
+        o = Vector((C1[:3, 3] + R2 @ np.array([xk, 0.0, 1.3 * H])).tolist()); d = Vector((R2 @ np.array([0.0, 0.0, -1.0])).tolist())
+        h1 = ob.ray_cast(o, d)
+        if not h1[0]:
+            return None, z_bot
+        h2 = ob.ray_cast(Vector(h1[1]) + d * 0.002, d)
+        if not h2[0]:
+            return None, z_bot
+        return float(((np.array(h2[1]) - C1[:3, 3]) @ R2)[2]) + 0.004, z_bot
     while STRINGS > 0:                                                                 # the span ends where the outermost string is still STRING_MIN long
         xs_ = [x_pil + (x_arm - x_pil) * k / (STRINGS + 1) for k in range(1, STRINGS + 1)]
         ends = [attach(x) for x in xs_]
