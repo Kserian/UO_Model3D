@@ -26,8 +26,8 @@ BODY_CLEAR = 0.012    # m: harp points closer than this to the body (not the han
 FLAT_WALK = [0, 1]    # walk, walk armed (user): the harp is tilted to the ground, its plane parallel to the floor (rolled FLAT_ROLL deg about the body's forward axis: the pillar crosses the hand sideways, the sound box still points forward)
 FLAT_ROLL = 90.0
 FLAT_PEN = 12         # body points (of 750) that may be inside the flat harp in the walk
-ARM_EXT = [17, 26]    # area spell, mounted 1H attack (user): the harp is the extension of the arm: the pillar along the axis of the fist (the way a sword would go), tilted ARM_OUT deg outward, the sound box forward
-ARM_OUT = 18.0
+YAW_OUT = {17: -12.0, 26: -12.0}   # area spell, mounted 1H attack (user: "wychylona na zewnatrz", an extension of the arm): the usual hold (pillar upright, the sound box forward) turned by a FEW degrees about the
+                      # axis of the held side, the pillar (negative = the sound box swings outward, away from the body, towards the arm)
 FLAT_DIE = [21, 22]   # both deaths (user): held in the hand, as far from the body as it goes, lying flat (plane horizontal), the sound box pointing away from the body
 FIST_FREE = {33: 0.3, 34: 0.3}   # rad per action: in salute and eat (user: the harp was not in the hand) the pillar stays within this angle of the axis of the right fist (a fist round a rod holds it along its own axis)
 FIST_DEFAULT = 0.9    # the other two-hand poses: only a loose limit (a stricter one turned the triangle edge-on in stand: it read as a bar)      # rad: in the two-hand poses the pillar may differ this much from the axis of the right fist (a fist round a rod holds it along its own axis); beyond that it costs
@@ -183,11 +183,6 @@ def main():
             if a in FLAT_WALK:
                 Rdes = Ro.from_rotvec(zup * math.radians(yaw_flat)).as_matrix() @ Dc @ Ro.from_rotvec(fwd0 * math.radians(FLAT_ROLL) * roll_sign).as_matrix() @ R2
                 D = orient(Rdes, gf)
-            elif a in ARM_EXT:
-                o = np.array([-1.0, 0, 0]); op = o - (o @ af) * af; op /= np.linalg.norm(op)
-                t = math.radians(ARM_OUT); u = math.cos(t) * af + math.sin(t) * op; u /= np.linalg.norm(u)
-                x = fr["fc"] - (fr["fc"] @ u) * u; x /= np.linalg.norm(x); y = np.cross(u, x)
-                D = orient(np.column_stack([x, y, u]), gf)
             elif a in FLAT_DIE:
                 h = af - (af @ zup) * zup
                 if np.linalg.norm(h) < 0.3:
@@ -199,8 +194,8 @@ def main():
                     Zp, Xp = -Zp, -Xp
                 zprev = Zp
                 D = orient(np.column_stack([Xp, zup, Zp]), gf)
-            else:                                                                     # one hand: orientation of the chest (upright, the sound box forward), grip on the right fist
-                D = orient(Dc @ R2, gf)
+            else:                                                                     # one hand: orientation of the chest (upright, the sound box forward), grip on the right fist; a few degrees about the pillar where set
+                D = orient(Dc @ Ro.from_rotvec(zup * math.radians(YAW_OUT.get(a, 0.0))).as_matrix() @ R2, gf)
             if a not in TWO_HAND:
                 keys[(a, i)] = D; meta[(a, i)] = dict(af=af, gf=gf); continue
             sc.frame_set(1 + STEP * i); bpy.context.view_layer.update()
@@ -225,9 +220,8 @@ def main():
                 100 * min(r["touch"] for r in rows), 100 * max(r["touch"] for r in rows), min(r["fist"] for r in rows), max(r["fist"] for r in rows), max(r["pen"] for r in rows),
                 (", harp ahead of the chest by %.0f..%.0f cm" % (100 * min(r["ahead"] for r in rows), 100 * max(r["ahead"] for r in rows))) if a in FRONT else "")
             extra += ", plane faces the front to %.0f..%.0f deg" % (min(r["facing"] for r in rows), max(r["facing"] for r in rows))
-        elif a in ARM_EXT:
-            ang = [math.degrees(math.acos(np.clip(Zw[i] @ meta[(a, i)]["af"], -1, 1))) for i in range(n)]
-            extra = " | ARM EXTENSION: pillar %.0f..%.0f deg off the fist's axis (outward tilt %.0f deg set)" % (min(ang), max(ang), ARM_OUT)
+        elif a in YAW_OUT:
+            extra = " | OUTWARD: the usual hold turned %+.0f deg about the pillar (sound box yaw above)" % YAW_OUT[a]
         elif a in FLAT_DIE:
             cen = [np.mean((K[i][:3, :3] @ P0[::6].T).T + K[i][:3, 3], axis=0) for i in range(n)]
             dist = [np.linalg.norm((cen[i] - meta[(a, i)]["gf"])[:2]) for i in range(n)]
@@ -270,7 +264,7 @@ def main():
     arm = next((m for m in ob.modifiers if m.type == "ARMATURE"), None) or ob.modifiers.new("Armature", "ARMATURE")
     arm.object = rig; arm.use_vertex_groups = True; arm.use_bone_envelopes = False
     ob["uo_no_body_gap"] = 1                                                          # rigid: the renderer never bends it around the limbs
-    ob["uo_harp"] = json.dumps(dict(height=HEIGHT, grip=GRIP, yaw=YAW, two_hand=TWO_HAND, steady=STEADY, flat_walk=FLAT_WALK, arm_ext=ARM_EXT, flat_die=FLAT_DIE, front=FRONT))
+    ob["uo_harp"] = json.dumps(dict(height=HEIGHT, grip=GRIP, yaw=YAW, two_hand=TWO_HAND, steady=STEADY, flat_walk=FLAT_WALK, yaw_out=YAW_OUT, flat_die=FLAT_DIE, front=FRONT))
     log("%s -> rigid on the bone harp, keyed in %d actions (%d frames)" % (ob.name, len(acts), len(keys)))
 
 
