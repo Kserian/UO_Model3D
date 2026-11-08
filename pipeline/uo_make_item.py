@@ -412,6 +412,8 @@ wp = %(weapon)r
 hp = %(harp)r
 if hp is not None:                                                           # an instrument held by a thin pillar (harp): its own bone, one hand or both (uo_harp.py: HEIGHT, GRIP, ROLL, TWO_HAND, ...)
     run("uo_harp.py", **hp)
+    if hp.get("STRINGS"):                                         # strings were added with a material of their own: wire it to UO_Look too (a material already wired is left alone)
+        run("uo_materials.py", **%(mat)r)
 elif wp:                                                           # a weapon: upright, class length, onto the line of its hand bone, rigid on the weapon bone
     run("uo_orient_weapon.py", CLASS=wp["class"], LENGTH=float(wp.get("length") or 0.0), TIP=wp.get("tip", "auto"), FLAT=bool(wp.get("flat", True)))
     run("uo_place_weapon.py", PART=wp["part"], **({"ROLL_DEG": float(wp["roll"])} if "roll" in wp else {}), **({"BUTT": float(wp["butt"])} if "butt" in wp else {}))
