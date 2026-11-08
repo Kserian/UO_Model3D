@@ -113,6 +113,8 @@ LEGS_UNDER = bool(sc.get("uo_legs_under", LEGS_UNDER))
 OCCLUDERS = [x for x in sc["uo_occluders"].split(",") if x] if sc.get("uo_occluders") is not None else OCCLUDERS   # per item ("scene": {"uo_occluders": "head,thigh,shin,foot"}):
                                    # a flail held in the hand: arms and hands cut it far more than the original
 HEAD_HIDES = bool(sc.get("uo_head_hides", HEAD_HIDES))     # uo_hood_cover.py sets it for a hood
+TORSO_HIDE_MARGIN = float(sc.get("uo_torso_margin", TORSO_HIDE_MARGIN))   # per item: how far behind the torso an item (with uo_behind_torso) must be to be hidden by it (0.12 m by default; the harp 0.02: a hand harp in front of the belly is hidden by the body from behind)
+HOLDOUT_MARGIN = float(sc.get("uo_holdout_margin", HOLDOUT_MARGIN))   # per item: how far in front of the item the head / arms / legs must be to hide it (1 cm by default; a rigid item that does not poke through the skin, the harp: 3 mm)
 CLOTH_LIE_DROP = float(sc.get("uo_cloth_lie_drop", CLOTH_LIE_DROP))
 LIE_W = {}
 FILL_HOLES = int(sc.get("uo_fill_holes", FILL_HOLES))
