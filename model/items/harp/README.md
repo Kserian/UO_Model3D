@@ -21,7 +21,7 @@ Rebuild: `python pipeline/uo_make_item.py model/items/harp/harp.json --out OUT -
 
 ## Version with strings
 
-`Harp_right_hand_strings.vd`: the same harp and the same poses with 3 dark grey strings (`harp_strings.json`: `STRINGS` 3, `STRING_DIAM` 0.03, albedo 0.09), parallel to the pillar, evenly spaced between the pillar and the sound box arm (x 0.15 / 0.24 / 0.34 m from the pillar, 0.31 / 0.23 / 0.10 m long: the longest by the pillar). The strings are tubes built by `uo_harp.py` in the harp's frame after the scaling and `THICKEN`, with a material of their own. A real string (1 mm) or 14 mm is not drawn at 36 px/m, 3 cm is a 1-px line. `uo_edge_floor` 28 keeps their 1-px rim from turning black.
+`Harp_right_hand_strings.vd` (35 actions x 5 directions): the same harp and the same poses with 3 dark grey strings (`harp_strings.json`: `STRINGS` 3, `STRING_DIAM` 0.03, albedo 0.09), parallel to the pillar, evenly spaced between the pillar and the sound box arm (x 0.15 / 0.24 / 0.34 m from the pillar, 0.31 / 0.23 / 0.10 m long: the longest by the pillar). The strings are tubes built by `uo_harp.py` in the harp's frame after the scaling and `THICKEN`, with a material of their own. A real string (1 mm) or 14 mm is not drawn at 36 px/m, 3 cm is a 1-px line. A 1-px string is all rim: with `uo_edge_floor` 28 it came out at value 28 (nearly black), 54 gives dark grey (value 54-57); it also makes the 1-px rim of the wood a little greyer. All directions of every action have the final poses (the walk lean -4 deg also in directions 1-3).
 
 ## Replacing frames in a finished vd
 
