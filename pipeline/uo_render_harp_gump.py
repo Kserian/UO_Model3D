@@ -39,7 +39,8 @@ ART_WOOD = (52.0, 92.0, 140.0)
 STRING_GREY = 60                 # the strings' grey (dark grey) in the gump: they are drawn as 1-px lines between their ends (a 1.3-px rendered tube broke into pieces: a pixel needs 50 % coverage, and 20 % made solid stripes); the art's below
 ART_STRING_GREY = 70
 ART_METAL_LEVELS = (56.0, 66.0, 80.0)   # the art's tone for the non-wood pixels (the dark rim's neighbours)
-ART_YAW = 45.0                   # deg: the pillar of the art along the picture's diagonal (up to the right), the harp's front face up
+ART_YAW = 45.0
+STAND = dict(pxm=58.0, elev=28.45, yaw=30.0, lean=10.0, size=60)   # the standing art: px/m, the camera's elevation (the game camera's), the harp turned `yaw` deg about the vertical (3/4 view), leaning `lean` deg back                   # deg: the pillar of the art along the picture's diagonal (up to the right), the harp's front face up
 
 
 def canon_of(ob, rig, V):
@@ -175,9 +176,31 @@ def main(gump_blend, art_blend, out):
     if lines:                                                                             # the strings as 1-px lines, no dark rim round them
         draw_strings(art, lines, lambda q: q @ R.T - np.array([0.0, 0.0, zmin_art]), lambda P_: (w / 2 + (P_[0] - c[0]) * W.ART_PXM, h / 2 - (P_[1] - c[1]) * W.ART_PXM), ART_STRING_GREY)
     ys, xs = np.nonzero(art[..., 3]); art = art[ys.min():ys.max() + 1]
+    for name, im in (("art_lying", art), ("art_lying_mirror", art[:, ::-1].copy())):
+        Image.fromarray(im).save(os.path.join(out, name + ".png")); open(os.path.join(out, name + ".bin"), "wb").write(ga.encode_art(im))
+    print("HG art lying: %d x %d px (the item %d x %d)" % (art.shape[1], art.shape[0], xs.max() - xs.min() + 1, ys.max() - ys.min() + 1))
+    # ---------------------------------------------------------------- the new art: the harp standing, seen like in the game (camera at the game's elevation), turned 3/4, leaning back a little
+    sc, ob, canon, info, lines = open_harp(art_blend)
+    cam = W.setup_render(sc)
+    lean = np.radians(STAND["lean"]); Rx = np.array([[1, 0, 0], [0, np.cos(-lean), -np.sin(-lean)], [0, np.sin(-lean), np.cos(-lean)]])
+    R = Rx @ gump_R(+1, STAND["yaw"], 0.0)
+    P = canon @ R.T; ctr = (P.min(0) + P.max(0)) / 2
+    ob.data.vertices.foreach_set("co", P.astype(np.float64).ravel()); ob.data.update()
+    e = np.radians(STAND["elev"]); L = np.array([0.0, np.cos(e), -np.sin(e)])
+    w = h = STAND["size"]; pxm = STAND["pxm"]
+    cam.data.ortho_scale = w / pxm; cam.location = Vector((ctr - L * 8.0).tolist()); cam.rotation_euler = Vector(L.tolist()).to_track_quat("-Z", "Y").to_euler()
+    sc.render.resolution_x, sc.render.resolution_y = w * SS, h * SS; sc.render.filepath = tmp
+    bpy.context.view_layer.update(); Mc = np.array(cam.matrix_world.to_3x3()); rv, uv = Mc[:, 0], Mc[:, 1]
+    bpy.ops.render.render(write_still=True)
+    a = W.box_down(np.asarray(Image.open(tmp).convert("RGBA"), np.float32) / 255.0, SS)
+    pp = np.zeros(a.shape[:2], np.int32)
+    art = W.tone(a, ART_METAL_LEVELS, pp, ART_WOOD, W.ART_OUTLINE, W.ART_RIM)
+    if lines:
+        draw_strings(art, lines, lambda q: q @ R.T, lambda P_: (w / 2 + ((P_ - ctr) @ rv) * pxm, h / 2 - ((P_ - ctr) @ uv) * pxm), ART_STRING_GREY)
+    ys, xs = np.nonzero(art[..., 3]); art = art[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
     for name, im in (("art", art), ("art_mirror", art[:, ::-1].copy())):
         Image.fromarray(im).save(os.path.join(out, name + ".png")); open(os.path.join(out, name + ".bin"), "wb").write(ga.encode_art(im))
-    print("HG art: %d x %d px (the item %d x %d)" % (art.shape[1], art.shape[0], xs.max() - xs.min() + 1, ys.max() - ys.min() + 1))
+    print("HG art standing: %d x %d px" % (art.shape[1], art.shape[0]))
     # ---------------------------------------------------------------- sheet: the gumps over the body gumps
     tiles = []
     for gender in GRIP:
