@@ -12,3 +12,4 @@ description: Open issues of UO_Model3D (slots, robe, cloak, pauldrons, body 401,
 - First real free model (e.g. Curuata's hair, CC BY 4.0, https://sketchfab.com/3d-models/hair-cc7e804cc15340db92d9464b32f71a2c): the user adds the glTF to the repo; record the attribution.
 - Body 401 (female) in `anim.mul` ≈ copy of the male; check in game before working on it.
 - `.glb`/`.fbx` are not in the repo: `pipeline/export.py --blend model/UO_Body_0x190.blend`.
+- Back axes (`"rigid"` recipe, `back_axes.vd`, 2026-11-13): user reports (more to come): (1) action 09 attack 1H slash, dir 3: the axes "escape" from the back (hub/handles stand off the torso, frame 5/7) - the chest bone swings away from the back surface there; check the gap per frame (item vs posed skin), maybe weight part of the rigid item on spine / pelvis; (2) 98 mm deepest inside the body in 13_attack_2h_slash; (3) optional: cut the dark hub disc of the Meshy model.
