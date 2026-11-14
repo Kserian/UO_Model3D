@@ -36,7 +36,75 @@ tmp = os.path.join(OUT, "_tmp.png")
 cxw = (GW / 2 - GX0) / PXM
 czw = (GY_FEET - GH / 2) / PXM
 W, H = GW * SS, GH * SS
+STRAIGHT = int(os.environ.get("PD_STRAIGHT", "1"))                 # 1 = the two hafts are made straight lines through the hub (the Meshy model's halves are skewed and offset: 9 deg and 5 px)
+STRAIGHT_DEG = float(os.environ.get("PD_STRAIGHT_DEG", "30"))      # deg from the vertical of both hafts (symmetric X)
+HUB_XZ = (0.0, float(os.environ.get("PD_HUB_Z", "1.36")))          # world x, z of the hub plate (rest pose of the recipe: the plate at the shoulder blades)
+CUT_R, BLEND_R = 0.10, 0.08                                        # m: the hub plate (within CUT_R of the hub) stays; the halves are blended in over BLEND_R
+
+
+def front_halves(a):
+    """wood pixel fits of the four half-hafts in a front render a (supersampled): {name: (centroid, unit direction, angle from vertical deg, signed distance of the hub from the line, px)}"""
+    al = a[..., 3] > 0.5; r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    wood = al & (r > g) & (g > b) & ((r - b) >= 40.0 / 255.0)
+    iron = al & ~wood
+    lab, n = ndimage.label(iron); sizes = ndimage.sum(iron, lab, range(1, n + 1))
+    yy, xx = np.nonzero(lab == (np.argmax(sizes) + 1)); hx, hy = xx.mean(), yy.mean()
+    wy, wx = np.nonzero(wood); dx, dy = wx - hx, wy - hy; far = np.hypot(dx, dy) > 14 * SS
+    out = {}
+    for name, m in (("UL", (dx < 0) & (dy < 0)), ("UR", (dx > 0) & (dy < 0)), ("LL", (dx < 0) & (dy > 0)), ("LR", (dx > 0) & (dy > 0))):
+        sel = far & m
+        P = np.c_[wx[sel], wy[sel]].astype(float); c = P.mean(0)
+        d = np.linalg.svd(P - c, full_matrices=False)[2][0]
+        if d[1] < 0:
+            d = -d                                                 # pointing down the picture
+        nrm = np.array([-d[1], d[0]])
+        out[name] = (c, d, float(np.degrees(np.arctan2(d[0], d[1]))), float(np.dot(np.array([hx, hy]) - c, nrm)), (hx, hy))
+    return out
+
+
+def straighten(a):
+    """rest-pose mesh edit: each half-haft (with the head on it) is rotated about the hub to the common angle and shifted so that its axis passes through the hub centre"""
+    f = front_halves(a); k = PXM * SS
+    for ob in items:
+        M = ob.matrix_world.copy(); Mi = M.inverted()
+        co = np.array([(M @ v.co)[:] for v in ob.data.vertices])
+        x, z = co[:, 0] - HUB_XZ[0], co[:, 2] - HUB_XZ[1]; r = np.hypot(x, z)
+        w = np.clip((r - CUT_R) / BLEND_R, 0.0, 1.0); w = w * w * (3 - 2 * w)
+        new = co.copy()
+        for name, (xs, zs, deg_tgt) in {"UL": (-1, 1, -STRAIGHT_DEG), "UR": (1, 1, STRAIGHT_DEG), "LL": (-1, -1, STRAIGHT_DEG), "LR": (1, -1, -STRAIGHT_DEG)}.items():
+            m = (np.sign(x) == xs) & (np.sign(z) == zs)
+            ang = np.radians(f[name][2])                           # angle of the half's line from the picture's vertical, measured (x right, y down): down-right = +
+            # picture direction (right, down); the world (x right, z up): the same line in the world is (dx, -dy)
+            tgt = np.radians({"UL": 180 - STRAIGHT_DEG, "UR": 180 + STRAIGHT_DEG, "LL": STRAIGHT_DEG * -1, "LR": STRAIGHT_DEG}[name])
+            cur = np.arctan2(np.sin(ang), np.cos(ang))
+            # direction of the half in the picture pointing down: (sin ang, cos ang); target pointing down: up-left half continues the down-right half: LR / UL share the angle +T, LL / UR share -T
+            T = np.radians(STRAIGHT_DEG)
+            want = {"UL": T, "LR": T, "UR": -T, "LL": -T}[name]
+            dth = want - ang                                       # rotation of the line in the picture, + = the down-pointing end turns to the right (clockwise seen by the viewer)
+            off = f[name][3] / k                                   # m, signed distance of the hub from the half's line, along the picture normal (-dy, dx) of the line
+            # picture normal n_p = (-d_y, d_x) with d = (sin ang, cos ang); in the world (x right, z up) that is (-cos ang, -sin ang) (y down -> z up)
+            c, s_ = np.cos(dth), np.sin(dth)
+            # the half's line turns by dth in the picture (measured from the vertical, down-right positive): the upper-left half, 8 deg too tilted, is turned clockwise = a negative angle in the world (x right, z up)
+            xr = x * np.cos(dth) - z * np.sin(dth); zr = x * np.sin(dth) + z * np.cos(dth)
+            nx, nz = -np.cos(want), -np.sin(want)                  # the normal after the rotation (picture normal of the new direction, in the world)
+            # shift so that the line passes through the hub: the hub is `off` from the line along n_p, so move the half by +off along n_p
+            xs_, zs_ = xr + off * nx, zr + off * nz
+            tx, tz = x + w * (xs_ - x), z + w * (zs_ - z)
+            new[m, 0] = HUB_XZ[0] + tx[m]; new[m, 2] = HUB_XZ[1] + tz[m]
+        for v, p in zip(ob.data.vertices, new):
+            v.co = Mi @ Vector(p.tolist())
+        ob.data.update()
+    bpy.context.view_layer.update()
+
+
 a0 = render(tmp, W, H, PXM * SS, cxw, czw, items, False)           # the prop alone, float RGBA at SS x SS
+if STRAIGHT:
+    f0 = front_halves(a0)
+    print("PD haft halves before: " + "  ".join("%s %.1f deg off %.1f px" % (n, f0[n][2], f0[n][3] / SS) for n in f0))
+    straighten(a0)
+    a0 = render(tmp, W, H, PXM * SS, cxw, czw, items, False)
+    f1 = front_halves(a0)
+    print("PD haft halves after:  " + "  ".join("%s %.1f deg off %.1f px" % (n, f1[n][2], f1[n][3] / SS) for n in f1))
 
 
 def affine(a, kx, ky, ax, ay, dy):
@@ -86,7 +154,8 @@ def clean_iron(img):
     return img
 
 
-THIN = int(os.environ.get("PD_THIN", "0"))                    # px: the lower part of the hafts is this much narrower (1 or 2): 1 = one pixel off the outer side, 2 = one off each side
+MIN_COMP = int(os.environ.get("PD_MIN_COMP", "14"))          # px: a detached piece of the gump smaller than this is removed (loose pixels)
+THIN = int(os.environ.get("PD_THIN", "1"))                    # px: the lower part of the hafts is this much narrower (1 or 2): 1 = one pixel off the outer side, 2 = one off each side
 THIN_FROM = {"male": float(os.environ.get("PD_THIN_FROM_MALE", "112")), "female": float(os.environ.get("PD_THIN_FROM_FEMALE", "108"))}   # gump row from which the hafts are thinned (below the hub and the body's waist: only the haft ends beside the hips)
 
 
@@ -142,10 +211,14 @@ for gender in ("male", "female"):
         bmask = ndimage.binary_dilation(bmask, iterations=BODY_GROW)
     r[bmask, 3] = 0
     r[r[..., 3] == 0, :3] = 0
-    # specks: a pixel with no 4-neighbour in the picture is dropped (single stray pixels flicker)
+    # loose pixels: a pixel with no 4-neighbour is dropped, then every detached piece smaller than MIN_COMP px (what is left of a haft end after the body is cut out)
     m = r[..., 3] > 0
     nb = ndimage.convolve(m.astype(int), np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]), mode="constant")
     r[m & (nb == 0), 3] = 0
+    lab, n = ndimage.label(r[..., 3] > 0, structure=np.ones((3, 3), int))
+    if n:
+        area = ndimage.sum(np.ones_like(lab), lab, index=np.arange(1, n + 1))
+        r[np.isin(lab, 1 + np.nonzero(area < MIN_COMP)[0]), 3] = 0
     out = to_rgba8(r)
     Image.fromarray(out).save(os.path.join(OUT, "gump_%s.png" % gender))
     data, extra = ga.encode_gump(out)
