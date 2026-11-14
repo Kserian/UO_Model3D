@@ -25,7 +25,7 @@ RECIPE.json (only "file" and "kind" are required):
    "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
-   "rigid": {"scale": 0.42, "offset": [0, 0.185, 0.0], "bone": "chest", "part": "quiver", "roll": 0},   # a prop that stays stiff on a bone (axes crossed on the back): not fitted to the skin and not bent; scale about its centre, centre put at the bone head + offset (m), roll deg about Y
+   "rigid": {"scale": 0.42, "offset": [0, 0.185, 0.0], "bone": "chest", "part": "quiver", "roll": 0},   # a prop that stays stiff on a bone (axes crossed on the back): not fitted to the skin and not bent; scale about its centre, centre put at the bone head + offset (m), roll deg about Y; fit_actions [12] = in these UO actions the prop sits on its own bone fitted per frame to the back skin, rigid; action_shift {\"22\": [0, 0, -0.15]} or one triple per frame [[0,0,0],[0,0,-0.06],...] = in that UO action it is moved by dx, dy, dz m in the body's rest axes (x right, y back, z up; turns with the chest) (uo_back_follow.py); in the other actions it is the chest bone's transform
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
@@ -433,6 +433,8 @@ elif %(rigid)r:                                                  # a rigid prop 
     for o in obs:
         for k in ("uo_no_body_gap", "uo_behind_torso"):
             o[k] = 1
+    if rg.get("fit_actions") or rg.get("action_shift"):           # an own bone `back_prop`: the chest bone's transform everywhere; in `fit_actions` fitted per frame to the back skin, in `action_shift` moved (uo_back_follow.py)
+        run("uo_back_follow.py", ACTIONS=[int(x) for x in rg.get("fit_actions", [])], SHIFT={int(k): ([[float(x) for x in t] for t in v] if isinstance(v[0], list) else [float(x) for x in v]) for k, v in rg.get("action_shift", {}).items()})
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
@@ -557,7 +559,7 @@ if __name__ == "__main__":
         render = os.path.join(out, "render")
         layer = "clothing" if a.vd else "all"
         wpart = (recipe.get("weapon") or {}).get("part")
-        acts = [x for x in (a.actions or WEAPON_ACTIONS.get(wpart, PREVIEW_ACTIONS)).split(",")] if not a.vd else []
+        acts = [x for x in (a.actions or WEAPON_ACTIONS.get(wpart, PREVIEW_ACTIONS)).split(",")] if (not a.vd or a.actions) else []        # --vd with --actions: only these actions are rendered (merge them into a full .vd with vdtool)
         cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, render, 'LAYER="all"' if a.preview else 'LAYER="clothing"',
                "ONLY=%r" % (acts,), "CANVAS=(256,256)", "ANCHOR=(128,192)"]
         subprocess.run(cmd, capture_output=True, text=True, check=True)
