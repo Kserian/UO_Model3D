@@ -86,6 +86,34 @@ def clean_iron(img):
     return img
 
 
+THIN = int(os.environ.get("PD_THIN", "0"))                    # px: the lower part of the hafts is this much narrower (1 or 2): 1 = one pixel off the outer side, 2 = one off each side
+THIN_FROM = {"male": float(os.environ.get("PD_THIN_FROM_MALE", "112")), "female": float(os.environ.get("PD_THIN_FROM_FEMALE", "108"))}   # gump row from which the hafts are thinned (below the hub and the body's waist: only the haft ends beside the hips)
+
+
+def thin_wood(img, n, y_from, axis):
+    """the wood runs of the rows from y_from down are trimmed by n px in total (n = 1: the outer pixel, n = 2: one on each side); a haft keeps at least 2 px"""
+    img = img.copy(); rgb = img[..., :3]; m = img[..., 3] > 0.5
+    wood = m & (rgb[..., 0] > rgb[..., 1]) & (rgb[..., 1] > rgb[..., 2]) & ((rgb[..., 0] - rgb[..., 2]) >= WOOD_SAT)
+    for y in range(int(y_from), img.shape[0]):
+        x = 0
+        while x < img.shape[1]:
+            if not wood[y, x]:
+                x += 1; continue
+            x1 = x
+            while x1 < img.shape[1] and wood[y, x1]:
+                x1 += 1
+            if x1 - x > n + 1:                                  # run [x, x1)
+                outer_left = (x + x1) / 2.0 < axis
+                if n == 1:
+                    cut = [x] if outer_left else [x1 - 1]
+                else:
+                    cut = [x, x1 - 1][:n]
+                for c in cut:
+                    img[y, c, 3] = 0
+            x = x1
+    return img
+
+
 def darken_edges(img, k):
     m = img[..., 3] > 0.5
     inner = ndimage.binary_erosion(m, structure=np.ones((3, 3), bool), border_value=1)
@@ -106,6 +134,8 @@ for gender in ("male", "female"):
     top = r[..., :3].max(-1, keepdims=True); grey = (top - r[..., :3].min(-1, keepdims=True)) <= 10.0 / 255.0
     r[..., :3] = np.where(grey, r[..., :3], r[..., :3] * COLOR_K)
     r = clean_iron(r)
+    if THIN:
+        r = thin_wood(r, THIN, THIN_FROM[gender], AXIS[gender])
     r = darken_edges(r, OUTLINE_G)
     bmask = np.asarray(Image.open(REF[gender]).convert("RGBA"))[..., 3] > 0
     if BODY_GROW:
