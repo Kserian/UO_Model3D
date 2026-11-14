@@ -48,6 +48,43 @@ def affine(a, kx, ky, ax, ay, dy):
     return out
 
 
+WOOD_SAT = float(os.environ.get("PD_WOOD_SAT", "40")) / 255.0   # a brownish pixel is wood when red - blue is at least this (the gump wood: 50-60); the dull brown specks of the metal texture (rust) are less saturated and are turned grey
+SPECK = float(os.environ.get("PD_SPECK", "20")) / 255.0      # a metal pixel darker than the median of its 5 x 5 neighbourhood by more than this (levels) is a speck of the texture
+SMOOTH_IRON = int(os.environ.get("PD_SMOOTH_IRON", "1"))   # passes of a 3 x 3 median on the metal pixels (not the wood, not the silhouette): the blades' texture noise reads as blemishes at 260 x 237
+
+
+def clean_iron(img):
+    """float RGBA (h, w, 4): small brown patches among the grey metal desaturated, then the metal evened by a 3 x 3 median (alpha unchanged)"""
+    img = img.copy(); rgb = img[..., :3]; m = img[..., 3] > 0.5
+    brown = m & (rgb[..., 0] > rgb[..., 1]) & (rgb[..., 1] > rgb[..., 2]) & ((rgb[..., 0] - rgb[..., 2]) > 10.0 / 255.0)
+    wood = brown & ((rgb[..., 0] - rgb[..., 2]) >= WOOD_SAT)
+    wood = ndimage.binary_opening(wood, structure=np.ones((2, 2), bool)) | (wood & ndimage.binary_dilation(ndimage.binary_opening(wood, structure=np.ones((2, 2), bool)), iterations=1))    # a lone saturated pixel in the metal is not wood
+    rust = brown & ~wood
+    grey_l = rgb.mean(-1, keepdims=True)
+    rgb[rust] = np.repeat(grey_l, 3, -1)[rust] * 0.95
+    iron = m & ~wood
+    for _ in range(SMOOTH_IRON):
+        out = rgb.copy()
+        for c in range(3):
+            ch = np.where(iron, rgb[..., c], np.nan)
+            pad = np.pad(ch, 1, constant_values=np.nan)
+            st = np.stack([pad[dy:dy + ch.shape[0], dx:dx + ch.shape[1]] for dy in range(3) for dx in range(3)])
+            med = np.nanmedian(st, 0)
+            out[..., c] = np.where(iron & np.isfinite(med), med, rgb[..., c])
+        rgb = out
+    # dark specks: a metal pixel (not on the silhouette edge) much darker than the median of its 5 x 5 neighbourhood takes that median
+    inner = ndimage.binary_erosion(iron, structure=np.ones((3, 3), bool), border_value=0)
+    lum = np.where(iron, rgb.mean(-1), np.nan)
+    pad = np.pad(lum, 2, constant_values=np.nan)
+    med5 = np.nanmedian(np.stack([pad[dy:dy + lum.shape[0], dx:dx + lum.shape[1]] for dy in range(5) for dx in range(5)]), 0)
+    speck = inner & np.isfinite(med5) & ((med5 - rgb.mean(-1)) > SPECK)
+    if speck.any():
+        sc_ = np.where(speck, med5 / np.maximum(rgb.mean(-1), 1e-3), 1.0)[..., None]
+        rgb = np.where(speck[..., None], np.clip(rgb * sc_, 0, 1), rgb)
+    img[..., :3] = rgb
+    return img
+
+
 def darken_edges(img, k):
     m = img[..., 3] > 0.5
     inner = ndimage.binary_erosion(m, structure=np.ones((3, 3), bool), border_value=1)
@@ -66,6 +103,7 @@ for gender in ("male", "female"):
     r = cap(box_down(g, SS))
     top = r[..., :3].max(-1, keepdims=True); grey = (top - r[..., :3].min(-1, keepdims=True)) <= 10.0 / 255.0
     r[..., :3] = np.where(grey, r[..., :3], r[..., :3] * COLOR_K)
+    r = clean_iron(r)
     r = darken_edges(r, OUTLINE_G)
     bmask = np.asarray(Image.open(REF[gender]).convert("RGBA"))[..., 3] > 0
     if BODY_GROW:
@@ -102,7 +140,7 @@ art = render(tmp, ART_W * S2, ART_H * S2, k * S2, ccx, ccz, items, False)
 res_art = cap(box_down(art, S2))
 top = res_art[..., :3].max(-1, keepdims=True); grey = (top - res_art[..., :3].min(-1, keepdims=True)) <= 10.0 / 255.0
 res_art[..., :3] = np.where(grey, res_art[..., :3], res_art[..., :3] * ART_COLOR_K)
-res_art = darken_edges(res_art, OUTLINE_G)
+res_art = darken_edges(clean_iron(res_art), OUTLINE_G)
 res_art[res_art[..., 3] == 0, :3] = 0
 np.save(os.path.join(OUT, "art_raw.npy"), res_art)
 a8 = to_rgba8(res_art)
