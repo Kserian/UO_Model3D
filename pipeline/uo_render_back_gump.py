@@ -29,7 +29,7 @@ FEM_KX = float(os.environ.get("PD_FEM_KX", "0.90"))   # female: width of the pro
 OUTLINE_G = float(os.environ.get("PD_OUTLINE", "0.62"))   # the edge pixels of the item (next to transparency) multiplied by this (a soft dark edge like the client's gumps)
 ART_W, ART_H = int(os.environ.get("PD_ART_W", "44")), int(os.environ.get("PD_ART_H", "44"))
 COLOR_K = float(os.environ.get("PD_COLOR_K", "0.6"))   # gump: the coloured (not grey) parts, the wood, are scaled by this: the front view is lit brighter than the animation (wood median (146, 89, 44) against the animation's (82, 47, 30))
-RAISE = float(os.environ.get("PD_RAISE", "6"))   # px: the prop is moved up on the gump by this (both genders)
+RAISE = {"male": float(os.environ.get("PD_RAISE_MALE", "3")), "female": float(os.environ.get("PD_RAISE_FEMALE", "6"))}   # px: the prop is moved up on the gump by this (the male torso is longer: the blades stood too high above the shoulders at 6)
 BODY_GROW = int(os.environ.get("PD_BODY_GROW", "0"))   # px: the drawn body's silhouette is grown by this before it is cut out of the prop
 
 tmp = os.path.join(OUT, "_tmp.png")
@@ -101,7 +101,7 @@ for gender in ("male", "female"):
     g = affine(a0, kx, ky, GX0 * SS, GY_FEET * SS, (FEET[gender] - GY_FEET) * SS) if gender == "female" else a0
     if gender == "female":                       # also the body axis: 94.5 -> 93.5 (a shift in x)
         g = ndimage.shift(g, (0, (AXIS[gender] - GX0) * SS, 0), order=1, mode="constant", cval=0.0)
-    g = ndimage.shift(g, (-RAISE * SS, 0, 0), order=1, mode="constant", cval=0.0)
+    g = ndimage.shift(g, (-RAISE[gender] * SS, 0, 0), order=1, mode="constant", cval=0.0)
     r = cap(box_down(g, SS))
     top = r[..., :3].max(-1, keepdims=True); grey = (top - r[..., :3].min(-1, keepdims=True)) <= 10.0 / 255.0
     r[..., :3] = np.where(grey, r[..., :3], r[..., :3] * COLOR_K)
