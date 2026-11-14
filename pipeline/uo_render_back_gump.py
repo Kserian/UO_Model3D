@@ -6,7 +6,7 @@ Gump (gumpart.mul, 260 x 237): front view, orthographic, 90.5 px/m, the same ali
 what sticks out beyond the drawn body: the blades above the shoulders, the haft ends beside the hips. The drawn body gump (reference png, default docs/paperdoll) is cut out of the picture, so the
 gump is right whether the client draws it under or over the body (the paperdoll arms of the drawn body differ from the 3D rest pose, so the 3D body is no use as a holdout).
 Female: the same prop on body gump 13 (head top y 58, feet y 219, narrower shoulders): scaled about the body axis and the feet by FEM_KX (width) and the height ratio, the hub kept on the same body height.
-Art (art.mul): the item turned towards the camera like a lying item (UO draws items from above at 45 degrees), fitted into ART_W x ART_H px; the mirrored second icon is written too.
+Art (art.mul): seen head-on and turned PD_ART_ROLL (45) degrees clockwise in the picture plane (PD_ART_TILT=55, PD_ART_ROLL=0, PD_ART_TURN=-35 = the old view of a lying item), fitted into ART_W x ART_H px; the mirrored second icon is written too.
 Writes gump_male.png, gump_female.png, art.png, art_mirror.png and the mul entries *.bin (uo_gump_art.py) in PD_OUT. Light / materials as render_uo_layer.py (UO_Look, 1 sample per pixel, 3 x 3 supersampling box-averaged).
 """
 import os, sys
@@ -85,9 +85,11 @@ for gender in ("male", "female"):
     print("PD %s: %d px, x %d..%d, y %d..%d (body gump rows %d..%d), extra=%d (w<<16|h)" % (gender, mm.sum(), xs.min(), xs.max(), ys.min(), ys.max(), HEAD[gender], FEET[gender], extra))
 
 # art: the item as one object, tilted towards the camera, fitted into ART_W x ART_H
-tilt = float(os.environ.get("PD_ART_TILT", "55"))
-turn = float(os.environ.get("PD_ART_TURN", "-35"))
-rig.rotation_mode = "ZYX"; rig.rotation_euler = (np.radians(tilt), 0, np.radians(turn))
+tilt = float(os.environ.get("PD_ART_TILT", "0"))             # 0 = seen head-on (the default now); 55 = lying on the ground seen from above (UO draws items at 45 degrees)
+turn = float(os.environ.get("PD_ART_TURN", "0"))
+roll = float(os.environ.get("PD_ART_ROLL", "45"))            # deg, in the picture plane, + = clockwise (to the right) as the viewer sees it
+ART_COLOR_K = float(os.environ.get("PD_ART_COLOR_K", str(COLOR_K if tilt < 20 else 1.0)))   # head-on is lit like the gump: the same wood level
+rig.rotation_mode = "ZYX"; rig.rotation_euler = (np.radians(tilt), np.radians(roll), np.radians(turn))
 rig.location = (0, 0, 0)
 bpy.context.view_layer.update()
 S2 = 4
@@ -97,7 +99,10 @@ bw, bh = (xs.max() - xs.min() + 1) / 200.0, (ys.max() - ys.min() + 1) / 200.0
 k = min((ART_W - 2) / bw, (ART_H - 2) / bh)
 ccx = ((xs.max() + xs.min()) / 2 - 512) / 200.0; ccz = 0.6 - ((ys.max() + ys.min()) / 2 - 512) / 200.0
 art = render(tmp, ART_W * S2, ART_H * S2, k * S2, ccx, ccz, items, False)
-res_art = darken_edges(cap(box_down(art, S2)), OUTLINE_G)
+res_art = cap(box_down(art, S2))
+top = res_art[..., :3].max(-1, keepdims=True); grey = (top - res_art[..., :3].min(-1, keepdims=True)) <= 10.0 / 255.0
+res_art[..., :3] = np.where(grey, res_art[..., :3], res_art[..., :3] * ART_COLOR_K)
+res_art = darken_edges(res_art, OUTLINE_G)
 res_art[res_art[..., 3] == 0, :3] = 0
 np.save(os.path.join(OUT, "art_raw.npy"), res_art)
 a8 = to_rgba8(res_art)
