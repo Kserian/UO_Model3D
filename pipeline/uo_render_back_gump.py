@@ -100,6 +100,8 @@ def straighten(a):
 a0 = render(tmp, W, H, PXM * SS, cxw, czw, items, False)           # the prop alone, float RGBA at SS x SS
 if STRAIGHT:
     f0 = front_halves(a0)
+    import json as _json
+    _json.dump({n: {"deg": f0[n][2], "off_m": f0[n][3] / (PXM * SS)} for n in f0}, open(os.path.join(OUT, "halves.json"), "w"), indent=1)     # the measured halves (for the "straighten" option of uo_make_item.py)
     print("PD haft halves before: " + "  ".join("%s %.1f deg off %.1f px" % (n, f0[n][2], f0[n][3] / SS) for n in f0))
     straighten(a0)
     a0 = render(tmp, W, H, PXM * SS, cxw, czw, items, False)

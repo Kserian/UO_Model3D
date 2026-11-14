@@ -25,7 +25,7 @@ RECIPE.json (only "file" and "kind" are required):
    "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
-   "rigid": {"scale": 0.42, "offset": [0, 0.185, 0.0], "bone": "chest", "part": "quiver", "roll": 0},   # a prop that stays stiff on a bone (axes crossed on the back): not fitted to the skin and not bent; scale about its centre, centre put at the bone head + offset (m), roll deg about Y; fit_actions [12] = in these UO actions the prop sits on its own bone fitted per frame to the back skin, rigid; action_shift {\"22\": [0, 0, -0.15]} or one triple per frame [[0,0,0],[0,0,-0.06],...] = in that UO action it is moved by dx, dy, dz m in the body's rest axes (x right, y back, z up; turns with the chest) (uo_back_follow.py); in the other actions it is the chest bone's transform
+   "rigid": {"scale": 0.42, "offset": [0, 0.185, 0.0], "bone": "chest", "part": "quiver", "roll": 0},   # a prop that stays stiff on a bone (axes crossed on the back): not fitted to the skin and not bent; scale about its centre, centre put at the bone head + offset (m), roll deg about Y; straighten {deg, hub, halves} = the hafts made straight lines through the hub (uo_straighten_hafts.py; the constants are measured by uo_render_back_gump.py -> halves.json); fit_actions [12] = in these UO actions the prop sits on its own bone fitted per frame to the back skin, rigid; action_shift {\"22\": [0, 0, -0.15]} or one triple per frame [[0,0,0],[0,0,-0.06],...] = in that UO action it is moved by dx, dy, dz m in the body's rest axes (x right, y back, z up; turns with the chest) (uo_back_follow.py); in the other actions it is the chest bone's transform
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
@@ -429,6 +429,8 @@ elif %(rigid)r:                                                  # a rigid prop 
     for o in obs:
         o.select_set(True)
     bpy.context.view_layer.objects.active = obs[0]
+    if rg.get("straighten"):                                      # the hafts into straight lines through the hub (uo_straighten_hafts.py), before the item is bound
+        run("uo_straighten_hafts.py", CFG=rg["straighten"])
     run("uo_bind_item.py", PART=rg.get("part", "quiver"))
     for o in obs:
         for k in ("uo_no_body_gap", "uo_behind_torso"):
