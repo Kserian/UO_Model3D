@@ -25,6 +25,7 @@ RECIPE.json (only "file" and "kind" are required):
    "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
+   "rigid_zone": {"below": 1.41, "xmax": 0.08, "bone": "chest"},   # the vertices below z (|x| < xmax) 100 % on a bone: a medal that folds when skinned like the skin under it
    "props": {"uo_behind_torso": 1, "uo_no_body_gap": 1},   # custom properties set on the item objects (a rigid item on the chest: the torso hides what is behind it, the renderer does not bend it away from limbs)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
@@ -419,12 +420,22 @@ for _o in bpy.context.selected_objects:                          # "props": cust
     if _o.type == "MESH" and _o.name != "UO_Body":
         for k, v in %(props)r.items():
             _o[k] = v
+rz = %(rigid_zone)r
+if rz:                                                            # "rigid_zone": {"below": z, "xmax": m, "bone": "chest"}: the vertices below z (rest pose, |x| < xmax) all on one bone (a medal: a disc skinned like the skin under it folds up when the spine bends)
+    for _o in bpy.context.selected_objects:
+        if _o.type == "MESH" and _o.name != "UO_Body":
+            _idx = [v.index for v in _o.data.vertices if (_o.matrix_world @ v.co).z < rz["below"] and abs((_o.matrix_world @ v.co).x) < rz.get("xmax", 9.0)]
+            for g in list(_o.vertex_groups):
+                g.remove(_idx)
+            _g = _o.vertex_groups.get(rz.get("bone", "chest")) or _o.vertex_groups.new(name=rz.get("bone", "chest"))
+            _g.add(_idx, 1.0, "REPLACE")
+            print("uo_make_item: rigid zone: %%d vertices on %%s" %% (len(_idx), rz.get("bone", "chest")))
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
     bpy.context.scene[k] = v
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), props=recipe.get("props", {}), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), props=recipe.get("props", {}), rigid_zone=recipe.get("rigid_zone"), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):

@@ -1,8 +1,8 @@
 """A ribbon medal (glTF: a flat loop of ribbon + a medal on a ring) -> a necklace lying on the UO body, as a new glTF in body coordinates (m, rest pose).
 
-    python make_medal_necklace.py MEDAL.glb OUT.glb [--base ../model/UO_Body_0x190.blend] [--medal-d 0.13] [--ribbon-w 0.06] [--ring-z 1.385]
+    python make_medal_necklace.py MEDAL.glb OUT.glb [--base ../model/UO_Body_0x190.blend] [--medal-d 0.17] [--ribbon-w 0.06] [--ring-z 1.385]
 
-The medal (disc + rim + ring, the faces of the file that are not red) is kept as it is, scaled to --medal-d and put on the sternum between the breasts,
+The medal (disc, rim, recessed face, ring: built here, plain colours painted into flat spots of the normal map of the file) is --medal-d wide and put on the sternum between the breasts,
 tilted to the slope of the chest and set on the skin (touching, not through). The ribbon of the file hangs as a long flat loop that does not fit a body, so
 it is rebuilt: a closed strip of --ribbon-w width and 3 mm thickness, in the same red texture, that leaves the ring in a V up the chest, goes over the
 collar bones and the sides of the neck and round the nape; every point of it is snapped to the skin (the body without the head, rest pose), so it lies on the
@@ -17,10 +17,12 @@ from mathutils.bvhtree import BVHTree
 ap = argparse.ArgumentParser()
 ap.add_argument("medal"); ap.add_argument("out")
 ap.add_argument("--base", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "model", "UO_Body_0x190.blend"))
-ap.add_argument("--medal-d", type=float, default=0.13)       # m, diameter of the medal disc (the file: 0.31)
+ap.add_argument("--medal-d", type=float, default=0.17)       # m, diameter of the medal disc (the file: 0.31)
 ap.add_argument("--ribbon-w", type=float, default=0.06)       # m, width of the ribbon (at 36 px/m 3.2 cm was 1 px: a broken line)
 ap.add_argument("--ring-z", type=float, default=1.385)        # m, height of the ring the ribbon passes through (the medal hangs below it)
-ap.add_argument("--gap", type=float, default=0.006)           # m, medal off the skin
+ap.add_argument("--gap", type=float, default=0.014)           # m, medal off the skin (in front of the end of the ribbon)
+ap.add_argument("--rim-rgb", type=float, nargs=3, default=(0.42, 0.42, 0.45))     # sRGB of the rim and the ring of the medal
+ap.add_argument("--face-rgb", type=float, nargs=3, default=(0.74, 0.74, 0.76))    # sRGB of the face of the medal
 ap.add_argument("--ribbon-gap", type=float, default=0.012)    # m, ribbon off the skin (the posed skin of the neck / shoulders pokes through a ribbon that lies on it)
 ap.add_argument("--thick", type=float, default=0.003)         # m, thickness of the ribbon
 ap.add_argument("--ribbon-rgb", type=float, nargs=3, default=(0.45, 0.03, 0.06))   # sRGB 0..1 of the ribbon (the file: a bright red 0.95 0.2 0.15)
@@ -50,80 +52,102 @@ def snap(p, gap=0.0):
     return np.array(loc + n * gap), np.array(n)
 
 
-# ---- the medal of the file ------------------------------------------------------------------------------------------------------------------------
+# ---- the texture of the file: three flat patches (ribbon, medal rim, medal face) painted with plain colours ------------------------------------------------
 bpy.ops.import_scene.gltf(filepath=os.path.abspath(a.medal))
 src = [o for o in bpy.context.selected_objects if o.type == "MESH"][0]
 mat = src.data.materials[0]
 img = next(n.image for n in mat.node_tree.nodes if n.type == "TEX_IMAGE" and n.image.name == "texture_0")
-W, H = img.size; px = np.array(img.pixels[:], np.float32).reshape(H, W, 4)[::-1]           # row 0 = top
-
-
-def color_at(u, v):
-    return px[min(H - 1, max(0, int((1 - v) * H))), min(W - 1, max(0, int(u * W)))][:3]
-
-
-def is_red(c):
-    return c[0] > 2.0 * c[1] and c[0] > 2.0 * c[2]
-
-
-bm = bmesh.new(); bm.from_mesh(src.data); uvl = bm.loops.layers.uv.active
-red = []
-for f in bm.faces:
-    u = np.mean([l[uvl].uv[0] for l in f.loops]); v = np.mean([l[uvl].uv[1] for l in f.loops])
-    if is_red(color_at(u, v)) or max(l.vert.co.z for l in f.loops) > -0.50 or abs(np.mean([l.vert.co.x for l in f.loops])) > 0.2:      # the ribbon (red), anything above the ring
-        red.append(f)
-bmesh.ops.delete(bm, geom=red, context="FACES")
-bm.verts.ensure_lookup_table()
-bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
-medal_n = len(bm.faces)
-
-# a spot of the atlas that is plain red, for the UV of the ribbon
-bm2 = bmesh.new(); bm2.from_mesh(src.data)
-best, best_uv = -1, None
-rng = np.random.default_rng(1)
-for _ in range(4000):
-    iu, iv = int(rng.integers(12, W - 12)), int(rng.integers(12, H - 12))
-    blk = px[iv - 8:iv + 9, iu - 8:iu + 9, :3]
-    if (blk[..., 0] > 2 * blk[..., 1]).all() and (blk[..., 0] > 2 * blk[..., 2]).all():
-        sc_ = blk[..., 0].mean() - blk.std()
-        if sc_ > best:
-            best, best_uv = sc_, (iu / W, 1 - iv / H)
-bm2.free()
-iu, iv = int(best_uv[0] * W), int((1 - best_uv[1]) * H)         # the patch the ribbon uses is painted the ribbon colour (no medal face uses it: they are not red)
+nimg = bpy.data.images["normal"]
+W, H = img.size
+nrm_px = np.array(nimg.pixels[:], np.float32).reshape(nimg.size[1], nimg.size[0], 4)
 px_ = np.array(img.pixels[:], np.float32).reshape(H, W, 4)
-px_[H - 1 - iv - 8:H - 1 - iv + 9, iu - 8:iu + 9, :3] = np.array(a.ribbon_rgb, np.float32)
+# the file's texture is an atlas of 2048 px with a bumpy normal map: take 17 x 17 px blocks where the normal map is flat (no relief on the faces that use them)
+flat = []
+rng = np.random.default_rng(3)
+for _ in range(6000):
+    iu, iv = int(rng.integers(12, W - 12)), int(rng.integers(12, H - 12))
+    blk = nrm_px[iv - 8:iv + 9, iu - 8:iu + 9, :3]
+    dev = np.abs(blk - np.array([0.5, 0.5, 1.0])).max()
+    if dev < 0.06 and all(abs(iu - u) + abs(iv - v) > 40 for u, v in flat):
+        flat.append((iu, iv))
+    if len(flat) == 3:
+        break
+assert len(flat) == 3, "no flat patch of the normal map found"
+UV = {}
+for name, (iu, iv), rgb in zip(("ribbon", "rim", "face"), flat, (a.ribbon_rgb, a.rim_rgb, a.face_rgb)):
+    px_[iv - 8:iv + 9, iu - 8:iu + 9, :3] = np.array(rgb, np.float32)
+    px_[iv - 8:iv + 9, iu - 8:iu + 9, 3] = 1.0
+    UV[name] = (iu / W, iv / H)                                   # bpy pixels: row 0 is the BOTTOM of the image, so v = row / H
 img.pixels.foreach_set(px_.ravel()); img.update()
-print("medal faces %d (of %d), red uv %s" % (medal_n, len(src.data.polygons), best_uv))
+print("patches (u, v):", {k: (round(v[0], 3), round(v[1], 3)) for k, v in UV.items()})
 
-M = np.array([v.co[:] for v in bm.verts])
-RING_C = np.array([0.0, 0.006, -0.604])                  # the ring hole of the file (measured on a zoomed render)
-k = a.medal_d / 0.306
-M = (M - RING_C) * k                                      # ring centre at the origin, medal hangs along -z (glTF Z-up after import)
-print("medal after scale: x %.3f..%.3f  z %.3f..%.3f  y %.4f..%.4f" % (M[:, 0].min(), M[:, 0].max(), M[:, 2].min(), M[:, 2].max(), M[:, 1].min(), M[:, 1].max()))
+# ---- the medal: a disc with a raised rim, a recessed face and a hanging ring, built flat (x right, z up, the face towards -Y), 1 = the disc diameter ---------
+D = a.medal_d
+bm = bmesh.new()
+uvl = bm.loops.layers.uv.verify()
+NS = 40
+
+
+def prism_ring(r_out, r_in, y_back, y_front, zc, uv):
+    """a flat ring (annulus) of thickness y_back..y_front (y_front < y_back: the front is -Y): outer wall, front, inner wall, back; own vertices per face group (hard edges)"""
+    ang = np.linspace(0, 2 * np.pi, NS, endpoint=False)
+    P = lambda r, y: [bm.verts.new((r * np.sin(t), y, zc + r * np.cos(t))) for t in ang]
+    def quad(ring_a, ring_b, flip=False):
+        for i in range(NS):
+            j = (i + 1) % NS
+            vs = [ring_a[i], ring_a[j], ring_b[j], ring_b[i]]
+            f = bm.faces.new(vs[::-1] if flip else vs)
+            for l in f.loops:
+                l[uvl].uv = uv
+    quad(P(r_out, y_back), P(r_out, y_front), flip=False)           # outer wall
+    quad(P(r_out, y_front), P(r_in, y_front), flip=False)           # front
+    quad(P(r_in, y_front), P(r_in, y_back), flip=False)             # inner wall
+    quad(P(r_in, y_back), P(r_out, y_back), flip=False)             # back
+
+
+def disc(r, y, zc, uv, front=True):
+    ang = np.linspace(0, 2 * np.pi, NS, endpoint=False)
+    c = bm.verts.new((0, y, zc)); ring = [bm.verts.new((r * np.sin(t), y, zc + r * np.cos(t))) for t in ang]
+    for i in range(NS):
+        f = bm.faces.new([c, ring[i], ring[(i + 1) % NS]] if front else [c, ring[(i + 1) % NS], ring[i]])
+        for l in f.loops:
+            l[uvl].uv = uv
+
+
+R = 0.5 * D; rw = 0.07 * D; th = 0.08 * D; zd = -0.62 * D              # disc radius, rim width, thickness, disc centre below the ring centre
+prism_ring(R, R - rw, 0.0, -th, zd, UV["rim"])                      # rim, full thickness
+disc(R - rw, -0.45 * th, zd, UV["face"], front=True)               # recessed face
+disc(R, 0.0, zd, UV["rim"], front=False)                           # back
+prism_ring(0.195 * D, 0.11 * D, 0.0, -0.5 * th, 0.0, UV["rim"])    # the ring the ribbon passes through (flat, thinner than the disc)
+bm.verts.ensure_lookup_table()
+bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+M = np.array([v.co[:] for v in bm.verts]); M[:, 1] += 0.5 * th      # the disc centred on y = 0
+print("medal: %d vertices, x %.3f..%.3f  z %.3f..%.3f" % (len(M), M[:, 0].min(), M[:, 0].max(), M[:, 2].min(), M[:, 2].max()))
 
 # drape the medal over the skin: every vertex keeps its x and height and its thickness, and lies GAP in front of the skin under it (a flat disc over the sternum and the breasts
-# touches only the middle of the chest, the skin under its lower half falls away); the skin line is smoothed over the mesh so that the pecs do not wrinkle the disc
+# touches only the middle of the chest, the skin under its lower half falls away); the skin line is averaged over 1.5 cm round the vertex so that the pecs do not wrinkle the disc
 Mr = M.copy(); Mr[:, 2] += a.ring_z
 t_ = Mr[:, 1].max() - Mr[:, 1]                                  # thickness in front of the back plane (the front is -Y)
-bm.verts.ensure_lookup_table()
-fy = np.array([front_y(p[0], p[2]) for p in Mr], dtype=float)
-bad = np.isnan(fy); fy[bad] = np.nanmean(fy)
-b = fy - a.gap
-edges = np.array([[e.verts[0].index, e.verts[1].index] for e in bm.edges])
-for _ in range(6):
-    acc = np.zeros_like(b); cnt = np.zeros_like(b)
-    np.add.at(acc, edges[:, 0], b[edges[:, 1]]); np.add.at(acc, edges[:, 1], b[edges[:, 0]])
-    np.add.at(cnt, edges[:, 0], 1); np.add.at(cnt, edges[:, 1], 1)
-    b = np.where(cnt > 0, 0.5 * b + 0.5 * acc / np.maximum(cnt, 1), b)
-b = np.minimum(b, fy - a.gap)                      # never behind the skin line (smoothing may push a vertex into a breast)
+rr = 0.025
+
+
+def skin_line(x, z):
+    ys = [front_y(x + dx, z + dz) for dx in (-rr, 0, rr) for dz in (-rr, 0, rr)]
+    ys = [v for v in ys if v is not None]
+    return (np.mean(ys), min(ys)) if ys else (np.nan, np.nan)
+
+
+sl = np.array([skin_line(p[0], p[2]) for p in Mr])
+sl[np.isnan(sl[:, 0])] = np.nanmean(sl, axis=0)
+b = np.minimum(sl[:, 0], sl[:, 1] + 0.004) - a.gap               # the averaged skin line, but at most 4 mm behind the most forward skin round the vertex
 Mr[:, 1] = b - t_
 ring_y = front_y(0.0, a.ring_z)
-print("medal: draped on the skin, back %.1f mm from it on average, ring y %.3f (skin %.3f)" % (1000 * np.mean(fy - Mr[:, 1] - t_), Mr[:, 1].mean(), ring_y))
+print("medal: draped on the skin, ring y %.3f (skin %.3f), lowest vertex y %.3f" % (Mr[:, 1].mean(), ring_y, Mr[np.argmin(Mr[:, 2])][1]))
 for v, p in zip(bm.verts, Mr):
     v.co = p
 
 # ---- the ribbon: a closed strip, snapped to the skin -----------------------------------------------------------------------------------------------
-ctrl = [(0.0, None, a.ring_z + 0.004), (0.0, None, a.ring_z + 0.022), (0.012, None, a.ring_z + 0.042), (0.034, None, a.ring_z + 0.078),
+ctrl = [(0.0, None, a.ring_z + 0.026), (0.0, None, a.ring_z + 0.04), (0.012, None, a.ring_z + 0.042), (0.034, None, a.ring_z + 0.078),
         (0.058, None, a.ring_z + 0.115), (0.085, -0.118, 1.525), (0.113, -0.07, 1.55), (0.120, -0.02, 1.575), (0.103, 0.036, 1.565), (0.062, 0.062, 1.552), (0.0, 0.068, 1.548)]
 pts = []
 for x, y, z in ctrl:
@@ -158,10 +182,12 @@ u = np.linspace(-0.5, 0.5, NW) * a.ribbon_w
 rows_in, rows_out = [], []
 for i in range(len(cen)):
     n_i = nor[i]; b = np.cross(n_i, tan[i]); b /= np.linalg.norm(b) + 1e-12
+    d_tip = min(np.linalg.norm(cen[i] - cen[0]), np.linalg.norm(cen[i] - cen[-1]))
+    gap_i = 0.003 + (a.ribbon_gap - 0.003) * min(d_tip / 0.07, 1.0)      # near the ring the ribbon lies low, under the medal (the medal covers it, not the other way round)
     r_in, r_out = [], []
     for uu in u:
         q, nq = snap(cen[i] + b * uu, 0.0)
-        r_in.append(q + nq * a.ribbon_gap); r_out.append(q + nq * (a.ribbon_gap + a.thick))
+        r_in.append(q + nq * gap_i); r_out.append(q + nq * (gap_i + a.thick))
     rows_in.append(r_in); rows_out.append(r_out)
 rows_in = np.array(rows_in); rows_out = np.array(rows_out)
 # the left strand lies on top of the right one at the ring: lift the second half of the last 4 cm by one thickness
@@ -170,7 +196,7 @@ for i in range(len(cen)):
         rows_in[i] += nor[i] * a.thick; rows_out[i] += nor[i] * a.thick
 
 nv = len(cen)
-uv_red = best_uv
+uv_red = UV['ribbon']
 rv = []
 for layer in (rows_out, rows_in):
     ids = [[bm.verts.new(Vector(layer[i][j])) for j in range(NW)] for i in range(nv)]
