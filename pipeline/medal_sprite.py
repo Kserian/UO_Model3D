@@ -29,6 +29,7 @@ ap.add_argument("--collar", type=float, default=0.72)                  # the cor
 ap.add_argument("--collar-zmax", type=float, default=1.55)
 ap.add_argument("--vwiden", type=float, default=0.014)                 # m per side: the two strands of the V on the chest are spread by this much in the middle (they merged into one mass)
 ap.add_argument("--thin-below", type=float, default=1.50)             # the V on the chest (points under this height) is a 1 px stair-step line, the collar 2 px
+ap.add_argument("--smooth", type=float, default=8.0)                  # sigma (path points, 3.5 mm each) of the smoothing of the projected cord: the snapped 3D path is not smooth and gave ragged edges
 ap.add_argument("--cord", default="136,26,32"); ap.add_argument("--cord-dark", default="112,18,24")
 a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
 CORD = tuple(int(x) for x in a.cord.split(",")); CORD_D = tuple(int(x) for x in a.cord_dark.split(","))
@@ -178,22 +179,25 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy):
     # cord: pass 1 dark (2 px), pass 2 lighter and smaller, shifted up
     cc, pr, pu, pf = px[n_axis], px[n_axis + 1], px[n_axis + 2], px[n_axis + 3]
     ring = np.array([cc[0], cc[1] - a.medal_px + 0.6])                  # the top of the drawn medal
+    from scipy.ndimage import gaussian_filter1d
+    Ps = gaussian_filter1d(px[:n_axis], a.smooth, axis=0, mode="nearest"); Zs = gaussian_filter1d(z[:n_axis], a.smooth, mode="nearest")
     thin = np.r_[True, pts[:n_axis, 2] < a.thin_below, True]                # per chain point: the ring and the V on the chest are thin
-    chain = [(ring, z[n_axis])] + [(px[i], z[i]) for i in range(n_axis)] + [(ring, z[n_axis])]
+    chain = [(ring, z[n_axis])] + [(Ps[i], Zs[i]) for i in range(n_axis)] + [(ring, z[n_axis])]
     seg = []
     for i in range(len(chain) - 1):
         (p_a, z_a), (p_b, z_b) = chain[i], chain[i + 1]
         n = max(int(np.ceil(np.linalg.norm(p_b - p_a) / 0.4)), 1)
         for t in np.linspace(0, 1, n, endpoint=False):
-            seg.append((p_a + (p_b - p_a) * t, z_a + (z_b - z_a) * t, bool(thin[i] and thin[i + 1])))
-    seg.append(chain[-1] + (bool(thin[-1]),))
-    for (c, zz, th) in seg:
-        if th:                                                              # a 1 px line: the pixel the point is in (every pixel along the line is visited: 0.4 px steps)
-            x, y = int(np.floor(c[0])), int(np.floor(c[1]))
-            if 0 <= x < W and 0 <= y < H and allow[y, x] and zz <= zlim[y, x] and zz <= zbuf[y, x] + 1e-9:
-                img[y, x] = (*CORD, 255); zbuf[y, x] = zz
-        else:                                                               # radius 1.0: always 2 pixel centres across
-            stamp(img, zbuf, c[0], c[1], 1.0, CORD, zz, zlim, allow)
+            seg.append((p_a + (p_b - p_a) * t, z_a + (z_b - z_a) * t, bool(thin[i] and thin[i + 1]), p_b - p_a))
+    seg.append(chain[-1] + (bool(thin[-1]), seg[-1][3]))
+    for (c, zz, th, dv) in seg:
+        x, y = int(np.floor(c[0])), int(np.floor(c[1]))
+        cells = [(x, y)]
+        if not th:                                                          # 2 px: the second pixel on the up / left side of a regular line (across the minor axis)
+            cells.append((x, y - 1) if abs(dv[0]) >= abs(dv[1]) else (x - 1, y))
+        for (xx, yy) in cells:
+            if 0 <= xx < W and 0 <= yy < H and allow[yy, xx] and zz <= zlim[yy, xx] and zz <= zbuf[yy, xx] + 1e-9:
+                img[yy, xx] = (*CORD, 255); zbuf[yy, xx] = zz
     # the cord: drop specks, then shade by the pixel's neighbours (light where the pixel above or to the left is free, dark where both are cord): the tone follows from the mask alone,
     # so it does not flip between frames while the cord moves
     cord = img[..., 3] > 0
