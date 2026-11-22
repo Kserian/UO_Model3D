@@ -13,6 +13,8 @@ A simple 1 px line, the same in every action and direction (all 1050 frames have
 
 Later: from `--thick-above` 1.455 m up (upper V and collar) the cord is 2 px, the second pixel on the OUTER side (the V: away from its middle, and only in rows where its two strands are 4+ px apart, so that they do not fuse in a profile; the collar: away from the neck); towards the medal 1 px. Cord pixels on or behind the head (own head depth buffer, `--head-tol`) are not drawn. The collar and the upper V are weighted to chest / neck / spine only (a raised arm in the attacks dragged them up over the face). Known: in a few attack frames with the torso turned to the side (09_attack_1h_slash dir 0, frames 0, 1, 5, 6) the two strands and the collar cross in the picture like a plus.
 
+Check of the whole set (`neckcheck`-style: the topmost red pixel of each of the 1050 frames against the top of the original head): in bends (32_bow, 22_die_backward, 11_attack_1h_bash, 16_spell_directed, 31_punch) the collar projected as tall bars / arches over the head (63 frames reached the head). Fixes: the collar is squashed to at most 3.2 px in height (`--collar-height`; a ring round a neck seen from above is a flat ellipse), and the cord is hidden by the head silhouette moved by whole pixels onto the ORIGINAL head (`head_shift`, over the upper 60 % of the head). Not verified against the position of the original neck in every frame: only against our posed 3D body and the original silhouette.
+
 ## History: the Cycles-rendered version
 (`Medal_walk_run_attack1h.vd`, removed: actions 00 walk, 02 run, 09 attack 1H slash (5 directions); other actions: `--vd` without `--actions` (all 35, minutes).
 

@@ -35,6 +35,7 @@ ap.add_argument("--collar-facing", type=float, default=-0.5)          # the coll
 ap.add_argument("--rdp-collar", type=float, default=1.8)             # px: the collar is reduced to even straighter pieces
 ap.add_argument("--thick-above", type=float, default=1.455)        # m: from this height up (upper V, collar) the cord is 2 px, the second pixel on the outer side; below (towards the medal) 1 px
 ap.add_argument("--head-tol", type=float, default=0.02)             # m: a cord pixel on the head is drawn only when it is this much in front of the head surface
+ap.add_argument("--collar-height", type=float, default=3.2)          # px: the most the collar is tall in the picture
 ap.add_argument("--rdp", type=float, default=0.8)                     # px: the cord is reduced to straight pieces within this distance of the smoothed path
 ap.add_argument("--all-thin", action="store_true", default=True)    # the collar is a 1 px line too (2 px made red masses)
 ap.add_argument("--cord", default="136,26,32"); ap.add_argument("--cord-dark", default="112,18,24")
@@ -159,6 +160,24 @@ def body_depth(dg, Pm, Vm, sel=None):
     return depth
 
 
+def head_shift(head_cov, om):
+    """whole-pixel move of our head silhouette onto the original body silhouette over the upper part of the head (above the chin only the head is in the picture)"""
+    ys, xs = np.nonzero(head_cov)
+    if len(ys) < 6 or om is None:
+        return 0, 0
+    y0, y1 = ys.min(), ys.min() + max(int(0.6 * (ys.max() - ys.min() + 1)), 3)
+    x0, x1 = xs.min() - 5, xs.max() + 6
+    band = np.zeros_like(head_cov); band[max(y0 - 4, 0):y1 + 5, max(x0, 0):x1] = True
+    best, bs = (0, 0), -1.0
+    for dy in range(-4, 5):
+        for dx in range(-4, 5):
+            c = np.roll(np.roll(head_cov, dy, 0), dx, 1)
+            sc_ = ((c & om & band).sum() / max(((c | om) & band).sum(), 1)) - 0.004 * (abs(dx) + abs(dy))
+            if sc_ > bs:
+                bs, best = sc_, (dx, dy)
+    return best
+
+
 def original_mask(act, d, i):
     import item_gif as G
     if not hasattr(original_mask, "meta"):
@@ -194,6 +213,11 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy, depth_head=None):
     from scipy.ndimage import gaussian_filter1d
     Ps = gaussian_filter1d(px[:n_axis], a.smooth, axis=0, mode="nearest"); Zs = gaussian_filter1d(z[:n_axis], a.smooth, mode="nearest")
     thin_pt = np.r_[pts[:n_axis, 2] < a.thin_below]
+    col_ = ~thin_pt                                                          # the collar: a ring round a neck seen from above is a flat ellipse; when the body bends it projects tall (bars, arches above the shoulders): squash it to a few pixels
+    if col_.any():
+        ys_ = Ps[col_, 1]; ext = ys_.max() - ys_.min()
+        if ext > a.collar_height:
+            Ps[col_, 1] = ys_.mean() + (ys_ - ys_.mean()) * (a.collar_height / ext)
     # the polyline (ring, the smoothed axis, ring) reduced to a few straight pieces (Ramer-Douglas-Peucker, a.rdp px): straight lines have the fewest, most regular steps; the pieces
     # are split where the V (thin) turns into the collar (2 px)
     Q = np.vstack([ring, Ps, ring]); ZQ = np.r_[z[n_axis], Zs, z[n_axis]]; TQ = np.r_[True, thin_pt, True]
@@ -337,6 +361,8 @@ for act in acts:
             om = original_mask(an, d, i)
             allow = dilate(om) if om is not None else np.ones((H, W), bool)
             dx, dy = fixes.get("%d,%d,%d" % (an, i, d), (0, 0))
+            hs = head_shift(np.isfinite(zh), om)                              # our head against the original head: the cord pixels are hidden by the ORIGINAL head
+            zh = np.roll(np.roll(zh, hs[1], 0), hs[0], 1)
             img = draw_frame(Xw, Pm, Vm, camw, zb, allow, dx, dy, zh)
             Image.fromarray(img).save(os.path.join(fdir, "%02d.png" % i)); mf.append(dict(file="%02d.png" % i))
         meta_blocks.append(dict(action=an, dir=d, name=act.name, frames=mf))
