@@ -21,6 +21,7 @@ ap.add_argument("--medal-d", type=float, default=0.17)       # m, diameter of th
 ap.add_argument("--ribbon-w", type=float, default=0.045)      # m, DIAMETER of the cord the ribbon is modelled as (a flat strip changes its width with the angle it is seen at: edge-on on the shoulders it was a broken 1-px line; a round cord is the same width from every side)
 ap.add_argument("--ring-z", type=float, default=1.385)        # m, height of the ring the ribbon passes through (the medal hangs below it)
 ap.add_argument("--gap", type=float, default=0.014)           # m, medal off the skin (in front of the end of the ribbon)
+ap.add_argument("--paths", default="")                        # JSON: the cord axis and the medal disc (rest pose) for medal_sprite.py (the 2D drawing of the necklace)
 ap.add_argument("--rim-rgb", type=float, nargs=3, default=(0.42, 0.42, 0.45))     # sRGB of the rim and the ring of the medal
 ap.add_argument("--face-rgb", type=float, nargs=3, default=(0.74, 0.74, 0.76))    # sRGB of the face of the medal
 ap.add_argument("--ribbon-gap", type=float, default=0.012)    # m, ribbon off the skin (the posed skin of the neck / shoulders pokes through a ribbon that lies on it)
@@ -145,6 +146,7 @@ ring_y = front_y(0.0, a.ring_z)
 print("medal: draped on the skin, ring y %.3f (skin %.3f), lowest vertex y %.3f" % (Mr[:, 1].mean(), ring_y, Mr[np.argmin(Mr[:, 2])][1]))
 for v, p in zip(bm.verts, Mr):
     v.co = p
+MED = Mr.copy()
 
 # ---- the ribbon: a closed strip, snapped to the skin -----------------------------------------------------------------------------------------------
 ctrl = [(0.0, None, a.ring_z + 0.026), (0.0, None, a.ring_z + 0.04), (0.012, None, a.ring_z + 0.042), (0.034, None, a.ring_z + 0.078),
@@ -189,6 +191,7 @@ for i in range(len(cen)):
     rings.append([ctr + r_c * (np.cos(ph) * n_i + np.sin(ph) * b) for ph in np.linspace(0, 2 * np.pi, NC, endpoint=False)])
 rings = np.array(rings)
 
+axis_pts = np.array([r.mean(0) for r in rings])
 nv = len(cen)
 uv_red = UV['ribbon']
 ids = [[bm.verts.new(Vector(rings[i][j])) for j in range(NC)] for i in range(nv)]
@@ -224,3 +227,15 @@ print("necklace: %d vertices, x %.3f..%.3f, y %.3f..%.3f, z %.3f..%.3f" % (len(P
 bpy.ops.object.select_all(action="DESELECT"); ob.select_set(True); bpy.context.view_layer.objects.active = ob
 bpy.ops.export_scene.gltf(filepath=os.path.abspath(a.out), export_format="GLB", use_selection=True, export_apply=True)
 print("wrote", a.out)
+
+if a.paths:
+    import json
+    disc_v = MED[MED[:, 2] < a.ring_z - 0.3 * D]                     # the disc (not the ring)
+    c0 = disc_v.mean(0)
+    u_, s_, vt = np.linalg.svd(disc_v - c0, full_matrices=False)
+    nrm = vt[2] * (1 if vt[2][1] < 0 else -1)                         # towards the front (-Y)
+    up = np.array([0, 0, 1.0]) - nrm * nrm[2]; up /= np.linalg.norm(up)
+    right = np.cross(up, nrm); right /= np.linalg.norm(right)
+    json.dump(dict(axis=axis_pts.round(5).tolist(), cord_radius=r_c, medal=dict(centre=c0.round(5).tolist(), normal=nrm.round(5).tolist(), up=up.round(5).tolist(), right=right.round(5).tolist(), radius=0.5 * D,
+                                                                                 ring=(c0 + up * (0.62 * D)).round(5).tolist())), open(a.paths, "w"))
+    print("paths ->", a.paths)

@@ -1,6 +1,15 @@
 # Ribbon medal (neck, hangs between the breasts, static on the body)
 
-`Medal_walk_run_attack1h.vd`: actions 00 walk, 02 run, 09 attack 1H slash (5 directions); other actions: `--vd` without `--actions` (all 35, minutes).
+**Current version: `Medal_all_actions.vd`** (all 35 actions x 5 directions) made by `pipeline/medal_sprite.py`: the necklace is DRAWN in 2D, not rendered. At 36 px/m a cord is 1-2 px wide, and a Cycles render of a 3D cord was a smudge whose width and pixel count jumped from frame to frame (the old recipe `medal.json` and the history below are that renderer). `medal_sprite.py` takes the cord axis and the medal (`necklace_paths.json`, from `make_medal_necklace.py --paths`), poses them like an item (skin weights of the skin under each point; the V on the chest and the medal rigid on `chest`), projects them with the UO camera and draws: the cord 2 px (a dark row under a lighter one, always the same width), the medal as a 6 px disc that faces the viewer (narrower from the side, not drawn from behind), connected to the V. A pixel is drawn only where the item is not behind the 3D body (depth) and inside the silhouette of the ORIGINAL body frame (+1 px). `--fixes fixes.json` ({"action,frame,dir": [dx, dy]}) moves single frames by whole pixels for hand corrections. All 35 actions take 30 s.
+Measured on the red pixels per frame (walk / run, all directions): the frame-to-frame change 0.04-0.09 (the Cycles version: 0.13-0.25); the silhouette of the posed 3D body fits the original in the neck circle (`uo_align`: 0 px shift for 127 of 135 frames).
+```
+python pipeline/make_medal_necklace.py MEDAL.glb medal_body.glb --paths model/items/medal/necklace_paths.json    # the geometry (cord axis, medal)
+python pipeline/medal_sprite.py model/items/medal/necklace_paths.json OUT --vd Medal_all_actions.vd                 # the sprites
+python pipeline/item_gif.py ROOT out.gif --actions 02_run_unarmed --dirs 1 --crop auto --scale 6 --body-color 169,134,102   # ROOT/clothing -> OUT
+```
+
+## History: the Cycles-rendered version
+(`Medal_walk_run_attack1h.vd`, removed: actions 00 walk, 02 run, 09 attack 1H slash (5 directions); other actions: `--vd` without `--actions` (all 35, minutes).
 
 Source: a Meshy-made glTF (`ribbon medal`, the user's file, **not in the repo**; check the licence). A flat loop of ribbon of 1.9 m does not fit a body, so `pipeline/make_medal_necklace.py` rebuilds it in body coordinates:
 - the medal (disc, rim, recessed face and ring) is built procedurally, 17 cm and draped on the skin of the sternum (thickness kept, 3 mm off the skin, skin line smoothed over the mesh),
