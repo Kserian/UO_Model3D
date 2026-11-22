@@ -1,3 +1,1 @@
-{"name": "medal", "file": "medal_body.glb", "kind": "vest",
- "prepare": {"AUTOFIT": false, "FIT": false, "DENSIFY": false, "PART": "all"},
- "decimate": 30000}
+{"name": "medal", "file": "medal_body.glb", "kind": "vest", "prepare": {"AUTOFIT": false, "FIT": false, "DENSIFY": false, "PART": "all"}, "decimate": 30000, "props": {"uo_behind_torso": 1, "uo_no_body_gap": 1}}
