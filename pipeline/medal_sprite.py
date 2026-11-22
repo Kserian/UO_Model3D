@@ -33,6 +33,8 @@ ap.add_argument("--smooth", type=float, default=8.0)                  # sigma (p
 ap.add_argument("--collar-tol", type=float, default=0.06)              # m of extra depth tolerance for the collar
 ap.add_argument("--collar-facing", type=float, default=-0.5)          # the collar is drawn where the point faces the camera by more than this (cos)
 ap.add_argument("--rdp-collar", type=float, default=1.8)             # px: the collar is reduced to even straighter pieces
+ap.add_argument("--thick-above", type=float, default=1.455)        # m: from this height up (upper V, collar) the cord is 2 px, the second pixel on the outer side; below (towards the medal) 1 px
+ap.add_argument("--head-tol", type=float, default=0.02)             # m: a cord pixel on the head is drawn only when it is this much in front of the head surface
 ap.add_argument("--rdp", type=float, default=0.8)                     # px: the cord is reduced to straight pieces within this distance of the smoothed path
 ap.add_argument("--all-thin", action="store_true", default=True)    # the collar is a 1 px line too (2 px made red masses)
 ap.add_argument("--cord", default="136,26,32"); ap.add_argument("--cord-dark", default="112,18,24")
@@ -81,6 +83,7 @@ mesh.calc_loop_triangles()
 tris = [tuple(t.vertices) for t in mesh.loop_triangles]
 bvh = BVHTree.FromPolygons(vcos, tris)
 vw = [{names[g.group]: g.weight for g in v.groups if names[g.group] in deform} for v in mesh.vertices]
+HEAD_TRI = np.array([np.mean([vw[j].get('head', 0.0) for j in t]) > 0.5 for t in tris])      # the triangles of the head (same order as in the evaluated mesh)
 weights = []
 for i, p in enumerate(pts):
     if i >= n_axis or (p[2] < a.rigid_below and abs(p[0]) < 0.08):
@@ -92,6 +95,8 @@ for i, p in enumerate(pts):
     for j, w in zip(tri, bw):
         for n, x in vw[j].items():
             acc[n] = acc.get(n, 0.0) + w * x
+    if p[2] >= a.rigid_below:                                            # the collar and the upper V stay on the trunk (a raised arm / the head must not drag them up over the face)
+        acc = {n: x for n, x in acc.items() if n in ("chest", "neck", "spine", "pelvis")} or {"chest": 1.0}
     s = sum(acc.values()) or 1.0
     weights.append({n: x / s for n, x in acc.items() if x / s > 1e-3})
 # pull the cord at the neck in towards the neck axis (the points lie on the shoulders beside the neck; the depth test tolerates a few cm), the higher the more
@@ -127,12 +132,14 @@ def project(Xw, Pm, Vm):
     return np.stack([(h[:, 0] / h[:, 3] + 1) * 0.5 * W, (1 - h[:, 1] / h[:, 3]) * 0.5 * H], 1), -hv[:, 2]
 
 
-def body_depth(dg, Pm, Vm):
+def body_depth(dg, Pm, Vm, sel=None):
     """camera depth (m) of the posed 3D body per pixel (inf = none): the same rule as render_uo_layer.py raster()"""
     ev = body.evaluated_get(dg); me = ev.to_mesh()
     co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
     me.calc_loop_triangles(); tri = np.empty(len(me.loop_triangles) * 3, np.int32); me.loop_triangles.foreach_get("vertices", tri); tri = tri.reshape(-1, 3)
     Mw = np.array(ev.matrix_world); ev.to_mesh_clear()
+    if sel is not None:
+        tri = tri[sel]
     px, z = project((np.c_[co, np.ones(len(co))] @ Mw.T)[:, :3], Pm, Vm)
     Pp, Z = px[tri], z[tri]
     depth = np.full((H, W), np.inf)
@@ -177,7 +184,7 @@ def stamp(img, zbuf, cx, cy, rad, color, z, zlim, allow):
                 img[y, x] = (*color, 255); zbuf[y, x] = z
 
 
-def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy):
+def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy, depth_head=None):
     img = np.zeros((H, W, 4), np.uint8); zbuf = np.full((H, W), np.inf)
     px, z = project(Xw, Pm, Vm); px = px + np.array([dx, dy])
     zlim = depth_body + 0.045                                            # the cord axis stands 2-3 cm off the skin
@@ -232,18 +239,46 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy):
             idx = rdp(lo, hi, a.rdp if TQ[lo:hi + 1].mean() > 0.5 else a.rdp_collar)
             pieces += [(idx[k], idx[k + 1], bool(TQ[idx[k]:idx[k + 1] + 1].mean() > 0.5) or a.all_thin) for k in range(len(idx) - 1)]
         i = j + 1
+    ncx, ncy = Q[1:-1][~thin_pt].mean(0) if (~thin_pt).any() else Q[1:-1].mean(0)     # the neck in the picture: the collar is "outside" away from it
+    vthick = []
+    thick_q = np.r_[False, pts[:n_axis, 2] >= a.thick_above, False]
     for (i0_, i1_, th) in pieces:
         A_, B_ = Q[i0_], Q[i1_]
         x0, y0, x1, y1 = int(np.floor(A_[0])), int(np.floor(A_[1])), int(np.floor(B_[0])), int(np.floor(B_[1]))
         n = max(abs(x1 - x0), abs(y1 - y0), 1)
-        dv = B_ - A_
+        dv = B_ - A_; steep = abs(dv[0]) < abs(dv[1])
         for k_ in range(n + 1):
             t_ = k_ / n
             x = int(round(x0 + (x1 - x0) * t_)); y = int(round(y0 + (y1 - y0) * t_))
-            cells = [(x, y)] if th else [(x, y), ((x, y - 1) if abs(dv[0]) >= abs(dv[1]) else (x - 1, y))]
+            zz = ZQ[i0_] + (ZQ[i1_] - ZQ[i0_]) * t_
+            cells = [(x, y)]
+            if thick_q[int(round(i0_ + (i1_ - i0_) * t_))]:                  # thicker where the cord is up at the neck: the second pixel on the OUTER side (the V: away from its middle, the collar: away from the neck)
+                if TQ[int(round(i0_ + (i1_ - i0_) * t_))]:
+                    vthick.append((x, y, zz))                                  # the V: widened below, only where its two strands are apart
+                else:
+                    ox, oy = x + 0.5 - ncx, y + 0.5 - ncy
+                    cells.append((x + (1 if ox >= 0 else -1), y) if steep else (x, y + (1 if oy >= 0 else -1)))
             for (cx, cy) in cells:
-                if 0 <= cx < W and 0 <= cy < H and allow[cy, cx]:
-                    img[cy, cx] = (*CORD, 255)
+                if not (0 <= cx < W and 0 <= cy < H and allow[cy, cx]):
+                    continue
+                if depth_head is not None and np.isfinite(depth_head[cy, cx]) and zz >= depth_head[cy, cx] - a.head_tol:
+                    continue                                                  # behind the head (or on it): not drawn
+                img[cy, cx] = (*CORD, 255)
+    rows = {}
+    for (x, y) in [(x_, y_) for y_ in range(H) for x_ in np.nonzero(img[y_, :, 3] > 0)[0]]:
+        rows.setdefault(y, []).append(x)
+    vset = {(x, y): zz for (x, y, zz) in vthick}
+    for y, xs in rows.items():                                               # the V: a second pixel on the outer side of each strand, only in rows where the two strands are 4+ px apart
+        xs = sorted(xs); groups = [[xs[0]]]
+        for x in xs[1:]:
+            (groups[-1].append(x) if x - groups[-1][-1] <= 1 else groups.append([x]))
+        if len(groups) >= 2 and groups[-1][0] - groups[0][-1] >= 4:
+            for x in groups[0]:
+                if (x, y) in vset and x - 1 >= 0 and allow[y, x - 1] and not (depth_head is not None and np.isfinite(depth_head[y, x - 1]) and vset[(x, y)] >= depth_head[y, x - 1] - a.head_tol):
+                    img[y, x - 1] = (*CORD, 255)
+            for x in groups[-1]:
+                if (x, y) in vset and x + 1 < W and allow[y, x + 1] and not (depth_head is not None and np.isfinite(depth_head[y, x + 1]) and vset[(x, y)] >= depth_head[y, x + 1] - a.head_tol):
+                    img[y, x + 1] = (*CORD, 255)
     # the cord: drop specks, then shade by the pixel's neighbours (light where the pixel above or to the left is free, dark where both are cord): the tone follows from the mask alone,
     # so it does not flip between frames while the cord moves
     cord = img[..., 3] > 0
@@ -298,11 +333,11 @@ for act in acts:
             eo = ob.evaluated_get(dg); me = eo.to_mesh()
             co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); Xw = (np.c_[co.reshape(-1, 3), np.ones(len(me.vertices))] @ np.array(eo.matrix_world).T)[:, :3]
             eo.to_mesh_clear()
-            zb = body_depth(dg, Pm, Vm)
+            zb = body_depth(dg, Pm, Vm); zh = body_depth(dg, Pm, Vm, HEAD_TRI)
             om = original_mask(an, d, i)
             allow = dilate(om) if om is not None else np.ones((H, W), bool)
             dx, dy = fixes.get("%d,%d,%d" % (an, i, d), (0, 0))
-            img = draw_frame(Xw, Pm, Vm, camw, zb, allow, dx, dy)
+            img = draw_frame(Xw, Pm, Vm, camw, zb, allow, dx, dy, zh)
             Image.fromarray(img).save(os.path.join(fdir, "%02d.png" % i)); mf.append(dict(file="%02d.png" % i))
         meta_blocks.append(dict(action=an, dir=d, name=act.name, frames=mf))
         print("%s dir%d: %d frames" % (act.name, d, len(mf)), flush=True)
