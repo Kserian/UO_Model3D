@@ -123,6 +123,13 @@ input[type=range]{vertical-align:middle}
       <div class="hint">strzałki przy narzędziu „Przesuń" (z <kbd>Shift</kbd> = 5 px)</div>
       <div class="row"><button id="bClip">Przytnij do sylwetki body</button><label>+</label><input id="clipN" type="number" min="0" max="4" value="0" style="width:44px"> px</div>
       <div class="row"><button id="bClear">Wyczyść klatkę</button><button id="bCopy">Kopiuj kl. <kbd>Ctrl+C</kbd></button><button id="bPaste">Wklej <kbd>Ctrl+V</kbd></button></div>
+      <h4>Kopiuj całą akcję do innej</h4>
+      <div class="row"><label>z</label><b id="cpFrom">–</b><label>do</label><select id="cpTarget" style="max-width:170px"></select></div>
+      <div class="row"><label>kierunki</label><select id="cpDirs"><option value="all">wszystkie 5 (0→0, 1→1 …)</option><option value="one">tylko ten kierunek →</option></select><select id="cpDirTo"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+      <div class="row"><label>klatki</label><select id="cpMap"><option value="1to1">1:1 (nadmiar odcięty)</option><option value="stretch">dopasuj liczbę klatek</option></select></div>
+      <div class="row"><label><input type="checkbox" id="cpMirror"> odbij w poziomie</label><label><input type="checkbox" id="cpEmpty"> tylko puste klatki</label></div>
+      <div class="row"><label>przesuń o</label><input id="cpDx" type="number" value="0" style="width:50px"><input id="cpDy" type="number" value="0" style="width:50px"><button id="bCopyAct">Kopiuj akcję</button></div>
+      <div class="hint">zastępuje przedmiot w klatkach docelowych; jedno cofnięcie (Ctrl+Z) cofa całość</div>
       <h4>Body</h4>
       <label class="row"><input type="checkbox" id="cTint" checked> kolorowanie szarego body:</label>
       <div class="row"><input id="tintR" type="number" min="0" max="255" value="169" style="width:52px"><input id="tintG" type="number" min="0" max="255" value="134" style="width:52px"><input id="tintB" type="number" min="0" max="255" value="102" style="width:52px"></div>
@@ -479,7 +486,7 @@ function pushUndo(changes, label) {
   S.undo.push({changes: real, label}); if (S.undo.length > 200) S.undo.shift(); S.redo = []; refreshButtons();
 }
 function setFrame(bi, f, nf) {                                               // zapis klatki przedmiotu (kopia przy zapisie: stare obiekty zostają w historii)
-  if (!S.itemFrames[bi]) S.itemFrames[bi] = []; const n = frameCount(bi);
+  if (!S.itemFrames[bi]) S.itemFrames[bi] = []; const n = Math.max(frameCount(bi), f + 1);
   while (S.itemFrames[bi].length < n) S.itemFrames[bi].push(EMPTY());
   S.itemFrames[bi][f] = nf; if (S.item) S.item.blocks[bi].dirty = true;
 }
@@ -694,9 +701,46 @@ function updateStatus(x, y) {
   const c = sampleAt(x, y, $("pickSrc").value); $("sCol").textContent = c ? hex(c) + "  (" + c.join(", ") + ")" : "–";
 }
 function refreshAll() {
-  refreshButtons(); refreshActions(); refreshFrames(); refreshPalette();
+  refreshButtons(); refreshActions(); refreshFrames(); refreshPalette(); refreshCopyUI();
   const bi = nBlock(); $("sFrm").textContent = "akcja " + S.a + " kier. " + S.d + " klatka " + S.f + "/" + Math.max(frameCount(bi) - 1, 0);
   $("drop").style.display = (S.body || S.item) ? "none" : "flex"; render();
+}
+
+
+/* ---------- kopiowanie całej akcji do innej */
+function mirrorFrame(f, ax) {
+  if (f.w === 0) return f;
+  const data = new Uint8ClampedArray(f.data.length);
+  for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) { const s = (y * f.w + x) * 4, d = (y * f.w + (f.w - 1 - x)) * 4; data[d] = f.data[s]; data[d + 1] = f.data[s + 1]; data[d + 2] = f.data[s + 2]; data[d + 3] = f.data[s + 3]; }
+  return {x0: 2 * ax - (f.x0 + f.w - 1), y0: f.y0, w: f.w, h: f.h, data};                     // odbicie względem kolumny zaczepienia
+}
+function copyAction() {
+  if (!ensureItem()) return;
+  const to = +$("cpTarget").value, mode = $("cpDirs").value, map = $("cpMap").value, mir = $("cpMirror").checked, onlyEmpty = $("cpEmpty").checked, dx = +$("cpDx").value || 0, dy = +$("cpDy").value || 0;
+  const pairs = mode === "all" ? [0, 1, 2, 3, 4].map(d => [S.a * 5 + d, to * 5 + d]) : [[S.a * 5 + S.d, to * 5 + (+$("cpDirTo").value)]];
+  if (pairs.every(([a, b]) => a === b) && !mir && !dx && !dy) { toast("Źródło i cel są takie same"); return; }
+  const ch = []; let nfr = 0;
+  // najpierw pobierz źródła (gdy źródło = cel, kopiujemy ze stanu sprzed operacji)
+  for (const [bs, bd] of pairs) {
+    const ns = frameCount(bs), nd = Math.max(frameCount(bd), ns && !frameCount(bd) ? ns : 0); if (!ns) continue;
+    const srcs = []; for (let f = 0; f < ns; f++) srcs.push(itemFrame(bs, f));
+    const cnt = map === "stretch" ? nd : Math.min(ns, nd);
+    for (let f = 0; f < cnt; f++) {
+      const sf = map === "stretch" ? (nd === 1 ? 0 : Math.round(f * (ns - 1) / (nd - 1))) : f;
+      const old = itemFrame(bd, f); if (onlyEmpty && old.w > 0) continue;
+      let nf = srcs[sf]; if (mir) nf = mirrorFrame(nf, S.cv.ax); if (dx || dy) nf = shiftFrame(nf, dx, dy);
+      ch.push({bi: bd, f, old, new: nf}); nfr++;
+    }
+  }
+  for (const c of ch) setFrame(c.bi, c.f, c.new);
+  const type = (S.body || S.item).type;
+  pushUndo(ch, "kopiowanie akcji " + S.a + " → " + to); refreshAll(); toast("Skopiowano " + nfr + " klatek: " + actName(type, S.a) + " → " + actName(type, to));
+}
+$("bCopyAct").onclick = copyAction;
+function refreshCopyUI() {
+  const src = S.body || S.item; if (!src) return; const sel = $("cpTarget"), prev = sel.value;
+  if (sel.options.length !== src.nAct) { sel.innerHTML = ""; for (let a = 0; a < src.nAct; a++) { const o = document.createElement("option"); o.value = a; o.textContent = String(a).padStart(2, "0") + " " + actName(src.type, a); sel.appendChild(o); } if (prev) sel.value = prev; else sel.value = Math.min(S.a + 1, src.nAct - 1); }
+  $("cpFrom").textContent = String(S.a).padStart(2, "0") + " " + actName(src.type, S.a);
 }
 
 /* ---------- eksport */
