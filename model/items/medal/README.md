@@ -4,7 +4,7 @@
 
 Source: a Meshy-made glTF (`ribbon medal`, the user's file, **not in the repo**; check the licence). A flat loop of ribbon of 1.9 m does not fit a body, so `pipeline/make_medal_necklace.py` rebuilds it in body coordinates:
 - the medal (disc + rim + ring: the non-red faces of the file) is kept, scaled to 9 cm and draped on the skin of the sternum (thickness kept, 3 mm off the skin, skin line smoothed over the mesh),
-- the ribbon is a closed 3.2 cm strip (3 mm thick, 12 mm off the skin: the posed skin of the neck and shoulders poked through a ribbon lying on it, `--ribbon-gap`) from the ring in a V up the chest, over the collar bones and the sides of the neck, round the nape; every point snapped to the skin (the body without the head, rest pose); the ribbon colour is painted into the texture (`--ribbon-rgb`, default dark red).
+- the ribbon is a closed 6 cm strip (3.2 cm was 1 px at 36 px/m: a broken line in the sprites; recipe scene `uo_hide_erode` 2, `uo_outline` 0.3) (3 mm thick, 12 mm off the skin: the posed skin of the neck and shoulders poked through a ribbon lying on it, `--ribbon-gap`) from the ring in a V up the chest, over the collar bones and the sides of the neck, round the nape; every point snapped to the skin (the body without the head, rest pose); the ribbon colour is painted into the texture (`--ribbon-rgb`, default dark red).
 
 Rebuild (the .glb is made in a scratch folder):
 ```

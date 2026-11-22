@@ -1,6 +1,6 @@
 """A ribbon medal (glTF: a flat loop of ribbon + a medal on a ring) -> a necklace lying on the UO body, as a new glTF in body coordinates (m, rest pose).
 
-    python make_medal_necklace.py MEDAL.glb OUT.glb [--base ../model/UO_Body_0x190.blend] [--medal-d 0.09] [--ribbon-w 0.032] [--ring-z 1.385]
+    python make_medal_necklace.py MEDAL.glb OUT.glb [--base ../model/UO_Body_0x190.blend] [--medal-d 0.09] [--ribbon-w 0.06] [--ring-z 1.385]
 
 The medal (disc + rim + ring, the faces of the file that are not red) is kept as it is, scaled to --medal-d and put on the sternum between the breasts,
 tilted to the slope of the chest and set on the skin (touching, not through). The ribbon of the file hangs as a long flat loop that does not fit a body, so
@@ -18,12 +18,12 @@ ap = argparse.ArgumentParser()
 ap.add_argument("medal"); ap.add_argument("out")
 ap.add_argument("--base", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "model", "UO_Body_0x190.blend"))
 ap.add_argument("--medal-d", type=float, default=0.09)       # m, diameter of the medal disc (the file: 0.31)
-ap.add_argument("--ribbon-w", type=float, default=0.032)      # m, width of the ribbon
+ap.add_argument("--ribbon-w", type=float, default=0.06)       # m, width of the ribbon (at 36 px/m 3.2 cm was 1 px: a broken line)
 ap.add_argument("--ring-z", type=float, default=1.385)        # m, height of the ring the ribbon passes through (the medal hangs below it)
 ap.add_argument("--gap", type=float, default=0.006)           # m, medal off the skin
 ap.add_argument("--ribbon-gap", type=float, default=0.012)    # m, ribbon off the skin (the posed skin of the neck / shoulders pokes through a ribbon that lies on it)
 ap.add_argument("--thick", type=float, default=0.003)         # m, thickness of the ribbon
-ap.add_argument("--ribbon-rgb", type=float, nargs=3, default=(0.38, 0.02, 0.05))   # sRGB 0..1 of the ribbon (the file: a bright red 0.95 0.2 0.15)
+ap.add_argument("--ribbon-rgb", type=float, nargs=3, default=(0.45, 0.03, 0.06))   # sRGB 0..1 of the ribbon (the file: a bright red 0.95 0.2 0.15)
 a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
 
 # ---- the body (rest pose), without the head: the skin the necklace lies on -------------------------------------------------------------------------
