@@ -8,6 +8,9 @@ python pipeline/medal_sprite.py model/items/medal/necklace_paths.json OUT --vd M
 python pipeline/item_gif.py ROOT out.gif --actions 02_run_unarmed --dirs 1 --crop auto --scale 6 --body-color 169,134,102   # ROOT/clothing -> OUT
 ```
 
+## Final form of the cord (iterations 2026-11)
+A simple 1 px line, the same in every action and direction (all 1050 frames have it): the smoothed projected path is reduced to straight pieces (Ramer-Douglas-Peucker, `--rdp` 0.8 px for the V, `--rdp-collar` 1.8 px for the collar: straight lines have the fewest and most even steps), and it is drawn whole between the visible points. Which points are seen is decided per POINT: the V by the depth buffer, the collar by the side of the neck it is on (`--collar-facing`; the depth test cut the collar into dashes of changing length, and from behind the whole collar was missing in 112 of 1050 frames), runs shorter than 3 px are dropped. Collar pulled in to 0.82 of its width, V spread 1.4 cm per side, medal a 5.8 px disc facing the viewer. Hand corrections of single frames: `--fixes`.
+
 ## History: the Cycles-rendered version
 (`Medal_walk_run_attack1h.vd`, removed: actions 00 walk, 02 run, 09 attack 1H slash (5 directions); other actions: `--vd` without `--actions` (all 35, minutes).
 

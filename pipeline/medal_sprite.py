@@ -25,11 +25,16 @@ ap.add_argument("--actions", default=""); ap.add_argument("--fixes", default="")
 ap.add_argument("--medal-scale", type=float, default=0.85)            # drawn radius of the medal relative to the model's (the model's is 8.5 cm: 3 px)
 ap.add_argument("--rigid-below", type=float, default=1.41)            # points under this height (|x| < 0.08) and the medal: rigid on the chest
 ap.add_argument("--medal-px", type=float, default=2.9)               # radius of the drawn medal in px
-ap.add_argument("--collar", type=float, default=0.72)                  # the cord at the neck is drawn this fraction of its width (round the neck, not out over the shoulders)
+ap.add_argument("--collar", type=float, default=0.82)                  # the cord at the neck is drawn this fraction of its width (round the neck, not out over the shoulders)
 ap.add_argument("--collar-zmax", type=float, default=1.55)
 ap.add_argument("--vwiden", type=float, default=0.014)                 # m per side: the two strands of the V on the chest are spread by this much in the middle (they merged into one mass)
 ap.add_argument("--thin-below", type=float, default=1.50)             # the V on the chest (points under this height) is a 1 px stair-step line, the collar 2 px
 ap.add_argument("--smooth", type=float, default=8.0)                  # sigma (path points, 3.5 mm each) of the smoothing of the projected cord: the snapped 3D path is not smooth and gave ragged edges
+ap.add_argument("--collar-tol", type=float, default=0.06)              # m of extra depth tolerance for the collar
+ap.add_argument("--collar-facing", type=float, default=-0.5)          # the collar is drawn where the point faces the camera by more than this (cos)
+ap.add_argument("--rdp-collar", type=float, default=1.8)             # px: the collar is reduced to even straighter pieces
+ap.add_argument("--rdp", type=float, default=0.8)                     # px: the cord is reduced to straight pieces within this distance of the smoothed path
+ap.add_argument("--all-thin", action="store_true", default=True)    # the collar is a 1 px line too (2 px made red masses)
 ap.add_argument("--cord", default="136,26,32"); ap.add_argument("--cord-dark", default="112,18,24")
 a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
 CORD = tuple(int(x) for x in a.cord.split(",")); CORD_D = tuple(int(x) for x in a.cord_dark.split(","))
@@ -181,23 +186,64 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy):
     ring = np.array([cc[0], cc[1] - a.medal_px + 0.6])                  # the top of the drawn medal
     from scipy.ndimage import gaussian_filter1d
     Ps = gaussian_filter1d(px[:n_axis], a.smooth, axis=0, mode="nearest"); Zs = gaussian_filter1d(z[:n_axis], a.smooth, mode="nearest")
-    thin = np.r_[True, pts[:n_axis, 2] < a.thin_below, True]                # per chain point: the ring and the V on the chest are thin
-    chain = [(ring, z[n_axis])] + [(Ps[i], Zs[i]) for i in range(n_axis)] + [(ring, z[n_axis])]
-    seg = []
-    for i in range(len(chain) - 1):
-        (p_a, z_a), (p_b, z_b) = chain[i], chain[i + 1]
-        n = max(int(np.ceil(np.linalg.norm(p_b - p_a) / 0.4)), 1)
-        for t in np.linspace(0, 1, n, endpoint=False):
-            seg.append((p_a + (p_b - p_a) * t, z_a + (z_b - z_a) * t, bool(thin[i] and thin[i + 1]), p_b - p_a))
-    seg.append(chain[-1] + (bool(thin[-1]), seg[-1][3]))
-    for (c, zz, th, dv) in seg:
-        x, y = int(np.floor(c[0])), int(np.floor(c[1]))
-        cells = [(x, y)]
-        if not th:                                                          # 2 px: the second pixel on the up / left side of a regular line (across the minor axis)
-            cells.append((x, y - 1) if abs(dv[0]) >= abs(dv[1]) else (x - 1, y))
-        for (xx, yy) in cells:
-            if 0 <= xx < W and 0 <= yy < H and allow[yy, xx] and zz <= zlim[yy, xx] and zz <= zbuf[yy, xx] + 1e-9:
-                img[yy, xx] = (*CORD, 255); zbuf[yy, xx] = zz
+    thin_pt = np.r_[pts[:n_axis, 2] < a.thin_below]
+    # the polyline (ring, the smoothed axis, ring) reduced to a few straight pieces (Ramer-Douglas-Peucker, a.rdp px): straight lines have the fewest, most regular steps; the pieces
+    # are split where the V (thin) turns into the collar (2 px)
+    Q = np.vstack([ring, Ps, ring]); ZQ = np.r_[z[n_axis], Zs, z[n_axis]]; TQ = np.r_[True, thin_pt, True]
+    def rdp(lo, hi, eps):
+        if hi <= lo + 1:
+            return [lo, hi]
+        A_, B_ = Q[lo], Q[hi]; d = B_ - A_; L = np.linalg.norm(d)
+        dist = np.abs(d[0] * (Q[lo + 1:hi, 1] - A_[1]) - d[1] * (Q[lo + 1:hi, 0] - A_[0])) / L if L > 1e-9 else np.linalg.norm(Q[lo + 1:hi] - A_, axis=1)
+        k_ = int(np.argmax(dist)); 
+        if dist[k_] <= eps:
+            return [lo, hi]
+        m_ = lo + 1 + k_
+        return rdp(lo, m_, eps)[:-1] + rdp(m_, hi, eps)
+    # the collar is on the near half of the loop round the neck: decided by the direction of the point from the neck (to the camera or away from it), not by the depth buffer
+    # (the collar lies inside the shoulders after the pull-in, so the depth test cut it into dashes of changing length)
+    cen_ = Xw[:n_axis][~thin_pt].mean(0) if (~thin_pt).any() else Xw[:n_axis].mean(0)
+    rad_ = Xw[:n_axis, :2] - cen_[:2]; rad_ = rad_ / (np.linalg.norm(rad_, axis=1, keepdims=True) + 1e-9)
+    vh_ = camw[:2, 2] / (np.linalg.norm(camw[:2, 2]) + 1e-9)
+    RV = np.r_[1.0, rad_ @ vh_, 1.0]                                      # > 0: the point is on the side of the neck that faces the camera
+    # which points of the path are seen (decided per POINT, so the lines are drawn whole between them): the V by the depth buffer, the collar by the side of the neck it is on
+    visQ = np.zeros(len(Q), bool)
+    for i in range(1, len(Q) - 1):
+        x, y = int(np.floor(Q[i][0])), int(np.floor(Q[i][1]))
+        if not (0 <= x < W and 0 <= y < H and allow[y, x]):
+            continue
+        visQ[i] = (ZQ[i] <= zlim[y, x]) if TQ[i] else (RV[i] > a.collar_facing)
+    visQ[0] = visQ[-1] = True                                               # the ring: the end of the V, cut by the depth test of its neighbours
+    if not visQ[1]:
+        visQ[0] = False
+    if not visQ[-2]:
+        visQ[-1] = False
+    pieces = []
+    i = 0
+    while i < len(Q):
+        if not visQ[i]:
+            i += 1; continue
+        j = i
+        while j + 1 < len(Q) and visQ[j + 1]:
+            j += 1
+        cuts = [i] + [k for k in range(i + 1, j + 1) if TQ[k] != TQ[k - 1]] + [j]
+        cuts = sorted(set(cuts))
+        for lo, hi in zip(cuts[:-1], cuts[1:]):
+            idx = rdp(lo, hi, a.rdp if TQ[lo:hi + 1].mean() > 0.5 else a.rdp_collar)
+            pieces += [(idx[k], idx[k + 1], bool(TQ[idx[k]:idx[k + 1] + 1].mean() > 0.5) or a.all_thin) for k in range(len(idx) - 1)]
+        i = j + 1
+    for (i0_, i1_, th) in pieces:
+        A_, B_ = Q[i0_], Q[i1_]
+        x0, y0, x1, y1 = int(np.floor(A_[0])), int(np.floor(A_[1])), int(np.floor(B_[0])), int(np.floor(B_[1]))
+        n = max(abs(x1 - x0), abs(y1 - y0), 1)
+        dv = B_ - A_
+        for k_ in range(n + 1):
+            t_ = k_ / n
+            x = int(round(x0 + (x1 - x0) * t_)); y = int(round(y0 + (y1 - y0) * t_))
+            cells = [(x, y)] if th else [(x, y), ((x, y - 1) if abs(dv[0]) >= abs(dv[1]) else (x - 1, y))]
+            for (cx, cy) in cells:
+                if 0 <= cx < W and 0 <= cy < H and allow[cy, cx]:
+                    img[cy, cx] = (*CORD, 255)
     # the cord: drop specks, then shade by the pixel's neighbours (light where the pixel above or to the left is free, dark where both are cord): the tone follows from the mask alone,
     # so it does not flip between frames while the cord moves
     cord = img[..., 3] > 0
