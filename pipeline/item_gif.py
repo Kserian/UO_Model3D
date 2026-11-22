@@ -1,6 +1,6 @@
 """An animated GIF of a rendered item on the original UO body (to look at the motion, not at single frames).
 
-    python item_gif.py RENDER_DIR OUT.gif [--actions 00_walk_unarmed,02_run_unarmed,09_attack_1h_slash] [--dirs 0,2,3] [--scale 4] [--fps 10] [--layer clothing] [--crop auto|X0,Y0,X1,Y1]
+    python item_gif.py RENDER_DIR OUT.gif [--actions 00_walk_unarmed,02_run_unarmed,09_attack_1h_slash] [--dirs 0,2,3] [--scale 4] [--fps 10] [--layer clothing] [--crop auto|X0,Y0,X1,Y1] [--body-color R,G,B]
 
 RENDER_DIR holds RENDER_DIR/<layer>/frames/NN_action/dirK/NN.png (render_uo_layer.py, 256x256, anchor (128, 192)); the body frames are the originals of
 client/body_0x190_frames (145x133, anchor (75, 92)): they are exactly what the game draws under the item. Every action is shown in the given directions side by side and
@@ -14,6 +14,14 @@ from PIL import Image, ImageDraw
 HERE = os.path.dirname(os.path.abspath(__file__))
 BODY = os.path.join(HERE, "..", "client", "body_0x190_frames")
 CROP = (88, 100, 168, 200)
+
+
+def tint(im, rgb, ref=113.3):
+    """the grey original body in the colour `rgb` (the mean grey of the original, 113.3, -> rgb, the shading kept: the game tints the body with a hue)"""
+    A = np.array(im, np.float32)
+    g = A[..., :3].mean(2); k = np.array(rgb, np.float32) / ref
+    A[..., :3] = np.clip(g[..., None] * k, 0, 255)
+    return Image.fromarray(A.astype(np.uint8), "RGBA")
 
 
 def body_frames(meta, act, d):
@@ -30,7 +38,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("root"); ap.add_argument("out"); ap.add_argument("--layer", default="clothing")
     ap.add_argument("--actions", default="00_walk_unarmed,02_run_unarmed,09_attack_1h_slash"); ap.add_argument("--dirs", default="0,2,3")
-    ap.add_argument("--crop", default=""); ap.add_argument("--scale", type=int, default=4); ap.add_argument("--fps", type=int, default=10); ap.add_argument("--loops", type=int, default=2)
+    ap.add_argument("--crop", default=""); ap.add_argument("--scale", type=int, default=4); ap.add_argument("--fps", type=int, default=10); ap.add_argument("--loops", type=int, default=2); ap.add_argument("--body-color", default="")
     a = ap.parse_args()
     meta = json.load(open(os.path.join(BODY, "meta.json")))
     dirs = [int(x) for x in a.dirs.split(",")]
@@ -64,6 +72,8 @@ def main():
         for d in dirs:
             item = sorted(glob.glob(os.path.join(dd[0], "dir%d" % d, "*.png")))
             body = body_frames(meta, n_act, d)
+            if a.body_color:
+                body = [tint(b, [int(x) for x in a.body_color.split(",")]) for b in body]
             per.append((item, body))
         n = min(len(p[0]) for p in per if p[0]) if any(p[0] for p in per) else 0
         for _ in range(a.loops):

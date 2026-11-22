@@ -4,7 +4,7 @@
 
 The medal (disc, rim, recessed face, ring: built here, plain colours painted into flat spots of the normal map of the file) is --medal-d wide and put on the sternum between the breasts,
 tilted to the slope of the chest and set on the skin (touching, not through). The ribbon of the file hangs as a long flat loop that does not fit a body, so
-it is rebuilt: a closed strip of --ribbon-w width and 3 mm thickness, in the same red texture, that leaves the ring in a V up the chest, goes over the
+it is rebuilt: a closed round cord of --ribbon-w diameter, in the same red texture, that leaves the ring in a V up the chest, goes over the
 collar bones and the sides of the neck and round the nape; every point of it is snapped to the skin (the body without the head, rest pose), so it lies on the
 skin. The result is static: bind it rigid on the chest (recipe prepare PART "quiver", AUTOFIT / FIT / DENSIFY off, see model/items/medal/).
 """
@@ -18,7 +18,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("medal"); ap.add_argument("out")
 ap.add_argument("--base", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "model", "UO_Body_0x190.blend"))
 ap.add_argument("--medal-d", type=float, default=0.17)       # m, diameter of the medal disc (the file: 0.31)
-ap.add_argument("--ribbon-w", type=float, default=0.06)       # m, width of the ribbon (at 36 px/m 3.2 cm was 1 px: a broken line)
+ap.add_argument("--ribbon-w", type=float, default=0.045)      # m, DIAMETER of the cord the ribbon is modelled as (a flat strip changes its width with the angle it is seen at: edge-on on the shoulders it was a broken 1-px line; a round cord is the same width from every side)
 ap.add_argument("--ring-z", type=float, default=1.385)        # m, height of the ring the ribbon passes through (the medal hangs below it)
 ap.add_argument("--gap", type=float, default=0.014)           # m, medal off the skin (in front of the end of the ribbon)
 ap.add_argument("--rim-rgb", type=float, nargs=3, default=(0.42, 0.42, 0.45))     # sRGB of the rim and the ring of the medal
@@ -148,7 +148,7 @@ for v, p in zip(bm.verts, Mr):
 
 # ---- the ribbon: a closed strip, snapped to the skin -----------------------------------------------------------------------------------------------
 ctrl = [(0.0, None, a.ring_z + 0.026), (0.0, None, a.ring_z + 0.04), (0.012, None, a.ring_z + 0.042), (0.034, None, a.ring_z + 0.078),
-        (0.058, None, a.ring_z + 0.115), (0.085, -0.118, 1.525), (0.113, -0.07, 1.55), (0.120, -0.02, 1.575), (0.103, 0.036, 1.565), (0.062, 0.062, 1.552), (0.0, 0.068, 1.548)]
+        (0.058, None, a.ring_z + 0.115), (0.085, -0.118, 1.50), (0.113, -0.07, 1.505), (0.122, -0.02, 1.51), (0.105, 0.036, 1.505), (0.062, 0.062, 1.495), (0.0, 0.068, 1.49)]
 pts = []
 for x, y, z in ctrl:
     if y is None:
@@ -177,36 +177,25 @@ for it in range(4):                                               # snap to the 
     C = Sm
 cen, nor = zip(*[snap(p, 0.0) for p in C]); cen = np.array(cen); nor = np.array(nor)
 tan = np.gradient(cen, axis=0); tan /= np.linalg.norm(tan, axis=1)[:, None] + 1e-12
-NW = 7                                                            # points across the width
-u = np.linspace(-0.5, 0.5, NW) * a.ribbon_w
-rows_in, rows_out = [], []
+NC = 8                                                            # points round the cord
+r_c = 0.5 * a.ribbon_w
+rings = []
 for i in range(len(cen)):
     n_i = nor[i]; b = np.cross(n_i, tan[i]); b /= np.linalg.norm(b) + 1e-12
     d_tip = min(np.linalg.norm(cen[i] - cen[0]), np.linalg.norm(cen[i] - cen[-1]))
-    gap_i = 0.003 + (a.ribbon_gap - 0.003) * min(d_tip / 0.07, 1.0)      # near the ring the ribbon lies low, under the medal (the medal covers it, not the other way round)
-    r_in, r_out = [], []
-    for uu in u:
-        q, nq = snap(cen[i] + b * uu, 0.0)
-        r_in.append(q + nq * gap_i); r_out.append(q + nq * (gap_i + a.thick))
-    rows_in.append(r_in); rows_out.append(r_out)
-rows_in = np.array(rows_in); rows_out = np.array(rows_out)
-# the left strand lies on top of the right one at the ring: lift the second half of the last 4 cm by one thickness
-for i in range(len(cen)):
-    if i > len(cen) // 2 and np.linalg.norm(cen[i] - cen[-1]) < 0.045:
-        rows_in[i] += nor[i] * a.thick; rows_out[i] += nor[i] * a.thick
+    gap_i = 0.003 + (a.ribbon_gap - 0.003) * min(d_tip / 0.07, 1.0)      # near the ring the cord lies low, under the medal (the medal covers it, not the other way round)
+    c0, _ = snap(cen[i], 0.0)
+    ctr = c0 + n_i * (gap_i + r_c)                                    # the cord rests GAP above the skin: its axis one radius higher
+    rings.append([ctr + r_c * (np.cos(ph) * n_i + np.sin(ph) * b) for ph in np.linspace(0, 2 * np.pi, NC, endpoint=False)])
+rings = np.array(rings)
 
 nv = len(cen)
 uv_red = UV['ribbon']
-rv = []
-for layer in (rows_out, rows_in):
-    ids = [[bm.verts.new(Vector(layer[i][j])) for j in range(NW)] for i in range(nv)]
-    rv.append(ids)
-out_ids, in_ids = rv
+ids = [[bm.verts.new(Vector(rings[i][j])) for j in range(NC)] for i in range(nv)]
 uvl = bm.loops.layers.uv.verify()
 
 
-def add(vs, flip=False):
-    vs = list(reversed(vs)) if flip else vs
+def add(vs):
     f = bm.faces.new(vs)
     for l in f.loops:
         l[uvl].uv = uv_red
@@ -214,15 +203,14 @@ def add(vs, flip=False):
 
 
 for i in range(nv - 1):
-    for j in range(NW - 1):
-        add([out_ids[i][j], out_ids[i + 1][j], out_ids[i + 1][j + 1], out_ids[i][j + 1]], flip=True)      # outer face (away from the skin)
-        add([in_ids[i][j], in_ids[i + 1][j], in_ids[i + 1][j + 1], in_ids[i][j + 1]])                    # inner face (towards the skin)
-for i in range(nv - 1):                                                                                    # the two long edges
-    add([out_ids[i][0], out_ids[i + 1][0], in_ids[i + 1][0], in_ids[i][0]])
-    add([out_ids[i][NW - 1], in_ids[i][NW - 1], in_ids[i + 1][NW - 1], out_ids[i + 1][NW - 1]])
-for end in (0, nv - 1):                                                                                    # the two ends (at the ring)
-    for j in range(NW - 1):
-        add([out_ids[end][j], in_ids[end][j], in_ids[end][j + 1], out_ids[end][j + 1]], flip=(end == 0))
+    for j in range(NC):
+        k = (j + 1) % NC
+        add([ids[i][j], ids[i][k], ids[i + 1][k], ids[i + 1][j]])
+for end in (0, nv - 1):                                                                                    # the two ends (at the ring): a cap
+    c = bm.verts.new(Vector(rings[end].mean(0)))
+    for j in range(NC):
+        k = (j + 1) % NC
+        add([c, ids[end][k], ids[end][j]] if end == 0 else [c, ids[end][j], ids[end][k]])
 bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
 
 res = bpy.data.meshes.new("medal_necklace"); bm.to_mesh(res); bm.free()

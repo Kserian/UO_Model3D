@@ -126,6 +126,8 @@ CONTRAST = float(sc.get("uo_contrast", CONTRAST)); CONTRAST_PIVOT = float(sc.get
 OUTLINE_AUTO = LAYER == "clothing" and OUTLINE_TARGET > 0 and sc.get("uo_outline") is None
 OUTLINE = float(sc.get("uo_outline", OUTLINE))          # an item whose 1-px outline should be softer than the body's (a light grey robe: 0.6)
 RIM = dict(edge=0.0, inner=0.0, ne=0, ni=0, paths={})   # OUTLINE_AUTO: brightness sums of the rim / one pixel in, and the frames of this run
+ALIGN_R = float(sc.get("uo_align", 0.0))                 # px > 0: per frame the model body is moved by whole pixels (|dx|, |dy| <= ALIGN_MAX) onto the ORIGINAL body round the neck (circle of this radius), smoothed along the action,
+ALIGN_MAX = int(sc.get("uo_align_max", 3))               # so that a necklace, a collar or a medal sits on the neck / chest of the original sprite (the model stands 1-3 px off it in some poses); the item and its hiding move with it
 DESPECKLE = int(sc.get("uo_despeckle", DESPECKLE))     # uo_prepare_item.py sets 0 for cloth and leather: the despeckle erased the straps, buttons and stitches of a texture (gambeson front closure)
 rig = bpy.data.objects["UO_Rig"]
 body = bpy.data.objects["UO_Body"]
@@ -1058,6 +1060,65 @@ def exact_clothing(hold, free, orig_body, cov):
     return out
 
 
+SHIFT = {}
+
+
+def shift_img(x, dx, dy):
+    """x (H x W [x C]) moved by whole pixels, the vacated edge empty"""
+    if not dx and not dy:
+        return x
+    out = np.zeros_like(x)
+    ys, yd = (slice(max(-dy, 0), H - max(dy, 0)), slice(max(dy, 0), H - max(-dy, 0)))
+    xs, xd = (slice(max(-dx, 0), W - max(dx, 0)), slice(max(dx, 0), W - max(-dx, 0)))
+    out[yd, xd] = x[ys, xs]
+    return out
+
+
+def neck_pixel():
+    """the neck of the posed rig in canvas pixels"""
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    cam = sc.camera.evaluated_get(dg)
+    Pm = np.array(cam.calc_matrix_camera(dg, x=W, y=H)); Vm = np.array(cam.matrix_world.inverted())
+    pb = rig.pose.bones["neck"]
+    p = np.array(rig.matrix_world @ ((pb.head + pb.tail) * 0.5))
+    hv = np.r_[p, 1.0] @ Vm.T; h = hv @ Pm.T
+    return (h[0] / h[3] + 1) * 0.5 * W, (1 - h[1] / h[3]) * 0.5 * H
+
+
+def compute_shifts():
+    """ALIGN_R: per (action, frame, direction) the whole-pixel move of the model body that fits it best onto the original body in a circle round the neck, then median-smoothed along the action"""
+    import scipy.ndimage as ndi
+    yy, xx = np.mgrid[0:H, 0:W]
+    table = {}
+    for act in [x for x in acts if not ONLY or x.name in ONLY]:
+        a = int(act["uo_action"]); rig.animation_data.action = act
+        for d in range(5):
+            rig["uo_direction"] = d; rig.update_tag()
+            raw = []
+            for i in range(int(act["uo_frames"])):
+                set_tile(a, i, d); sc.frame_set(1 + i * STEP)
+                orig = original(a, i, d)
+                if orig is None:
+                    raw.append((0, 0)); continue
+                om = orig[..., 3] > 0; cov = body_coverage()
+                nx, ny = neck_pixel(); win = (xx - nx) ** 2 + (yy - ny) ** 2 <= ALIGN_R ** 2
+                best, bs = (0, 0), -1e9
+                for dy in range(-ALIGN_MAX, ALIGN_MAX + 1):
+                    for dx in range(-ALIGN_MAX, ALIGN_MAX + 1):
+                        c = shift_img(cov, dx, dy)
+                        inter = (c & om & win).sum(); uni = ((c | om) & win).sum()
+                        sc_ = inter / max(uni, 1) - 0.01 * (abs(dx) + abs(dy))
+                        if sc_ > bs:
+                            bs, best = sc_, (dx, dy)
+                raw.append(best)
+            R = np.array(raw, float)
+            Sm = np.stack([ndi.median_filter(R[:, k], size=3, mode="nearest") for k in range(2)], 1) if len(R) > 2 else R
+            for i, (dx, dy) in enumerate(Sm):
+                table["%d,%d,%d" % (a, i, d)] = [int(round(dx)), int(round(dy))]
+    return table
+
+
 root = bpy.path.abspath(OUT_DIR + LAYER + "/")
 tmp = os.path.join(root, "_tmp.png")
 os.makedirs(root, exist_ok=True)
@@ -1075,7 +1136,12 @@ def frame_job():
     """one UO frame per step; uo_job.py hands control back to Blender between two of them (the window stays alive, ESC cancels)"""
     view_prefs.render_display_type = "NONE"             # no Render Result window popping up for every frame
     done_frames = 0
+    global SHIFT
     try:
+        if ALIGN_R > 0 and not SHIFT:
+            SHIFT = compute_shifts()
+            json.dump(SHIFT, open(os.path.join(root, "shifts.json"), "w"))
+            print("render_uo_layer: ALIGN %.0f px: %d frames, moved %d" % (ALIGN_R, len(SHIFT), sum(1 for v in SHIFT.values() if v != [0, 0])))
         for act in acts:
             if ONLY and act.name not in ONLY:
                 continue
@@ -1103,6 +1169,9 @@ def frame_job():
                     elif LAYER == "clothing" and HOLDOUT_MARGIN > 0:
                         free = render_frame(a, i, d, "hidden")
                         hold, cov = body_occlusion(free, HOLDOUT_MARGIN)
+                        sh = SHIFT.get("%d,%d,%d" % (a, i, d))
+                        if sh and (sh[0] or sh[1]):
+                            free, hold, cov = shift_img(free, *sh), shift_img(hold, *sh), shift_img(cov, *sh)
                         px = exact_clothing(hold, free, orig_m, cov) if (EXACT_BODY and orig is not None) else hold
                         if FILL_HOLES > 0:
                             px = fill_small_holes(px, free, FILL_HOLES)
