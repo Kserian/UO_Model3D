@@ -20,7 +20,8 @@ ap.add_argument("--base", default=os.path.join(os.path.dirname(os.path.abspath(_
 ap.add_argument("--medal-d", type=float, default=0.09)       # m, diameter of the medal disc (the file: 0.31)
 ap.add_argument("--ribbon-w", type=float, default=0.032)      # m, width of the ribbon
 ap.add_argument("--ring-z", type=float, default=1.385)        # m, height of the ring the ribbon passes through (the medal hangs below it)
-ap.add_argument("--gap", type=float, default=0.003)           # m, ribbon / medal off the skin
+ap.add_argument("--gap", type=float, default=0.006)           # m, medal off the skin
+ap.add_argument("--ribbon-gap", type=float, default=0.012)    # m, ribbon off the skin (the posed skin of the neck / shoulders pokes through a ribbon that lies on it)
 ap.add_argument("--thick", type=float, default=0.003)         # m, thickness of the ribbon
 ap.add_argument("--ribbon-rgb", type=float, nargs=3, default=(0.38, 0.02, 0.05))   # sRGB 0..1 of the ribbon (the file: a bright red 0.95 0.2 0.15)
 a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
@@ -160,7 +161,7 @@ for i in range(len(cen)):
     r_in, r_out = [], []
     for uu in u:
         q, nq = snap(cen[i] + b * uu, 0.0)
-        r_in.append(q + nq * a.gap); r_out.append(q + nq * (a.gap + a.thick))
+        r_in.append(q + nq * a.ribbon_gap); r_out.append(q + nq * (a.ribbon_gap + a.thick))
     rows_in.append(r_in); rows_out.append(r_out)
 rows_in = np.array(rows_in); rows_out = np.array(rows_out)
 # the left strand lies on top of the right one at the ring: lift the second half of the last 4 cm by one thickness
