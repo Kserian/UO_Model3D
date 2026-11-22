@@ -25,7 +25,9 @@ ap.add_argument("--actions", default=""); ap.add_argument("--fixes", default="")
 ap.add_argument("--medal-scale", type=float, default=0.85)            # drawn radius of the medal relative to the model's (the model's is 8.5 cm: 3 px)
 ap.add_argument("--rigid-below", type=float, default=1.41)            # points under this height (|x| < 0.08) and the medal: rigid on the chest
 ap.add_argument("--medal-px", type=float, default=2.9)               # radius of the drawn medal in px
-ap.add_argument("--cord", default="140,28,34"); ap.add_argument("--cord-dark", default="88,12,18")
+ap.add_argument("--collar", type=float, default=0.72)                  # the cord at the neck is drawn this fraction of its width (round the neck, not out over the shoulders)
+ap.add_argument("--collar-zmax", type=float, default=1.55)
+ap.add_argument("--cord", default="128,24,30"); ap.add_argument("--cord-dark", default="88,12,18")
 a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
 CORD = tuple(int(x) for x in a.cord.split(",")); CORD_D = tuple(int(x) for x in a.cord_dark.split(","))
 W = H = 256; ANCHOR = (128, 192); OANCHOR = (68, 86); STEP = 3
@@ -84,6 +86,11 @@ for i, p in enumerate(pts):
             acc[n] = acc.get(n, 0.0) + w * x
     s = sum(acc.values()) or 1.0
     weights.append({n: x / s for n, x in acc.items() if x / s > 1e-3})
+# pull the cord at the neck in towards the neck axis (the points lie on the shoulders beside the neck; the depth test tolerates a few cm), the higher the more
+t_ = np.clip((pts[:n_axis, 2] - 1.45) / 0.06, 0.0, 1.0)
+pts[:n_axis, 0] *= 1.0 - (1.0 - a.collar) * t_
+pts[:n_axis, 1] = -0.03 + (pts[:n_axis, 1] + 0.03) * (1.0 - (1.0 - a.collar) * t_)
+pts[:n_axis, 2] = np.minimum(pts[:n_axis, 2], a.collar_zmax)
 ob = bpy.data.objects.new("uo_necklace_pts", bpy.data.meshes.new("uo_necklace_pts"))
 sc.collection.objects.link(ob)
 ob.data.from_pydata([tuple(p) for p in pts], [], [])
@@ -173,7 +180,7 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy):
         for t in np.linspace(0, 1, n, endpoint=False):
             seg.append((p_a + (p_b - p_a) * t, z_a + (z_b - z_a) * t))
     seg.append(chain[-1])
-    for rad, off, col in ((0.9, (0.0, 0.0), CORD_D), (0.62, (0.0, -0.35), CORD)):
+    for rad, off, col in ((1.0, (0.0, 0.0), CORD),):                     # ONE flat colour, radius 1.0: always 2 pixel centres across, so neither the width nor the colour of a pixel flips between frames (the two-tone cord did)
         for (c, zz) in seg:
             stamp(img, zbuf, c[0] + off[0], c[1] + off[1], rad, col, zz, zlim, allow)
     # medal: drawn as a disc that faces the viewer (a 3D-projected disc on a chest seen from above is a flat 5 x 3 px ellipse that does not read as a medal);
