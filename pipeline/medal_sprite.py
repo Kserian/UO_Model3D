@@ -35,7 +35,10 @@ ap.add_argument("--collar-facing", type=float, default=-0.5)          # the coll
 ap.add_argument("--rdp-collar", type=float, default=1.8)             # px: the collar is reduced to even straighter pieces
 ap.add_argument("--thick-above", type=float, default=1.455)        # m: from this height up (upper V, collar) the cord is 2 px, the second pixel on the outer side; below (towards the medal) 1 px
 ap.add_argument("--head-tol", type=float, default=0.02)             # m: a cord pixel on the head is drawn only when it is this much in front of the head surface
+ap.add_argument("--collar-width", type=float, default=6.0)           # px: the most the collar is wide in the picture
 ap.add_argument("--collar-height", type=float, default=3.2)          # px: the most the collar is tall in the picture
+ap.add_argument("--neck-dx", type=float, default=4.5)                 # px sideways of the neck the cord may reach in the neck rows
+ap.add_argument("--neck-dy", type=float, default=6.0)                 # px below the neck centre: the rows that count as the neck / shoulders
 ap.add_argument("--rdp", type=float, default=0.8)                     # px: the cord is reduced to straight pieces within this distance of the smoothed path
 ap.add_argument("--all-thin", action="store_true", default=True)    # the collar is a 1 px line too (2 px made red masses)
 ap.add_argument("--cord", default="136,26,32"); ap.add_argument("--cord-dark", default="112,18,24")
@@ -84,6 +87,7 @@ mesh.calc_loop_triangles()
 tris = [tuple(t.vertices) for t in mesh.loop_triangles]
 bvh = BVHTree.FromPolygons(vcos, tris)
 vw = [{names[g.group]: g.weight for g in v.groups if names[g.group] in deform} for v in mesh.vertices]
+LIMB_TRI = np.array([max(sum(w for n, w in vw[j].items() if n.startswith(('forearm', 'hand', 'finger'))) for j in t) > 0.5 for t in tris])      # forearms and hands: they hide the cord (a raised arm / hands behind the head)
 HEAD_TRI = np.array([np.mean([vw[j].get('head', 0.0) for j in t]) > 0.5 for t in tris])      # the triangles of the head (same order as in the evaluated mesh)
 weights = []
 for i, p in enumerate(pts):
@@ -203,7 +207,7 @@ def stamp(img, zbuf, cx, cy, rad, color, z, zlim, allow):
                 img[y, x] = (*color, 255); zbuf[y, x] = z
 
 
-def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy, depth_head=None):
+def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy, depth_head=None, neck=None, fx=None, depth_limb=None):
     img = np.zeros((H, W, 4), np.uint8); zbuf = np.full((H, W), np.inf)
     px, z = project(Xw, Pm, Vm); px = px + np.array([dx, dy])
     zlim = depth_body + 0.045                                            # the cord axis stands 2-3 cm off the skin
@@ -218,6 +222,11 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy, depth_head=None):
         ys_ = Ps[col_, 1]; ext = ys_.max() - ys_.min()
         if ext > a.collar_height:
             Ps[col_, 1] = ys_.mean() + (ys_ - ys_.mean()) * (a.collar_height / ext)
+        xs_ = Ps[col_, 0]; extx = xs_.max() - xs_.min()                      # and not wider than a neck with its shoulders: in twisted poses the collar projected as a 12 px bar over the arm
+        if extx > a.collar_width:
+            k_x = a.collar_width / extx; mx = xs_.mean()
+            wz = np.clip((pts[:n_axis, 2] - 1.42) / 0.04, 0, 1)             # the upper V follows (it hangs from the collar)
+            Ps[:, 0] = mx + (Ps[:, 0] - mx) * (1 - (1 - k_x) * wz)
     # the polyline (ring, the smoothed axis, ring) reduced to a few straight pieces (Ramer-Douglas-Peucker, a.rdp px): straight lines have the fewest, most regular steps; the pieces
     # are split where the V (thin) turns into the collar (2 px)
     Q = np.vstack([ring, Ps, ring]); ZQ = np.r_[z[n_axis], Zs, z[n_axis]]; TQ = np.r_[True, thin_pt, True]
@@ -287,6 +296,8 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy, depth_head=None):
                     continue
                 if depth_head is not None and np.isfinite(depth_head[cy, cx]) and zz >= depth_head[cy, cx] - a.head_tol:
                     continue                                                  # behind the head (or on it): not drawn
+                if depth_limb is not None and np.isfinite(depth_limb[cy, cx]) and zz >= depth_limb[cy, cx] - 0.01:
+                    continue                                                  # behind a forearm / hand: not drawn
                 img[cy, cx] = (*CORD, 255)
     rows = {}
     for (x, y) in [(x_, y_) for y_ in range(H) for x_ in np.nonzero(img[y_, :, 3] > 0)[0]]:
@@ -303,6 +314,20 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy, depth_head=None):
             for x in groups[-1]:
                 if (x, y) in vset and x + 1 < W and allow[y, x + 1] and not (depth_head is not None and np.isfinite(depth_head[y, x + 1]) and vset[(x, y)] >= depth_head[y, x + 1] - a.head_tol):
                     img[y, x + 1] = (*CORD, 255)
+    if neck is not None:                                                     # the cord stays round the neck: in the rows of the neck and the shoulders nothing further than NECK_DX px sideways of the neck (twisted poses drew it far out over an arm)
+        yy_, xx_ = np.mgrid[0:H, 0:W]
+        far = (np.abs(xx_ + 0.5 - neck[0]) > a.neck_dx) & (yy_ + 0.5 <= neck[1] + a.neck_dy)
+        img[far] = 0
+    if fx:                                                                   # hand corrections of this frame
+        for (x0, y0, x1, y1) in fx.get("erase", []):
+            img[y0:y1 + 1, x0:x1 + 1] = 0
+        for line in fx.get("draw", []):
+            for (xa, ya), (xb, yb) in zip(line[:-1], line[1:]):
+                n_ = max(abs(xb - xa), abs(yb - ya), 1)
+                for k_ in range(n_ + 1):
+                    xx = int(round(xa + (xb - xa) * k_ / n_)); yy = int(round(ya + (yb - ya) * k_ / n_))
+                    if 0 <= xx < W and 0 <= yy < H:
+                        img[yy, xx] = (*CORD, 255)
     # the cord: drop specks, then shade by the pixel's neighbours (light where the pixel above or to the left is free, dark where both are cord): the tone follows from the mask alone,
     # so it does not flip between frames while the cord moves
     cord = img[..., 3] > 0
@@ -357,13 +382,19 @@ for act in acts:
             eo = ob.evaluated_get(dg); me = eo.to_mesh()
             co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); Xw = (np.c_[co.reshape(-1, 3), np.ones(len(me.vertices))] @ np.array(eo.matrix_world).T)[:, :3]
             eo.to_mesh_clear()
-            zb = body_depth(dg, Pm, Vm); zh = body_depth(dg, Pm, Vm, HEAD_TRI)
+            zb = body_depth(dg, Pm, Vm); zh = body_depth(dg, Pm, Vm, HEAD_TRI); zl = body_depth(dg, Pm, Vm, LIMB_TRI)
             om = original_mask(an, d, i)
             allow = dilate(om) if om is not None else np.ones((H, W), bool)
-            dx, dy = fixes.get("%d,%d,%d" % (an, i, d), (0, 0))
+            fx = fixes.get("%d,%d,%d" % (an, i, d)) or {}
+            dx, dy = fx.get("shift", (0, 0)); dx0, dy0 = dx, dy
+            pb = rig.pose.bones["neck"]; nw = np.array(rig.matrix_world @ ((pb.head + pb.tail) * 0.5)); npx, _ = project(nw[None], Pm, Vm); neck = npx[0] + np.array([dx0, dy0])
             hs = head_shift(np.isfinite(zh), om)                              # our head against the original head: the cord pixels are hidden by the ORIGINAL head
             zh = np.roll(np.roll(zh, hs[1], 0), hs[0], 1)
-            img = draw_frame(Xw, Pm, Vm, camw, zb, allow, dx, dy, zh)
+            img = draw_frame(Xw, Pm, Vm, camw, zb, allow, dx, dy, zh, neck, fx, zl)
+            red = (img[..., 3] > 0) & (img[..., 0] > img[..., 2] * 1.3) & (img[..., 0] > img[..., 1] * 1.3)
+            if red.sum() < 6:                                                 # nothing left of the cord (hidden by a limb / the head / cut at the neck): draw it without those rules
+                img = draw_frame(Xw, Pm, Vm, camw, zb, allow, dx, dy, None, None, fx, None)
+                print("  relaxed:", act.name, d, i, "->", int(((img[..., 3] > 0) & (img[..., 0] > img[..., 2] * 1.3)).sum()), "px", flush=True)
             Image.fromarray(img).save(os.path.join(fdir, "%02d.png" % i)); mf.append(dict(file="%02d.png" % i))
         meta_blocks.append(dict(action=an, dir=d, name=act.name, frames=mf))
         print("%s dir%d: %d frames" % (act.name, d, len(mf)), flush=True)
