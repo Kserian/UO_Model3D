@@ -231,6 +231,8 @@ In-plane stiffness (tension, compression, shear) is 5 for all fabrics: Blender's
 
 `vdtool/vdtool.py` (Python 3.8+, `pip install pillow numpy`; messages in Polish) unpacks a `.vd` into PNGs and packs them back in the same order; unpack + pack without changes gives a byte-identical file.
 
+`vdtool/vd_editor.html` is a pixel editor for the item layer (open it in a browser, no install; it reads and writes `.vd` itself): load the original `body400.vd` and an item `.vd`, move the item against the body (one frame, a direction, an action or everything; arrows or drag), pencil / eraser / picker / fill / line / rectangle / selection, colour from the body or the item, onion skin, tint of the grey body, clip to the body silhouette, undo for everything; "Save" writes only the changed blocks and copies the rest byte for byte, "ZIP" gives the PNG frames for `vdtool pack`.
+
 ```bash
 python vdtool.py info    file.vd                   # type, actions, frame counts
 python vdtool.py extract file.vd work              # -> work/meta.json + work/frames/NN_action/dirK/NN.png

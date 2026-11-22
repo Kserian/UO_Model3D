@@ -231,6 +231,8 @@ Sztywność w płaszczyźnie (tension, compression, shear) wynosi 5 dla wszystki
 
 `vdtool/vdtool.py` (Python 3.8+, `pip install pillow numpy`; komunikaty po polsku) rozpakowuje `.vd` do PNG i pakuje z powrotem w tej samej kolejności; rozpakowanie i spakowanie bez zmian daje plik identyczny bajt w bajt.
 
+`vdtool/vd_editor.html` to edytor pikseli warstwy przedmiotu (otwierasz w przeglądarce, bez instalacji; sam czyta i zapisuje `.vd`): wczytujesz oryginalne `body400.vd` i `.vd` przedmiotu, przesuwasz przedmiot względem body (klatka, kierunek, akcja albo wszystko; strzałki lub przeciąganie), ołówek / gumka / pipeta / wiadro / linia / prostokąt / zaznaczenie, kolor z body lub z przedmiotu, cebula, kolorowanie szarego body, przycinanie do sylwetki body, cofanie wszystkiego; „Zapisz" zapisuje tylko zmienione bloki, resztę kopiuje bajt w bajt, „ZIP" daje klatki PNG dla `vdtool pack`.
+
 ```bash
 python vdtool.py info    plik.vd                   # typ, akcje, liczby klatek
 python vdtool.py extract plik.vd work              # -> work/meta.json + work/frames/NN_akcja/dirK/NN.png

@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VD Edytor</title>
+<style>
+:root{--bg:#16181c;--panel:#1e2127;--panel2:#262a32;--line:#343944;--text:#e6e8ec;--dim:#99a0ad;--acc:#e0a050;--acc2:#5aa0e0;--bad:#e06060}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:13px/1.35 system-ui,Segoe UI,Roboto,sans-serif}
+button,input,select{font:inherit;color:var(--text)}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:4px 9px;cursor:pointer}
+button:hover{border-color:#566}button.on{background:#4a3a20;border-color:var(--acc);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+input[type=number],input[type=text],select{background:#111318;border:1px solid var(--line);border-radius:4px;padding:3px 5px}
+input[type=range]{vertical-align:middle}
+#app{display:grid;grid-template-rows:auto 22px 1fr auto;height:100%}
+#info{padding:2px 10px;background:var(--panel);border-bottom:1px solid var(--line);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;background:var(--panel);border-bottom:1px solid var(--line)}
+#top .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+#main{display:grid;grid-template-columns:150px 1fr 290px;min-height:0}
+#tools{background:var(--panel);border-right:1px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:5px;overflow:auto}
+#tools button{text-align:left;display:flex;justify-content:space-between;gap:6px}
+#tools kbd,#help kbd{background:#111318;border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:11px;color:var(--dim)}
+#tools h4,#side h4{margin:8px 0 2px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+#view{position:relative;overflow:hidden;background:#0d0e11;min-width:0;touch-action:none}
+#view canvas{position:absolute;left:0;top:0}
+#cv{image-rendering:pixelated;box-shadow:0 0 0 1px #000}
+#ov{pointer-events:none}
+#side>*{flex-shrink:0}
+#side{background:var(--panel);border-left:1px solid var(--line);padding:8px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.row label{color:var(--dim)}
+#status{display:flex;gap:14px;padding:4px 10px;background:var(--panel);border-top:1px solid var(--line);color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+#status b{color:var(--text);font-weight:500}
+.sw{width:20px;height:20px;border:1px solid #000;border-radius:3px;cursor:pointer;display:inline-block}
+.sw.sel{outline:2px solid var(--acc)}
+#pal{display:flex;flex-wrap:wrap;gap:3px;max-height:96px;overflow:auto}
+#prim,#sec{width:38px;height:38px;border:2px solid #000;border-radius:4px;padding:0;background:none;cursor:pointer}
+#cols{position:relative;width:64px;height:48px}
+#cols input{position:absolute}
+#prim{left:0;top:0;z-index:2}#sec{left:22px;top:14px}
+#frames{display:flex;flex-wrap:wrap;gap:3px}
+#frames button{padding:2px 7px;min-width:30px}
+.list{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:5px;background:#111318}
+.list div{padding:2px 8px;cursor:pointer;white-space:nowrap}
+.list div:hover{background:#222731}.list div.on{background:#4a3a20;color:#fff}
+.hint{color:var(--dim);font-size:12px}
+#drop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim);text-align:center;pointer-events:none;font-size:15px;line-height:1.7}
+#help{position:fixed;right:16px;bottom:34px;width:430px;max-height:72vh;overflow:auto;background:#101216ee;border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:none;z-index:9}
+#help table{border-collapse:collapse;width:100%}#help td{padding:2px 4px;border-bottom:1px solid #22262e;vertical-align:top}
+#toast{position:fixed;left:50%;top:56px;transform:translateX(-50%);background:#101216;border:1px solid var(--acc);border-radius:6px;padding:6px 14px;display:none;z-index:10}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <button id="bBody">Wczytaj body (.vd)</button>
+    <button id="bItem">Wczytaj przedmiot (.vd)</button>
+    <button id="bNew" title="Pusty przedmiot o takiej samej liczbie klatek jak body">Nowy pusty</button>
+    <button id="bSave" disabled>Zapisz przedmiot .vd</button>
+    <span class="sep"></span>
+    <button id="bUndo" disabled>Cofnij <kbd>Ctrl+Z</kbd></button>
+    <button id="bRedo" disabled>Ponów <kbd>Ctrl+Y</kbd></button>
+    <span class="sep"></span>
+    <button id="bPng" disabled>PNG klatki</button>
+    <button id="bZip" disabled>ZIP wszystkich klatek</button>
+    <span class="sep"></span>
+    <button id="bHelp">Skróty <kbd>?</kbd></button>
+    <input id="fBody" type="file" accept=".vd" hidden><input id="fItem" type="file" accept=".vd" hidden>
+  </div>
+  <div id="info"><span id="fileInfo"></span></div>
+  <div id="main">
+    <div id="tools">
+      <h4>Narzędzia</h4>
+      <button data-tool="pencil">Ołówek <kbd>B</kbd></button>
+      <button data-tool="eraser">Gumka <kbd>E</kbd></button>
+      <button data-tool="picker">Pipeta <kbd>I</kbd></button>
+      <button data-tool="fill">Wiadro <kbd>G</kbd></button>
+      <button data-tool="line">Linia <kbd>L</kbd></button>
+      <button data-tool="rect">Ramka <kbd>R</kbd></button>
+      <button data-tool="rectf">Prostokąt <kbd>F</kbd></button>
+      <button data-tool="select">Zaznaczenie <kbd>S</kbd></button>
+      <button data-tool="move">Przesuń <kbd>M</kbd></button>
+      <h4>Pędzel</h4>
+      <div class="row"><input id="brush" type="range" min="1" max="8" value="1" style="width:84px"><b id="brushV">1</b> px</div>
+      <h4>Próbka koloru z</h4>
+      <select id="pickSrc"><option value="comp">tego co widać</option><option value="item">przedmiotu</option><option value="body">body (kolor oryg.)</option></select>
+      <h4>Widok</h4>
+      <label class="row"><input type="checkbox" id="cBody" checked> body</label>
+      <label class="row"><input type="checkbox" id="cItem" checked> przedmiot</label>
+      <label class="row"><input type="checkbox" id="cOnion"> cebula (±1 kl.)</label>
+      <label class="row"><input type="checkbox" id="cGrid" checked> siatka</label>
+      <label class="row"><input type="checkbox" id="cAnchor" checked> zaczepienie</label>
+      <div class="row"><label>przezr. przedm.</label><input id="itemAlpha" type="range" min="10" max="100" value="100" style="width:80px"></div>
+      <div class="row"><label>zoom</label><button id="zOut">−</button><b id="zoomV">8×</b><button id="zIn">+</button><button id="zFit">dopasuj</button></div>
+    </div>
+    <div id="view">
+      <canvas id="cv"></canvas><canvas id="ov"></canvas>
+      <div id="drop">Wczytaj <b>body400.vd</b> i plik przedmiotu .vd<br>(przeciągnij pliki tutaj albo użyj przycisków u góry)</div>
+    </div>
+    <div id="side">
+      <h4>Kolory</h4>
+      <div class="row">
+        <div id="cols"><input id="sec" type="color" value="#ffffff"><input id="prim" type="color" value="#88181e"></div>
+        <div style="flex:1"><div class="row"><label>1.</label><input id="hex1" type="text" value="#88181e" size="8"><button id="bSwap" title="zamień (X)">⇄</button></div>
+        <div class="row"><label>2.</label><input id="hex2" type="text" value="#ffffff" size="8"></div></div>
+      </div>
+      <div class="hint">lewy przycisk = kolor 1, prawy = kolor 2, <kbd>Alt</kbd>+klik = pipeta</div>
+      <h4>Paleta tego bloku / klatki</h4>
+      <div id="pal"></div>
+      <div class="row"><button id="bPalAll">wszystkie kolory bloku</button><button id="bPalFrame">tej klatki</button></div>
+      <h4>Akcja</h4>
+      <div id="actions" class="list"></div>
+      <div class="row"><label>kierunek</label><span id="dirs" class="row"></span></div>
+      <h4>Klatka <span id="fInfo" class="hint"></span></h4>
+      <div id="frames"></div>
+      <div class="row"><button id="fPrev">◀</button><button id="fPlay">▶ odtwarzaj</button><button id="fNext">▶</button><label>fps</label><input id="fps" type="number" min="1" max="30" value="8" style="width:46px"></div>
+      <h4>Przesunięcie / operacje na przedmiocie</h4>
+      <div class="row"><label>zakres</label>
+        <select id="scope"><option value="frame">tylko ta klatka</option><option value="dir">wszystkie klatki tego kierunku</option><option value="action">cała akcja (5 kierunków)</option><option value="all">wszystko</option></select></div>
+      <div class="row"><button id="mL">←</button><button id="mU">↑</button><button id="mD">↓</button><button id="mR">→</button><label>o</label><input id="step" type="number" min="1" max="20" value="1" style="width:46px"> px</div>
+      <div class="hint">strzałki przy narzędziu „Przesuń" (z <kbd>Shift</kbd> = 5 px)</div>
+      <div class="row"><button id="bClip">Przytnij do sylwetki body</button><label>+</label><input id="clipN" type="number" min="0" max="4" value="0" style="width:44px"> px</div>
+      <div class="row"><button id="bClear">Wyczyść klatkę</button><button id="bCopy">Kopiuj kl. <kbd>Ctrl+C</kbd></button><button id="bPaste">Wklej <kbd>Ctrl+V</kbd></button></div>
+      <h4>Body</h4>
+      <label class="row"><input type="checkbox" id="cTint" checked> kolorowanie szarego body:</label>
+      <div class="row"><input id="tintR" type="number" min="0" max="255" value="169" style="width:52px"><input id="tintG" type="number" min="0" max="255" value="134" style="width:52px"><input id="tintB" type="number" min="0" max="255" value="102" style="width:52px"></div>
+      <div class="row"><label>tło</label><input id="bgc" type="color" value="#54684f"></div>
+    </div>
+  </div>
+  <div id="status"><span>pozycja <b id="sPos">–</b></span><span>względem zaczepienia <b id="sRel">–</b></span><span>kolor <b id="sCol">–</b></span><span>klatka <b id="sFrm">–</b></span><span id="sMsg"></span></div>
+</div>
+<div id="help"><b>Skróty klawiszowe</b><table>
+<tr><td><kbd>B</kbd> <kbd>E</kbd> <kbd>I</kbd> <kbd>G</kbd> <kbd>L</kbd> <kbd>R</kbd> <kbd>F</kbd> <kbd>S</kbd> <kbd>M</kbd></td><td>ołówek, gumka, pipeta, wiadro, linia, ramka, prostokąt, zaznaczenie, przesuń</td></tr>
+<tr><td><kbd>Alt</kbd>+klik</td><td>pipeta (próbka koloru z wybranego źródła)</td></tr>
+<tr><td><kbd>Shift</kbd> przy linii / prostokącie</td><td>linia pod 45°, kwadrat</td></tr>
+<tr><td>kółko myszy</td><td>zoom w miejscu kursora</td></tr>
+<tr><td>środkowy przycisk albo <kbd>Spacja</kbd>+przeciąganie</td><td>przesuwanie widoku</td></tr>
+<tr><td><kbd>,</kbd> <kbd>.</kbd> albo <kbd>←</kbd> <kbd>→</kbd></td><td>poprzednia / następna klatka (strzałki: gdy nie jest wybrane „Przesuń")</td></tr>
+<tr><td><kbd>↑</kbd> <kbd>↓</kbd> / <kbd>PgUp</kbd> <kbd>PgDn</kbd></td><td>kierunek / akcja</td></tr>
+<tr><td><kbd>1</kbd>–<kbd>5</kbd></td><td>kierunek 0–4</td></tr>
+<tr><td>strzałki przy „Przesuń"</td><td>przesuń przedmiot o 1 px (<kbd>Shift</kbd> = 5 px) w wybranym zakresie</td></tr>
+<tr><td><kbd>Spacja</kbd></td><td>odtwarzanie / stop (gdy nie przeciągasz widoku)</td></tr>
+<tr><td><kbd>Del</kbd> / <kbd>Esc</kbd></td><td>wyczyść zaznaczenie / odznacz</td></tr>
+<tr><td><kbd>X</kbd></td><td>zamień kolory 1 i 2</td></tr>
+<tr><td><kbd>Ctrl+Z</kbd> <kbd>Ctrl+Y</kbd></td><td>cofnij / ponów (wszystko, także przesunięcia na wiele klatek)</td></tr>
+<tr><td><kbd>Ctrl+C</kbd> <kbd>Ctrl+V</kbd></td><td>kopiuj / wklej warstwę przedmiotu klatki</td></tr>
+</table>
+<p class="hint">Przedmiot to warstwa nad body; piksele są pełne albo przezroczyste (jak w .vd). „Zapisz" zapisuje tylko zmienione bloki w nowym kodowaniu, resztę kopiuje bajt w bajt. Ołówek, gumka itd. działają na klatce, którą widzisz; przesunięcie, przycięcie i czyszczenie – na wybranym zakresie.</p></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================ format .vd (jak vdtool.py) */
+const MAGIC = 6, END = 0x7FFF7FFF;
+const ACTIONS_BY_TYPE = {0: 22, 1: 13, 2: 35};
+const PEOPLE = ["walk_unarmed","walk_armed","run_unarmed","run_armed","stand","fidget_1","fidget_2","combat_idle_1h","combat_idle_2h","attack_1h_slash","attack_1h_pierce","attack_1h_bash","attack_2h_bash","attack_2h_slash","attack_2h_pierce","combat_advance","spell_directed","spell_area","attack_bow","attack_crossbow","get_hit","die_forward","die_backward","mounted_walk","mounted_run","mounted_stand","mounted_attack_1h","mounted_attack_bow","mounted_attack_crossbow","mounted_attack_2h","block","punch","bow","salute","eat"];
+const actName = (type, a) => type === 2 && a < PEOPLE.length ? PEOPLE[a] : "action";
+const c15rgb = c => [Math.floor(((c >> 10) & 31) * 255 / 31), Math.floor(((c >> 5) & 31) * 255 / 31), Math.floor((c & 31) * 255 / 31)];
+const rgb15 = (r, g, b) => { const c = (Math.floor((r * 31 + 127) / 255) << 10) | (Math.floor((g * 31 + 127) / 255) << 5) | Math.floor((b * 31 + 127) / 255); return c === 0 ? 1 : c; };
+
+function parseVD(buf, name) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  const magic = dv.getInt16(0, true), type = dv.getInt16(2, true);
+  if (magic !== MAGIC) throw new Error(name + ": to nie jest plik .vd (nagłówek " + magic + ")");
+  if (!(type in ACTIONS_BY_TYPE)) throw new Error(name + ": nieznany typ animacji " + type);
+  const nAct = ACTIONS_BY_TYPE[type], blocks = [];
+  for (let i = 0; i < nAct * 5; i++) {
+    const lookup = dv.getInt32(4 + 12 * i, true), length = dv.getInt32(8 + 12 * i, true), extra = dv.getInt32(12 + 12 * i, true);
+    const blk = {a: Math.floor(i / 5), d: i % 5, lookup, length, extra, palette: null, src: [], frames: [], dirty: false};
+    if (lookup > 0 && length > 0) {
+      const pal = []; for (let k = 0; k < 256; k++) pal.push(dv.getUint16(lookup + 2 * k, true) & 0x7FFF);
+      const start = lookup + 512, fc = dv.getInt32(start, true), offs = [];
+      for (let j = 0; j < fc; j++) offs.push(dv.getInt32(start + 4 + 4 * j, true));
+      for (const fo of offs) {
+        if (fo <= 0) { blk.src.push({cx: 0, cy: 0, w: 0, h: 0, idx: null}); continue; }
+        let p = start + fo;
+        const cx = dv.getInt16(p, true), cy = dv.getInt16(p + 2, true), w = dv.getUint16(p + 4, true), h = dv.getUint16(p + 6, true); p += 8;
+        const W = Math.max(w, 1), Hh = Math.max(h, 1), idx = new Int16Array(W * Hh).fill(-1);
+        for (;;) {
+          const hdr = dv.getUint32(p, true); p += 4;
+          if (hdr === END) break;
+          const n = hdr & 0xFFF; let dx = (hdr >>> 22) & 0x3FF, dy = (hdr >>> 12) & 0x3FF;
+          if (dx & 0x200) dx -= 0x400; if (dy & 0x200) dy -= 0x400;
+          const x = cx + dx, y = cy + h + dy;
+          if (y >= 0 && y < Hh) for (let t = 0; t < n; t++) { const xx = x + t; if (xx >= 0 && xx < W) idx[y * W + xx] = u8[p + t]; }
+          p += n;
+        }
+        blk.src.push({cx, cy, w, h, idx});
+      }
+      blk.palette = pal;
+    }
+    blocks.push(blk);
+  }
+  return {type, nAct, blocks, buf, name};
+}
+
+function extents(vd) {
+  const e = [0, 0, 0, 0];
+  for (const b of vd.blocks) for (const f of b.src) if (f.w > 0) {
+    e[0] = Math.max(e[0], f.cx); e[1] = Math.max(e[1], f.w - f.cx); e[2] = Math.max(e[2], f.cy + f.h); e[3] = Math.max(e[3], -f.cy);
+  }
+  return e;
+}
+
+// klatka w układzie płótna: {x0,y0,w,h,data(RGBA)} albo pusta {w:0}
+const EMPTY = () => ({x0: 0, y0: 0, w: 0, h: 0, data: null});
+function srcToFrame(s, pal, cv) {
+  if (!s || s.w <= 0 || s.h <= 0 || !s.idx) return EMPTY();
+  const x0 = cv.ax - s.cx, y0 = cv.ay - (s.cy + s.h), data = new Uint8ClampedArray(s.w * s.h * 4);
+  const lut = pal.map(c15rgb);
+  for (let i = 0; i < s.w * s.h; i++) { const k = s.idx[i]; if (k >= 0) { const c = lut[k]; data[i * 4] = c[0]; data[i * 4 + 1] = c[1]; data[i * 4 + 2] = c[2]; data[i * 4 + 3] = 255; } }
+  const f = {x0, y0, w: s.w, h: s.h, data};
+  return clipToCanvas(f, cv);
+}
+function clipToCanvas(f, cv) {
+  if (f.w === 0) return f;
+  const nx0 = Math.max(f.x0, 0), ny0 = Math.max(f.y0, 0), nx1 = Math.min(f.x0 + f.w, cv.W), ny1 = Math.min(f.y0 + f.h, cv.H);
+  if (nx1 <= nx0 || ny1 <= ny0) return EMPTY();
+  if (nx0 === f.x0 && ny0 === f.y0 && nx1 - nx0 === f.w && ny1 - ny0 === f.h) return f;
+  const w = nx1 - nx0, h = ny1 - ny0, data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) data.set(f.data.subarray(((y + ny0 - f.y0) * f.w + (nx0 - f.x0)) * 4, ((y + ny0 - f.y0) * f.w + (nx0 - f.x0) + w) * 4), y * w * 4);
+  return {x0: nx0, y0: ny0, w, h, data};
+}
+function toWork(f, cv) {
+  const wk = new Uint8ClampedArray(cv.W * cv.H * 4);
+  if (f.w > 0) for (let y = 0; y < f.h; y++) wk.set(f.data.subarray(y * f.w * 4, (y + 1) * f.w * 4), ((f.y0 + y) * cv.W + f.x0) * 4);
+  return wk;
+}
+function fromWork(wk, cv) {
+  let x0 = cv.W, y0 = cv.H, x1 = -1, y1 = -1;
+  for (let y = 0; y < cv.H; y++) for (let x = 0; x < cv.W; x++) if (wk[(y * cv.W + x) * 4 + 3] >= 128) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return EMPTY();
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const s = ((y0 + y) * cv.W + x0 + x) * 4, d = (y * w + x) * 4;
+    if (wk[s + 3] >= 128) { data[d] = wk[s]; data[d + 1] = wk[s + 1]; data[d + 2] = wk[s + 2]; data[d + 3] = 255; }
+  }
+  return {x0, y0, w, h, data};
+}
+
+function encodeFrame(f, idxOf, cv) {
+  // f: ramka w układzie płótna; pusta -> 1x1 pusta ramka (jak vdtool)
+  let w = 1, h = 1, cx = 0, cy = -1, idx = new Int16Array(1).fill(-1);
+  if (f.w > 0) { w = f.w; h = f.h; cx = cv.ax - f.x0; cy = (cv.ay - f.y0) - h; idx = idxOf(f); }
+  const out = [];
+  const push16 = v => out.push(v & 255, (v >> 8) & 255);
+  const push32 = v => out.push(v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255);
+  push16(cx); push16(cy); push16(w); push16(h);
+  for (let y = 0; y < h; y++) {
+    let x = 0;
+    while (x < w) {
+      if (idx[y * w + x] < 0) { x++; continue; }
+      const x0 = x; while (x < w && idx[y * w + x] >= 0 && x - x0 < 0xFFF) x++;
+      const dx = (x0 - cx) & 0x3FF, dy = (y - cy - h) & 0x3FF;
+      push32(((dx << 22) | (dy << 12) | (x - x0)) >>> 0);
+      for (let t = x0; t < x; t++) out.push(idx[y * w + t]);
+    }
+  }
+  push32(END);
+  return Uint8Array.from(out);
+}
+
+function buildPalette(frames) {
+  const cnt = new Map();
+  for (const f of frames) if (f.w > 0) for (let i = 0; i < f.w * f.h; i++) if (f.data[i * 4 + 3] >= 128) {
+    const c = rgb15(f.data[i * 4], f.data[i * 4 + 1], f.data[i * 4 + 2]); cnt.set(c, (cnt.get(c) || 0) + 1);
+  }
+  let colors = [...cnt.keys()], reduced = 0;
+  if (colors.length > 256) { colors = [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 256).map(e => e[0]); reduced = cnt.size - 256; }
+  const palette = colors.slice(); while (palette.length < 256) palette.push(0);
+  const rgbs = colors.map(c15rgb), lookup = new Map(colors.map((c, i) => [c, i])), near = new Map();
+  const idxOf = f => {
+    const idx = new Int16Array(f.w * f.h).fill(-1);
+    for (let i = 0; i < f.w * f.h; i++) if (f.data[i * 4 + 3] >= 128) {
+      const r = f.data[i * 4], g = f.data[i * 4 + 1], b = f.data[i * 4 + 2], c = rgb15(r, g, b);
+      let k = lookup.get(c);
+      if (k === undefined) { k = near.get(c); if (k === undefined) { let best = 1e9; k = 0; rgbs.forEach((q, j) => { const d = (q[0] - r) ** 2 + (q[1] - g) ** 2 + (q[2] - b) ** 2; if (d < best) { best = d; k = j; } }); near.set(c, k); } }
+      idx[i] = k;
+    }
+    return idx;
+  };
+  return {palette, idxOf, reduced};
+}
+
+function writeVD(vd, frames, cv) {
+  // frames: blocks[i] -> lista klatek (układ płótna). Bloki niezmienione kopiowane bajt w bajt.
+  const parts = [], n = vd.blocks.length;
+  const head = new DataView(new ArrayBuffer(4 + 12 * n)); head.setInt16(0, MAGIC, true); head.setInt16(2, vd.type, true);
+  let off = 4 + 12 * n, reducedTotal = 0;
+  vd.blocks.forEach((blk, i) => {
+    let data = null, extra = 0;
+    if (!blk.dirty) {
+      if (blk.lookup > 0 && blk.length > 0) { data = new Uint8Array(vd.buf, blk.lookup, blk.length); extra = blk.extra; }
+    } else if (frames[i].length) {
+      const bp = buildPalette(frames[i]); reducedTotal += bp.reduced;
+      const fb = frames[i].map(f => encodeFrame(f, bp.idxOf, cv));
+      const total = 512 + 4 + 4 * fb.length + fb.reduce((s, b) => s + b.length, 0);
+      data = new Uint8Array(total); const dv = new DataView(data.buffer);
+      bp.palette.forEach((c, k) => dv.setUint16(2 * k, c, true));
+      dv.setInt32(512, fb.length, true);
+      let o = 4 + 4 * fb.length, p = 512 + 4 + 4 * fb.length;
+      fb.forEach((b, k) => { dv.setInt32(512 + 4 + 4 * k, o, true); data.set(b, p); p += b.length; o += b.length; });
+    }
+    if (data) { head.setInt32(4 + 12 * i, off, true); head.setInt32(8 + 12 * i, data.length, true); head.setInt32(12 + 12 * i, extra, true); parts.push(data); off += data.length; }
+    else { head.setInt32(4 + 12 * i, -1, true); head.setInt32(8 + 12 * i, -1, true); head.setInt32(12 + 12 * i, -1, true); }
+  });
+  return {blob: new Blob([head.buffer, ...parts], {type: "application/octet-stream"}), reducedTotal};
+}
+
+/* ============================================================ ZIP (store) */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function makeZip(files) {
+  const enc = new TextEncoder(), chunks = [], central = []; let off = 0;
+  for (const f of files) {
+    const nm = enc.encode(f.name), crc = crc32(f.data), h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true); h.setUint16(10, 0, true); h.setUint16(12, 0x21, true);
+    h.setUint32(14, crc, true); h.setUint32(18, f.data.length, true); h.setUint32(22, f.data.length, true); h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+    chunks.push(new Uint8Array(h.buffer), nm, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true); c.setUint16(12, 0, true); c.setUint16(14, 0x21, true);
+    c.setUint32(16, crc, true); c.setUint32(20, f.data.length, true); c.setUint32(24, f.data.length, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + f.data.length;
+  }
+  const csize = central.reduce((s, b) => s + b.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csize, true); e.setUint32(16, off, true);
+  return new Blob([...chunks, ...central, new Uint8Array(e.buffer)], {type: "application/zip"});
+}
+
+/* ============================================================ stan */
+const $ = id => document.getElementById(id);
+const S = {
+  body: null, item: null, cv: {W: 192, H: 192, ax: 96, ay: 136},
+  bodyFrames: [], itemFrames: [],          // [blok][klatka] w układzie płótna
+  a: 0, d: 0, f: 0, tool: "pencil", c1: [136, 26, 32], c2: [255, 255, 255], brush: 1,
+  zoom: 8, panX: 20, panY: 20, undo: [], redo: [], clip: null, sel: null, playing: false, timer: null,
+  drag: null, hover: null, space: false, tintCache: new Map(), paletteMode: "frame"
+};
+const nBlock = () => S.a * 5 + S.d;
+const frameCount = bi => Math.max(S.bodyFrames[bi] ? S.bodyFrames[bi].length : 0, S.itemFrames[bi] ? S.itemFrames[bi].length : 0);
+const itemFrame = (bi, f) => (S.itemFrames[bi] && S.itemFrames[bi][f]) || EMPTY();
+const bodyFrame = (bi, f) => (S.bodyFrames[bi] && S.bodyFrames[bi][f]) || EMPTY();
+const hex = c => "#" + c.map(v => v.toString(16).padStart(2, "0")).join("");
+const parseHex = s => { const m = /^#?([0-9a-f]{6})$/i.exec(s.trim()); return m ? [0, 2, 4].map(i => parseInt(m[1].substr(i, 2), 16)) : null; };
+let toastT = 0;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = "none", 2600); }
+
+/* ---------- ładowanie */
+function autoCanvas() {
+  const e = [0, 0, 0, 0];
+  for (const v of [S.body, S.item]) if (v) { const x = extents(v); for (let i = 0; i < 4; i++) e[i] = Math.max(e[i], x[i]); }
+  const m = 28, side = Math.max(e[0], e[1]) + m, up = e[2] + m, down = e[3] + m;
+  S.cv = {W: 2 * side, H: up + down, ax: side, ay: up};
+}
+function rebuildFrames() {
+  autoCanvas();
+  S.bodyFrames = S.body ? S.body.blocks.map(b => b.src.map(s => srcToFrame(s, b.palette, S.cv))) : [];
+  const old = S.itemFrames;
+  S.itemFrames = S.item ? S.item.blocks.map(b => b.src.map(s => srcToFrame(s, b.palette, S.cv))) : [];
+  S.tintCache.clear();
+}
+async function loadFile(kind, file) {
+  if (kind === "body" && S.item && S.item.blocks.some(b => b.dirty) && S.undo.length && !confirm("Wczytanie body przebuduje płótno i odrzuci niezapisane zmiany przedmiotu. Kontynuować?")) return;
+  try {
+    const vd = parseVD(await file.arrayBuffer(), file.name);
+    if (kind === "body") S.body = vd; else S.item = vd;
+    if (S.body && S.item && S.body.type !== S.item.type) { toast("Uwaga: różne typy animacji body/przedmiot"); }
+    S.undo = []; S.redo = []; S.sel = null;
+    rebuildFrames(); S.f = 0; fitView(); refreshAll();
+    toast((kind === "body" ? "Body: " : "Przedmiot: ") + file.name + " (" + vd.blocks.filter(b => b.src.length).length + " bloków)");
+  } catch (e) { toast(e.message); console.error(e); }
+}
+function newEmptyItem() {
+  if (!S.body) { toast("Najpierw wczytaj body"); return; }
+  // minimalny pusty .vd: bloki bez danych, klatki puste jak w body
+  const type = S.body.type, n = S.body.blocks.length, buf = new ArrayBuffer(4 + 12 * n), dv = new DataView(buf);
+  dv.setInt16(0, MAGIC, true); dv.setInt16(2, type, true);
+  for (let i = 0; i < n; i++) { dv.setInt32(4 + 12 * i, -1, true); dv.setInt32(8 + 12 * i, -1, true); dv.setInt32(12 + 12 * i, -1, true); }
+  const vd = parseVD(buf, "nowy_przedmiot.vd");
+  S.item = vd; S.itemFrames = vd.blocks.map((b, i) => (S.bodyFrames[i] || []).map(() => EMPTY()));
+  vd.blocks.forEach((b, i) => { b.dirty = true; });
+  S.undo = []; S.redo = []; refreshAll(); toast("Pusty przedmiot: " + S.itemFrames.reduce((s, x) => s + x.length, 0) + " klatek");
+}
+
+/* ---------- body: kolorowanie */
+function tintedBody(f) {
+  if (f.w === 0 || !$("cTint").checked) return f;
+  const key = f, rgb = [+$("tintR").value, +$("tintG").value, +$("tintB").value].join(",");
+  let e = S.tintCache.get(key);
+  if (e && e.rgb === rgb) return e.f;
+  const k = rgb.split(",").map(v => v / 113.3), data = new Uint8ClampedArray(f.data.length);
+  for (let i = 0; i < f.data.length; i += 4) { const g = (f.data[i] + f.data[i + 1] + f.data[i + 2]) / 3; data[i] = g * k[0]; data[i + 1] = g * k[1]; data[i + 2] = g * k[2]; data[i + 3] = f.data[i + 3]; }
+  const nf = {x0: f.x0, y0: f.y0, w: f.w, h: f.h, data}; S.tintCache.set(key, {rgb, f: nf}); return nf;
+}
+
+/* ============================================================ rysowanie widoku */
+const cvEl = $("cv"), ctx = cvEl.getContext("2d"), ovEl = $("ov"), octx = ovEl.getContext("2d"), viewEl = $("view");
+let imgData = null;
+function blit(out, f, alpha, W) {
+  if (f.w === 0) return;
+  for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) {
+    const s = (y * f.w + x) * 4; if (f.data[s + 3] < 128) continue;
+    const d = ((f.y0 + y) * W + f.x0 + x) * 4;
+    if (alpha >= 1) { out[d] = f.data[s]; out[d + 1] = f.data[s + 1]; out[d + 2] = f.data[s + 2]; }
+    else { out[d] += (f.data[s] - out[d]) * alpha; out[d + 1] += (f.data[s + 1] - out[d + 1]) * alpha; out[d + 2] += (f.data[s + 2] - out[d + 2]) * alpha; }
+    out[d + 3] = 255;
+  }
+}
+function blitWork(out, wk, alpha, W, H) {
+  for (let i = 0; i < W * H; i++) if (wk[i * 4 + 3] >= 128) {
+    const d = i * 4;
+    if (alpha >= 1) { out[d] = wk[d]; out[d + 1] = wk[d + 1]; out[d + 2] = wk[d + 2]; }
+    else { out[d] += (wk[d] - out[d]) * alpha; out[d + 1] += (wk[d + 1] - out[d + 1]) * alpha; out[d + 2] += (wk[d + 2] - out[d + 2]) * alpha; }
+    out[d + 3] = 255;
+  }
+}
+function composeLayers(workOverride) {
+  const {W, H} = S.cv, bi = nBlock(), out = new Uint8ClampedArray(W * H * 4), bg = parseHex($("bgc").value) || [84, 104, 84];
+  for (let i = 0; i < W * H; i++) { out[i * 4] = bg[0]; out[i * 4 + 1] = bg[1]; out[i * 4 + 2] = bg[2]; out[i * 4 + 3] = 255; }
+  if ($("cBody").checked) blit(out, tintedBody(bodyFrame(bi, S.f)), 1, W);
+  const ia = +$("itemAlpha").value / 100;
+  if ($("cOnion").checked && $("cItem").checked) {
+    const n = frameCount(bi);
+    if (n > 1) { blit(out, itemFrame(bi, (S.f + n - 1) % n), 0.28 * ia, W); blit(out, itemFrame(bi, (S.f + 1) % n), 0.28 * ia, W); }
+  }
+  if ($("cItem").checked) { if (workOverride) blitWork(out, workOverride, ia, W, H); else blit(out, itemFrame(bi, S.f), ia, W); }
+  return out;
+}
+let renderQueued = false;
+function render(workOverride) {
+  if (!S.body && !S.item) { cvEl.style.display = "none"; ovEl.style.display = "none"; return; }
+  cvEl.style.display = ovEl.style.display = "block";
+  const {W, H} = S.cv;
+  if (cvEl.width !== W || cvEl.height !== H) { cvEl.width = W; cvEl.height = H; imgData = null; }
+  if (!imgData) imgData = ctx.createImageData(W, H);
+  imgData.data.set(composeLayers(workOverride || (S.drag && S.drag.preview) || null));
+  ctx.putImageData(imgData, 0, 0);
+  cvEl.style.width = W * S.zoom + "px"; cvEl.style.height = H * S.zoom + "px"; cvEl.style.left = S.panX + "px"; cvEl.style.top = S.panY + "px";
+  drawOverlay();
+}
+function queueRender() { if (!renderQueued) { renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); } }
+function drawOverlay() {
+  const w = viewEl.clientWidth, h = viewEl.clientHeight;
+  if (ovEl.width !== w || ovEl.height !== h) { ovEl.width = w; ovEl.height = h; }
+  octx.clearRect(0, 0, w, h);
+  const {W, H, ax, ay} = S.cv, z = S.zoom, X = S.panX, Y = S.panY;
+  if ($("cGrid").checked && z >= 6) {
+    octx.strokeStyle = "rgba(255,255,255,.10)"; octx.lineWidth = 1; octx.beginPath();
+    for (let x = 0; x <= W; x++) { octx.moveTo(Math.round(X + x * z) + .5, Y); octx.lineTo(Math.round(X + x * z) + .5, Y + H * z); }
+    for (let y = 0; y <= H; y++) { octx.moveTo(X, Math.round(Y + y * z) + .5); octx.lineTo(X + W * z, Math.round(Y + y * z) + .5); }
+    octx.stroke();
+  }
+  if ($("cAnchor").checked) {
+    octx.strokeStyle = "rgba(255,210,60,.65)"; octx.lineWidth = 1; octx.beginPath();
+    octx.moveTo(X + ax * z, Y); octx.lineTo(X + ax * z, Y + H * z); octx.moveTo(X, Y + ay * z); octx.lineTo(X + W * z, Y + ay * z); octx.stroke();
+  }
+  if (S.sel) {
+    const s = S.sel, off = S.drag && S.drag.tool === "move" && S.drag.selMove ? S.drag.selMove : [0, 0];
+    octx.setLineDash([5, 4]); octx.strokeStyle = "#fff"; octx.lineWidth = 1.5;
+    octx.strokeRect(X + (s.x0 + off[0]) * z + .5, Y + (s.y0 + off[1]) * z + .5, (s.x1 - s.x0 + 1) * z - 1, (s.y1 - s.y0 + 1) * z - 1);
+    octx.setLineDash([]);
+  }
+  if (S.drag && S.drag.shape) {                                              // podgląd linii / ramki
+    const sh = S.drag.shape; octx.strokeStyle = "#fff"; octx.lineWidth = 1;
+    for (const [px, py] of sh) octx.strokeRect(X + px * z + .5, Y + py * z + .5, z - 1, z - 1);
+  }
+  if (S.hover && ["pencil", "eraser", "fill", "picker"].includes(S.tool)) {
+    const b = (S.tool === "pencil" || S.tool === "eraser") ? S.brush : 1, o = Math.floor((b - 1) / 2);
+    octx.strokeStyle = "#fff"; octx.lineWidth = 1; octx.strokeRect(X + (S.hover[0] - o) * z + .5, Y + (S.hover[1] - o) * z + .5, b * z - 1, b * z - 1);
+  }
+}
+
+/* ============================================================ edycja: operacje */
+function pushUndo(changes, label) {
+  const real = changes.filter(c => c.old !== c.new); if (!real.length) return;
+  S.undo.push({changes: real, label}); if (S.undo.length > 200) S.undo.shift(); S.redo = []; refreshButtons();
+}
+function setFrame(bi, f, nf) {                                               // zapis klatki przedmiotu (kopia przy zapisie: stare obiekty zostają w historii)
+  if (!S.itemFrames[bi]) S.itemFrames[bi] = []; const n = frameCount(bi);
+  while (S.itemFrames[bi].length < n) S.itemFrames[bi].push(EMPTY());
+  S.itemFrames[bi][f] = nf; if (S.item) S.item.blocks[bi].dirty = true;
+}
+function applyChanges(list, dir) {
+  for (const c of list) setFrame(c.bi, c.f, dir === "undo" ? c.old : c.new);
+  refreshAll();
+}
+function doUndo() { const e = S.undo.pop(); if (!e) return; applyChanges(e.changes, "undo"); S.redo.push(e); refreshButtons(); toast("Cofnięto: " + e.label); }
+function doRedo() { const e = S.redo.pop(); if (!e) return; applyChanges(e.changes, "redo"); S.undo.push(e); refreshButtons(); toast("Ponowiono: " + e.label); }
+function ensureItem() { if (!S.item) { toast("Najpierw wczytaj przedmiot albo utwórz pusty"); return false; } return true; }
+
+function scopeFrames() {                                                      // lista {bi,f} wg zakresu
+  const sc = $("scope").value, out = [];
+  const addBlock = bi => { const n = frameCount(bi); for (let f = 0; f < n; f++) out.push({bi, f}); };
+  if (sc === "frame") out.push({bi: nBlock(), f: S.f});
+  else if (sc === "dir") addBlock(nBlock());
+  else if (sc === "action") for (let d = 0; d < 5; d++) addBlock(S.a * 5 + d);
+  else for (let bi = 0; bi < (S.item ? S.item.blocks.length : 0); bi++) addBlock(bi);
+  return out;
+}
+function shiftFrame(f, dx, dy) { if (f.w === 0) return f; return clipToCanvas({x0: f.x0 + dx, y0: f.y0 + dy, w: f.w, h: f.h, data: f.data}, S.cv); }
+function moveScope(dx, dy) {
+  if (!ensureItem() || (!dx && !dy)) return;
+  const ch = []; for (const {bi, f} of scopeFrames()) { const o = itemFrame(bi, f), n = shiftFrame(o, dx, dy); ch.push({bi, f, old: o, new: n}); }
+  for (const c of ch) if (c.old !== c.new) setFrame(c.bi, c.f, c.new);
+  pushUndo(ch, "przesunięcie " + dx + "," + dy + " (" + ch.length + " kl.)"); refreshAll();
+}
+function clipScope() {
+  if (!ensureItem()) return; const r = +$("clipN").value, {W, H} = S.cv, ch = [];
+  for (const {bi, f} of scopeFrames()) {
+    const o = itemFrame(bi, f); if (o.w === 0) continue;
+    const bf = bodyFrame(bi, f), mask = new Uint8Array(W * H);
+    for (let y = 0; y < bf.h; y++) for (let x = 0; x < bf.w; x++) if (bf.data[(y * bf.w + x) * 4 + 3] >= 128) mask[(bf.y0 + y) * W + bf.x0 + x] = 1;
+    let m = mask; for (let it = 0; it < r; it++) { const n2 = m.slice(); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x]) { if (x > 0) n2[y * W + x - 1] = 1; if (x < W - 1) n2[y * W + x + 1] = 1; if (y > 0) n2[(y - 1) * W + x] = 1; if (y < H - 1) n2[(y + 1) * W + x] = 1; } m = n2; }
+    const wk = toWork(o, S.cv); let any = false;
+    for (let i = 0; i < W * H; i++) if (wk[i * 4 + 3] >= 128 && !m[i]) { wk[i * 4 + 3] = 0; any = true; }
+    if (any) ch.push({bi, f, old: o, new: fromWork(wk, S.cv)});
+  }
+  for (const c of ch) setFrame(c.bi, c.f, c.new);
+  pushUndo(ch, "przycięcie do body"); refreshAll(); toast("Przycięto " + ch.length + " klatek");
+}
+function clearFrame() {
+  if (!ensureItem()) return; const bi = nBlock(), o = itemFrame(bi, S.f); if (o.w === 0) return;
+  const n = EMPTY(); setFrame(bi, S.f, n); pushUndo([{bi, f: S.f, old: o, new: n}], "wyczyszczenie klatki"); refreshAll();
+}
+function copyFrame() { S.clip = itemFrame(nBlock(), S.f); toast("Skopiowano warstwę przedmiotu klatki " + S.f); }
+function pasteFrame() {
+  if (!S.clip || !ensureItem()) return; const bi = nBlock(), o = itemFrame(bi, S.f);
+  setFrame(bi, S.f, S.clip); pushUndo([{bi, f: S.f, old: o, new: S.clip}], "wklejenie klatki"); refreshAll();
+}
+
+/* ---------- narzędzia rysowania na płótnie roboczym */
+function inb(x, y) { return x >= 0 && y >= 0 && x < S.cv.W && y < S.cv.H; }
+function stamp(wk, x, y, col, b) {
+  const o = Math.floor((b - 1) / 2), W = S.cv.W;
+  for (let j = 0; j < b; j++) for (let i = 0; i < b; i++) {
+    const px = x - o + i, py = y - o + j; if (!inb(px, py)) continue; const d = (py * W + px) * 4;
+    if (col) { wk[d] = col[0]; wk[d + 1] = col[1]; wk[d + 2] = col[2]; wk[d + 3] = 255; } else { wk[d + 3] = 0; }
+  }
+}
+function linePts(x0, y0, x1, y1) {
+  const pts = [], dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx - dy;
+  for (;;) { pts.push([x0, y0]); if (x0 === x1 && y0 === y1) break; const e2 = 2 * err; if (e2 > -dy) { err -= dy; x0 += sx; } if (e2 < dx) { err += dx; y0 += sy; } }
+  return pts;
+}
+function rectPts(x0, y0, x1, y1, fill) {
+  const pts = [], xa = Math.min(x0, x1), xb = Math.max(x0, x1), ya = Math.min(y0, y1), yb = Math.max(y0, y1);
+  for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) if (fill || x === xa || x === xb || y === ya || y === yb) pts.push([x, y]);
+  return pts;
+}
+function floodFill(wk, x, y, col) {
+  const {W, H} = S.cv, at = (px, py) => { const d = (py * W + px) * 4; return wk[d + 3] >= 128 ? (wk[d] << 16 | wk[d + 1] << 8 | wk[d + 2]) : -1; };
+  const target = at(x, y), repl = col ? (col[0] << 16 | col[1] << 8 | col[2]) : -1; if (target === repl) return;
+  const st = [[x, y]];
+  while (st.length) {
+    const [px, py] = st.pop(); if (!inb(px, py) || at(px, py) !== target) continue; const d = (py * W + px) * 4;
+    if (col) { wk[d] = col[0]; wk[d + 1] = col[1]; wk[d + 2] = col[2]; wk[d + 3] = 255; } else wk[d + 3] = 0;
+    st.push([px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]);
+  }
+}
+function sampleAt(x, y, src) {
+  if (!inb(x, y)) return null; const {W} = S.cv, bi = nBlock();
+  const frameAt = (f, tint) => { const ff = tint ? tintedBody(f) : f; const lx = x - ff.x0, ly = y - ff.y0; if (ff.w === 0 || lx < 0 || ly < 0 || lx >= ff.w || ly >= ff.h) return null; const s = (ly * ff.w + lx) * 4; return ff.data[s + 3] >= 128 ? [ff.data[s], ff.data[s + 1], ff.data[s + 2]] : null; };
+  if (src === "item") return frameAt(itemFrame(bi, S.f), false);
+  if (src === "body") return frameAt(bodyFrame(bi, S.f), false);
+  const d = composeLayers(null), i = (y * W + x) * 4; return [d[i], d[i + 1], d[i + 2]];
+}
+function setColor(slot, c) {
+  if (!c) return; const col = c.map(v => Math.round(v));
+  if (slot === 1) { S.c1 = col; $("prim").value = hex(col); $("hex1").value = hex(col); } else { S.c2 = col; $("sec").value = hex(col); $("hex2").value = hex(col); }
+  refreshPalette();
+}
+
+/* ---------- zdarzenia wskaźnika */
+function toPx(e) { const r = viewEl.getBoundingClientRect(); return [Math.floor((e.clientX - r.left - S.panX) / S.zoom), Math.floor((e.clientY - r.top - S.panY) / S.zoom)]; }
+viewEl.addEventListener("contextmenu", e => e.preventDefault());
+viewEl.addEventListener("pointerdown", e => {
+  if (!S.body && !S.item) return;
+  viewEl.setPointerCapture(e.pointerId);
+  if (e.button === 1 || S.space) { S.drag = {pan: true, sx: e.clientX, sy: e.clientY, px: S.panX, py: S.panY}; return; }
+  const [x, y] = toPx(e), slot = e.button === 2 ? 2 : 1, col = slot === 1 ? S.c1 : S.c2;
+  let tool = S.tool; if (e.altKey) tool = "picker";
+  if (tool === "picker") { const c = sampleAt(x, y, $("pickSrc").value); if (c) { setColor(slot, c); } S.drag = {tool: "picker"}; return; }
+  if (!ensureItem()) return;
+  const bi = nBlock(), cur = itemFrame(bi, S.f);
+  if (tool === "pencil" || tool === "eraser") {
+    const wk = toWork(cur, S.cv); S.drag = {tool, bi, old: cur, work: wk, preview: wk, last: [x, y], slot};
+    stamp(wk, x, y, tool === "pencil" ? col : null, S.brush); queueRender();
+  } else if (tool === "fill") {
+    const wk = toWork(cur, S.cv); if (inb(x, y)) { floodFill(wk, x, y, e.button === 2 ? S.c2 : S.c1); const nf = fromWork(wk, S.cv); setFrame(bi, S.f, nf); pushUndo([{bi, f: S.f, old: cur, new: nf}], "wypełnienie"); refreshAll(); }
+  } else if (tool === "line" || tool === "rect" || tool === "rectf") {
+    S.drag = {tool, bi, old: cur, start: [x, y], slot, shape: [[x, y]]}; queueRender();
+  } else if (tool === "select") {
+    S.drag = {tool, start: [x, y]}; S.sel = {x0: x, y0: y, x1: x, y1: y}; queueRender();
+  } else if (tool === "move") {
+    const inSel = S.sel && x >= S.sel.x0 && x <= S.sel.x1 && y >= S.sel.y0 && y <= S.sel.y1;
+    S.drag = {tool, bi, old: cur, start: [x, y], selMove: inSel ? [0, 0] : null, delta: [0, 0]};
+    if (!inSel && S.sel) S.sel = null;
+  }
+});
+viewEl.addEventListener("pointermove", e => {
+  const [x, y] = toPx(e); S.hover = [x, y]; updateStatus(x, y);
+  const d = S.drag; if (!d) { queueRender(); return; }
+  if (d.pan) { S.panX = d.px + e.clientX - d.sx; S.panY = d.py + e.clientY - d.sy; queueRender(); return; }
+  if (d.tool === "picker") { const c = sampleAt(x, y, $("pickSrc").value); if (c && (e.buttons & 3)) setColor(e.buttons & 2 ? 2 : 1, c); return; }
+  if (d.tool === "pencil" || d.tool === "eraser") {
+    const col = d.tool === "pencil" ? (d.slot === 2 ? S.c2 : S.c1) : null;
+    for (const [px, py] of linePts(d.last[0], d.last[1], x, y)) stamp(d.work, px, py, col, S.brush); d.last = [x, y]; queueRender();
+  } else if (d.tool === "line" || d.tool === "rect" || d.tool === "rectf") {
+    let [sx, sy] = d.start, tx = x, ty = y;
+    if (e.shiftKey) { if (d.tool === "line") { const ax = Math.abs(tx - sx), ay = Math.abs(ty - sy); if (ax > 2 * ay) ty = sy; else if (ay > 2 * ax) tx = sx; else { const m = Math.max(ax, ay); tx = sx + Math.sign(tx - sx) * m; ty = sy + Math.sign(ty - sy) * m; } } else { const m = Math.max(Math.abs(tx - sx), Math.abs(ty - sy)); tx = sx + Math.sign(tx - sx || 1) * m; ty = sy + Math.sign(ty - sy || 1) * m; } }
+    d.end = [tx, ty]; d.shape = d.tool === "line" ? linePts(sx, sy, tx, ty) : rectPts(sx, sy, tx, ty, d.tool === "rectf"); queueRender();
+  } else if (d.tool === "select") {
+    S.sel = {x0: Math.min(d.start[0], x), y0: Math.min(d.start[1], y), x1: Math.max(d.start[0], x), y1: Math.max(d.start[1], y)}; queueRender();
+  } else if (d.tool === "move") {
+    d.delta = [x - d.start[0], y - d.start[1]];
+    const wk = toWork(d.old, S.cv), {W} = S.cv;
+    if (d.selMove) {                                                          // przesuwanie tylko zaznaczonych pikseli
+      d.selMove = d.delta.slice(); const s = S.sel, lift = [];
+      for (let yy = s.y0; yy <= s.y1; yy++) for (let xx = s.x0; xx <= s.x1; xx++) if (inb(xx, yy)) { const i = (yy * W + xx) * 4; if (wk[i + 3] >= 128) { lift.push([xx, yy, wk[i], wk[i + 1], wk[i + 2]]); wk[i + 3] = 0; } }
+      for (const [xx, yy, r, g, b] of lift) { const nx = xx + d.delta[0], ny = yy + d.delta[1]; if (inb(nx, ny)) { const i = (ny * W + nx) * 4; wk[i] = r; wk[i + 1] = g; wk[i + 2] = b; wk[i + 3] = 255; } }
+      d.preview = wk;
+    } else d.preview = toWork(shiftFrame(d.old, d.delta[0], d.delta[1]), S.cv);
+    queueRender();
+  }
+});
+function endDrag() {
+  const d = S.drag; S.drag = null; if (!d) return;
+  if (d.pan || d.tool === "picker") return;
+  if (d.tool === "pencil" || d.tool === "eraser") { const nf = fromWork(d.work, S.cv); setFrame(d.bi, S.f, nf); pushUndo([{bi: d.bi, f: S.f, old: d.old, new: nf}], d.tool === "pencil" ? "rysowanie" : "gumowanie"); }
+  else if ((d.tool === "line" || d.tool === "rect" || d.tool === "rectf") && d.shape) {
+    const wk = toWork(d.old, S.cv), col = d.slot === 2 ? S.c2 : S.c1; for (const [x, y] of d.shape) stamp(wk, x, y, col, S.brush);
+    const nf = fromWork(wk, S.cv); setFrame(d.bi, S.f, nf); pushUndo([{bi: d.bi, f: S.f, old: d.old, new: nf}], "kształt");
+  } else if (d.tool === "move") {
+    if (d.selMove && (d.delta[0] || d.delta[1])) {
+      const nf = fromWork(d.preview, S.cv); setFrame(d.bi, S.f, nf); pushUndo([{bi: d.bi, f: S.f, old: d.old, new: nf}], "przesunięcie zaznaczenia");
+      S.sel = {x0: S.sel.x0 + d.delta[0], y0: S.sel.y0 + d.delta[1], x1: S.sel.x1 + d.delta[0], y1: S.sel.y1 + d.delta[1]};
+    } else if (!d.selMove && (d.delta[0] || d.delta[1])) moveScope(d.delta[0], d.delta[1]);
+  }
+  refreshAll();
+}
+viewEl.addEventListener("pointerup", endDrag); viewEl.addEventListener("pointercancel", endDrag);
+viewEl.addEventListener("pointerleave", () => { S.hover = null; updateStatus(); queueRender(); });
+viewEl.addEventListener("wheel", e => {
+  e.preventDefault(); const r = viewEl.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const nz = Math.max(1, Math.min(64, S.zoom * (e.deltaY < 0 ? 1.2 : 1 / 1.2))), z = Math.round(nz * 4) / 4;
+  S.panX = mx - (mx - S.panX) * z / S.zoom; S.panY = my - (my - S.panY) * z / S.zoom; S.zoom = z; $("zoomV").textContent = (Math.round(z * 10) / 10) + "×"; queueRender();
+}, {passive: false});
+function fitView() {                                                           // zoom na postać (nie na całe płótno): ~80 x 100 px wokół tułowia
+  const w = viewEl.clientWidth, h = viewEl.clientHeight, {W, H, ax, ay} = S.cv;
+  S.zoom = Math.max(2, Math.min(24, Math.floor(Math.min(w / 84, h / 104) * 4) / 4));
+  S.panX = Math.round(w / 2 - ax * S.zoom); S.panY = Math.round(h / 2 - (ay - 62) * S.zoom); $("zoomV").textContent = S.zoom + "×";
+}
+function setZoom(z) { const w = viewEl.clientWidth / 2, h = viewEl.clientHeight / 2; S.panX = w - (w - S.panX) * z / S.zoom; S.panY = h - (h - S.panY) * z / S.zoom; S.zoom = z; $("zoomV").textContent = z + "×"; queueRender(); }
+
+/* ============================================================ interfejs */
+function refreshButtons() {
+  $("bUndo").disabled = !S.undo.length; $("bRedo").disabled = !S.redo.length;
+  $("bSave").disabled = !S.item; $("bPng").disabled = !(S.body || S.item); $("bZip").disabled = !S.item;
+  document.querySelectorAll("[data-tool]").forEach(b => b.classList.toggle("on", b.dataset.tool === S.tool));
+  const dirty = S.item ? S.item.blocks.filter(b => b.dirty).length : 0;
+  $("fileInfo").textContent = (S.body ? "body: " + S.body.name : "") + (S.item ? "   przedmiot: " + S.item.name + (dirty ? " (zmienione bloki: " + dirty + ")" : "") : "");
+}
+function refreshActions() {
+  const type = (S.body || S.item || {}).type; if (type === undefined) return; const box = $("actions"), n = (S.body || S.item).nAct; box.innerHTML = "";
+  for (let a = 0; a < n; a++) {
+    let cnt = 0; for (let d = 0; d < 5; d++) cnt = Math.max(cnt, frameCount(a * 5 + d));
+    const el = document.createElement("div"); el.textContent = String(a).padStart(2, "0") + " " + actName(type, a) + " (" + cnt + ")"; el.classList.toggle("on", a === S.a);
+    el.onclick = () => { S.a = a; S.f = 0; refreshAll(); }; box.appendChild(el);
+  }
+  const on = box.querySelector(".on"); if (on) on.scrollIntoView({block: "nearest"});
+  const ds = $("dirs"); ds.innerHTML = ""; for (let d = 0; d < 5; d++) { const b = document.createElement("button"); b.textContent = d; b.classList.toggle("on", d === S.d); b.title = "kierunek " + d + " (klawisz " + (d + 1) + ")"; b.onclick = () => { S.d = d; S.f = 0; refreshAll(); }; ds.appendChild(b); }
+}
+function refreshFrames() {
+  const bi = nBlock(), n = frameCount(bi), box = $("frames"); box.innerHTML = ""; if (S.f >= n) S.f = Math.max(0, n - 1);
+  for (let f = 0; f < n; f++) { const b = document.createElement("button"); b.textContent = f; b.classList.toggle("on", f === S.f); if (itemFrame(bi, f).w > 0) b.style.borderColor = "#5a7"; b.onclick = () => { S.f = f; refreshAll(); }; box.appendChild(b); }
+  $("fInfo").textContent = "(" + n + " w bloku)";
+}
+function refreshPalette() {
+  const bi = nBlock(), cols = new Map(); const addF = f => { if (f.w > 0) for (let i = 0; i < f.w * f.h; i++) if (f.data[i * 4 + 3] >= 128) { const k = f.data[i * 4] << 16 | f.data[i * 4 + 1] << 8 | f.data[i * 4 + 2]; cols.set(k, (cols.get(k) || 0) + 1); } };
+  if (S.paletteMode === "frame") addF(itemFrame(bi, S.f)); else { for (let f = 0; f < frameCount(bi); f++) addF(itemFrame(bi, f)); }
+  const box = $("pal"); box.innerHTML = "";
+  [...cols.entries()].sort((a, b) => b[1] - a[1]).slice(0, 96).forEach(([k]) => {
+    const c = [k >> 16, (k >> 8) & 255, k & 255], s = document.createElement("span"); s.className = "sw" + (hex(c) === hex(S.c1) ? " sel" : ""); s.style.background = hex(c); s.title = hex(c) + " (klik: kolor 1, Shift+klik: kolor 2)";
+    s.onclick = e => setColor(e.shiftKey ? 2 : 1, c); box.appendChild(s);
+  });
+  if (!cols.size) box.innerHTML = '<span class="hint">brak pikseli przedmiotu w tej klatce / bloku</span>';
+}
+function updateStatus(x, y) {
+  if (x === undefined) { $("sPos").textContent = "–"; $("sRel").textContent = "–"; $("sCol").textContent = "–"; return; }
+  $("sPos").textContent = x + ", " + y; $("sRel").textContent = (x - S.cv.ax) + ", " + (y - S.cv.ay);
+  const c = sampleAt(x, y, $("pickSrc").value); $("sCol").textContent = c ? hex(c) + "  (" + c.join(", ") + ")" : "–";
+}
+function refreshAll() {
+  refreshButtons(); refreshActions(); refreshFrames(); refreshPalette();
+  const bi = nBlock(); $("sFrm").textContent = "akcja " + S.a + " kier. " + S.d + " klatka " + S.f + "/" + Math.max(frameCount(bi) - 1, 0);
+  $("drop").style.display = (S.body || S.item) ? "none" : "flex"; render();
+}
+
+/* ---------- eksport */
+function download(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+function saveVD() {
+  if (!S.item) return;
+  const frames = S.item.blocks.map((b, i) => { const n = frameCount(i), arr = []; for (let f = 0; f < n; f++) arr.push(itemFrame(i, f)); return arr; });
+  const r = writeVD(S.item, frames, S.cv);
+  const name = S.item.name.replace(/\.vd$/i, "") + "_edit.vd"; download(r.blob, name);
+  toast("Zapisano " + name + (r.reducedTotal ? " (uwaga: zredukowano " + r.reducedTotal + " kolorów do 256 w bloku)" : ""));
+}
+function pngOfFrames(frameList, W, H) {
+  const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d"), id = x.createImageData(W, H);
+  for (const f of frameList) if (f.w > 0) for (let yy = 0; yy < f.h; yy++) for (let xx = 0; xx < f.w; xx++) { const s = (yy * f.w + xx) * 4; if (f.data[s + 3] < 128) continue; const d = ((f.y0 + yy) * W + f.x0 + xx) * 4; id.data[d] = f.data[s]; id.data[d + 1] = f.data[s + 1]; id.data[d + 2] = f.data[s + 2]; id.data[d + 3] = 255; }
+  x.putImageData(id, 0, 0); return new Promise(res => c.toBlob(res, "image/png"));
+}
+$("bPng").onclick = () => {
+  const {W, H} = S.cv; const c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").putImageData(new ImageData(composeLayers(null), W, H), 0, 0);
+  c.toBlob(b => download(b, "klatka_a" + S.a + "_d" + S.d + "_f" + S.f + ".png"));
+};
+$("bZip").onclick = async () => {
+  if (!S.item) return; toast("Pakuję klatki przedmiotu…"); const files = [], blocks = [], enc = new TextEncoder(), {W, H, ax, ay} = S.cv, type = S.item.type;
+  for (let bi = 0; bi < S.item.blocks.length; bi++) {
+    const n = frameCount(bi); if (!n) continue; const a = Math.floor(bi / 5), d = bi % 5, nm = String(a).padStart(2, "0") + "_" + actName(type, a), fl = [];
+    for (let f = 0; f < n; f++) { const buf = new Uint8Array(await (await pngOfFrames([itemFrame(bi, f)], W, H)).arrayBuffer()); const fn = String(f).padStart(2, "0") + ".png"; files.push({name: "frames/" + nm + "/dir" + d + "/" + fn, data: buf}); fl.push({file: fn}); }
+    blocks.push({action: a, dir: d, name: actName(type, a), frames: fl});
+  }
+  files.push({name: "meta.json", data: enc.encode(JSON.stringify({tool: "vd_editor", anim_type: type, actions: S.item.nAct, mode: "canvas", canvas: [W, H], anchor: [ax, ay], blocks}, null, 1))});
+  download(makeZip(files), S.item.name.replace(/\.vd$/i, "") + "_klatki.zip"); toast("Gotowe: " + (files.length - 1) + " klatek (pasuje do: python vdtool.py pack)");
+};
+
+/* ---------- podpięcie przycisków */
+$("bBody").onclick = () => $("fBody").click(); $("bItem").onclick = () => $("fItem").click(); $("bNew").onclick = newEmptyItem; $("bSave").onclick = saveVD;
+$("fBody").onchange = e => { if (e.target.files[0]) loadFile("body", e.target.files[0]); e.target.value = ""; };
+$("fItem").onchange = e => { if (e.target.files[0]) loadFile("item", e.target.files[0]); e.target.value = ""; };
+$("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo; $("bHelp").onclick = () => { const h = $("help"); h.style.display = h.style.display === "block" ? "none" : "block"; };
+document.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => { S.tool = b.dataset.tool; refreshButtons(); drawOverlay(); });
+$("brush").oninput = e => { S.brush = +e.target.value; $("brushV").textContent = S.brush; };
+["cBody", "cItem", "cOnion", "cGrid", "cAnchor", "itemAlpha", "cTint", "tintR", "tintG", "tintB", "bgc"].forEach(id => $(id).addEventListener("input", () => { S.tintCache.clear(); render(); }));
+$("zIn").onclick = () => setZoom(Math.min(64, S.zoom * 1.5)); $("zOut").onclick = () => setZoom(Math.max(1, S.zoom / 1.5)); $("zFit").onclick = () => { fitView(); queueRender(); };
+$("prim").oninput = e => setColor(1, parseHex(e.target.value)); $("sec").oninput = e => setColor(2, parseHex(e.target.value));
+$("hex1").onchange = e => setColor(1, parseHex(e.target.value)); $("hex2").onchange = e => setColor(2, parseHex(e.target.value));
+$("bSwap").onclick = swapColors; function swapColors() { const a = S.c1.slice(); setColor(1, S.c2); setColor(2, a); }
+$("bPalAll").onclick = () => { S.paletteMode = "block"; refreshPalette(); }; $("bPalFrame").onclick = () => { S.paletteMode = "frame"; refreshPalette(); };
+$("mL").onclick = () => moveScope(-(+$("step").value), 0); $("mR").onclick = () => moveScope(+$("step").value, 0); $("mU").onclick = () => moveScope(0, -(+$("step").value)); $("mD").onclick = () => moveScope(0, +$("step").value);
+$("bClip").onclick = clipScope; $("bClear").onclick = clearFrame; $("bCopy").onclick = copyFrame; $("bPaste").onclick = pasteFrame;
+$("fPrev").onclick = () => stepFrame(-1); $("fNext").onclick = () => stepFrame(1); $("fPlay").onclick = togglePlay;
+function stepFrame(k) { const n = frameCount(nBlock()); if (!n) return; S.f = (S.f + k + n) % n; refreshFrames(); $("sFrm").textContent = "akcja " + S.a + " kier. " + S.d + " klatka " + S.f + "/" + (n - 1); refreshPalette(); render(); }
+function togglePlay() { S.playing = !S.playing; $("fPlay").textContent = S.playing ? "■ stop" : "▶ odtwarzaj"; clearInterval(S.timer); if (S.playing) S.timer = setInterval(() => stepFrame(1), 1000 / Math.max(1, +$("fps").value)); }
+$("fps").onchange = () => { if (S.playing) { togglePlay(); togglePlay(); } };
+function stepBlock(da, dd) {
+  const type = (S.body || S.item); if (!type) return; if (da) S.a = (S.a + da + type.nAct) % type.nAct; if (dd) S.d = (S.d + dd + 5) % 5; S.f = 0; refreshAll();
+}
+
+/* ---------- klawisze */
+window.addEventListener("keydown", e => {
+  if (e.target.matches("input[type=text],input[type=number],select")) return;
+  const k = e.key, ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && k.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
+  if (ctrl && k.toLowerCase() === "y") { e.preventDefault(); doRedo(); return; }
+  if (ctrl && k.toLowerCase() === "c") { e.preventDefault(); copyFrame(); return; }
+  if (ctrl && k.toLowerCase() === "v") { e.preventDefault(); pasteFrame(); return; }
+  if (ctrl || e.altKey) return;
+  const tools = {b: "pencil", e: "eraser", i: "picker", g: "fill", l: "line", r: "rect", f: "rectf", s: "select", m: "move"};
+  if (tools[k.toLowerCase()]) { S.tool = tools[k.toLowerCase()]; refreshButtons(); return; }
+  if (k === "x" || k === "X") { swapColors(); return; }
+  if (k === "?") { $("bHelp").click(); return; }
+  if (k === "Escape") { S.sel = null; $("help").style.display = "none"; queueRender(); return; }
+  if (k === "Delete" && S.sel && ensureItem()) {
+    const bi = nBlock(), o = itemFrame(bi, S.f), wk = toWork(o, S.cv), s = S.sel;
+    for (let y = s.y0; y <= s.y1; y++) for (let x = s.x0; x <= s.x1; x++) if (inb(x, y)) wk[(y * S.cv.W + x) * 4 + 3] = 0;
+    const nf = fromWork(wk, S.cv); setFrame(bi, S.f, nf); pushUndo([{bi, f: S.f, old: o, new: nf}], "usunięcie zaznaczenia"); refreshAll(); return;
+  }
+  if (k === " ") { e.preventDefault(); if (!S.space && !S.drag) { S.space = true; viewEl.style.cursor = "grab"; } return; }
+  if (k === "[") { $("brush").value = Math.max(1, S.brush - 1); $("brush").oninput({target: $("brush")}); return; }
+  if (k === "]") { $("brush").value = Math.min(8, S.brush + 1); $("brush").oninput({target: $("brush")}); return; }
+  if (k === "," ) { stepFrame(-1); return; } if (k === ".") { stepFrame(1); return; }
+  if (/^[1-5]$/.test(k)) { S.d = +k - 1; S.f = 0; refreshAll(); return; }
+  if (k === "PageUp") { stepBlock(-1, 0); return; } if (k === "PageDown") { stepBlock(1, 0); return; }
+  const mv = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[k];
+  if (mv) {
+    e.preventDefault();
+    if (S.tool === "move") { const st = e.shiftKey ? 5 : 1; if (S.sel) { S.drag = null; moveSelection(mv[0] * st, mv[1] * st); } else moveScope(mv[0] * st, mv[1] * st); }
+    else if (mv[0]) stepFrame(mv[0]); else stepBlock(0, mv[1]);
+  }
+});
+function moveSelection(dx, dy) {
+  if (!ensureItem()) return; const bi = nBlock(), o = itemFrame(bi, S.f), wk = toWork(o, S.cv), s = S.sel, {W} = S.cv, lift = [];
+  for (let y = s.y0; y <= s.y1; y++) for (let x = s.x0; x <= s.x1; x++) if (inb(x, y)) { const i = (y * W + x) * 4; if (wk[i + 3] >= 128) { lift.push([x, y, wk[i], wk[i + 1], wk[i + 2]]); wk[i + 3] = 0; } }
+  for (const [x, y, r, g, b] of lift) { const nx = x + dx, ny = y + dy; if (inb(nx, ny)) { const i = (ny * W + nx) * 4; wk[i] = r; wk[i + 1] = g; wk[i + 2] = b; wk[i + 3] = 255; } }
+  const nf = fromWork(wk, S.cv); setFrame(bi, S.f, nf); pushUndo([{bi, f: S.f, old: o, new: nf}], "przesunięcie zaznaczenia");
+  S.sel = {x0: s.x0 + dx, y0: s.y0 + dy, x1: s.x1 + dx, y1: s.y1 + dy}; refreshAll();
+}
+window.addEventListener("keyup", e => { if (e.key === " ") { S.space = false; viewEl.style.cursor = ""; if (!S.drag) togglePlayKey(); } });
+function togglePlayKey() { /* spacja: odtwarzanie tylko gdy nie była użyta do przesuwania widoku */ if (!S.spaceUsed) togglePlay(); S.spaceUsed = false; }
+viewEl.addEventListener("pointerdown", () => { if (S.space) S.spaceUsed = true; }, true);
+window.addEventListener("beforeunload", e => { if (S.item && S.item.blocks.some(b => b.dirty) && S.undo.length) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("resize", () => { render(); });
+/* przeciąganie plików */
+["dragover", "drop"].forEach(t => window.addEventListener(t, e => e.preventDefault()));
+window.addEventListener("drop", e => {
+  const fs = [...(e.dataTransfer ? e.dataTransfer.files : [])].filter(f => /\.vd$/i.test(f.name)); if (!fs.length) return;
+  fs.forEach(f => loadFile(/body/i.test(f.name) ? "body" : "item", f));                  // nazwa z "body" = body, reszta = przedmiot
+});
+refreshButtons(); setColor(1, S.c1); setColor(2, S.c2);
+</script>
+</body>
+</html>
