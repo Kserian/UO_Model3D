@@ -27,7 +27,8 @@ ap.add_argument("--rigid-below", type=float, default=1.41)            # points u
 ap.add_argument("--medal-px", type=float, default=2.9)               # radius of the drawn medal in px
 ap.add_argument("--collar", type=float, default=0.72)                  # the cord at the neck is drawn this fraction of its width (round the neck, not out over the shoulders)
 ap.add_argument("--collar-zmax", type=float, default=1.55)
-ap.add_argument("--cord", default="128,24,30"); ap.add_argument("--cord-dark", default="88,12,18")
+ap.add_argument("--vwiden", type=float, default=0.014)                 # m per side: the two strands of the V on the chest are spread by this much in the middle (they merged into one mass)
+ap.add_argument("--cord", default="136,26,32"); ap.add_argument("--cord-dark", default="112,18,24")
 a = ap.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:])
 CORD = tuple(int(x) for x in a.cord.split(",")); CORD_D = tuple(int(x) for x in a.cord_dark.split(","))
 W = H = 256; ANCHOR = (128, 192); OANCHOR = (68, 86); STEP = 3
@@ -91,6 +92,10 @@ t_ = np.clip((pts[:n_axis, 2] - 1.45) / 0.06, 0.0, 1.0)
 pts[:n_axis, 0] *= 1.0 - (1.0 - a.collar) * t_
 pts[:n_axis, 1] = -0.03 + (pts[:n_axis, 1] + 0.03) * (1.0 - (1.0 - a.collar) * t_)
 pts[:n_axis, 2] = np.minimum(pts[:n_axis, 2], a.collar_zmax)
+# spread the two strands of the V: 0 at the ring, full in the middle of the chest part, fading out where the collar starts (z 1.49-1.52)
+zz_ = pts[:n_axis, 2]
+wv_ = np.clip((zz_ - 1.425) / 0.03, 0, 1) * (1 - np.clip((zz_ - 1.485) / 0.035, 0, 1))
+pts[:n_axis, 0] += np.sign(pts[:n_axis, 0]) * a.vwiden * wv_
 ob = bpy.data.objects.new("uo_necklace_pts", bpy.data.meshes.new("uo_necklace_pts"))
 sc.collection.objects.link(ob)
 ob.data.from_pydata([tuple(p) for p in pts], [], [])
@@ -183,6 +188,20 @@ def draw_frame(Xw, Pm, Vm, camw, depth_body, allow, dx, dy):
     for rad, off, col in ((1.0, (0.0, 0.0), CORD),):                     # ONE flat colour, radius 1.0: always 2 pixel centres across, so neither the width nor the colour of a pixel flips between frames (the two-tone cord did)
         for (c, zz) in seg:
             stamp(img, zbuf, c[0] + off[0], c[1] + off[1], rad, col, zz, zlim, allow)
+    # the cord: drop specks, then shade by the pixel's neighbours (light where the pixel above or to the left is free, dark where both are cord): the tone follows from the mask alone,
+    # so it does not flip between frames while the cord moves
+    cord = img[..., 3] > 0
+    import scipy.ndimage as ndi
+    lab, nl = ndi.label(cord, structure=np.ones((3, 3)))
+    if nl:
+        sizes = ndi.sum(cord, lab, range(1, nl + 1))
+        for k_, sz in enumerate(sizes, 1):
+            if sz < 3:
+                cord[lab == k_] = False
+    img[~cord] = 0
+    up_ = np.zeros_like(cord); up_[1:] = cord[:-1]; left_ = np.zeros_like(cord); left_[:, 1:] = cord[:, :-1]
+    dark = cord & up_ & left_
+    img[cord & ~dark, :3] = CORD; img[dark, :3] = CORD_D
     # medal: drawn as a disc that faces the viewer (a 3D-projected disc on a chest seen from above is a flat 5 x 3 px ellipse that does not read as a medal);
     # seen from the side it narrows with the angle of its face to the camera, from behind it is not drawn
     nrm = Xw[n_axis + 3] - Xw[n_axis]; nrm = nrm / (np.linalg.norm(nrm) + 1e-9)
