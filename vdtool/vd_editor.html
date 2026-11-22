@@ -92,6 +92,7 @@ input[type=range]{vertical-align:middle}
       <label class="row"><input type="checkbox" id="cOnion"> cebula (±1 kl.)</label>
       <label class="row"><input type="checkbox" id="cGrid" checked> siatka</label>
       <label class="row"><input type="checkbox" id="cAnchor" checked> zaczepienie</label>
+      <label class="row" title="piksele przedmiotu poza sylwetką body (z marginesem z pola „+ px”) w czerwonej ramce"><input type="checkbox" id="cOutside"> podświetl poza sylwetką</label>
       <div class="row"><label>przezr. przedm.</label><input id="itemAlpha" type="range" min="10" max="100" value="100" style="width:80px"></div>
       <div class="row"><label>zoom</label><button id="zOut">−</button><b id="zoomV">8×</b><button id="zIn">+</button><button id="zFit">dopasuj</button></div>
     </div>
@@ -464,6 +465,11 @@ function drawOverlay() {
     octx.strokeStyle = "rgba(255,210,60,.65)"; octx.lineWidth = 1; octx.beginPath();
     octx.moveTo(X + ax * z, Y); octx.lineTo(X + ax * z, Y + H * z); octx.moveTo(X, Y + ay * z); octx.lineTo(X + W * z, Y + ay * z); octx.stroke();
   }
+  if ($("cOutside").checked && S.body && S.item) {
+    const bi = nBlock(), f = itemFrame(bi, S.f);
+    if (f.w > 0) { const m = bodyMask(bi, S.f, +$("clipN").value); octx.strokeStyle = "#ff2a2a"; octx.lineWidth = 1.5;
+      for (let y = 0; y < f.h; y++) for (let x = 0; x < f.w; x++) if (f.data[(y * f.w + x) * 4 + 3] >= 128 && !m[(f.y0 + y) * W + f.x0 + x]) octx.strokeRect(X + (f.x0 + x) * z + 1, Y + (f.y0 + y) * z + 1, Math.max(z - 2, 1), Math.max(z - 2, 1)); }
+  }
   if (S.sel) {
     const s = S.sel, off = S.drag && S.drag.tool === "move" && S.drag.selMove ? S.drag.selMove : [0, 0];
     octx.setLineDash([5, 4]); octx.strokeStyle = "#fff"; octx.lineWidth = 1.5;
@@ -514,19 +520,25 @@ function moveScope(dx, dy) {
   for (const c of ch) if (c.old !== c.new) setFrame(c.bi, c.f, c.new);
   pushUndo(ch, "przesunięcie " + dx + "," + dy + " (" + ch.length + " kl.)"); refreshAll();
 }
+function bodyMask(bi, f, r) {                                                  // sylwetka body (alfa >= 128) powiększona o r px
+  const {W, H} = S.cv, bf = bodyFrame(bi, f), mask = new Uint8Array(W * H);
+  for (let y = 0; y < bf.h; y++) for (let x = 0; x < bf.w; x++) if (bf.data[(y * bf.w + x) * 4 + 3] >= 128) mask[(bf.y0 + y) * W + bf.x0 + x] = 1;
+  let m = mask; for (let it = 0; it < r; it++) { const n2 = m.slice(); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x]) { if (x > 0) n2[y * W + x - 1] = 1; if (x < W - 1) n2[y * W + x + 1] = 1; if (y > 0) n2[(y - 1) * W + x] = 1; if (y < H - 1) n2[(y + 1) * W + x] = 1; } m = n2; }
+  return m;
+}
 function clipScope() {
-  if (!ensureItem()) return; const r = +$("clipN").value, {W, H} = S.cv, ch = [];
+  if (!ensureItem()) return; if (!S.body) { toast("Przycięcie do sylwetki wymaga wczytanego body"); return; }
+  const r = +$("clipN").value, {W, H} = S.cv, ch = []; let removed = 0, seen = 0, noBody = 0;
   for (const {bi, f} of scopeFrames()) {
-    const o = itemFrame(bi, f); if (o.w === 0) continue;
-    const bf = bodyFrame(bi, f), mask = new Uint8Array(W * H);
-    for (let y = 0; y < bf.h; y++) for (let x = 0; x < bf.w; x++) if (bf.data[(y * bf.w + x) * 4 + 3] >= 128) mask[(bf.y0 + y) * W + bf.x0 + x] = 1;
-    let m = mask; for (let it = 0; it < r; it++) { const n2 = m.slice(); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x]) { if (x > 0) n2[y * W + x - 1] = 1; if (x < W - 1) n2[y * W + x + 1] = 1; if (y > 0) n2[(y - 1) * W + x] = 1; if (y < H - 1) n2[(y + 1) * W + x] = 1; } m = n2; }
-    const wk = toWork(o, S.cv); let any = false;
-    for (let i = 0; i < W * H; i++) if (wk[i * 4 + 3] >= 128 && !m[i]) { wk[i * 4 + 3] = 0; any = true; }
-    if (any) ch.push({bi, f, old: o, new: fromWork(wk, S.cv)});
+    const o = itemFrame(bi, f); if (o.w === 0) continue; seen++;
+    if (bodyFrame(bi, f).w === 0) { noBody++; continue; }                     // brak klatki body: nie ma do czego przycinać
+    const m = bodyMask(bi, f, r), wk = toWork(o, S.cv); let any = 0;
+    for (let i = 0; i < W * H; i++) if (wk[i * 4 + 3] >= 128 && !m[i]) { wk[i * 4 + 3] = 0; any++; }
+    if (any) { ch.push({bi, f, old: o, new: fromWork(wk, S.cv)}); removed += any; }
   }
   for (const c of ch) setFrame(c.bi, c.f, c.new);
-  pushUndo(ch, "przycięcie do body"); refreshAll(); toast("Przycięto " + ch.length + " klatek");
+  pushUndo(ch, "przycięcie do body"); refreshAll();
+  toast(removed ? "Przycięto: usunięto " + removed + " pikseli w " + ch.length + " z " + seen + " klatek" : "Nic do przycięcia: w " + seen + " klatkach wszystkie piksele przedmiotu leżą w sylwetce body" + (r ? " (+" + r + " px)" : "") + (noBody ? "; " + noBody + " klatek bez klatki body" : "") + ". Włącz „podświetl poza sylwetką\" żeby zobaczyć, co jest poza.");
 }
 function clearFrame() {
   if (!ensureItem()) return; const bi = nBlock(), o = itemFrame(bi, S.f); if (o.w === 0) return;
@@ -779,7 +791,7 @@ $("fItem").onchange = e => { if (e.target.files[0]) loadFile("item", e.target.fi
 $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo; $("bHelp").onclick = () => { const h = $("help"); h.style.display = h.style.display === "block" ? "none" : "block"; };
 document.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => { S.tool = b.dataset.tool; refreshButtons(); drawOverlay(); });
 $("brush").oninput = e => { S.brush = +e.target.value; $("brushV").textContent = S.brush; };
-["cBody", "cItem", "cOnion", "cGrid", "cAnchor", "itemAlpha", "cTint", "tintR", "tintG", "tintB", "bgc"].forEach(id => $(id).addEventListener("input", () => { S.tintCache.clear(); render(); }));
+["cBody", "cItem", "cOnion", "cGrid", "cAnchor", "cOutside", "clipN", "itemAlpha", "cTint", "tintR", "tintG", "tintB", "bgc"].forEach(id => $(id).addEventListener("input", () => { S.tintCache.clear(); render(); }));
 $("zIn").onclick = () => setZoom(Math.min(64, S.zoom * 1.5)); $("zOut").onclick = () => setZoom(Math.max(1, S.zoom / 1.5)); $("zFit").onclick = () => { fitView(); queueRender(); };
 $("prim").oninput = e => setColor(1, parseHex(e.target.value)); $("sec").oninput = e => setColor(2, parseHex(e.target.value));
 $("hex1").onchange = e => setColor(1, parseHex(e.target.value)); $("hex2").onchange = e => setColor(2, parseHex(e.target.value));
