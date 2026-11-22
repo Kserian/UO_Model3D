@@ -1,0 +1,3 @@
+{"name": "medal", "file": "medal_body.glb", "kind": "vest",
+ "prepare": {"AUTOFIT": false, "FIT": false, "DENSIFY": false, "PART": "all"},
+ "decimate": 30000}

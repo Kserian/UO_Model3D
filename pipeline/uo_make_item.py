@@ -1,6 +1,6 @@
 """A free 3D model -> a UO item, in one command (no Blender window).
 
-    python uo_make_item.py RECIPE.json [--out DIR] [--base ../model/UO_Body_0x190.blend] [--preview] [--vd] [--actions 04_stand,...]
+    python uo_make_item.py RECIPE.json [--out DIR] [--base ../model/UO_Body_0x190.blend] [--preview] [--vd] [--actions 04_stand,...]   (--vd with --actions renders only those actions)
     python uo_make_item.py --list MODEL.glb          # what is in the file: meshes, vertices, size (to choose `skip` / `keep`)
 
 RECIPE.json (only "file" and "kind" are required):
@@ -25,6 +25,7 @@ RECIPE.json (only "file" and "kind" are required):
    "flail": {"BALL_SCALE": 0.7, "CHAIN_SCALE": 0.65},   # a weapon that is a flail: the chain and the ball swing (uo_flail.py, its settings)
    "hood_cover": true,              # kind hood: brought down onto the skull, cowl onto the shoulders, out of the head skin over the ears, symmetric (uo_hood_cover.py; on by default for a hood, false = off, {"GAP": 0.015} = its settings)
    "sim": true,                     # loose garments (kind robe / skirt): cloth simulation on top of the leg push (uo_cloth_sim.py; on by default, false = off, {"goal": 0.3, ...} = its settings)
+   "props": {"uo_behind_torso": 1, "uo_no_body_gap": 1},   # custom properties set on the item objects (a rigid item on the chest: the torso hides what is behind it, the renderer does not bend it away from limbs)
    "weapon": {"class": "sword", "part": "weapon1h", "length": null, "tip": "auto"}}   # a weapon instead of "kind": class (sword, dagger, mace, axe, polearm, staff, spear,
                                # bow, crossbow, gun), part (weapon1h, polearm, axe2h, bow: which hand bone and motion; weapon.L: 1H in the left hand, the mirrored grip of weapon1h, rigid on hand.L), length m (null = of the class), tip ("auto", "heavy", "+y" ...), butt (m along the hand line where the butt goes, the hand at 0: -0.06 = held near the butt end; default of the class)
 
@@ -414,12 +415,16 @@ if wp:                                                           # a weapon: upr
     run("uo_bind_item.py", PART=wp["part"])
 else:
     run("uo_prepare_item.py", KIND=%(kind)r, **flat)
+for _o in bpy.context.selected_objects:                          # "props": custom properties of the item objects (uo_behind_torso: the torso hides what is behind it; uo_no_body_gap: not bent away from limbs by the renderer)
+    if _o.type == "MESH" and _o.name != "UO_Body":
+        for k, v in %(props)r.items():
+            _o[k] = v
 for k, v in %(scene)r.items():                                    # "scene": properties of the scene the renderer reads per item (uo_outline, uo_hide_erode, uo_legs_under, ...)
     bpy.context.scene[k] = v
     print("uo_make_item: scene property %%s = %%r" %% (k, v))
 bpy.ops.wm.save_as_mainfile(filepath=%(out)r)
 print("uo_make_item: saved", %(out)r)
-''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), tune=json.dumps(recipe.get("tune", {})))
+''' % dict(here=HERE, scene=scene_of(recipe), imp=imp, mat=recipe.get("materials", {}), prep=recipe.get("prepare", {}), kind=kind, out=out_blend, weapon=recipe.get("weapon"), props=recipe.get("props", {}), tune=json.dumps(recipe.get("tune", {})))
 
 
 def run_blend(base, stage_text, log):
@@ -536,7 +541,7 @@ if __name__ == "__main__":
         render = os.path.join(out, "render")
         layer = "clothing" if a.vd else "all"
         wpart = (recipe.get("weapon") or {}).get("part")
-        acts = [x for x in (a.actions or WEAPON_ACTIONS.get(wpart, PREVIEW_ACTIONS)).split(",")] if not a.vd else []
+        acts = [x for x in (a.actions or WEAPON_ACTIONS.get(wpart, PREVIEW_ACTIONS)).split(",")] if (not a.vd or a.actions) else []        # --vd with --actions: only those actions (the .vd holds the actions rendered)
         cmd = [sys.executable, os.path.join(HERE, "run_render_headless.py"), blend, render, 'LAYER="all"' if a.preview else 'LAYER="clothing"',
                "ONLY=%r" % (acts,), "CANVAS=(256,256)", "ANCHOR=(128,192)"]
         subprocess.run(cmd, capture_output=True, text=True, check=True)
