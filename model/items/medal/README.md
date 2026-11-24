@@ -42,11 +42,8 @@ The ribbon is modelled as a round cord of 4.5 cm diameter (`--ribbon-w`): a flat
 `item_gif.py --body-color R,G,B` tints the grey original body (a GIF with the skin colour of the game).
 
 ## Paperdoll gumps and item art
-`paperdoll/gump_male.png`, `paperdoll/gump_female.png` (260 x 237, the canvas of the body gumps 12 / 13) and `paperdoll/art.png` (44 x 32, the item icon): `pipeline/uo_render_medal_gump.py`
-(a copy of `uo_render_paperdoll.py` without the belt fitting), rendered from the same `item.blend` as the animation:
-```
-PD_OUT=DIR python pipeline/run_script_in_blend.py OUT/item.blend pipeline/uo_render_medal_gump.py      # PD_DY_FEMALE (-6), PD_ART_TILT (15), PD_ART_TURN (0)
-```
-Front view, rest pose, body (head included) as a holdout, 90.5 px/m, body axis x 94.5, floor y 221 (the measured body gump 12). The female gump is the same render moved 6 px up (the female
-body gump stands ca. 7 px higher at the waist; the chest was not measured: **no original gump here to check it**, tune `PD_DY_FEMALE` in game). Art: the necklace hanging, tilted 15 deg towards the camera,
-so the round medal reads (tilt 55 and 90 hid it as a thin ellipse). Grey is capped at 160 like the animation. Gump ids: worn item = 50000 + animation id (male), 60000 + animation id (female).
+`paperdoll/gump_male.png`, `paperdoll/gump_female.png` (260 x 237) and `paperdoll/art.png` (44 x 32): `python pipeline/uo_medal_gump_fit.py CLIENT_DIR model/items/medal/paperdoll`
+(`CLIENT_DIR` holds `Gumpidx.mul` / `Gumpart.mul`; `check_*.png` show the gump over the original body gumps 12 / 13).
+Fitted to the ORIGINAL necklace of the client (gump 50439 male / 60439 female, a chain with a pendant): its footprint on the drawn body, our dark red cord (animation reds, no black outline),
+our round grey medal instead of the pendant. A render of the 3D model did not fit the drawn bodies (the cord climbed to the jaw, the female medal sat off); the original necklace icons are 10-12 px wide,
+so the art is a small hand-built icon (V of ribbon + medal), not a render of the whole necklace. Gump ids: worn item = 50000 + animation id (male), 60000 + animation id (female).
