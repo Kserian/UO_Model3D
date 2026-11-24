@@ -7,8 +7,8 @@ Only the free-hanging pendant (every non-red pixel of the item) is touched:
   1. isolated 1-2 px specks are removed,
   2. 1-frame gaps (and 2-frame gaps between similar sizes) of the pendant are filled from the neighbours,
   3. the pendant becomes one rigid sprite (the most typical real frame, so its shape and brightness no longer flicker) placed on a smooth trajectory: position in canvas coordinates (the body is fixed there),
-     low-passed in time (2 Fourier harmonics for walk/run loops, binomial filter otherwise). It stays on the body;
-     if it ends up away from the ribbon, the missing chain pixels are drawn.
+     low-passed in time (2 Fourier harmonics for walk/run loops, binomial filter otherwise). A frame keeps its original
+     place if the move would put the pendant further from the ribbon than it was, cover more ribbon, or push it off the body.
 
 Usage:  python vd_item_smooth.py in.vd out.vd [--body client/body_0x190_frames] [--strength 2] [--max-shift 3]
         [--report report.json]
@@ -188,30 +188,17 @@ def stamp_rgba(im, template, tc, pos):
     im[ys + oy, xs + ox] = template[ys, xs]
 
 
+def gap_to(mask, ribbon):
+    """smallest Chebyshev distance between the pendant and the ribbon (0 = overlap); large if there is no ribbon."""
+    ys, xs = np.nonzero(mask)
+    rys, rxs = np.nonzero(ribbon)
+    if len(ys) == 0 or len(rys) == 0:
+        return 99
+    return int(np.min(np.maximum(np.abs(ys[:, None] - rys[None, :]), np.abs(xs[:, None] - rxs[None, :]))))
+
+
 def body_cover(mask, body):
     return float(body[mask].mean()) if mask.any() else 0.0
-
-
-def bridge_chain(im, ribbon, pendant):
-    """if the pendant hangs more than 1 px below the nearest ribbon pixel, draw the missing ribbon/chain pixels."""
-    rys, rxs = np.nonzero(ribbon)
-    pys, pxs = np.nonzero(pendant)
-    if len(rys) == 0 or len(pys) == 0:
-        return
-    d = np.maximum(np.abs(rys[:, None] - pys[None, :]), np.abs(rxs[:, None] - pxs[None, :]))
-    ri, pi = np.unravel_index(np.argmin(d), d.shape)
-    if d[ri, pi] <= 1:
-        return
-    (y0, x0), (y1, x1) = (rys[ri], rxs[ri]), (pys[pi], pxs[pi])
-    color = im[y0, x0].copy()
-    steps = int(d[ri, pi])
-    for k in range(1, steps):
-        y = int(round(y0 + (y1 - y0) * k / steps))
-        x = int(round(x0 + (x1 - x0) * k / steps))
-        if not pendant[y, x]:
-            im[y, x] = color
-            if x0 + 1 < im.shape[1] and ribbon[y0, x0 + 1] and not pendant[y, x + 1]:   # keep a 2 px wide ribbon
-                im[y, x + 1] = color
 
 
 def shift_pendant(im, pendant, dx, dy):
@@ -332,17 +319,27 @@ def process_block(frames, heads, bodies, cyclic, strength, max_shift, log):
     applied = {}
     for i, (template, tc, target, orig) in placed.items():
         rib = red_mask(frames[i])
-        need_touch = touches(pend[i], rib)
-        for f in (1.0, 0.67, 0.33, 0.0):                         # back off towards the original place if off the body
-            pos = orig + (target - orig) * f
+        gap0 = gap_to(pend[i], rib)
+        cover0 = body_cover(pend[i], bodies[i])
+        pos = None
+        for f in (1.0, 0.67, 0.33, 0.0):                         # back off towards the original place
+            cand = orig + (target - orig) * f
             new = np.zeros_like(pend[i])
-            if stamp(new, template, tc, pos) and body_cover(new, bodies[i]) >= 0.9:
+            if not stamp(new, template, tc, cand):
+                continue
+            ok = (body_cover(new, bodies[i]) >= min(0.9, cover0)
+                  and gap_to(new, rib) <= max(gap0, 1)
+                  and int((new & rib).sum()) <= int((pend[i] & rib).sum()) + 1)
+            if ok:
+                pos = cand
                 break
-        else:
-            continue
+        if pos is None:                                          # the template at the original place (always allowed)
+            pos = orig
+            new = np.zeros_like(pend[i])
+            if not stamp(new, template, tc, pos):
+                continue
         frames[i][pend[i]] = 0
         stamp_rgba(frames[i], template, tc, pos)
-        bridge_chain(frames[i], rib, new)
         applied[i] = tuple(np.round(pos - orig, 1))
     shifts = applied
     pend = [(~red_mask(im)) & (im[..., 3] > 0) for im in frames]
