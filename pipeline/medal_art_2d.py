@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """medal_art_2d - item art (icon of the medal in a backpack / on the ground, art.mul) drawn in 2D.
 
-    python medal_art_2d.py OUT_DIR [--name Red] [--colors dark;mid;light;hi] [--tilt 52] [--turn -48]
+    python medal_art_2d.py OUT_DIR [--name Red] [--colors dark;mid;light;hi] [--tilt 54] [--turn -40]
 
-UO draws a lying item seen from above at an angle, so the medal is built lying on a plane (ribbon loop + steel disc with an eyelet), turned by --turn
+UO draws a lying item seen from above at an angle, so the medal is built lying on a plane (ribbon loop in the shape of a slightly curled heart + steel disc on a bail), turned by --turn
 degrees and tilted towards the camera by --tilt; every screen pixel is mapped back onto the plane, so the ribbon keeps its true width and the disc
 becomes an ellipse.  Same light, ribbon colours and steel as medal_gump_2d.py (key light from the upper left).  Drawn at 8 x, the thickness of the
 disc and of the ribbon shows as a darker side wall below the edge, down-sampled with a coverage threshold (hard edges: art has no alpha), and a
@@ -25,13 +25,25 @@ AW, AH = 44, 32
 LIGHT = np.array([-0.55, 0.45, 0.70]); LIGHT /= np.linalg.norm(LIGHT)
 OUTLINE = (22, 8, 10)
 
-W_RIB = 0.0225          # ribbon width, m
+W_RIB = 0.0205          # ribbon width, m
 R_DISC = 0.0425         # disc radius
-LOOP = 0.23             # length of the ribbon loop
-# strands of the loop in the table frame (u right, v away); both start at the eyelet and meet again at the far end
-STRANDS = [np.array([(-0.004, -0.004), (-0.085, 0.045), (-0.100, 0.215), (0.0, LOOP)]),
-           np.array([(0.004, -0.004), (0.085, 0.045), (0.100, 0.215), (0.0, LOOP)])]
-DISC_C = np.array([0.0, -0.058])
+KH = 0.0054             # m per unit of the heart curve
+
+
+def heart_arms(n=90):
+    """the ribbon lies in a heart: both arms start at the eyelet (bottom point) and meet in the notch at the top (left arm first)."""
+    t = np.linspace(np.pi, 0, n)
+    x = 16 * np.sin(t) ** 3
+    y = 13 * np.cos(t) - 5 * np.cos(2 * t) - 2 * np.cos(3 * t) - np.cos(4 * t)
+    right = np.c_[x, y] * KH
+    left = np.c_[-x, y] * KH
+    return [left, right]
+
+
+STRANDS = heart_arms()
+APEX_V = STRANDS[0][0, 1]
+EYELET = np.array([0.0, APEX_V - 0.004])
+DISC_C = np.array([0.0, APEX_V - 0.004 - 0.0105 - R_DISC * 0.78])
 
 
 def poly(pts, n=120):
@@ -58,25 +70,29 @@ def field(U, V, paths):
     H = np.zeros(U.shape); rib = np.zeros(U.shape, bool); tex = np.ones(U.shape)
     for k, pts in enumerate(paths):
         d, arc, side = seg_dist(U, V, pts)
-        # the strands lie side by side near the eyelet and spread into the loop
         r = d / (W_RIB / 2)
         m = r < 1
-        fold = 0.0007 * np.sin(2 * np.pi * (arc / 0.075 + 0.3 * k))
-        h = 0.0032 * np.sqrt(np.clip(1 - r ** 2, 0, 1)) ** 0.7 + fold
+        inner = (side * (1 if k == 0 else -1)) > 0
+        fold = 0.0006 * np.sin(2 * np.pi * (arc / 0.07 + 0.3 * k))
+        bank = 0.0018 * np.clip(arc / 0.10, 0, 1) * (side * (1 if k == 0 else -1)) * np.clip(r, 0, 1)      # the ribbon is slightly curled
+        h = 0.0032 * np.sqrt(np.clip(1 - r ** 2, 0, 1)) ** 0.7 + fold + bank
         weave = 0.5 + 0.5 * np.sin(2 * np.pi * (arc / 0.012 + side * d / 0.012 * (1 if k == 0 else -1)))
         up = m & (h + 0.0001 * k >= H)
         H = np.where(up, h + 0.0001 * k, H)
-        tex = np.where(up, (0.90 + 0.10 * weave) * (1 - 0.40 * np.clip((r - 0.72) / 0.28, 0, 1) ** 1.5), tex)
+        edge = np.clip((r - 0.30) / 0.70, 0, 1) ** 1.3
+        tex = np.where(up, (0.92 + 0.08 * weave) * (1 - np.where(inner, 0.62, 0.30) * edge), tex)
         rib |= up
     # eyelet ring and disc (steel)
-    ex, ey = 0.0, -0.016
-    Re = np.hypot(U - ex, V - ey)
-    ring = (Re < 0.0105) & (Re > 0.0048)
+    # the bail: a short steel capsule from the eyelet down to the top of the disc
+    top = np.array([0.0, DISC_C[1] + R_DISC * 0.95])
+    dd, _, _ = seg_dist(U, V, np.array([EYELET, top]))
+    ring = dd < 0.0072
+    Re = dd / 0.0072
     Rd = np.hypot(U - DISC_C[0], V - DISC_C[1]) / R_DISC
     disc = Rd < 1
     rim = np.clip(1 - np.abs(Rd - 0.86) / 0.17, 0, 1)
     hd = 0.0045 + 0.0030 * rim ** 0.8 * (Rd > 0.66) + 0.0042 * np.clip(1 - (Rd / 0.82) ** 2, 0, 1) * (Rd <= 0.78) + 0.0007 * np.clip(1 - np.abs(Rd - 0.5) / 0.14, 0, 1) * (Rd < 0.66)
-    hr = 0.0040 + 0.0025 * np.clip(1 - np.abs(Re - 0.0076) / 0.0030, 0, 1)
+    hr = 0.0040 + 0.0030 * np.sqrt(np.clip(1 - Re ** 2, 0, 1))
     metal = disc | ring
     H = np.where(disc, hd + 0.003, np.where(ring, hr + 0.003, H))
     return H, rib | metal, metal, tex, Rd
@@ -86,7 +102,7 @@ def render(tilt, turn, colors, seed=3):
     th, ph = np.radians(tilt), np.radians(turn)
     # fit: project the outline samples of the object at scale 1
     t = np.linspace(0, 1, 200)
-    pts = np.vstack([poly(s, 200) for s in STRANDS]
+    pts = np.vstack([s for s in STRANDS]
                     + [DISC_C + R_DISC * np.c_[np.cos(2 * np.pi * t), np.sin(2 * np.pi * t)]])
     pad = W_RIB / 2
     rot = lambda p: np.c_[p[:, 0] * np.cos(ph) - p[:, 1] * np.sin(ph), p[:, 0] * np.sin(ph) + p[:, 1] * np.cos(ph)]
@@ -100,7 +116,7 @@ def render(tilt, turn, colors, seed=3):
     up_ = sx / s + cx                                              # camera-frame plane coordinates
     vp_ = -sy / (s * np.sin(th)) + cy
     inv = lambda u, v: (u * np.cos(ph) + v * np.sin(ph), -u * np.sin(ph) + v * np.cos(ph))
-    paths = [poly(p, 160) for p in STRANDS]
+    paths = STRANDS
     def eval_h(u, v):
         U, V = inv(u, v)
         return field(U, V, paths)
@@ -162,7 +178,7 @@ def to_art(cov, rgb, thr=0.5):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('out'); ap.add_argument('--name', default='Red')
-    ap.add_argument('--colors'); ap.add_argument('--tilt', type=float, default=52); ap.add_argument('--turn', type=float, default=-48)
+    ap.add_argument('--colors'); ap.add_argument('--tilt', type=float, default=54); ap.add_argument('--turn', type=float, default=-40)
     o = ap.parse_args()
     colors = dict(RIBBON)
     if o.colors:
