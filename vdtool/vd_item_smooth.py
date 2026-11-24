@@ -350,6 +350,18 @@ def process_block(frames, heads, bodies, cyclic, strength, max_shift, log):
     return frames
 
 
+def parse_only(spec):
+    """'0-3:1,17:1,26:1' -> {(action, dir), ...}; 'A:D1+D2' selects several directions of one action."""
+    out = set()
+    for part in spec.split(","):
+        acts, dirs = part.split(":")
+        a0, _, a1 = acts.partition("-")
+        for a in range(int(a0), int(a1 or a0) + 1):
+            for d in dirs.split("+"):
+                out.add((a, int(d)))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src")
@@ -357,6 +369,7 @@ def main():
     ap.add_argument("--body", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "client", "body_0x190_frames"))
     ap.add_argument("--strength", type=int, default=2, help="low-pass passes (1 = light, 2 = default, 3 = strong)")
     ap.add_argument("--max-shift", type=int, default=3)
+    ap.add_argument("--only", help="process only these blocks, e.g. 0-3:1,17:1,26:1 (action[-action]:dir[+dir]); all others stay byte-identical")
     ap.add_argument("--report")
     a = ap.parse_args()
     bmeta = json.load(open(os.path.join(a.body, "meta.json")))
@@ -365,8 +378,11 @@ def main():
         vdtool.cmd_extract(a.src, tmp)
         meta = json.load(open(os.path.join(tmp, "meta.json")))
         report = {}
+        only = parse_only(a.only) if a.only else None
         for blk in meta["blocks"]:
             A, D, name = blk["action"], blk["dir"], blk["name"]
+            if only is not None and (A, D) not in only:
+                continue
             d = os.path.join(tmp, "frames", f"{A:02d}_{name}", f"dir{D}")
             frames = [np.array(Image.open(os.path.join(d, f["file"])).convert("RGBA")) for f in blk["frames"]]
             heads = [np.zeros(2) for _ in blk["frames"]]          # trajectories are smoothed in canvas coordinates
@@ -382,8 +398,9 @@ def main():
     if a.report:
         json.dump(report, open(a.report, "w"), indent=1, default=float)
     b = [(v["d2_before"][1], v["d2_after"][1]) for v in report.values() if v["d2_before"][1] > 0]
-    print("mean 2nd difference of pendant position: %.2f px -> %.2f px (%d blocks)"
-          % (np.mean([x[0] for x in b]), np.mean([x[1] for x in b]), len(b)))
+    if b:
+        print("mean 2nd difference of pendant position: %.2f px -> %.2f px (%d blocks)"
+              % (np.mean([x[0] for x in b]), np.mean([x[1] for x in b]), len(b)))
     fb = np.mean([v["flicker_before"] for v in report.values()], axis=0)
     fa = np.mean([v["flicker_after"] for v in report.values()], axis=0)
     print("frame-to-frame change of pendant size / brightness: %.1f px, %.1f -> %.1f px, %.1f" % (fb[0], fb[1], fa[0], fa[1]))
