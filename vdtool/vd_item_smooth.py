@@ -6,8 +6,9 @@ Only the free-hanging pendant (every non-red pixel of the item) is touched:
 
   1. isolated 1-2 px specks are removed,
   2. 1-frame gaps (and 2-frame gaps between similar sizes) of the pendant are filled from the neighbours,
-  3. the pendant position, measured relative to the original body's head top, is low-pass filtered in time
-     (binomial 5-tap, cyclic for walk/run loops) and the pendant pixels are shifted by whole pixels.
+  3. the pendant becomes one rigid sprite (the most typical real frame, so its shape and brightness no longer flicker) placed on a smooth trajectory: position in canvas coordinates (the body is fixed there),
+     low-passed in time (2 Fourier harmonics for walk/run loops, binomial filter otherwise). It stays on the body;
+     if it ends up away from the ribbon, the missing chain pixels are drawn.
 
 Usage:  python vd_item_smooth.py in.vd out.vd [--body client/body_0x190_frames] [--strength 2] [--max-shift 3]
         [--report report.json]
@@ -73,10 +74,20 @@ def centroid(mask):
     return np.array([xs.mean(), ys.mean()]) if len(xs) else None
 
 
-def head_top(body_png, body_anchor):
-    a = np.array(Image.open(body_png).convert("RGBA"))[..., 3] > 0
-    ys, xs = np.nonzero(a)
-    return np.array([xs[ys == ys.min()].mean() - body_anchor[0], ys.min() - body_anchor[1]])
+def flicker(frames, cyclic):
+    """mean frame-to-frame change of the pendant: pixel count (px) and brightness (0-255), over visible neighbours."""
+    st = []
+    for im in frames:
+        m = (~red_mask(im)) & (im[..., 3] > 0)
+        st.append((int(m.sum()), float(im[m][:, :3].mean()) if m.sum() >= MIN_PENDANT_PX else None))
+    n = len(st)
+    dc, dl = [], []
+    for i in range(0 if cyclic else 1, n):
+        a, b = st[i - 1], st[i]
+        if a[1] is not None and b[1] is not None:
+            dc.append(abs(a[0] - b[0]))
+            dl.append(abs(a[1] - b[1]))
+    return (float(np.mean(dc)) if dc else 0.0, float(np.mean(dl)) if dl else 0.0)
 
 
 def d2_stat(series, cyclic):
@@ -141,6 +152,68 @@ def touches(pend, ribbon):
     return np.min(np.maximum(np.abs(ys[:, None] - rys[None, :]), np.abs(xs[:, None] - rxs[None, :]))) <= 1
 
 
+def fourier_lowpass(arr, keep):
+    """keep the first `keep` harmonics of a closed loop of (n,2) samples."""
+    f = np.fft.rfft(arr, axis=0)
+    f[keep + 1:] = 0
+    return np.fft.irfft(f, n=len(arr), axis=0)
+
+
+def consensus(pend, frames, idxs):
+    """the most typical real pendant sprite among the frames (size closest to the median): (rgba, centroid)."""
+    cnts = [int(pend[i].sum()) for i in idxs]
+    med = float(np.median(cnts))
+    best = min(idxs, key=lambda i: (abs(int(pend[i].sum()) - med), -int(pend[i].sum())))
+    ys, xs = np.nonzero(pend[best])
+    y0, x0 = ys.min(), xs.min()
+    rgba = np.zeros((ys.max() - y0 + 1, xs.max() - x0 + 1, 4), np.uint8)
+    rgba[ys - y0, xs - x0] = frames[best][ys, xs]
+    return rgba, np.array([xs.mean() - x0, ys.mean() - y0])
+
+
+def stamp(mask, template, tc, pos):
+    """set mask where the template lands when its centroid is at pos; False if it leaves the canvas."""
+    ys, xs = np.nonzero(template[..., 3] > 0)
+    oy, ox = int(round(pos[1] - tc[1])), int(round(pos[0] - tc[0]))
+    ny, nx = ys + oy, xs + ox
+    if ((ny < 0) | (ny >= mask.shape[0]) | (nx < 0) | (nx >= mask.shape[1])).any():
+        return False
+    mask[ny, nx] = True
+    return True
+
+
+def stamp_rgba(im, template, tc, pos):
+    ys, xs = np.nonzero(template[..., 3] > 0)
+    oy, ox = int(round(pos[1] - tc[1])), int(round(pos[0] - tc[0]))
+    im[ys + oy, xs + ox] = template[ys, xs]
+
+
+def body_cover(mask, body):
+    return float(body[mask].mean()) if mask.any() else 0.0
+
+
+def bridge_chain(im, ribbon, pendant):
+    """if the pendant hangs more than 1 px below the nearest ribbon pixel, draw the missing ribbon/chain pixels."""
+    rys, rxs = np.nonzero(ribbon)
+    pys, pxs = np.nonzero(pendant)
+    if len(rys) == 0 or len(pys) == 0:
+        return
+    d = np.maximum(np.abs(rys[:, None] - pys[None, :]), np.abs(rxs[:, None] - pxs[None, :]))
+    ri, pi = np.unravel_index(np.argmin(d), d.shape)
+    if d[ri, pi] <= 1:
+        return
+    (y0, x0), (y1, x1) = (rys[ri], rxs[ri]), (pys[pi], pxs[pi])
+    color = im[y0, x0].copy()
+    steps = int(d[ri, pi])
+    for k in range(1, steps):
+        y = int(round(y0 + (y1 - y0) * k / steps))
+        x = int(round(x0 + (x1 - x0) * k / steps))
+        if not pendant[y, x]:
+            im[y, x] = color
+            if x0 + 1 < im.shape[1] and ribbon[y0, x0 + 1] and not pendant[y, x + 1]:   # keep a 2 px wide ribbon
+                im[y, x + 1] = color
+
+
 def shift_pendant(im, pendant, dx, dy):
     """move the pendant pixels of im by (dx, dy); they are drawn over the ribbon."""
     h, w = pendant.shape
@@ -161,6 +234,7 @@ def process_block(frames, heads, bodies, cyclic, strength, max_shift, log):
     vis = [c >= MIN_PENDANT_PX for c in cnt]
     off = [centroid(p) - heads[i] if vis[i] else None for i, p in enumerate(pend)]
     log["d2_before"] = d2_stat(off, cyclic)
+    log["flicker_before"] = flicker(frames, cyclic)
 
     # --- 2. fill short gaps -------------------------------------------------------------------------------------
     filled = []
@@ -212,7 +286,7 @@ def process_block(frames, heads, bodies, cyclic, strength, max_shift, log):
         vis = [c >= MIN_PENDANT_PX for c in cnt]
         off = [centroid(p) - heads[i] if vis[i] else None for i, p in enumerate(pend)]
 
-    # --- 3. smooth position over each visible run ---------------------------------------------------------------
+    # --- 3. rigid pendant on a smooth trajectory ----------------------------------------------------------------
     runs, cur = [], []
     for i in range(n):
         if vis[i]:
@@ -224,36 +298,57 @@ def process_block(frames, heads, bodies, cyclic, strength, max_shift, log):
         runs.append(cur)
     if cyclic and len(runs) > 1 and runs[0][0] == 0 and runs[-1][-1] == n - 1:
         runs[0] = runs.pop() + runs[0]                          # a run that wraps around the loop
-    shifts = {}
+    if cyclic and len(runs) == 1 and len(runs[0]) == n:
+        runs[0] = list(range(n))
+    placed = {}
     for run in runs:
-        if len(run) < 3:
+        med = float(np.median([cnt[i] for i in run]))
+        limit = 0.3 if cyclic else 0.5                          # below this the pendant is hidden by an arm / the torso
+        good = [cnt[i] >= limit * med for i in run]
+        sub, cur = [], []
+        for i, g in zip(run, good):
+            if g:
+                cur.append(i)
+            elif cur:
+                sub.append(cur)
+                cur = []
+        if cur:
+            sub.append(cur)
+        if cyclic and len(sub) > 1 and sub[0][0] == run[0] and sub[-1][-1] == run[-1] and good[0] and good[-1] \
+                and (run[0] - run[-1]) % n == 1:
+            sub[0] = sub.pop() + sub[0]
+        gframes = [i for s in sub for i in s]
+        if len(gframes) < 3:
             continue
-        full_cycle = cyclic and len(run) == n
-        arr = np.array([off[i] for i in run])
-        sm = lowpass(arr, full_cycle, strength)
-        d = np.clip(np.round(sm - arr), -max_shift, max_shift)
-        # accept the run only if it really gets smoother (second difference inside the run)
-        before = d2_stat(list(arr), full_cycle)[1] if len(arr) >= 3 else 0
-        after = d2_stat(list(arr + d), full_cycle)[1]
-        if after >= before:
-            continue
-        for k, i in enumerate(run):
-            shifts[i] = (int(d[k][0]), int(d[k][1]))
+        template, tc = consensus(pend, frames, gframes)
+        for s in sub:
+            if len(s) < 3:
+                continue
+            full_cycle = cyclic and len(s) == n
+            arr = np.array([off[i] for i in s])
+            sm = fourier_lowpass(arr, 2) if full_cycle else lowpass(arr, False, max(strength, 3))
+            for k, i in enumerate(s):
+                placed[i] = (template, tc, arr[k] + np.clip(sm[k] - arr[k], -max_shift, max_shift) + heads[i], arr[k] + heads[i])
     applied = {}
-    for i, (dx, dy) in shifts.items():
+    for i, (template, tc, target, orig) in placed.items():
         rib = red_mask(frames[i])
         need_touch = touches(pend[i], rib)
-        for f in (1.0, 0.67, 0.33, 0.0):                         # back off until the constraints hold
-            sx, sy = int(round(dx * f)), int(round(dy * f))
-            if (sx == 0 and sy == 0) or placement_ok(pend[i], rib, bodies[i], sx, sy, need_touch):
+        for f in (1.0, 0.67, 0.33, 0.0):                         # back off towards the original place if off the body
+            pos = orig + (target - orig) * f
+            new = np.zeros_like(pend[i])
+            if stamp(new, template, tc, pos) and body_cover(new, bodies[i]) >= 0.9:
                 break
-        if sx or sy:
-            shift_pendant(frames[i], pend[i], sx, sy)
-            applied[i] = (sx, sy)
+        else:
+            continue
+        frames[i][pend[i]] = 0
+        stamp_rgba(frames[i], template, tc, pos)
+        bridge_chain(frames[i], rib, new)
+        applied[i] = tuple(np.round(pos - orig, 1))
     shifts = applied
     pend = [(~red_mask(im)) & (im[..., 3] > 0) for im in frames]
     new_off = [centroid(p) - heads[i] if p.sum() >= MIN_PENDANT_PX else None for i, p in enumerate(pend)]
     log["d2_after"] = d2_stat(new_off, cyclic)
+    log["flicker_after"] = flicker(frames, cyclic)
     log["shifted"] = {int(i): list(map(int, s)) for i, s in shifts.items() if s != (0, 0)}
     return frames
 
@@ -277,8 +372,7 @@ def main():
             A, D, name = blk["action"], blk["dir"], blk["name"]
             d = os.path.join(tmp, "frames", f"{A:02d}_{name}", f"dir{D}")
             frames = [np.array(Image.open(os.path.join(d, f["file"])).convert("RGBA")) for f in blk["frames"]]
-            heads = [head_top(os.path.join(a.body, "frames", f"{A:02d}_{name}", f"dir{D}", f["file"]), banchor)
-                     + np.array(meta["anchor"]) for f in blk["frames"]]
+            heads = [np.zeros(2) for _ in blk["frames"]]          # trajectories are smoothed in canvas coordinates
             # item frames and body frames have different canvases; offsets are taken in item-canvas pixels
             bodies = [body_mask_in_item_canvas(os.path.join(a.body, "frames", f"{A:02d}_{name}", f"dir{D}", f["file"]),
                                                banchor, meta["anchor"], frames[0].shape[:2]) for f in blk["frames"]]
@@ -291,8 +385,11 @@ def main():
     if a.report:
         json.dump(report, open(a.report, "w"), indent=1, default=float)
     b = [(v["d2_before"][1], v["d2_after"][1]) for v in report.values() if v["d2_before"][1] > 0]
-    print("mean 2nd difference of pendant position vs head: %.2f px -> %.2f px (%d blocks)"
+    print("mean 2nd difference of pendant position: %.2f px -> %.2f px (%d blocks)"
           % (np.mean([x[0] for x in b]), np.mean([x[1] for x in b]), len(b)))
+    fb = np.mean([v["flicker_before"] for v in report.values()], axis=0)
+    fa = np.mean([v["flicker_after"] for v in report.values()], axis=0)
+    print("frame-to-frame change of pendant size / brightness: %.1f px, %.1f -> %.1f px, %.1f" % (fb[0], fb[1], fa[0], fa[1]))
     print("pendant frames filled:", sum(len(v["filled"]) for v in report.values()),
           "| shifted:", sum(len(v["shifted"]) for v in report.values()),
           "| specks removed:", sum(v["specks"] for v in report.values()))
