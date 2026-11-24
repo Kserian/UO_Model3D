@@ -40,3 +40,13 @@ The medal skinned like the skin under it folded up when the spine bent (its lowe
 ## Round cord, alignment (work in progress)
 The ribbon is modelled as a round cord of 4.5 cm diameter (`--ribbon-w`): a flat strip changed its projected width with the angle it was seen at (edge-on on the shoulders it was a broken 1-px line); the cord has the same width from every side (flicker of the red pixel count between frames 0.24 -> 0.13). The path lies lower on the shoulders (z 1.49-1.51) so that it does not cover the face. `render_uo_layer.py` got `uo_align` (scene property, px): per frame the model body is moved by whole pixels onto the original body in a circle round the neck (shifts.json next to the frames); with the model's silhouette this was 0 px for 127 of 135 frames of walk / run / attack.
 `item_gif.py --body-color R,G,B` tints the grey original body (a GIF with the skin colour of the game).
+
+## Paperdoll gumps and item art
+`paperdoll/gump_male.png`, `paperdoll/gump_female.png` (260 x 237, the canvas of the body gumps 12 / 13) and `paperdoll/art.png` (44 x 32, the item icon): `pipeline/uo_render_medal_gump.py`
+(a copy of `uo_render_paperdoll.py` without the belt fitting), rendered from the same `item.blend` as the animation:
+```
+PD_OUT=DIR python pipeline/run_script_in_blend.py OUT/item.blend pipeline/uo_render_medal_gump.py      # PD_DY_FEMALE (-6), PD_ART_TILT (15), PD_ART_TURN (0)
+```
+Front view, rest pose, body (head included) as a holdout, 90.5 px/m, body axis x 94.5, floor y 221 (the measured body gump 12). The female gump is the same render moved 6 px up (the female
+body gump stands ca. 7 px higher at the waist; the chest was not measured: **no original gump here to check it**, tune `PD_DY_FEMALE` in game). Art: the necklace hanging, tilted 15 deg towards the camera,
+so the round medal reads (tilt 55 and 90 hid it as a thin ellipse). Grey is capped at 160 like the animation. Gump ids: worn item = 50000 + animation id (male), 60000 + animation id (female).
