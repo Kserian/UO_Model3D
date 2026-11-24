@@ -44,6 +44,6 @@ The ribbon is modelled as a round cord of 4.5 cm diameter (`--ribbon-w`): a flat
 ## Paperdoll gumps and item art
 `paperdoll/gump_male.png`, `paperdoll/gump_female.png` (260 x 237) and `paperdoll/art.png` (44 x 32): `python pipeline/uo_medal_gump_fit.py CLIENT_DIR model/items/medal/paperdoll [CHECK_DIR]`
 (`CLIENT_DIR` holds `Gumpidx.mul` / `Gumpart.mul`; `CHECK_DIR` gets `check_*.png`, the gump over the original body gumps 12 / 13: keep it outside the repo).
-Fitted to the ORIGINAL necklace of the client (gump 50439 male / 60439 female, a chain with a pendant): its footprint on the drawn body, our dark red cord (animation reds, no black outline),
-our round grey medal instead of the pendant. A render of the 3D model did not fit the drawn bodies (the cord climbed to the jaw, the female medal sat off); the original necklace icons are 10-12 px wide,
-so the art is a small hand-built icon (V of ribbon + medal), not a render of the whole necklace. Gump ids: worn item = 50000 + animation id (male), 60000 + animation id (female).
+Drawn on the original body gumps (`uo_medal_gump_fit.py`): the neck centre and the shoulder row are measured on gump 12 / 13, the same symmetric cord (round the neck, +- 12 px over the shoulders) and the round medal 17 px
+under the shoulder row for both sexes (equal length), light from the upper left, our dark reds without a black outline. A render of the 3D model did not fit the drawn bodies (the cord climbed to the jaw, the female medal sat off);
+the original necklace icons are 10-12 px wide, so the art is a small hand-built icon (V of ribbon + medal). Gump ids: worn item = 50000 + animation id (male), 60000 + animation id (female).
