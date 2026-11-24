@@ -3,10 +3,10 @@
     python uo_medal_gump_fit.py CLIENT_DIR OUT_DIR [CHECK_DIR]       # CLIENT_DIR holds Gumpidx.mul, Gumpart.mul
 
 A render of the 3D model cannot be placed right: the drawn paperdoll bodies (gumps 12 / 13) have another neck, shoulders and chest than the 3D body (the cord climbed to the jaw, the female medal sat 6 px off).
-So the necklace is drawn on the drawn body itself: the neck centre x and the shoulder row are measured on gump 12 / 13, and the same cord (NECK, relative to them: round the neck, spread +- 12 px over the shoulders,
-down to the medal) and the medal 17 px under the shoulder row are drawn for a man and a woman: equal length, symmetric, light from the upper left (3 reds like the animation, no black outline); what lies
-outside the body is cut (the cord goes round the back of the neck). The original necklace gumps 50439 / 60439 were checked for the scale (a chain 18 px wide, a pendant of 6 px). Art: a hand-built icon in the scale
-of the original necklace icons (10-12 px wide; the render of the whole necklace was 20 x 30 px): a V of ribbon with the medal, 1 px shadow outline to the lower right.
+So the necklace is drawn on the drawn body itself: the neck centre x and the shoulder row are measured on gump 12 / 13; the same V (strands from the sides of the neck, over the collar bones) and the medal
+17 px under the shoulder row are drawn for a man and a woman (equal length). The drawn bodies are turned a little, so the medal hangs on the sternum (x 94, between the breasts) and the strands meet above it in the
+perspective of the body. Light from the upper left (3 reds like the animation, no black outline); what lies outside the body is cut. The original necklace gumps 50439 / 60439 were checked for the scale
+(a pendant of 6 px). Art: a hand-built icon in the scale of the original necklace icons (10-12 px wide; the render of the whole necklace was 20 x 30 px): a V of ribbon with the medal, 1 px shadow outline to the lower right.
 Writes gump_male.png, gump_female.png (260 x 237), art.png (44 x 32) and check_male.png / check_female.png (the gump over the original body gump 12 / 13, 6x) in CHECK_DIR if given (outside the repo).
 """
 import os, sys
@@ -68,15 +68,26 @@ def spline(pts, n=60):
     out.append(P[-2]); return np.array(out)
 
 
-# the necklace in the same measures for both bodies, relative to the neck centre x and the shoulder row of the drawn body: ends on the sides of the neck, the cord spreads out over the shoulders
-# (+- 12 px) and runs down into a V to the medal that hangs the same 17 px below the shoulder row for a man and a woman
-NECK = [(-7.0, -3.0), (-10.5, 1.5), (-12.0, 5.0), (-9.5, 8.5), (-5.0, 11.0), (0.0, 17.0 - R)]
+# the necklace in the same measures for both bodies: a V. The drawn bodies are turned a little, so the sternum (between the breasts: the cloth of the female body gump spans x 80..108, the male chest x 76..106)
+# is at x 94, 3 px right of the neck centre: the medal hangs there (y 99, 17 px under the shoulder row for a man and a woman) and the two strands of the V (from the sides of the neck, over the collar bones, 9.5 px
+# from the neck centre) meet above it in the perspective of the body: the left strand is longer than the right one
+STERNUM_X, MEDAL_DY, V_HALF = 94.0, 17.0, 9.5
+
+
+def strands(cx, sh):
+    apex = (STERNUM_X, sh + MEDAL_DY - R - 2.0)
+    out = []
+    for sgn in (-1, 1):
+        e = (cx + sgn * V_HALF, sh - 1.5)
+        m = ((e[0] + apex[0]) / 2 + sgn * 0.9, (e[1] + apex[1]) / 2 - 0.4)       # the strand bows a little outward, over the collar bone
+        out.append([e, m, apex])
+    return out
 
 
 def cord_pixels(cx, sh, shape, ss=8, width=1.8):
     """antialiased cord at ss x resolution; returns (coverage, side) where side > 0 is the upper left (lit) side of the cord"""
     h, w = shape[:2]
-    left = [(cx + dx, sh + dy) for dx, dy in NECK]; right = [(cx - dx, sh + dy) for dx, dy in NECK]
+    left, right = strands(cx, sh)
     cov = np.zeros((h * ss, w * ss), np.float32); side = np.zeros_like(cov)
     yy, xx = np.mgrid[0:h * ss, 0:w * ss]; xx = (xx + 0.5) / ss; yy = (yy + 0.5) / ss
     best = np.full(cov.shape, 1e9, np.float32)
@@ -103,7 +114,7 @@ def make_gump(gender, tid, bid):
     cov, side = cord_pixels(cx, sh, out.shape)
     m = (cov >= 0.4) & (gump_rgba(bid)[..., 3] > 0)                 # the cord goes round the back of the neck: only what lies on the drawn body is seen
     out[m, :3] = RED; out[m & (side > 0.25), :3] = REDL; out[m & (side < -0.25), :3] = REDD; out[m, 3] = 255
-    my = sh + 17.0
+    my = sh + MEDAL_DY; cx = STERNUM_X
     disc(out, cx, my, R)
     for k in (1, 2):                                               # the ring the cord runs through
         yy_ = int(round(my - R)) - k
