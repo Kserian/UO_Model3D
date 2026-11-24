@@ -240,6 +240,7 @@ python vdtool.py verify  plik.vd nowy.vd           # co się zmieniło
 python mul2vd.py anim.idx anim.mul out 701 468     # animacje klienta (np. włosy 701, płaszcz 468) -> .vd
 ```
 
+- **`vd_item_smooth.py in.vd out.vd`:** wygładzanie w czasie ręcznie edytowanego przedmiotu na szyi (medal na wstążce). Wstążka zostaje nietknięta; wisiorek traci pojedyncze piksele, krótkie dziury są wypełniane, a jego położenie względem głowy oryginalnego ciała jest filtrowane dolnoprzepustowo (piksele przesuwają się tylko, gdy wisiorek zostaje na ciele i styka się ze wstążką). Wypisuje drgania przed/po.
 - **Tryb płótna (domyślny):** wszystkie klatki mają jeden rozmiar i punkt zaczepienia z `meta.json`; przy pakowaniu każda jest przycinana. Najlepszy do edycji. **`--raw`:** oryginalne przycięte rozmiary; tylko do retuszu pikseli.
 - **Zasady:** nie przesuwaj rysunku względem płótna (1 px = 1 px w grze); przezroczystość 0/1 (alfa ≥ 128 widoczne); jedna paleta 256 kolorów 15-bitowych na blok (więcej kolorów: redukcja median cut z ostrzeżeniem; czysta czerń staje się prawie czarną, bo `0x0000` to przezroczystość); części do barwienia rysuj w szarości (R = G = B); klatki można dodawać na końcu lub usuwać od końca, wszystkie 5 kierunków akcji powinno mieć tyle samo; nie zmieniaj nazw folderów ani `meta.json`.
 
