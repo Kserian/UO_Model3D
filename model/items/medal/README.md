@@ -42,8 +42,8 @@ The ribbon is modelled as a round cord of 4.5 cm diameter (`--ribbon-w`): a flat
 `item_gif.py --body-color R,G,B` tints the grey original body (a GIF with the skin colour of the game).
 
 ## Paperdoll gumps and item art
-`paperdoll/gump_male.png`, `paperdoll/gump_female.png` (260 x 237) and `paperdoll/art.png` (44 x 32): `python pipeline/uo_medal_gump_fit.py CLIENT_DIR model/items/medal/paperdoll`
-(`CLIENT_DIR` holds `Gumpidx.mul` / `Gumpart.mul`; `check_*.png` show the gump over the original body gumps 12 / 13).
+`paperdoll/gump_male.png`, `paperdoll/gump_female.png` (260 x 237) and `paperdoll/art.png` (44 x 32): `python pipeline/uo_medal_gump_fit.py CLIENT_DIR model/items/medal/paperdoll [CHECK_DIR]`
+(`CLIENT_DIR` holds `Gumpidx.mul` / `Gumpart.mul`; `CHECK_DIR` gets `check_*.png`, the gump over the original body gumps 12 / 13: keep it outside the repo).
 Fitted to the ORIGINAL necklace of the client (gump 50439 male / 60439 female, a chain with a pendant): its footprint on the drawn body, our dark red cord (animation reds, no black outline),
 our round grey medal instead of the pendant. A render of the 3D model did not fit the drawn bodies (the cord climbed to the jaw, the female medal sat off); the original necklace icons are 10-12 px wide,
 so the art is a small hand-built icon (V of ribbon + medal), not a render of the whole necklace. Gump ids: worn item = 50000 + animation id (male), 60000 + animation id (female).

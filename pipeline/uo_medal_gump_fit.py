@@ -1,13 +1,13 @@
 """Paperdoll gumps (male / female) and the item icon (art) of the medal necklace, fitted to the ORIGINAL necklace of the client.
 
-    python uo_medal_gump_fit.py CLIENT_DIR OUT_DIR       # CLIENT_DIR holds Gumpidx.mul, Gumpart.mul
+    python uo_medal_gump_fit.py CLIENT_DIR OUT_DIR [CHECK_DIR]       # CLIENT_DIR holds Gumpidx.mul, Gumpart.mul
 
 A render of the 3D model (uo_render_medal_gump.py) cannot be placed right: the drawn paperdoll bodies (gumps 12 / 13) have another neck, shoulders and chest than the 3D body (the cord climbed to the
 jaw, the female medal sat 6 px off). So the footprint of the original necklace with a pendant (gump 50439 male / 60439 female: where the chain leaves the neck base, how it runs on the chest, where the pendant hangs)
 is taken from the client, recoloured as our dark red cord (the same reds as the animation, no black outline) and the pendant is replaced by our round grey medal (R 4.5 px, light from the upper left).
 Only the two strands are kept (the original has a stray pixel), each runs on to the medal's edge. Art: a hand-built icon in the scale of the original necklace icons (they are 10-12 px wide: the 3D render of
 the whole necklace was 20 x 30 px, twice too big): a V of ribbon with the medal, 1 px shadow outline to the lower right like the originals.
-Writes gump_male.png, gump_female.png (260 x 237), art.png (44 x 32) and check_male.png / check_female.png (the gump over the original body gump 12 / 13, 6x) in OUT_DIR.
+Writes gump_male.png, gump_female.png (260 x 237), art.png (44 x 32) and check_male.png / check_female.png (the gump over the original body gump 12 / 13, 6x) in CHECK_DIR if given (outside the repo).
 """
 import os, sys
 import numpy as np
@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import uo_gump_art as U
 
 CLIENT, OUT = sys.argv[1], sys.argv[2]
+CHECK = sys.argv[3] if len(sys.argv) > 3 else ""          # optional folder for check_*.png: they contain the client's body gumps, never commit them
 os.makedirs(OUT, exist_ok=True)
 R = 4.5                                          # medal radius in the gump (the original pendant is ca. 6 px wide)
 RED, REDD, REDL, EDGE = (136, 26, 32), (112, 18, 24), (152, 34, 40), (86, 12, 18)
@@ -71,9 +72,12 @@ def make_gump(gender, tid, bid):
             out[int(round(y)), int(round(x)), :3] = RED; out[int(round(y)), int(round(x)), 3] = 255
     disc(out, cx, cy, R)
     Image.fromarray(out).save(os.path.join(OUT, "gump_%s.png" % gender))
+    if not CHECK:
+        print(gender, "pendant of the original at", round(cx, 1), round(cy, 1)); return
+    os.makedirs(CHECK, exist_ok=True)
     body = Image.fromarray(gump_rgba(bid)).convert("RGBA")
     bg = Image.new("RGBA", body.size, (60, 70, 60, 255)); bg.alpha_composite(body); bg.alpha_composite(Image.fromarray(out))
-    bg.crop((60, 60, 125, 115)).resize((390, 330), Image.NEAREST).save(os.path.join(OUT, "check_%s.png" % gender))
+    bg.crop((60, 60, 125, 115)).resize((390, 330), Image.NEAREST).save(os.path.join(CHECK, "check_%s.png" % gender))
     print(gender, "pendant of the original at", round(cx, 1), round(cy, 1))
 
 
