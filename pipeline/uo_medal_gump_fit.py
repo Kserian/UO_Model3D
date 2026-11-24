@@ -4,7 +4,7 @@
 
 A render of the 3D model cannot be placed right: the drawn paperdoll bodies (gumps 12 / 13) have another neck, shoulders and chest than the 3D body (the cord climbed to the jaw, the female medal sat 6 px off).
 So the necklace is drawn on the drawn body itself: the neck centre x and the shoulder row are measured on gump 12 / 13; the same V (strands from the sides of the neck, over the collar bones) and the medal
-17 px under the shoulder row are drawn for a man and a woman (equal length). The drawn bodies are turned a little, so the medal hangs on the sternum (x 94, between the breasts) and the strands meet above it in the
+20 px under the shoulder row are drawn for a man and a woman (equal length). The drawn bodies are turned a little, so the medal hangs on the sternum (x 94, between the breasts) and the strands meet above it in the
 perspective of the body. Light from the upper left (3 reds like the animation, no black outline); what lies outside the body is cut. The original necklace gumps 50439 / 60439 were checked for the scale
 (a pendant of 6 px). Art: a hand-built icon in the scale of the original necklace icons (10-12 px wide; the render of the whole necklace was 20 x 30 px): a V of ribbon with the medal, 1 px shadow outline to the lower right.
 Writes gump_male.png, gump_female.png (260 x 237), art.png (44 x 32) and check_male.png / check_female.png (the gump over the original body gump 12 / 13, 6x) in CHECK_DIR if given (outside the repo).
@@ -69,9 +69,9 @@ def spline(pts, n=60):
 
 
 # the necklace in the same measures for both bodies: a V. The drawn bodies are turned a little, so the sternum (between the breasts: the cloth of the female body gump spans x 80..108, the male chest x 76..106)
-# is at x 94, 3 px right of the neck centre: the medal hangs there (y 99, 17 px under the shoulder row for a man and a woman) and the two strands of the V (from the sides of the neck, over the collar bones, 9.5 px
+# is at x 94, 3 px right of the neck centre: the medal hangs there (y 99, 20 px under the shoulder row for a man and a woman) and the two strands of the V (from the sides of the neck, over the collar bones, 12.5 px
 # from the neck centre) meet above it in the perspective of the body: the left strand is longer than the right one
-STERNUM_X, MEDAL_DY, V_HALF = 94.0, 17.0, 9.5
+STERNUM_X, MEDAL_DY, V_HALF = 94.0, 20.0, 12.5
 
 
 def strands(cx, sh):
