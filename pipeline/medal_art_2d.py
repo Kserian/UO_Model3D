@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """medal_art_2d - item art (icon of the medal in a backpack / on the ground, art.mul) drawn in 2D.
 
-    python medal_art_2d.py OUT_DIR [--name Red] [--colors dark;mid;light;hi] [--tilt 54] [--turn -40]
+    python medal_art_2d.py OUT_DIR [--name Red] [--colors dark;mid;light;hi] [--tilt 54] [--turn -40] [--seed 1]
 
-UO draws a lying item seen from above at an angle, so the medal is built lying on a plane (ribbon loop in the shape of a slightly curled heart + steel disc on a bail), turned by --turn
+UO draws a lying item seen from above at an angle, so the medal is built lying on a plane (ribbon loop laid loosely in an uneven wave + steel disc on a bail), turned by --turn
 degrees and tilted towards the camera by --tilt; every screen pixel is mapped back onto the plane, so the ribbon keeps its true width and the disc
 becomes an ellipse.  Same light, ribbon colours and steel as medal_gump_2d.py (key light from the upper left).  Drawn at 8 x, the thickness of the
 disc and of the ribbon shows as a darker side wall below the edge, down-sampled with a coverage threshold (hard edges: art has no alpha), and a
@@ -25,25 +25,39 @@ AW, AH = 44, 32
 LIGHT = np.array([-0.55, 0.45, 0.70]); LIGHT /= np.linalg.norm(LIGHT)
 OUTLINE = (22, 8, 10)
 
-W_RIB = 0.0205          # ribbon width, m
+W_RIB = 0.0215          # ribbon width, m
 R_DISC = 0.0425         # disc radius
-KH = 0.0054             # m per unit of the heart curve
+LOOP_SCALE = 1.35       # size of the loop
+WAVE = 1.0              # strength of the waves of the ribbon
+WSEED = 1               # which uneven laying (phases of the waves)
 
 
-def heart_arms(n=90):
-    """the ribbon lies in a heart: both arms start at the eyelet (bottom point) and meet in the notch at the top (left arm first)."""
-    t = np.linspace(np.pi, 0, n)
-    x = 16 * np.sin(t) ** 3
-    y = 13 * np.cos(t) - 5 * np.cos(2 * t) - 2 * np.cos(3 * t) - np.cos(4 * t)
-    right = np.c_[x, y] * KH
-    left = np.c_[-x, y] * KH
-    return [left, right]
+def wave_arms(n=160, seed=None):
+    """the ribbon is laid loosely: a loop from the eyelet to its far end, both arms waving unevenly (left arm first)."""
+    rng = np.random.default_rng(WSEED if seed is None else seed)
+    arms = []
+    # left arm: higher and wider, right arm lower; the far ends cross a little (the ribbon is curled over at the top)
+    shape = {-1: [(-0.004, -0.004), (-0.034, 0.088), (-0.118, 0.128), (0.013, 0.176)],
+             1: [(0.004, -0.004), (0.030, 0.082), (0.112, 0.112), (-0.011, 0.168)]}
+    for k, sgn in enumerate((-1, 1)):
+        base = bezier(np.array(shape[sgn]) * LOOP_SCALE, n)
+        d = np.gradient(base, axis=0)
+        d /= np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-9)
+        nrm = np.c_[-d[:, 1], d[:, 0]]
+        s = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(base, axis=0), axis=1))])
+        u = s / s[-1]
+        env = np.sin(np.pi * np.clip(u, 0, 1)) ** 0.6                         # no waves at the eyelet and at the far end
+        ph = rng.uniform(0, 2 * np.pi, 3)
+        off = WAVE * env * (0.0105 * np.sin(2 * np.pi * s / 0.125 + ph[0]) + 0.0040 * np.sin(2 * np.pi * s / 0.075 + ph[1])
+                            + 0.0040 * np.sin(2 * np.pi * s / 0.26 + ph[2]))
+        arms.append(base + nrm * off[:, None])
+    return arms
 
 
-STRANDS = heart_arms()
-APEX_V = STRANDS[0][0, 1]
+STRANDS = wave_arms()
+APEX_V = -0.004
 EYELET = np.array([0.0, APEX_V - 0.004])
-DISC_C = np.array([0.0, APEX_V - 0.004 - 0.0105 - R_DISC * 0.78])
+DISC_C = np.array([0.0, APEX_V - 0.024 - R_DISC * 0.92])
 
 
 def poly(pts, n=120):
@@ -84,10 +98,10 @@ def field(U, V, paths):
         rib |= up
     # eyelet ring and disc (steel)
     # the bail: a short steel capsule from the eyelet down to the top of the disc
-    top = np.array([0.0, DISC_C[1] + R_DISC * 0.95])
+    top = np.array([0.0, DISC_C[1] + R_DISC * 0.90])
     dd, _, _ = seg_dist(U, V, np.array([EYELET, top]))
-    ring = dd < 0.0072
-    Re = dd / 0.0072
+    ring = dd < 0.0092
+    Re = dd / 0.0092
     Rd = np.hypot(U - DISC_C[0], V - DISC_C[1]) / R_DISC
     disc = Rd < 1
     rim = np.clip(1 - np.abs(Rd - 0.86) / 0.17, 0, 1)
@@ -139,7 +153,7 @@ def render(tilt, turn, colors, seed=3):
     steel = np.array([150.0, 152.0, 164.0])[None, None, :] * (0.30 + 0.88 * lam)[..., None]
     steel = steel + (spec ** 22)[..., None] * 110
     steel = np.where(((Rd > 0.72) & (Rd < 1))[..., None], steel * 1.05 + 8, steel)
-    steel = np.where((~(Rd < 1))[..., None], steel * 0.78, steel)            # the eyelet ring is a little darker than the disc face
+    steel = np.where((~(Rd < 1))[..., None], steel * 0.60, steel)            # the eyelet ring is a little darker than the disc face
     rgb = np.where(metal[..., None], steel, rc)
     # side walls (thickness) below the lower edge
     def wall(mask, drop_px, col):
@@ -178,6 +192,7 @@ def to_art(cov, rgb, thr=0.5):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('out'); ap.add_argument('--name', default='Red')
+    ap.add_argument('--seed', type=int, default=1, help='which uneven laying of the ribbon (1, 2, 3, 5 look good)')
     ap.add_argument('--colors'); ap.add_argument('--tilt', type=float, default=54); ap.add_argument('--turn', type=float, default=-40)
     o = ap.parse_args()
     colors = dict(RIBBON)
@@ -185,6 +200,8 @@ def main():
         for k, v in zip(('dark', 'mid', 'light', 'hi'), o.colors.split(';')):
             colors[k] = tuple(int(x) for x in v.split(','))
     os.makedirs(o.out, exist_ok=True)
+    global STRANDS
+    STRANDS[:] = wave_arms(seed=o.seed)
     cov, rgb = render(o.tilt, o.turn, colors)
     art = to_art(cov, rgb)
     Image.fromarray(art).save(os.path.join(o.out, f'Medal_{o.name}_Art.png'))
