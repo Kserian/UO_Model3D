@@ -34,6 +34,8 @@ GEOM = {
                    right=((99.6, 80.8), (99.6, 85.0), (96.8, 89.6), (93.0, 92.4)),
                    apex=(92.7, 92.4), disc=(92.7, 99.4), width=2.3),
 }
+# single pixels removed by hand after the render (they stuck out of the ribbon's stair step): (x, y) in gump pixels
+FIX = {'Female': [(85, 88)]}
 RIBBON = dict(dark=(30, 2, 6), mid=(90, 8, 16), light=(139, 24, 32), hi=(204, 62, 68))   # red: mid / light are the two reds of the animation
 
 
@@ -161,6 +163,18 @@ def to_gump(cov, rgb, win, body_alpha, thr=0.38, metal=None):
     return out
 
 
+def make_gump(sex, colors, bodies):
+    """the medal gump (260 x 237 RGBA) of one sex and the body gump it sits on."""
+    g = GEOM[sex]
+    body = Image.open(os.path.join(bodies, g['body'])).convert('RGBA')
+    balpha = np.asarray(body)[..., 3] > 0
+    cov, rgb, win, metal = render(g, colors)
+    gump = to_gump(cov, rgb, win, balpha, metal=metal.astype(float))
+    for x, y in FIX.get(sex, []):
+        gump[y, x] = 0
+    return body, gump
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('out'); ap.add_argument('--name', default='Red')
@@ -172,11 +186,8 @@ def main():
         for k, v in zip(('dark', 'mid', 'light', 'hi'), o.colors.split(';')):
             colors[k] = tuple(int(x) for x in v.split(','))
     os.makedirs(o.out, exist_ok=True)
-    for sex, g in GEOM.items():
-        body = Image.open(os.path.join(o.bodies, g['body'])).convert('RGBA')
-        balpha = np.asarray(body)[..., 3] > 0
-        cov, rgb, win, metal = render(g, colors)
-        gump = to_gump(cov, rgb, win, balpha, metal=metal.astype(float))
+    for sex in GEOM:
+        body, gump = make_gump(sex, colors, o.bodies)
         Image.fromarray(gump).save(os.path.join(o.out, f'Medal_{o.name}_{sex}.png'))
         comp = body.copy(); comp.alpha_composite(Image.fromarray(gump))
         comp.save(os.path.join(o.out, f'Medal_{o.name}_{sex}_on_body.png'))
