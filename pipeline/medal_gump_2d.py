@@ -19,19 +19,20 @@ import numpy as np
 from PIL import Image
 
 K = 6                                    # super-sampling
+DS = 0.94                                # disc size relative to the first version (diameter ~9.4 px)
 GW, GH = 260, 237
 LIGHT = np.array([-0.60, -0.45, 0.66]); LIGHT /= np.linalg.norm(LIGHT)
 
 # gump pixel geometry (x right, y down), measured on the body gumps
 GEOM = {
     'Male': dict(body='paperdoll_male_0xc.png',
-                 left=((81.6, 80.0), (81.0, 87.5), (88.0, 96.0), (94.2, 101.4)),
-                 right=((101.4, 80.0), (102.4, 87.5), (101.0, 96.0), (95.2, 101.4)),
-                 apex=(94.7, 101.4), disc=(94.7, 110.2), width=2.8),
+                 left=((81.8, 80.2), (82.2, 84.8), (88.5, 90.2), (94.0, 92.6)),
+                 right=((100.8, 80.2), (100.9, 85.2), (98.0, 89.8), (94.8, 92.6)),
+                 apex=(94.4, 92.6), disc=(94.4, 99.6), width=2.4),
     'Female': dict(body='paperdoll_female_0xd.png',
-                   left=((82.4, 80.4), (81.8, 86.5), (87.5, 92.0), (92.2, 96.2)),
-                   right=((100.4, 80.4), (101.2, 86.5), (97.5, 92.0), (92.8, 96.2)),
-                   apex=(92.5, 96.2), disc=(92.5, 105.2), width=2.6),
+                   left=((82.4, 80.8), (82.8, 85.0), (88.2, 89.8), (92.4, 92.4)),
+                   right=((99.6, 80.8), (99.6, 85.0), (96.8, 89.6), (93.0, 92.4)),
+                   apex=(92.7, 92.4), disc=(92.7, 99.4), width=2.3),
 }
 RIBBON = dict(dark=(30, 2, 6), mid=(90, 8, 16), light=(139, 24, 32), hi=(204, 62, 68))   # red: mid / light are the two reds of the animation
 
@@ -89,9 +90,9 @@ def render(geom, colors, seed=3):
         up = m & (h >= H)
         H = np.where(up, h + 0.06 * k, H); tex = np.where(up, (0.90 + 0.10 * weave) * (1 - 0.40 * np.clip((r - 0.72) / 0.28, 0, 1) ** 1.5), tex); rib |= up
     ax, ay = geom['apex']; dx, dy = geom['disc']
-    stem = np.array([[ax, ay - 0.5], [ax + 0.05, (ay + dy) / 2 - 1.5], [dx, dy - 5.3]])
+    stem = np.array([[ax, ay - 0.5], [ax + 0.02, (ay + dy) / 2 - 0.3], [dx, dy - 4.8]])
     d, arc, side = seg_dist(X, Y, stem)
-    sw = w * 1.38
+    sw = w * 1.45
     r = d / (sw / 2)
     m = r < 1
     h = 0.62 * np.sqrt(np.clip(1 - r ** 2, 0, 1)) ** 0.7 + 0.07 * np.sin(2 * np.pi * (arc / 4.6 + 0.2))
@@ -101,14 +102,14 @@ def render(geom, colors, seed=3):
     up = m & (h + 0.1 >= H)
     H = np.where(up, h + 0.1, H); tex = np.where(up, (0.90 + 0.10 * weave) * (1 - 0.40 * np.clip((r - 0.72) / 0.28, 0, 1) ** 1.5), tex); rib |= up
     # ring joining the ribbon to the disc, then the disc
-    R = np.hypot(X - dx, Y - (dy - 5.5))
+    R = np.hypot(X - dx, Y - (dy - 5.0)) / DS
     ring = (R < 1.7) & (R > 0.8)
-    Rd = np.hypot(X - dx, Y - dy)
+    Rd = np.hypot(X - dx, Y - dy) / DS
     disc = Rd < 5.0
     Hd = np.zeros_like(H)
     rim = np.clip(1 - np.abs(Rd - 4.3) / 0.8, 0, 1)
-    face = np.clip(1 - (Rd / 4.2) ** 2, 0, 1) * 0.35
-    emb = np.clip(1 - np.abs(Rd - 2.4) / 0.45, 0, 1) * 0.22 + np.clip(1 - Rd / 0.9, 0, 1) * 0.18
+    face = np.clip(1 - (Rd / 4.2) ** 2, 0, 1) * 0.50
+    emb = np.clip(1 - np.abs(Rd - 2.3) / 0.6, 0, 1) * 0.10
     Hd = 0.95 * rim ** 0.8 * (Rd > 3.4) + face * (Rd <= 3.7) + emb * (Rd < 3.3)
     Hd = Hd + 0.15
     metal = disc | ring
@@ -129,22 +130,30 @@ def render(geom, colors, seed=3):
     rc = ramp(np.clip(I * tex * (1 + noise), 0, 1.4), colors)
     rc = rc + (spec ** 40)[..., None] * 32 * (rib & ~metal)[..., None]
     steel_base = np.array([150.0, 152.0, 164.0])
-    steel = steel_base[None, None, :] * (0.26 + 0.92 * lam)[..., None] * (1 + noise)[..., None]
-    steel = steel + (spec ** 28)[..., None] * 150 + (np.clip(1 - np.abs(Rd - 2.55) / 0.4, 0, 1) * 0)[..., None]
+    steel = steel_base[None, None, :] * (0.30 + 0.88 * lam)[..., None]
+    steel = steel + (spec ** 22)[..., None] * 110 + (np.clip(1 - np.abs(Rd - 2.55) / 0.4, 0, 1) * 0)[..., None]
     steel = np.where(((Rd > 3.4) & (Rd < 5.0))[..., None], steel * 1.06 + 8, steel)
     rgb = np.where(metal[..., None], steel, rc)
     # outline: a thin dark edge so the disc and the ribbon read against the skin (the body gump has the same dark edge)
-    return cov, np.clip(rgb, 0, 255), (x0, y0, x1, y1)
+    return cov, np.clip(rgb, 0, 255), (x0, y0, x1, y1), metal
 
 
-def to_gump(cov, rgb, win, body_alpha):
+def to_gump(cov, rgb, win, body_alpha, thr=0.38, metal=None):
+    """6 x -> 1 x. Soft edges: the colour of a border pixel is darkened by how little of it is covered (a fringe instead of a stair step)."""
     x0, y0, x1, y1 = win
     h, w = cov.shape
     c = cov.reshape(h // K, K, w // K, K).mean((1, 3))
     col = (rgb * cov[..., None]).reshape(h // K, K, w // K, K, 3).sum((1, 3)) / np.maximum(cov.reshape(h // K, K, w // K, K).sum((1, 3)), 1)[..., None]
+    s = np.clip((c - thr) / (0.95 - thr), 0, 1)
+    s = s * s * (3 - 2 * s)                                    # smoothstep
+    dark = 0.50
+    if metal is not None:
+        mshare = (metal * cov).reshape(h // K, K, w // K, K).sum((1, 3)) / np.maximum(cov.reshape(h // K, K, w // K, K).sum((1, 3)), 1)
+        dark = 0.50 + 0.22 * mshare                           # steel keeps more of its light at the border
+    col = col * (dark + (1 - dark) * s)[..., None]
     out = np.zeros((GH, GW, 4), np.uint8)
     win = out[y0:y1, x0:x1]
-    on = (c > 0.5) & body_alpha[y0:y1, x0:x1]
+    on = (c > thr) & body_alpha[y0:y1, x0:x1]
     win[..., :3] = np.where(on[..., None], np.clip(np.round(col), 0, 255), 0).astype(np.uint8)
     dead = on & (win[..., :3].max(-1) < 8)
     win[..., :3][dead] = 8
@@ -166,8 +175,8 @@ def main():
     for sex, g in GEOM.items():
         body = Image.open(os.path.join(o.bodies, g['body'])).convert('RGBA')
         balpha = np.asarray(body)[..., 3] > 0
-        cov, rgb, win = render(g, colors)
-        gump = to_gump(cov, rgb, win, balpha)
+        cov, rgb, win, metal = render(g, colors)
+        gump = to_gump(cov, rgb, win, balpha, metal=metal.astype(float))
         Image.fromarray(gump).save(os.path.join(o.out, f'Medal_{o.name}_{sex}.png'))
         comp = body.copy(); comp.alpha_composite(Image.fromarray(gump))
         comp.save(os.path.join(o.out, f'Medal_{o.name}_{sex}_on_body.png'))
